@@ -31,6 +31,17 @@
     $satuan = $isLiter ? 'Liter' : 'Kg';
     $satuanUpper = $isLiter ? 'LITER' : 'KG';
     $satuanLower = $isLiter ? 'liter' : 'kg';
+
+    // Helper format desimal bersih tanpa trailing zero
+    $formatClean = function ($val, $maxDecimals = 3) {
+        if ($val === null || $val === '') return '-';
+        $num = (float) $val;
+        if ($num == (int) $num) {
+            return number_format($num, 0, ',', '.');
+        }
+        $formatted = number_format($num, $maxDecimals, ',', '.');
+        return rtrim(rtrim($formatted, '0'), ',');
+    };
 @endphp
 
 <div class="excel-doc-sheet" style="width: 100%; max-width: 860px; margin: 0 auto 1.5rem; background: #ffffff; border: 2px solid #000000; padding: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); font-family: Arial, sans-serif; font-size: 0.76rem; color: #000000;">
@@ -234,9 +245,6 @@
                         @endif
                         @if ($qc->sopir_nama)
                             ({{ $qc->sopir_nama }})
-                        @endif
-                        @if ($qc->po)
-                            &bull; PO: {{ $qc->po->po_no }}
                         @endif
                     @endif
                 </td>
@@ -462,16 +470,16 @@
                         <td style="padding: 6px; border-right: 1px solid #000000; font-weight: 800; font-size: 0.95rem;">FFA</td>
                         <td style="padding: 6px; border-right: 1px solid #000000; font-weight: 700;">
                             @if($isEdit)
-                                <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_coa]" value="{{ old('items.'.$qcdtlId.'.ffa_coa', $firstDetail?->ffa_coa) }}" class="excel-cell-input text-center" placeholder="0.050">
+                                <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_coa]" value="{{ old('items.'.$qcdtlId.'.ffa_coa', $firstDetail?->ffa_coa !== null ? (float)$firstDetail->ffa_coa : '') }}" class="excel-cell-input text-center" placeholder="0.050">
                             @else
-                                {{ $firstDetail?->ffa_coa !== null ? number_format($firstDetail->ffa_coa, 3, ',', '.') : '-' }}
+                                {{ $formatClean($firstDetail?->ffa_coa, 3) }}
                             @endif
                         </td>
                         <td style="padding: 6px; font-weight: 900; color: #0284c7;">
                             @if($isEdit)
-                                <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_qc]" value="{{ old('items.'.$qcdtlId.'.ffa_qc', $firstDetail?->ffa_qc) }}" class="excel-cell-input text-center font-bold" placeholder="0.045">
+                                <input type="number" step="0.001" name="items[{{ $qcdtlId }}][ffa_qc]" value="{{ old('items.'.$qcdtlId.'.ffa_qc', $firstDetail?->ffa_qc !== null ? (float)$firstDetail->ffa_qc : '') }}" class="excel-cell-input text-center font-bold" placeholder="0.045">
                             @else
-                                {{ $firstDetail?->ffa_qc !== null ? number_format($firstDetail->ffa_qc, 3, ',', '.') : '-' }}
+                                {{ $formatClean($firstDetail?->ffa_qc, 3) }}
                             @endif
                         </td>
                     </tr>
@@ -524,14 +532,14 @@
                 <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
                     <input type="radio" name="kesimpulan_qc" value="TERIMA" {{ old('kesimpulan_qc', $qc->status_qc !== 'DITOLAK_TOTAL' ? 'TERIMA' : '') === 'TERIMA' ? 'checked' : '' }} class="excel-checkbox">
                     <strong style="font-weight: 800; color: #000000;">TERIMA :</strong>
-                    <u style="font-weight: 700; margin-left: 2px; text-underline-offset: 3px;">{{ number_format($totalNetto, 2, ',', '.') }}</u>
+                    <u style="font-weight: 700; margin-left: 2px; text-underline-offset: 3px;">{{ $formatClean($totalNetto, 2) }}</u>
                     <span style="margin-left: 2px;">{{ $satuanLower }}</span>
                 </label>
 
                 <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #dc2626;">
                     <input type="radio" name="kesimpulan_qc" value="TOLAK" {{ old('kesimpulan_qc', $qc->status_qc === 'DITOLAK_TOTAL' ? 'TOLAK' : '') === 'TOLAK' ? 'checked' : '' }} class="excel-checkbox">
                     <strong style="font-weight: 800; color: #dc2626;">TOLAK :</strong>
-                    <u style="font-weight: 700; margin-left: 2px; text-underline-offset: 3px; color: #dc2626;">{{ number_format($totalReject, 2, ',', '.') }}</u>
+                    <u style="font-weight: 700; margin-left: 2px; text-underline-offset: 3px; color: #dc2626;">{{ $formatClean($totalReject, 2) }}</u>
                     <span style="margin-left: 2px; color: #dc2626;">{{ $satuanLower }}</span>
                 </label>
             </div>
@@ -542,7 +550,7 @@
                         <span style="font-weight: 900; font-size: 1rem; margin-right: 6px; color: #000000;">✓</span>
                     @endif
                     <strong style="font-weight: 800; color: #000000;">TERIMA :</strong>
-                    <u style="font-weight: 700; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px;">{{ number_format($totalNetto, 2, ',', '.') }}</u>
+                    <u style="font-weight: 700; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px;">{{ $formatClean($totalNetto, 2) }}</u>
                     <span>{{ $satuanLower }}</span>
                 </div>
 
@@ -551,7 +559,7 @@
                         <span style="font-weight: 900; font-size: 1rem; margin-right: 6px; color: #dc2626;">✓</span>
                     @endif
                     <strong style="font-weight: 800; color: #dc2626;">TOLAK :</strong>
-                    <u style="font-weight: 700; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px; color: #dc2626;">{{ number_format($totalReject, 2, ',', '.') }}</u>
+                    <u style="font-weight: 700; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px; color: #dc2626;">{{ $formatClean($totalReject, 2) }}</u>
                     <span style="color: #dc2626;">{{ $satuanLower }}</span>
                 </div>
             </div>

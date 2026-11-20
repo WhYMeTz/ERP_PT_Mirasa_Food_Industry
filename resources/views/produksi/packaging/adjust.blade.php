@@ -27,11 +27,6 @@
                 <h1 class="adjust-title">Adjustment HPP</h1>
                 <span class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 700; border: 1px solid #bae6fd;">{{ $header->pack_no }}</span>
                 <span class="badge-version">v{{ $header->version_no ?? 1 }}</span>
-                @if($header->status_cd === 'POSTED')
-                    <span class="badge badge-success">Posted</span>
-                @else
-                    <span class="badge" style="background: #f1f5f9; color: #475569;">{{ $header->status_cd }}</span>
-                @endif
             </div>
         </div>
         <div class="adjust-header-actions">
@@ -266,7 +261,22 @@
                         @endphp
                         <tr class="adj-item-row" data-group="KEMASAN">
                             <td>
-                                <div class="adj-item-title">{{ $kem->barang?->barang_nm ?? 'Material Kemasan' }}</div>
+                                <div class="adj-item-title">
+                                    {{ $kem->barang?->barang_nm ?? 'Material Kemasan' }}
+                                    @php
+                                        $bCdA = strtoupper($kem->barang?->barang_cd ?? '');
+                                        $bNmA = strtoupper($kem->barang?->barang_nm ?? '');
+                                    @endphp
+                                    @if($bCdA === 'KIF00G-BP1' || $bCdA === 'KIF00G-PUT' || (str_contains($bNmA, 'IFM') && str_contains($bNmA, 'KARTON')))
+                                        <span style="font-size: 0.685rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">
+                                            Amortisasi 5x
+                                        </span>
+                                    @elseif($bCdA === 'KMS-KTN-REJ' || str_contains($bNmA, 'REJECT') || str_contains($bNmA, 'MANUAL'))
+                                        <span style="font-size: 0.685rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">
+                                            Manual (HPP Rp 0)
+                                        </span>
+                                    @endif
+                                </div>
                                 <div class="adj-item-code">
                                     <span>{{ $kem->barang?->barang_cd ?? '-' }}</span>
                                     &bull; <span>{{ $kem->kategori_bahan }}</span>
@@ -526,7 +536,7 @@
                 <h3 class="adjust-audit-title">Riwayat Berita Acara Penyesuaian Dokumen Ini</h3>
             </div>
             <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">
-                {{ $header->adjustmentLogs ? $header->adjustmentLogs->count() : 0 }} Catatan
+                {{ $header->visibleAdjustmentLogs() ? $header->visibleAdjustmentLogs()->count() : 0 }} Catatan
             </span>
         </div>
 
@@ -544,7 +554,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($header->adjustmentLogs as $log)
+                    @forelse($header->visibleAdjustmentLogs() as $log)
                         <tr>
                             <td>
                                 <span class="adjust-ba-badge">{{ $log->adj_no }}</span>
@@ -592,13 +602,16 @@
                                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                     <span>{{ $log->created_by ?? 'System' }}</span>
                                 </span>
+                                @if($log->role_cd)
+                                    <div style="font-size: 0.675rem; color: #64748b; margin-top: 2px;">{{ str_replace('_', ' ', $log->role_cd) }}</div>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8;">
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian HPP Kemas</div>
-                                <div style="font-size: 0.775rem; margin-top: 0.25rem;">Dokumen ini masih mencatat nilai kalkulasi pengemasan orisinal (Versi 1).</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">Belum Ada Riwayat Penyesuaian</div>
+                                <div style="font-size: 0.775rem; margin-top: 0.25rem;">Tidak ada catatan penyesuaian yang sesuai dengan hak akses peran akun Anda.</div>
                             </td>
                         </tr>
                     @endforelse

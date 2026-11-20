@@ -18,7 +18,12 @@
             Histori arus kas masuk, kas keluar, pelunasan hutang, transfer internal dan opname saldo berjalan.
         </p>
     </div>
-    <div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ route('keuangan.kas_bank.rekening_koran', !empty($filters['kas_bank_id']) ? ['kas_bank_id' => $filters['kas_bank_id']] : []) }}" class="btn" style="background: #f0fdf4; color: #166534; border: 1.5px solid #bbf7d0; font-weight: 700; font-size: 0.8125rem;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Format Rekening Koran Resmi</span>
+        </a>
+
         <a href="{{ route('keuangan.kas_bank.index') }}" class="btn btn-secondary" style="font-weight: 700; font-size: 0.8125rem;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             <span>Kembali ke Master Rekening</span>

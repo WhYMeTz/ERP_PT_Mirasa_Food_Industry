@@ -1,0 +1,306 @@
+/**
+ * ═════════════════════════════════════════════════════════════════
+ * STYLESHEET: MONITORING & REKONSILIASI PENGGUNAAN GAS CNG
+ * ERP PT Mirasa Food Industry - Modul Produksi
+ * ═════════════════════════════════════════════════════════════════
+ */
+
+/* ─── KARTU RINGKASAN EKSEKUTIF (EXECUTIVE STATS) ─── */
+.cng-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.cng-stat-card {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.cng-stat-card:hover {
+    border-color: #94a3b8;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.cng-stat-card.card-primary {
+    border-color: #fde68a;
+    background: linear-gradient(135deg, #ffffff 0%, #fffdf5 100%);
+}
+
+.cng-stat-card.card-info {
+    border-color: #bae6fd;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.cng-stat-card.card-success {
+    border-color: #a7f3d0;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.cng-stat-card.card-neutral {
+    border-color: #e2e8f0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.cng-stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.cng-stat-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+}
+
+.cng-stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cng-stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.35rem;
+}
+
+.cng-stat-subvalue {
+    font-size: 0.775rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* ─── SEGMENTED TAB SWITCHER TERPADU ─── */
+.cng-tab-switcher-wrap {
+    display: flex;
+    gap: 0.35rem;
+    background: #f1f5f9;
+    padding: 0.35rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    width: fit-content;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.cng-tab-btn {
+    padding: 0.5rem 1.15rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: transparent;
+    color: #64748b;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.cng-tab-btn:hover {
+    background: #ffffff;
+    color: #0f172a;
+}
+
+.cng-tab-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cng-tab-btn.active.tab-amber {
+    color: #b45309;
+    border-bottom: 2px solid #d97706;
+}
+
+.cng-tab-btn.active.tab-blue {
+    color: #0369a1;
+    border-bottom: 2px solid #0284c7;
+}
+
+.cng-tab-btn.active.tab-emerald {
+    color: #047857;
+    border-bottom: 2px solid #059669;
+}
+
+/* ─── TAB PANE WRAPPERS ─── */
+.cng-tab-pane {
+    display: none;
+}
+
+.cng-tab-pane.active {
+    display: block;
+    animation: fadeInPane 0.15s ease-in-out;
+}
+
+@keyframes fadeInPane {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── TABEL RANGKUMAN HARIAN (READ-ONLY CLEAN TABLE) ─── */
+.cng-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.cng-table-header {
+    background: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.cng-table-title {
+    font-size: 0.925rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cng-table-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.table-cng-clean {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+}
+
+.table-cng-clean thead th {
+    background: #f8fafc;
+    border-bottom: 1.5px solid #cbd5e1;
+    color: #334155;
+    font-weight: 700;
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.65rem 0.85rem;
+    white-space: nowrap;
+}
+
+.table-cng-clean tbody td {
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.table-cng-clean tbody tr:hover {
+    background: #f8fafc;
+}
+
+.table-cng-clean tfoot td {
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    font-weight: 800;
+    padding: 0.75rem 0.85rem;
+    color: #0f172a;
+}
+
+/* ─── STICKY / BOTTOM ACTION BAR ELEGAN ─── */
+.bottom-submit-bar {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem 1.35rem;
+    margin-top: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.bottom-summary-text {
+    font-size: 0.8125rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 65%;
+}
+
+.bottom-summary-text strong {
+    color: #0f172a;
+}
+
+/* Badge Efisiensi */
+.badge-efficiency {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+}
+
+.badge-efficiency.eff-good {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-efficiency.eff-warning {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+/* Print Styling */
+@media print {
+    .cng-tab-switcher-wrap,
+    .cng-table-actions,
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: #ffffff !important;
+    }
+
+    .cng-table-card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}

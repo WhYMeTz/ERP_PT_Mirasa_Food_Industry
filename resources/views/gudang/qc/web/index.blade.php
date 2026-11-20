@@ -368,18 +368,45 @@
                                 {{-- BAHAN PENOLONG (PENGUJIAN 1 KALI TOK) --}}
                                 <div style="display: flex; align-items: center; gap: 0.4rem;">
                                     <span style="font-weight: 700; color: #0f172a;">{{ number_format($p1Netto, 0, ',', '.') }} {{ $satuanCd }}</span>
-                                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
-                                        <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            ❌ Ditolak
-                                        </span>
-                                    @elseif ($p1Reject > 0)
-                                        <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            ⚠️ Parsial
-                                        </span>
+                                    @if ($kat === 'KARTON')
+                                        @php
+                                            $rowGA = $qc->details->firstWhere('grade_cd', 'A');
+                                            $rowGB = $qc->details->firstWhere('grade_cd', 'B');
+                                        @endphp
+                                        @if ($rowGA && $rowGB && (float)$rowGA->qty_netto_lolos > 0 && (float)$rowGB->qty_netto_lolos > 0)
+                                            <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.65rem; padding: 1px 4px; border-radius: 4px;">
+                                                🟢 A: {{ number_format((float)$rowGA->qty_netto_lolos, 0, ',', '.') }}
+                                            </span>
+                                            <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.65rem; padding: 1px 4px; border-radius: 4px;">
+                                                🟡 B: {{ number_format((float)$rowGB->qty_netto_lolos, 0, ',', '.') }}
+                                            </span>
+                                        @elseif ($p1Grade === 'B' || ($rowGB && (float)$rowGB->qty_netto_lolos > 0))
+                                            <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                🟡 Gr. B
+                                            </span>
+                                        @elseif ($p1Grade === 'REJECT')
+                                            <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                ❌ Afkir
+                                            </span>
+                                        @else
+                                            <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                🟢 Gr. A
+                                            </span>
+                                        @endif
                                     @else
-                                        <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
-                                            🟢 Lolos Uji
-                                        </span>
+                                        @if ($qc->status_qc === 'DITOLAK_TOTAL' || $p1Netto <= 0)
+                                            <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                ❌ Ditolak
+                                            </span>
+                                        @elseif ($p1Reject > 0)
+                                            <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                ⚠️ Parsial
+                                            </span>
+                                        @else
+                                            <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.68rem; padding: 1px 5px; border-radius: 4px;">
+                                                🟢 Lolos Uji
+                                            </span>
+                                        @endif
                                     @endif
                                 </div>
                                 @if ($p1Reject > 0)

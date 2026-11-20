@@ -34,7 +34,7 @@ class TerimaBarangController extends Controller
     {
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
-        $viewType = $request->input('view', 'item'); // 'item' (Excel format) atau 'header'
+        $viewType = $request->input('view', 'header'); // Default: 'header' (Daftar Dokumen GRN) atau 'item' (Rekap Per Item)
 
         $user = auth()->user();
         $allowedGudangIds = $user ? $user->getAllowedGudangIds() : [];
@@ -164,9 +164,13 @@ class TerimaBarangController extends Controller
         }
     }
 
-    public function show(Request $request, int $id): View|JsonResponse
+    public function show(Request $request, int|string $id): View|JsonResponse
     {
-        $terima = $this->terimaService->getById($id);
+        if (!is_numeric($id)) {
+            abort(404, 'Data penerimaan barang tidak ditemukan.');
+        }
+
+        $terima = $this->terimaService->getById((int)$id);
 
         if ($request->wantsJson()) {
             return response()->json([

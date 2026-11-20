@@ -20,6 +20,7 @@ class MstSupplier extends Model
         'supplier_nm',
         'jenis_supplier_id',
         'kontak_no',
+        'email',
         'alamat_txt',
         'top_hari',
         'created_by',

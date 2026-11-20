@@ -18,11 +18,18 @@ class MstBarang extends Model
         'barang_cd',
         'barang_nm',
         'jenis_barang_id',
+        'grade_cd',
+        'kategori_output_cd',
         'satuan_dasar_id',
         'satuan_besar_id',
         'konversi_qty',
         'batas_minimum_qty',
         'harga_beli_standar',
+        'harga_jual',
+        'harga_jual_idm_alfa',
+        'harga_jual_alfamidi',
+        'harga_jual_ifm_smg',
+        'harga_jual_ifm_ckl',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -30,13 +37,94 @@ class MstBarang extends Model
         'active_st',
     ];
 
-    protected $casts = [
-        'konversi_qty'       => 'decimal:4',
-        'batas_minimum_qty'  => 'decimal:4',
-        'harga_beli_standar' => 'decimal:4',
-        'deleted_st'         => 'boolean',
-        'active_st'          => 'boolean',
+    public const KATEGORI_OUTPUT_LIST = [
+        'FCC_NON_BUMBU' => 'Khusus Indofood (FCC Non Bumbu 6 kg/box - Rilis)',
+        'EKSPOR'        => 'Produk Ekspor (Lolos Rilis)',
+        'WIP_BERBUMBU'  => 'Curah Berbumbu (Hasil Seasoning)',
+        'WIP_TAWAR'     => 'Curah Tawar (Polos)',
+        'WIP_HOLD'      => 'Tidak Jadi Rilis (Hold QC / Karantina Gudang)',
+        'WIP_AFKIR'     => 'Hasil Langsung Afkir / Limbah Dapur (Berko, Remahan, Lengket)',
     ];
+
+    protected $casts = [
+        'konversi_qty'        => 'decimal:4',
+        'batas_minimum_qty'   => 'decimal:4',
+        'harga_beli_standar'  => 'decimal:4',
+        'harga_jual'          => 'decimal:4',
+        'harga_jual_idm_alfa' => 'decimal:4',
+        'harga_jual_alfamidi' => 'decimal:4',
+        'harga_jual_ifm_smg'  => 'decimal:4',
+        'harga_jual_ifm_ckl'  => 'decimal:4',
+        'deleted_st'          => 'boolean',
+        'active_st'           => 'boolean',
+    ];
+
+    /**
+     * The "booted" method of the model.
+     * Auto-sync harga beli standar Karton Puteran (KIF00G-PUT) = 1/5 dari Karton Baru (KIF00G-BP1).
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (MstBarang $barang) {
+            if ($barang->barang_cd === 'KIF00G-BP1') {
+                $hargaBaru = (float) $barang->harga_beli_standar;
+                $hargaPuteran = round($hargaBaru / 5, 2);
+
+                $puteran = static::where('barang_cd', 'KIF00G-PUT')->first();
+                if ($puteran && abs((float) $puteran->harga_beli_standar - $hargaPuteran) > 0.001) {
+                    $puteran->harga_beli_standar = $hargaPuteran;
+                    $puteran->updated_by = $barang->updated_by ?? 'SYSTEM_SYNC';
+                    $puteran->saveQuietly();
+                }
+            }
+        });
+    }
+
+    /**
+     * Resolusi harga jual barang berdasarkan mitra pelanggan (Customer Tier Pricing).
+     */
+    public function getHargaForCustomer($customer = null): float
+    {
+        if (!$customer) {
+            return (float) ($this->harga_jual ?: $this->harga_beli_standar);
+        }
+
+        $cId = is_object($customer) ? ($customer->customer_id ?? null) : (int)$customer;
+        $cKlas = strtoupper(is_object($customer) ? ($customer->klasifikasi ?? '') : '');
+        $cNm = strtoupper(is_object($customer) ? ($customer->customer_nm ?? '') : '');
+        $cCd = strtoupper(is_object($customer) ? ($customer->customer_cd ?? '') : '');
+
+        // 1. Alfamidi (PT Midi Utama Indonesia Tbk)
+        if ($cId == 12 || str_contains($cNm, 'MIDI') || str_contains($cCd, 'MIDI')) {
+            if ($this->harga_jual_alfamidi && (float)$this->harga_jual_alfamidi > 0) {
+                return (float) $this->harga_jual_alfamidi;
+            }
+        }
+
+        // 2. Indomaret & Alfamart
+        if (in_array($cKlas, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) || 
+            str_contains($cNm, 'INDOMARET') || str_contains($cNm, 'ALFARIA') || str_contains($cNm, 'ALFAMART') ||
+            str_contains($cCd, 'IDM') || str_contains($cCd, 'ALFA')) {
+            if ($this->harga_jual_idm_alfa && (float)$this->harga_jual_idm_alfa > 0) {
+                return (float) $this->harga_jual_idm_alfa;
+            }
+        }
+
+        // 3. Indofood (IFM)
+        if ($cKlas === 'IFM' || str_contains($cNm, 'INDOFOOD')) {
+            if ($cId == 4 || str_contains($cNm, 'CIKOKOL') || str_contains($cNm, 'CIKUPA') || str_contains($cCd, 'CKL')) {
+                if ($this->harga_jual_ifm_ckl && (float)$this->harga_jual_ifm_ckl > 0) {
+                    return (float) $this->harga_jual_ifm_ckl;
+                }
+            }
+            if ($this->harga_jual_ifm_smg && (float)$this->harga_jual_ifm_smg > 0) {
+                return (float) $this->harga_jual_ifm_smg;
+            }
+        }
+
+        // Fallback default
+        return (float) ($this->harga_jual ?: $this->harga_beli_standar);
+    }
 
     /**
      * Scope barang khusus Bahan Baku & Bahan Penolong (bukan barang jadi FG atau setengah jadi WIP)
@@ -69,6 +157,33 @@ class MstBarang extends Model
         return $query->whereHas('jenisBarang', function ($q) {
             $q->whereIn('jenis_barang_cd', ['FG', 'WIP']);
         });
+    }
+
+    /**
+     * Scope & Helper Grade Kualitas Produk (Poin 24):
+     * KW1 = Kualitas Utama (Ekspor, Indofood, Grade A)
+     * KW2 = Kualitas Kedua (Sortir, Rework, Curah Lokal, Grade B)
+     */
+    public function scopeKw1($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('grade_cd', 'KW1')->orWhereNull('grade_cd');
+        });
+    }
+
+    public function scopeKw2($query)
+    {
+        return $query->where('grade_cd', 'KW2');
+    }
+
+    public function isKw2(): bool
+    {
+        return strtoupper($this->grade_cd ?? '') === 'KW2';
+    }
+
+    public function isKw1(): bool
+    {
+        return !$this->isKw2();
     }
 
     /**
@@ -144,7 +259,43 @@ class MstBarang extends Model
     {
         return in_array($this->jenisBarang?->jenis_barang_cd, ['FG', 'WIP']);
     }
+
+    /**
+     * Cek apakah komoditas ini memiliki sistem penentuan Grade mutu (Grade A, B, Reject).
+     * Sesuai SOP Mutu PT Mirasa, hanya Bahan Baku Singkong dan Kemasan Karton Box yang ber-grade.
+     * Bahan lainnya (Minyak, Plastik, Bumbu, dll.) berstatus NON-GRADE.
+     */
+    public function hasGrade(): bool
+    {
+        return static::checkHasGrade($this->barang_nm, $this->barang_cd);
+    }
+
+    /**
+     * Helper statis untuk mengecek apakah nama / kode barang ber-grade.
+     */
+    public static function checkHasGrade(?string $barangNm, ?string $barangCd): bool
+    {
+        $nm = strtoupper(trim((string) $barangNm));
+        $cd = strtoupper(trim((string) $barangCd));
+
+        return str_contains($nm, 'SINGKONG')
+            || str_starts_with($cd, 'BB-SK')
+            || str_contains($nm, 'KARTON')
+            || str_contains($nm, 'DUS')
+            || str_contains($nm, 'BOX')
+            || str_starts_with($cd, 'BP-KT')
+            || str_starts_with($cd, 'BP-BX');
+    }
+
+    /**
+     * Mendapatkan kode grade bawaan untuk komoditas ('A' untuk ber-grade, 'NON-GRADE' untuk lainnya).
+     */
+    public function getDefaultGrade(): string
+    {
+        return $this->hasGrade() ? 'A' : 'NON-GRADE';
+    }
 }
+
 
 
 

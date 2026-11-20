@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Lembar Produksi - ' . $produksi->produksi_no)
+@section('title', 'Detail Dokumen Hasil Produksi - ' . $produksi->produksi_no)
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/produksi/produksi-show.css') }}?v={{ filemtime(public_path('css/produksi/produksi-show.css')) }}">
@@ -9,7 +9,7 @@
 @section('content')
 <div class="show-container">
 
-    {{-- KOP SURAT RESMI CETAK (PRINT-ONLY) --}}
+    {{-- KOP SURAT RESMI CETAK SPK (PRINT-ONLY) --}}
     <div class="print-only" style="margin-bottom: 1.5rem; border-bottom: 2px solid #0f172a; padding-bottom: 0.75rem;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
@@ -19,7 +19,7 @@
                 </p>
             </div>
             <div style="text-align: right;">
-                <strong style="font-size: 1.05rem; color: #0284c7; display: block;">LEMBAR BUKTI HASIL PRODUKSI &amp; HARGA POKOK (HPP)</strong>
+                <strong style="font-size: 1.05rem; color: #0284c7; display: block;">SURAT PERINTAH KERJA &amp; BUKTI HASIL PRODUKSI (SPK FISIK)</strong>
                 <span style="font-family: monospace; font-size: 0.9rem; font-weight: 700;">{{ $produksi->produksi_no }}</span>
             </div>
         </div>
@@ -28,27 +28,61 @@
     {{-- BARIS HEADER NAVIGASI & AKSI (NO-PRINT) --}}
     <div class="show-header no-print">
         <div>
-            <a href="{{ route('produksi.rekap', ['tahun' => Carbon\Carbon::parse($produksi->produksi_tgl)->year, 'bulan' => Carbon\Carbon::parse($produksi->produksi_tgl)->month]) }}" class="btn-back-link">
+            <a href="{{ route('produksi.index') }}" class="btn-back-link">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Kembali ke Buku Rekap Bulanan</span>
+                <span>Kembali ke Hasil Barang Produksi</span>
             </a>
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                 <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">{{ $produksi->produksi_no }}</h1>
-                @if ($produksi->status_cd === 'POSTED')
-                    <span class="badge badge-success">Posted</span>
-                @else
-                    <span class="badge" style="background: #f1f5f9; color: #475569;">Draft</span>
+                @if ($produksi->shift_cd)
+                    <span class="badge-shift-pill {{ $produksi->shift_cd === 'A' ? 'badge-shift-a' : 'badge-shift-b' }}">
+                        Shift {{ $produksi->shift_cd }}
+                    </span>
+                @endif
+                <span style="font-size: 0.75rem; font-weight: 700; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.2rem 0.6rem; border-radius: 4px;">
+                    {{ $produksi->lini_produksi }}
+                </span>
+                @if($produksi->jurnal_id && $produksi->jurnal)
+                    <a href="{{ route('keuangan.jurnal.index', ['search' => $produksi->jurnal->jurnal_no]) }}" style="background: #ecfdf5; border: 1.5px solid #a7f3d0; color: #065f46; font-size: 0.775rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat detail Jurnal Umum Akuntansi">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Jurnal: {{ $produksi->jurnal->jurnal_no }}</span>
+                    </a>
                 @endif
             </div>
         </div>
 
         <div class="show-actions">
+            @if(Auth::user()->canCreateProduksi() && (in_array($produksi->batch_wip_no, ['BELUM TERBIT', 'PENDING']) || empty($produksi->batch_wip_no)))
+                <button type="button" onclick="openModalAssignBatch()" class="btn-print-doc" style="background: #f59e0b; color: #fff; text-decoration: none; border-color: #d97706; font-weight: 700;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>⚡ Beri Nomor Batch</span>
+                </button>
+            @endif
             <button type="button" onclick="window.print()" class="btn-print-doc">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Cetak Lembar HPP</span>
+                <span>Cetak Dokumen SPK</span>
             </button>
         </div>
     </div>
+
+    {{-- BANNER KHUSUS BUFFER STOCK IFM (BATCH BELUM TERBIT) --}}
+    @if(in_array($produksi->batch_wip_no, ['BELUM TERBIT', 'PENDING']) || empty($produksi->batch_wip_no))
+        <div class="no-print" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.85rem 1.25rem; color: #92400e; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.35rem;">📦</span>
+                <div>
+                    <strong style="display: block; font-size: 0.875rem;">Status Batch: Belum Diterbitkan (Buffer Stock IFM)</strong>
+                    <span style="font-size: 0.775rem; color: #b45309;">Produksi ini tersimpan di gudang sebagai persediaan buffer tanpa nomor batch pengiriman. Terbitkan nomor batch resmi saat jadwal keberangkatan truk Indofood tiba.</span>
+                </div>
+            </div>
+            @if(Auth::user()->canCreateProduksi())
+                <button type="button" onclick="openModalAssignBatch()" style="background: #d97706; color: #ffffff; border: none; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.825rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Beri Nomor Batch Sekarang</span>
+                </button>
+            @endif
+        </div>
+    @endif
 
     {{-- ALERT NOTIFIKASI SUKSES / ERROR --}}
     @if(session('success'))
@@ -77,19 +111,6 @@
             : ($isIfm
                 ? Carbon\Carbon::parse($produksi->produksi_tgl)->addMonths(6)->format('d/m/Y')
                 : Carbon\Carbon::parse($produksi->produksi_tgl)->addYear()->subDay()->format('d/m/Y'));
-
-        $subtotalBahan = (float) ($produksi->total_bahan_nilai ?: ($produksi->singkong_nilai + $produksi->minyak_nilai + $produksi->bumbu_nilai));
-        $subtotalKemasan = (float) ($produksi->karton_baru_nilai + $produksi->karton_bekas_nilai + $produksi->plastik_hd_nilai + $produksi->lakban_besar_nilai + $produksi->lakban_kecil_nilai + $produksi->tali_rafia_nilai);
-        $subtotalEnergiBtkl = (float) ($produksi->cng_nilai + $produksi->tk_total_nilai);
-        $subtotalFoh = (float) ($produksi->fotocopy_nilai + $produksi->sarung_tangan_plastik_nilai + $produksi->sarung_tangan_kain_nilai + $produksi->qc_pengawasan_nilai + $produksi->listrik_air_telp_nilai + $produksi->pemeliharaan_mesin_nilai + $produksi->penyusutan_mesin_nilai + $produksi->limbah_padat_nilai + $produksi->limbah_kimia_nilai);
-
-        $totBiaya = (float) $produksi->total_biaya_produksi;
-        $totWip = (float) $produksi->total_wip_qty;
-
-        $pctBahan = $totBiaya > 0 ? ($subtotalBahan / $totBiaya) * 100 : 0;
-        $pctKemasan = $totBiaya > 0 ? ($subtotalKemasan / $totBiaya) * 100 : 0;
-        $pctEnergiBtkl = $totBiaya > 0 ? ($subtotalEnergiBtkl / $totBiaya) * 100 : 0;
-        $pctFoh = $totBiaya > 0 ? ($subtotalFoh / $totBiaya) * 100 : 0;
     @endphp
 
     {{-- TAB SWITCHER SPLIT DATA PER LINI (JIKA PADA TANGGAL INI TERDAPAT LEBIH DARI 1 LINI PRODUKSI) --}}
@@ -101,7 +122,7 @@
                     <span>Lini Produksi Hari Ini ({{ Carbon\Carbon::parse($produksi->produksi_tgl)->format('d/m/Y') }}):</span>
                 </div>
                 <div class="line-split-badge-info">
-                    <span>Lini IFM &amp; Lini Manual &bull; Klik Tab untuk Beralih Rincian Lini</span>
+                    <span>Lini IFM &amp; Lini Manual &bull; Klik Tab untuk Beralih Rincian SPK</span>
                 </div>
             </div>
 
@@ -113,7 +134,6 @@
                         $isIfmTab = str_contains($rawUpper, 'IFM') || str_contains($rawUpper, 'IFL') || str_contains($rawUpper, 'INDOFOOD');
                         $lineTitle = $isIfmTab ? 'Lini IFM' : 'Lini Manual';
 
-                        // Jika ada lebih dari 1 dokumen pada lini yang sama di hari itu, sertakan Shift & Urutan Batch
                         $sameLineItems = $sameDateProductions->filter(function($x) use ($isIfmTab) {
                             $u = strtoupper($x->lini_produksi ?? '');
                             $xIfm = str_contains($u, 'IFM') || str_contains($u, 'IFL') || str_contains($u, 'INDOFOOD');
@@ -150,8 +170,6 @@
                             <span class="meta-doc-no">#{{ $pItem->produksi_no }}</span>
                             <span class="meta-sep">&bull;</span>
                             <span class="meta-qty">{{ number_format($pItem->total_wip_qty, 0, ',', '.') }} kg WIP</span>
-                            <span class="meta-sep">&bull;</span>
-                            <span class="meta-hpp">HPP Rp {{ number_format($pItem->hpp_per_kg, 0, ',', '.') }}/kg</span>
                         </div>
                     </a>
                 @endforeach
@@ -160,24 +178,24 @@
     @endif
 
     {{-- ═════════════════════════════════════════════════════════════════ --}}
-    {{-- BARIS 1: 4 KARTU METRIK EKSEKUTIF UTAMA (EXECUTIVE STAT GRID)      --}}
+    {{-- BARIS 1: 4 KARTU METRIK OPERASIONAL FISIK (EXECUTIVE STAT GRID)    --}}
     {{-- ═════════════════════════════════════════════════════════════════ --}}
     <div class="executive-stat-grid">
-        {{-- METRIK 1: TOTAL BIAYA OPERASIONAL --}}
+        {{-- METRIK 1: INPUT SINGKONG MENTAH --}}
         <div class="executive-stat-card">
             <div class="executive-stat-card-header">
                 <div>
-                    <span class="executive-stat-label">Total Biaya Operasional</span>
+                    <span class="executive-stat-label">Input Singkong Mentah</span>
                     <div class="executive-stat-value">
-                        Rp {{ number_format($produksi->total_biaya_produksi, 0, ',', '.') }}
+                        {{ number_format($produksi->singkong_qty, 0, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">kg</span>
                     </div>
                 </div>
                 <div class="executive-stat-icon-box" style="background: #e0f2fe; color: #0284c7;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                Akumulasi Bahan, Upah, Energi &amp; FOH
+                Bahan baku masuk (BPPB {{ $produksi->pemakaianBahan?->pakai_no ?? '-' }})
             </div>
         </div>
 
@@ -230,26 +248,29 @@
             </div>
         </div>
 
-        {{-- METRIK 4: HPP RIIL PER KG --}}
+        {{-- METRIK 4: TOTAL LIMBAH & WASTE (HACCP) --}}
         <div class="executive-stat-card">
             <div class="executive-stat-card-header">
                 <div>
-                    <span class="executive-stat-label" style="color: #059669;">HPP Riil per Kg</span>
-                    <div class="executive-stat-value" style="color: #059669;">
-                        Rp {{ number_format($produksi->hpp_per_kg, 2, ',', '.') }}
+                    <span class="executive-stat-label" style="color: #dc2626;">Limbah &amp; Waste (HACCP)</span>
+                    <div class="executive-stat-value" style="color: #dc2626;">
+                        {{ number_format($produksi->waste_total_qty ?: ($produksi->waste_lengket_qty + $produksi->total_berko_qty), 2, ',', '.') }} <span style="font-size: 0.85rem; font-weight: 600; color: #dc2626;">kg</span>
                     </div>
                 </div>
-                <div class="executive-stat-icon-box" style="background: #ecfdf5; color: #059669;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                <div class="executive-stat-icon-box" style="background: #fef2f2; color: #dc2626;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </div>
             </div>
             <div class="executive-stat-subtext">
-                Biaya pokok per kg produk jadi WIP
+                @if($produksi->waste_lengket_qty > 0)
+                    Lengket: {{ number_format($produksi->waste_lengket_qty, 1, ',', '.') }} kg ({{ number_format($produksi->waste_lengket_persen, 1) }}%)
+                @else
+                    BS, lengket &amp; reject pemrosesan
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- ═════════════════════════════════════════════════════════════════ --}}
     {{-- ═════════════════════════════════════════════════════════════════ --}}
     {{-- BARIS 2: 2 PANEL SEJAJAR (PARAMETER OPERASIONAL & BATCH GUDANG)    --}}
     {{-- ═════════════════════════════════════════════════════════════════ --}}
@@ -260,7 +281,7 @@
             <div class="card-enterprise-header">
                 <div class="card-enterprise-title">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Parameter Operasional</span>
+                    <span>Parameter Operasional Pabrik</span>
                 </div>
                 @if ($produksi->shift_cd)
                     <span class="badge-shift-pill {{ $produksi->shift_cd === 'A' ? 'badge-shift-a' : 'badge-shift-b' }}">
@@ -278,6 +299,22 @@
                         <td class="value-col">{{ Carbon\Carbon::parse($produksi->produksi_tgl)->locale('id')->isoFormat('dddd, D MMMM Y') }}</td>
                     </tr>
                     <tr>
+                        <td class="label-col">Lokasi Produksi</td>
+                        <td class="value-col">
+                            @php
+                                $isBmbDoc = in_array(strtoupper($produksi->lokasi_pabrik ?? 'MFI'), ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+                            @endphp
+                            <span style="display: inline-flex; align-items: center; gap: 0.35rem; background: {{ $isBmbDoc ? '#ede9fe; color: #6d28d9; border: 1px solid #c4b5fd' : '#e0f2fe; color: #0369a1; border: 1px solid #7dd3fc' }}; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.775rem;">
+                                <span>{{ $isBmbDoc ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry' }}</span>
+                            </span>
+                            @if(!empty($produksi->bf_aktif_count))
+                                <span style="font-size: 0.775rem; color: #64748b; margin-left: 0.4rem; font-weight: 600;">
+                                    ({{ $produksi->bf_aktif_count }} BF Aktif)
+                                </span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
                         <td class="label-col">Lini Produksi Pabrik</td>
                         <td class="value-col">{{ $produksi->lini_produksi }}</td>
                     </tr>
@@ -287,6 +324,25 @@
                             {{ !empty($produksi->varietas_singkong) ? $produksi->varietas_singkong : 'Standar Pabrik (STP / MGU)' }}
                         </td>
                     </tr>
+                    @php
+                        $singkongDetails = ($produksi->pemakaianBahan && $produksi->pemakaianBahan->details) ? $produksi->pemakaianBahan->details->filter(function($d) {
+                            $nm = strtoupper($d->barang?->barang_nm ?? '');
+                            $cd = strtoupper($d->barang?->barang_cd ?? '');
+                            return str_contains($nm, 'SINGKONG') || str_contains($cd, 'SK00') || str_contains($cd, 'BB-SK');
+                        }) : collect([]);
+
+                        $gradeGroups = [];
+                        foreach ($singkongDetails as $sk) {
+                            $gRaw = trim((string) ($sk->grade_cd ?: ($sk->barang?->grade_cd ?: 'A')));
+                            $gName = strtoupper($gRaw);
+                            if (!str_starts_with($gName, 'GRADE')) {
+                                $gName = 'Grade ' . $gName;
+                            }
+                            $qtyVal = (float) ($sk->qty_keluar ?: ($sk->qty_satuan ?? 0));
+                            $gradeGroups[$gName] = ($gradeGroups[$gName] ?? 0) + $qtyVal;
+                        }
+                        $isCampuran = count($gradeGroups) > 1;
+                    @endphp
                     <tr>
                         <td class="label-col">Input Singkong Mentah</td>
                         <td class="value-col" style="font-weight: 700;">{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg</td>
@@ -295,11 +351,15 @@
                     <tr>
                         <td class="label-col">Dokumen Bahan Baku (BPPB)</td>
                         <td class="value-col">
-                            <a href="{{ route('gudang.pemakaian.show', $produksi->pakai_id) }}" style="color: #0284c7; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat Dokumen Pengeluaran Gudang (BPPB)">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                <span>{{ $produksi->pemakaianBahan->pakai_no }}</span>
-                            </a>
-                            <span style="font-size: 0.725rem; color: #64748b; margin-left: 0.25rem;">({{ $produksi->pemakaianBahan->tujuan_pemakaian }})</span>
+                            <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                                <a href="{{ route('gudang.pemakaian.show', $produksi->pakai_id) }}" style="color: #0284c7; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Lihat Dokumen Pengeluaran Gudang (BPPB)">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    <span>{{ $produksi->pemakaianBahan->pakai_no }}</span>
+                                </a>
+                                @if($produksi->pemakaianBahan->tujuan_pemakaian)
+                                    <span style="font-size: 0.75rem; color: #64748b;">({{ $produksi->pemakaianBahan->tujuan_pemakaian }})</span>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @endif
@@ -309,14 +369,6 @@
                             {{ $tkTotal > 0 ? $tkTotal . ' Orang Hadir' : 'Standar Alokasi Shift' }}
                         </td>
                     </tr>
-                    @if(!empty($produksi->po_ifl_no) || !empty($produksi->po_buyer_ifl))
-                    <tr>
-                        <td class="label-col">PO Buyer / Pemesan IFL</td>
-                        <td class="value-col" style="color: #166534; font-weight: 700;">
-                            {{ $produksi->po_ifl_no ?: $produksi->po_buyer_ifl }}
-                        </td>
-                    </tr>
-                    @endif
                     @if(($produksi->waste_total_qty > 0) || ($produksi->waste_lengket_qty > 0) || ($produksi->total_berko_qty > 0) || ($produksi->berko_ifl_qty > 0) || ($produksi->berko_non_ifl_qty > 0))
                     <tr>
                         <td class="label-col">Limbah &amp; Waste (HACCP)</td>
@@ -342,7 +394,7 @@
             <div class="card-enterprise-header">
                 <div class="card-enterprise-title">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    <span>Identitas Batch &amp; Gudang</span>
+                    <span>Identitas Batch &amp; Gudang Simpan</span>
                 </div>
                 <span class="badge-batch-pill">
                     {{ $produksi->batch_wip_no ?: $produksi->produksi_no }}
@@ -355,8 +407,12 @@
                 <table class="spec-table">
                     <tr>
                         <td class="label-col">No. Batch Persediaan</td>
-                        <td class="value-col" style="font-family: monospace; color: #0284c7; font-weight: 700;">
-                            {{ $produksi->batch_wip_no ?: '-' }}
+                        <td class="value-col" style="font-family: monospace; font-weight: 700;">
+                            @if(in_array($produksi->batch_wip_no, ['BELUM TERBIT', 'PENDING']))
+                                <span style="background: #fffbeb; color: #b45309; border: 1.5px solid #f59e0b; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.825rem; font-weight: 700;">BELUM TERBIT (Buffer Stock IFM)</span>
+                            @else
+                                <span style="color: #0284c7;">{{ $produksi->batch_wip_no ?: '-' }}</span>
+                            @endif
                         </td>
                     </tr>
                     <tr>
@@ -382,7 +438,7 @@
                     <tr>
                         <td class="label-col">Alur Pengeluaran Stok</td>
                         <td class="value-col" style="color: #64748b; font-weight: 600;">
-                            FIFO Persediaan (SO Toko)
+                            FIFO Persediaan (Gudang WIP &rarr; Kemasan)
                         </td>
                     </tr>
                     <tr>
@@ -395,453 +451,149 @@
     </div>
 
     {{-- ═════════════════════════════════════════════════════════════════ --}}
-    {{-- BARIS 3: TAB CONTAINER TERPADU (OUTPUT WIP | BIAYA HPP | AUDIT)   --}}
+    {{-- BARIS 3: RINCIAN HASIL TIMBANGAN BARANG JADI (WIP OUTPUT) FISIK   --}}
     {{-- ═════════════════════════════════════════════════════════════════ --}}
-    <div class="prod-tab-container">
-        {{-- TAB NAVIGATION HEADER (NO-PRINT) --}}
-        <div class="prod-tab-nav no-print">
-            <button type="button" class="prod-tab-btn active" data-tab="output" onclick="switchProdTab('output', event)">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
-                <span>Hasil Timbangan WIP</span>
-                <span class="prod-tab-badge">{{ $produksi->outputs->count() }} Varian</span>
-            </button>
-            <button type="button" class="prod-tab-btn" data-tab="biaya" onclick="switchProdTab('biaya', event)">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                <span>Kalkulasi Biaya Manufaktur</span>
-                <span class="prod-tab-badge">Rp {{ number_format($produksi->total_biaya_produksi, 0, ',', '.') }}</span>
-            </button>
-            <button type="button" class="prod-tab-btn" data-tab="audit" onclick="switchProdTab('audit', event)">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Riwayat Adjustment &amp; Audit</span>
-                <span class="prod-tab-badge">v{{ $produksi->version_no ?? 1 }}</span>
-            </button>
-        </div>
-
-        {{-- ── TAB 1: HASIL OUTPUT WIP ── --}}
-        <div id="pane-output" class="prod-tab-pane active">
-            <div class="prod-tab-pane-header">
-                <div class="prod-tab-pane-title">
-                    <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
-                    <span>Rincian Hasil Timbangan Barang Jadi (WIP Output)</span>
-                </div>
-                <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
-                    {{ $produksi->outputs->count() }} Varian Output Terdaftar
+    <div class="card-enterprise" style="margin-top: 1.5rem;">
+        <div class="card-enterprise-header" style="padding: 0.85rem 1.25rem;">
+            <div class="card-enterprise-title">
+                <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+                <span>Rincian Hasil Timbangan Barang Jadi (WIP Output)</span>
+                <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; border: 1px solid #cbd5e1; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.5rem;">
+                    {{ $produksi->outputs->count() }} Varian Output
                 </span>
             </div>
-            <div style="overflow-x: auto;">
-                <table class="table-enterprise">
-                    <thead>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 0.825rem; font-weight: 700; color: #0f172a; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 4px;">
+                    Total Berat: {{ number_format($produksi->total_wip_qty, 2, ',', '.') }} kg
+                </span>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="table-enterprise">
+                <thead>
+                    <tr>
+                        <th style="width: 45px; text-align: center;">No</th>
+                        <th style="width: 160px;">Kategori Output</th>
+                        <th>Kode &amp; Nama Barang WIP / Olahan</th>
+                        <th style="width: 140px; text-align: center;">Batch Varian</th>
+                        <th style="width: 130px; text-align: right;">Qty Kemasan</th>
+                        <th style="width: 140px; text-align: right;">Berat Bersih (Kg)</th>
+                        <th style="width: 90px; text-align: center;">Porsi (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($produksi->outputs as $idx => $out)
+                        @php
+                            $bNm = strtoupper($out->barang?->barang_nm ?? '');
+                            $bCd = strtoupper($out->barang?->barang_cd ?? '');
+                            $kat = strtoupper($out->kategori_output ?? '');
+                            
+                            $isLengket = str_contains($bNm, 'LENGKET') || str_contains($bCd, 'LGT') || str_contains($kat, 'LGT') || str_contains($kat, 'LENGKET');
+                            $isBerko = !$isLengket && (str_contains($bNm, 'BERKO') || str_contains($bCd, 'BRK') || str_contains($kat, 'BERKO') || str_contains($kat, 'BRK'));
+                            $isAfval = str_contains($bNm, 'AFVAL') || str_contains($bNm, 'REMAHAN') || str_contains($kat, 'AFVAL') || str_contains($bCd, 'AFV');
+                            $isUtama = !$isLengket && !$isBerko && !$isAfval;
+
+                            $totalWip = (float) $produksi->total_wip_qty > 0 ? (float) $produksi->total_wip_qty : 1;
+                            $porsiPersen = round(((float)$out->qty_kg / $totalWip) * 100, 1);
+                            $satuanTampil = $out->satuan_cd ?: ($out->barang?->satuan?->satuan_nm ?? 'KG');
+                            $hasQtyKemasan = (float) $out->qty_hasil > 0;
+                        @endphp
                         <tr>
-                            <th style="width: 45px; text-align: center;">No</th>
-                            <th style="width: 140px;">Kategori Varian</th>
-                            <th>Kode &amp; Nama Barang WIP</th>
-                            <th style="width: 150px; text-align: center;">Batch Varian</th>
-                            <th style="width: 160px; text-align: right;">Kuantitas (Kg)</th>
-                            <th style="width: 160px; text-align: right;">HPP Satuan</th>
-                            <th style="width: 180px; text-align: right;">Total Nilai (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($produksi->outputs as $idx => $out)
-                            <tr>
-                                <td style="text-align: center; color: #94a3b8; font-weight: 700;">{{ $idx + 1 }}</td>
-                                <td style="font-weight: 700; color: #0f172a;">
-                                    <span style="background: #f1f5f9; color: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                                        {{ $out->kategori_output }}
+                            <td style="text-align: center; color: #94a3b8; font-weight: 700;">{{ $idx + 1 }}</td>
+                            <td>
+                                @if($isUtama)
+                                    <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                        {{ $out->kategori_output ?: 'Produk Utama' }}
                                     </span>
-                                </td>
-                                <td>
-                                    <strong style="color: #0284c7; font-family: monospace;">{{ $out->barang?->barang_cd ?? '-' }}</strong> &ndash; 
-                                    <span style="font-weight: 600;">{{ $out->barang?->barang_nm ?? '-' }}</span>
-                                </td>
-                                <td style="font-family: monospace; font-weight: 700; color: #475569; text-align: center;">
-                                    {{ $out->batch_no }}
-                                </td>
-                                <td style="text-align: right; font-weight: 700; color: #059669; font-variant-numeric: tabular-nums;">
-                                    {{ number_format($out->qty_kg, 2, ',', '.') }} kg
-                                </td>
-                                <td style="text-align: right; color: #475569; font-variant-numeric: tabular-nums;">
-                                    Rp {{ number_format($out->hpp_satuan, 2, ',', '.') }}
-                                </td>
-                                <td style="text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
-                                    Rp {{ number_format($out->total_nilai, 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" style="text-align: center; padding: 2rem; color: #94a3b8;">
-                                    Belum ada rincian output timbangan tersimpan.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                    <tfoot style="background: #f8fafc; font-weight: 700; border-top: 2px solid #e2e8f0;">
-                        <tr>
-                            <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; font-size: 0.8rem; color: #475569;">
-                                TOTAL WIP TERTIMBANG:
-                            </td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; color: #059669; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
-                                {{ number_format($produksi->total_wip_qty, 2, ',', '.') }} kg
-                            </td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; color: #64748b; font-size: 0.8rem;">
-                                HPP/KG:
-                            </td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; color: #0284c7; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($produksi->hpp_per_kg, 2, ',', '.') }}
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-
-        {{-- ── TAB 2: KALKULASI BIAYA HPP ── --}}
-        <div id="pane-biaya" class="prod-tab-pane">
-            <div class="prod-tab-pane-header">
-                <div class="prod-tab-pane-title">
-                    <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    <span>Kalkulasi Komponen Biaya Manufaktur</span>
-                </div>
-                <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
-                    Audit Akuntansi Biaya Manufaktur
-                </span>
-            </div>
-
-            {{-- 1. RINGKASAN 4 KELOMPOK BIAYA --}}
-            <div class="cost-summary-bar">
-                <div class="cost-summary-pill">
-                    <span class="cost-pill-label">Bahan Baku (Direct Material)</span>
-                    <span class="cost-pill-val">Rp {{ number_format($subtotalBahan, 0, ',', '.') }}</span>
-                </div>
-                <div class="cost-summary-pill">
-                    <span class="cost-pill-label">Kemasan &amp; Pembantu</span>
-                    <span class="cost-pill-val">Rp {{ number_format($subtotalKemasan, 0, ',', '.') }}</span>
-                </div>
-                <div class="cost-summary-pill">
-                    <span class="cost-pill-label">Energi &amp; Tenaga Kerja (BTKL)</span>
-                    <span class="cost-pill-val">Rp {{ number_format($subtotalEnergiBtkl, 0, ',', '.') }}</span>
-                </div>
-                <div class="cost-summary-pill">
-                    <span class="cost-pill-label">Overhead Pabrik (FOH)</span>
-                    <span class="cost-pill-val">Rp {{ number_format($subtotalFoh, 0, ',', '.') }}</span>
-                </div>
-            </div>
-
-            {{-- 2. DISTRIBUSI KOMPOSISI BIAYA (COST PROPORTION BAR) --}}
-            <div class="cost-distribution-card">
-                <div class="cost-distribution-header">
-                    <span class="cost-dist-title">Distribusi Biaya per Kg WIP (HPP: Rp {{ number_format($produksi->hpp_per_kg, 2, ',', '.') }} / kg)</span>
-                </div>
-                <div class="cost-dist-bar-track">
-                    <div class="cost-dist-segment seg-bahan" style="width: {{ $pctBahan }}%;" title="Bahan Baku: {{ number_format($pctBahan, 1) }}%"></div>
-                    <div class="cost-dist-segment seg-kemasan" style="width: {{ $pctKemasan }}%;" title="Kemasan: {{ number_format($pctKemasan, 1) }}%"></div>
-                    <div class="cost-dist-segment seg-energi" style="width: {{ $pctEnergiBtkl }}%;" title="Energi & BTKL: {{ number_format($pctEnergiBtkl, 1) }}%"></div>
-                    <div class="cost-dist-segment seg-foh" style="width: {{ $pctFoh }}%;" title="FOH: {{ number_format($pctFoh, 1) }}%"></div>
-                </div>
-                <div class="cost-dist-legend-grid">
-                    <div class="cost-legend-item">
-                        <span class="cost-legend-dot seg-bahan"></span>
-                        <div>
-                            <span class="cost-legend-label">Bahan Baku Langsung</span>
-                            <div class="cost-legend-value">
-                                Rp {{ number_format($totWip > 0 ? $subtotalBahan / $totWip : 0, 2, ',', '.') }}/kg 
-                                <span class="cost-legend-pct">({{ number_format($pctBahan, 1) }}%)</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cost-legend-item">
-                        <span class="cost-legend-dot seg-kemasan"></span>
-                        <div>
-                            <span class="cost-legend-label">Material Kemasan</span>
-                            <div class="cost-legend-value">
-                                Rp {{ number_format($totWip > 0 ? $subtotalKemasan / $totWip : 0, 2, ',', '.') }}/kg 
-                                <span class="cost-legend-pct">({{ number_format($pctKemasan, 1) }}%)</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cost-legend-item">
-                        <span class="cost-legend-dot seg-energi"></span>
-                        <div>
-                            <span class="cost-legend-label">Energi &amp; Upah BTKL</span>
-                            <div class="cost-legend-value">
-                                Rp {{ number_format($totWip > 0 ? $subtotalEnergiBtkl / $totWip : 0, 2, ',', '.') }}/kg 
-                                <span class="cost-legend-pct">({{ number_format($pctEnergiBtkl, 1) }}%)</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cost-legend-item">
-                        <span class="cost-legend-dot seg-foh"></span>
-                        <div>
-                            <span class="cost-legend-label">Overhead Pabrik (FOH)</span>
-                            <div class="cost-legend-value">
-                                Rp {{ number_format($totWip > 0 ? $subtotalFoh / $totWip : 0, 2, ',', '.') }}/kg 
-                                <span class="cost-legend-pct">({{ number_format($pctFoh, 1) }}%)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- 3. RINCIAN TABEL KOMPONEN BIAYA --}}
-            <div style="overflow-x: auto;">
-                <table class="table-enterprise">
-                    <thead>
-                        <tr>
-                            <th style="width: 42%;">Komponen Biaya Manufaktur</th>
-                            <th style="width: 36%;">Rincian Fisik / Parameter Kuantitas</th>
-                            <th style="width: 22%; text-align: right;">Nominal Biaya (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- 1. KELOMPOK A: BAHAN BAKU LANGSUNG --}}
-                        <tr class="cost-group-header">
-                            <td colspan="3">
-                                A. Bahan Baku Langsung (Direct Materials)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Singkong Mentah</td>
-                            <td>{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg (Input Bahan Utama)</td>
-                            <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->singkong_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Minyak Goreng Sawit</td>
-                            <td>{{ number_format($produksi->minyak_sawit_qty, 1, ',', '.') }} kg</td>
-                            <td style="text-align: right; color: #64748b; font-variant-numeric: tabular-nums;">-</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Minyak Goreng Kelapa (Barco)</td>
-                            <td>{{ number_format($produksi->minyak_kelapa_qty, 1, ',', '.') }} kg</td>
-                            <td style="text-align: right; color: #64748b; font-variant-numeric: tabular-nums;">-</td>
-                        </tr>
-                        <tr style="background: #f8fafc;">
-                            <td style="padding-left: 2rem; font-weight: 600; color: #0284c7;">&bull; Subtotal Minyak Goreng</td>
-                            <td style="color: #0284c7; font-weight: 600;">Rasio terhadap Singkong: {{ number_format($produksi->minyak_rasio_persen, 2, ',', '.') }}%</td>
-                            <td style="text-align: right; font-weight: 700; color: #0284c7; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->minyak_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Bumbu &amp; Perenyah</td>
-                            <td>Garam, bumbu racik &amp; bahan perenyah</td>
-                            <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->bumbu_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="cost-group-subtotal" style="color: #047857;">
-                            <td colspan="2" style="padding-left: 1.5rem;">SUBTOTAL BAHAN BAKU LANGSUNG:</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalBahan, 0, ',', '.') }}</td>
-                        </tr>
-
-                        {{-- 2. KELOMPOK B: KEMASAN & MATERIAL PACKING --}}
-                        <tr class="cost-group-header">
-                            <td colspan="3">
-                                B. Biaya Kemasan &amp; Material Packing (Packaging Materials)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Karton Baru (FL)</td>
-                            <td>Kemasan karton baru box luar</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_baru_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Karton Bekas</td>
-                            <td>Kemasan karton daur ulang / karton packing alternatif</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->karton_bekas_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Plastik HD 90x100</td>
-                            <td>Plastik inner pelindung karton</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->plastik_hd_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Lakban Besar &amp; Kecil</td>
-                            <td>Isolasi perekat penutup karton</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->lakban_besar_nilai + $produksi->lakban_kecil_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Tali Rafia</td>
-                            <td>Pengikat packing karton</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->tali_rafia_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="cost-group-subtotal" style="color: #0369a1;">
-                            <td colspan="2" style="padding-left: 1.5rem;">SUBTOTAL BIAYA KEMASAN:</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalKemasan, 0, ',', '.') }}</td>
-                        </tr>
-
-                        {{-- 3. KELOMPOK C: ENERGI & TENAGA KERJA (BTKL) --}}
-                        <tr class="cost-group-header">
-                            <td colspan="3">
-                                C. Energi &amp; Biaya Tenaga Kerja Langsung (BTKL)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Gas Alam (CNG)</td>
-                            <td>{{ number_format($produksi->cng_mmbtu, 3, ',', '.') }} MMBTU (Tarif: Rp {{ number_format($produksi->cng_tarif, 0, ',', '.') }})</td>
-                            <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->cng_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; color: #0f172a; padding-left: 1.5rem;">Upah Tenaga Kerja Langsung (BTKL)</td>
-                            <td>Tenaga Kerja Hadir: {{ $produksi->tk_jumlah_org ?? ($produksi->tk_langsung_org + $produksi->tk_tidak_langsung_org + $produksi->tk_training_org) }} Orang</td>
-                            <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->tk_total_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="cost-group-subtotal" style="color: #b45309;">
-                            <td colspan="2" style="padding-left: 1.5rem;">SUBTOTAL ENERGI &amp; UPAH BTKL:</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalEnergiBtkl, 0, ',', '.') }}</td>
-                        </tr>
-
-                        {{-- 4. KELOMPOK D: BIAYA OVERHEAD PABRIK (FOH) & UTILITAS --}}
-                        <tr class="cost-group-header">
-                            <td colspan="3">
-                                D. Biaya Overhead Pabrik (FOH) &amp; Utilitas
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Listrik, Air &amp; Telepon (Utilitas)</td>
-                            <td>Utilitas operasional harian pabrik</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->listrik_air_telp_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Pemeliharaan &amp; Service Mesin</td>
-                            <td>Perawatan preventif &amp; suku cadang fryer/boiler</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->pemeliharaan_mesin_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Pengawasan Mutu (QC Lab)</td>
-                            <td>Inspeksi standar mutu, organoleptik &amp; sampling</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->qc_pengawasan_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Penyusutan Mesin &amp; Gedung</td>
-                            <td>Amortisasi aset fasilitas manufaktur</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->penyusutan_mesin_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">Pengolahan Limbah &amp; IPAL</td>
-                            <td>Treatment limbah padat singkong &amp; kimia IPAL</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->limbah_padat_nilai + $produksi->limbah_kimia_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 1.5rem;">ATK &amp; Sanitasi Operator</td>
-                            <td>Fotocopy, sarung tangan plastik &amp; kain sanitasi</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($produksi->fotocopy_nilai + $produksi->sarung_tangan_plastik_nilai + $produksi->sarung_tangan_kain_nilai, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="cost-group-subtotal" style="color: #6d28d9;">
-                            <td colspan="2" style="padding-left: 1.5rem;">SUBTOTAL BIAYA OVERHEAD PABRIK (FOH):</td>
-                            <td style="text-align: right; font-variant-numeric: tabular-nums;">Rp {{ number_format($subtotalFoh, 0, ',', '.') }}</td>
-                        </tr>
-                    </tbody>
-                    <tfoot class="cost-total-footer">
-                        <tr>
-                            <td colspan="2" style="font-size: 0.95rem;">TOTAL BIAYA PRODUKSI HARIAN:</td>
-                            <td style="text-align: right; font-size: 1.15rem; font-variant-numeric: tabular-nums;">
-                                Rp {{ number_format($produksi->total_biaya_produksi, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-
-        {{-- ── TAB 3: RIWAYAT ADJUSTMENT & AUDIT TRAIL ── --}}
-        <div id="pane-audit" class="prod-tab-pane">
-            <div class="prod-tab-pane-header">
-                <div class="prod-tab-pane-title">
-                    <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Riwayat Adjustment &amp; Audit Trail HPP</span>
-                    <span class="badge-version">
-                        v{{ $produksi->version_no ?? 1 }}
-                    </span>
-                </div>
-                <span style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
-                    Catatan audit revisi nilai kalkulasi biaya produksi harian
-                </span>
-            </div>
-
-            <div style="overflow-x: auto;">
-                <table class="table-enterprise">
-                    <thead>
-                        <tr>
-                            <th style="width: 140px;">No. Berita Acara</th>
-                            <th style="width: 110px;">Tanggal</th>
-                            <th style="width: 120px;">Komponen</th>
-                            <th style="width: 160px; text-align: right;">Perubahan Biaya</th>
-                            <th style="width: 150px; text-align: right;">Dampak HPP/Kg</th>
-                            <th>Alasan &amp; Dasar Dokumen</th>
-                            <th style="width: 120px;">Operator</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($produksi->adjustmentLogs as $log)
-                            @php
-                                $isNaik = (float) $log->selisih_hpp > 0;
-                                $isTurun = (float) $log->selisih_hpp < 0;
-                            @endphp
-                            <tr>
-                                <td style="font-family: monospace; font-weight: 700; color: #0284c7;">
-                                    {{ $log->adj_no }}
-                                </td>
-                                <td>
-                                    {{ Carbon\Carbon::parse($log->adj_tgl)->format('d/m/Y') }}
-                                    <div style="font-size: 0.7rem; color: #94a3b8;">{{ $log->created_at?->format('H:i') }} WIB</div>
-                                </td>
-                                <td>
-                                    <span style="background: #f1f5f9; color: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.7rem;">
-                                        {{ $log->kategori_komponen }}
+                                @elseif($isBerko)
+                                    <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                        KS Berko
                                     </span>
-                                </td>
-                                <td style="text-align: right; font-variant-numeric: tabular-nums;">
-                                    <div style="font-size: 0.725rem; color: #64748b;">
-                                        Rp {{ number_format($log->total_biaya_sebelum, 0, ',', '.') }} &rarr;
-                                    </div>
-                                    <div style="font-weight: 700; color: #0f172a;">
-                                        Rp {{ number_format($log->total_biaya_sesudah, 0, ',', '.') }}
-                                    </div>
-                                    <div style="font-size: 0.7rem; font-weight: 700; color: {{ (float)$log->selisih_biaya >= 0 ? '#dc2626' : '#16a34a' }};">
-                                        {{ (float)$log->selisih_biaya >= 0 ? '+' : '' }}Rp {{ number_format($log->selisih_biaya, 0, ',', '.') }}
-                                    </div>
-                                </td>
-                                <td style="text-align: right; font-variant-numeric: tabular-nums;">
-                                    <div style="font-size: 0.725rem; color: #64748b;">
-                                        Rp {{ number_format($log->hpp_sebelum, 2, ',', '.') }} &rarr;
-                                    </div>
-                                    <div style="font-weight: 700; color: #0284c7;">
-                                        Rp {{ number_format($log->hpp_sesudah, 2, ',', '.') }}
-                                    </div>
-                                    <div style="font-size: 0.7rem; font-weight: 700; color: {{ $isNaik ? '#dc2626' : ($isTurun ? '#16a34a' : '#64748b') }};">
-                                        {{ $isNaik ? '+' : '' }}Rp {{ number_format($log->selisih_hpp, 2, ',', '.') }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="font-weight: 600; color: #334155;">{{ $log->alasan_txt }}</div>
-                                    @if(!empty($log->perubahan_field_json))
-                                        <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.2rem;">
-                                            Rincian: 
-                                            @foreach($log->perubahan_field_json as $fKey => $fVal)
-                                                <span style="background: #f8fafc; padding: 1px 4px; border: 1px solid #e2e8f0; border-radius: 3px; margin-right: 3px;">
-                                                    {{ $fVal['label'] ?? $fKey }}: Rp {{ number_format($fVal['old'], 0, ',', '.') }} &rarr; Rp {{ number_format($fVal['new'], 0, ',', '.') }}
-                                                </span>
-                                            @endforeach
-                                        </div>
-                                    @endif
-                                </td>
-                                <td style="color: #475569; font-weight: 600;">
-                                    {{ $log->created_by ?? 'System' }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" style="padding: 2rem 1rem; text-align: center; color: #94a3b8;">
-                                    <div style="font-weight: 700; color: #64748b; font-size: 0.85rem;">Belum Ada Riwayat Adjustment HPP</div>
-                                    <div style="font-size: 0.75rem; margin-top: 0.2rem;">Dokumen ini masih mencatat nilai kalkulasi produksi orisinal (Versi v1).</div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                @elseif($isLengket)
+                                    <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                        KS Lengket
+                                    </span>
+                                @else
+                                    <span style="display: inline-block; padding: 0.2rem 0.5rem; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.725rem; font-weight: 600;">
+                                        Remahan / BS
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                <strong style="color: #0f172a; font-family: monospace;">{{ $out->barang?->barang_cd ?? '-' }}</strong> &ndash; 
+                                <span style="font-weight: 600; color: #1e293b;">{{ $out->barang?->barang_nm ?? '-' }}</span>
+                            </td>
+                            <td style="font-family: monospace; font-weight: 600; color: #475569; text-align: center;">
+                                {{ $out->batch_no }}
+                            </td>
+                            <td style="text-align: right; font-weight: 600; color: #334155;">
+                                @if($hasQtyKemasan)
+                                    {{ number_format((float) $out->qty_hasil, 0, ',', '.') }} {{ $satuanTampil }}
+                                @else
+                                    <span style="color: #94a3b8; font-size: 0.75rem;">Curah (Kg)</span>
+                                @endif
+                            </td>
+                            <td style="text-align: right; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums;">
+                                {{ number_format($out->qty_kg, 2, ',', '.') }} kg
+                            </td>
+                            <td style="text-align: center; font-weight: 600; color: #475569; font-variant-numeric: tabular-nums;">
+                                {{ number_format($porsiPersen, 1, ',', '.') }}%
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                                Belum ada rincian output timbangan tersimpan.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                <tfoot style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                    <tr>
+                        <td colspan="5" style="padding: 0.75rem 1rem; text-align: right; font-size: 0.78rem; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">
+                            TOTAL AKUMULASI OUTPUT:
+                        </td>
+                        <td style="padding: 0.75rem 1rem; text-align: right; color: #0f172a; font-size: 0.95rem; font-variant-numeric: tabular-nums;">
+                            {{ number_format($produksi->total_wip_qty, 2, ',', '.') }} kg
+                        </td>
+                        <td style="padding: 0.75rem 1rem; text-align: center; color: #475569; font-size: 0.85rem; font-variant-numeric: tabular-nums;">
+                            100.0%
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
+
+    {{-- CATATAN OPERASIONAL PABRIK (JIKA ADA) --}}
+    @if(!empty($produksi->catatan))
+        <div class="card-enterprise" style="margin-top: 1.25rem;">
+            <div class="card-enterprise-header">
+                <div class="card-enterprise-title">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                    <span>Catatan Operasional Shift</span>
+                </div>
+            </div>
+            <div style="padding: 1rem 1.25rem; font-size: 0.85rem; color: #334155; line-height: 1.6;">
+                {{ $produksi->catatan }}
+            </div>
+        </div>
+    @endif
+
 </div>
+
+@include('produksi.partials.modal-assign-batch')
 @endsection
 
 @push('scripts')
+    <script>
+        window.produksiData = {
+            id: {{ $produksi->produksi_id }},
+            no: "{{ $produksi->produksi_no }}",
+            qtyKarton: {{ (int) $produksi->qty_karton }},
+            assignBatchUrl: "{{ route('produksi.assign-batch', $produksi->produksi_id) }}"
+        };
+    </script>
     <script src="{{ asset('js/produksi/produksi-show.js') }}?v={{ filemtime(public_path('js/produksi/produksi-show.js')) }}"></script>
 @endpush
-

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Common\CodeGeneratorController;
 use App\Http\Controllers\Gudang\AdjustmentController;
 use App\Http\Controllers\Gudang\PemakaianController;
+use App\Http\Controllers\Gudang\PoApprovalController;
 use App\Http\Controllers\Gudang\PoController;
 use App\Http\Controllers\Gudang\QcInboundController;
 use App\Http\Controllers\Gudang\ReturPembelianController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\MasterData\TarifKemasanController;
 use App\Http\Controllers\Keuangan\BayarHutangController;
+use App\Http\Controllers\Keuangan\KasKeluarController;
 use App\Http\Controllers\Keuangan\CoaController;
 use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
@@ -32,10 +34,13 @@ use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Keuangan\JurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
 use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
+use App\Http\Controllers\Keuangan\LaporanKeuanganController;
+use App\Http\Controllers\Keuangan\PengaturanJurnalController;
 use App\Http\Controllers\Penjualan\SoController;
 use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
 use App\Http\Controllers\Penjualan\SoReturController;
+use App\Http\Controllers\Penjualan\DirectSalesController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
 use App\Http\Controllers\Produksi\PackagingOperatorController;
@@ -71,6 +76,13 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 });
+
+// Persetujuan Dokumen PO Langsung dari Tautan Email Atasan (Secure Token)
+Route::get('po/approval-action/{token}', [PoApprovalController::class, 'directAction'])->name('po.approval.direct');
+Route::post('po/approval-action/{token}/reject', [PoApprovalController::class, 'processReject'])->name('po.approval.reject.process');
+
+// Verifikasi Keabsahan Dokumen PO Publik (Hasil Scan QR Code)
+Route::get('verify-po/{token}', [PoApprovalController::class, 'verifyQr'])->name('po.verify.qr');
 
 // Utility Routes (Bebas diakses oleh formulir web untuk live generator kode/batch)
 Route::get('/ajax/generate-code', [CodeGeneratorController::class, 'generate'])->name('ajax.generate_code');
@@ -116,6 +128,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-resep', BomController::class)
         ->names('master.resep')
         ->middleware('role:SUPERADMIN,STAFF_PRODUKSI,master_resep_view,master_resep_manage');
+    Route::patch('master-lini-produksi/{id}/toggle-status', [LiniProduksiController::class, 'toggleStatus'])
+        ->name('master.lini_produksi.toggle_status');
     Route::resource('master-lini-produksi', LiniProduksiController::class)
         ->names('master.lini_produksi');
     Route::patch('master-mesin/{id}/toggle-status', [MesinController::class, 'toggleStatus'])
@@ -132,6 +146,8 @@ Route::middleware('auth')->group(function () {
         ->name('master.tarif_produksi.api-rates');
     Route::post('master-tarif-produksi/quick-update', [TarifProduksiController::class, 'quickUpdate'])
         ->name('master.tarif_produksi.quick-update');
+    Route::post('master-tarif-produksi/sync-jisdor', [TarifProduksiController::class, 'syncJisdor'])
+        ->name('master.tarif_produksi.sync-jisdor');
     Route::get('master-tarif-produksi', [TarifProduksiController::class, 'index'])
         ->name('master.tarif_produksi.index');
     Route::put('master-tarif-produksi/{id}', [TarifProduksiController::class, 'update'])
@@ -146,6 +162,7 @@ Route::middleware('auth')->group(function () {
         ->name('master.tarif_kemasan.index');
     Route::put('master-tarif-kemasan/{id}', [TarifKemasanController::class, 'update'])
         ->name('master.tarif_kemasan.update');
+
 
     // Master Supplier
     Route::resource('master-jenis-supplier', JenisSupplierController::class)->names('master.jenis_supplier');
@@ -230,6 +247,10 @@ Route::middleware('auth')->group(function () {
 
     // Modul Transaksi Gudang (Inbound, Outbound & Inventory Engine)
     Route::prefix('gudang')->name('gudang.')->group(function () {
+        // Purchase Order (PO): Approval Center Khusus Eksekutif / Atasan
+        Route::get('po/approval-center', [PoApprovalController::class, 'approvalCenter'])
+            ->name('po.approval_center');
+
         // Purchase Order (PO): Create & Manage (Berdasarkan izin 'po_create')
         Route::post('po/{id}/cancel', [PoController::class, 'cancel'])
             ->name('po.cancel')
@@ -256,6 +277,24 @@ Route::middleware('auth')->group(function () {
         Route::get('po/{id}/export-pdf', [PoController::class, 'exportPdf'])
             ->name('po.export-pdf')
             ->middleware('role:po_view');
+        Route::get('po/{id}/berita-acara', [PoController::class, 'beritaAcara'])
+            ->name('po.berita_acara')
+            ->middleware('role:po_view');
+        Route::get('po/{id}/review', [PoApprovalController::class, 'review'])
+            ->name('po.review')
+            ->middleware('role:po_view');
+        Route::post('po/{id}/resend-approval', [PoApprovalController::class, 'resendApprovalEmail'])
+            ->name('po.resend_approval');
+        Route::post('po/{id}/send-supplier', [PoApprovalController::class, 'sendToSupplier'])
+            ->name('po.send_supplier');
+        Route::post('po/{id}/send-atasan-copy', [PoApprovalController::class, 'sendAtasanCopy'])
+            ->name('po.send_atasan_copy');
+        Route::post('po/{id}/approve-internal', [PoApprovalController::class, 'approveInternal'])
+            ->name('po.approve_internal');
+        Route::post('po/{id}/reject-internal', [PoApprovalController::class, 'rejectInternal'])
+            ->name('po.reject_internal');
+        Route::post('po/{id}/request-revision', [PoApprovalController::class, 'requestRevision'])
+            ->name('po.request_revision');
         Route::resource('po', PoController::class)->only(['index', 'show'])->middleware('role:po_view');
 
         // Antrean Tiket QC Inbound -> Dialihkan terpadu ke Riwayat QC & Dokumen HACCP
@@ -296,8 +335,25 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:terima_create');
         Route::get('terima/{id}/export-pdf', [TerimaBarangController::class, 'exportPdf'])
             ->name('terima.export-pdf')
+            ->whereNumber('id')
             ->middleware('role:terima_view');
-        Route::resource('terima', TerimaBarangController::class)->only(['index', 'show'])->middleware('role:terima_view');
+        Route::resource('terima', TerimaBarangController::class)
+            ->only(['index', 'show'])
+            ->whereNumber('terima')
+            ->middleware('role:terima_view');
+
+        // Penerimaan Kemasan Sirkular (Karton, Palet & Wadah Balikan Customer):
+        Route::get('kemasan-sirkular/mobile', [\App\Http\Controllers\Gudang\KemasanSirkularController::class, 'mobileCreate'])
+            ->name('kemasan-sirkular.mobile')
+            ->middleware('role:terima_create,gudang');
+        Route::get('kemasan-sirkular/pengeluaran-detail/{id}', [\App\Http\Controllers\Gudang\KemasanSirkularController::class, 'ajaxPengeluaranDetail'])
+            ->name('kemasan-sirkular.ajax-pengeluaran-detail');
+        Route::post('kemasan-sirkular/{id}/void', [\App\Http\Controllers\Gudang\KemasanSirkularController::class, 'void'])
+            ->name('kemasan-sirkular.void')
+            ->middleware('role:terima_create,gudang');
+        Route::resource('kemasan-sirkular', \App\Http\Controllers\Gudang\KemasanSirkularController::class)
+            ->except(['edit', 'update', 'destroy'])
+            ->middleware('role:terima_view,gudang');
 
         // Retur Pembelian ke Supplier (Outbound Retur Cacat/Reject): (Berdasarkan izin 'retur_create')
         Route::get('retur/batches', [ReturPembelianController::class, 'getBatches'])->name('retur.batches');
@@ -351,6 +407,23 @@ Route::middleware('auth')->group(function () {
             ->middleware('role:pemakaian_view');
         Route::resource('pemakaian', PemakaianController::class)->only(['index', 'show'])->middleware('role:pemakaian_view');
 
+        // Transfer Antar-Gudang (Mutasi Stok Real-Time Antar Lokasi Simpan)
+        Route::get('transfer/batches', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'getBatches'])
+            ->name('transfer.batches')
+            ->middleware('role:gudang,pemakaian_view');
+        Route::get('transfer/create', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'create'])
+            ->name('transfer.create')
+            ->middleware('role:gudang,pemakaian_create');
+        Route::post('transfer', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'store'])
+            ->name('transfer.store')
+            ->middleware('role:gudang,pemakaian_create');
+        Route::post('transfer/{id}/void', [\App\Http\Controllers\Gudang\TransferGudangController::class, 'void'])
+            ->name('transfer.void')
+            ->middleware('role:gudang,pemakaian_delete,SUPERADMIN');
+        Route::resource('transfer', \App\Http\Controllers\Gudang\TransferGudangController::class)
+            ->only(['index', 'show'])
+            ->middleware('role:gudang,pemakaian_view');
+
         // Monitoring Persediaan: Lacak Stok, Kartu Stok & Rekapitulasi Persediaan (Berdasarkan izin 'stok_view')
         Route::get('stok', [StokController::class, 'index'])->name('stok.index')->middleware('role:stok_view');
         Route::get('stok/rekap', [StokController::class, 'rekap'])->name('stok.rekap')->middleware('role:stok_view');
@@ -383,20 +456,40 @@ Route::middleware('auth')->group(function () {
         Route::get('/export-rekap-pdf', [ProduksiController::class, 'exportRekapPdf'])->name('export-rekap-pdf');
         Route::get('/download-rekap-template', [ProduksiController::class, 'downloadRekapTemplate'])->name('download-rekap-template');
         Route::post('/import-rekap-excel', [ProduksiController::class, 'importRekapExcel'])->name('import-rekap-excel')->middleware('role:produksi_create');
+        Route::get('/cng-monitoring', [ProduksiController::class, 'cngMonitoringPage'])->name('cng-monitoring');
         Route::get('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitasPage'])->name('adjust-utilitas');
         Route::post('/adjust-utilitas', [ProduksiController::class, 'adjustUtilitas'])->name('adjust-utilitas.store')->middleware('role:produksi_create');
+        Route::get('/adjust-cng-harian', [ProduksiController::class, 'adjustCngHarianPage'])->name('adjust-cng-harian');
+        Route::post('/adjust-cng-harian', [ProduksiController::class, 'adjustCngHarianStore'])->name('adjust-cng-harian.store')->middleware('role:produksi_create');
+
+        // Kalkulasi HPP Produksi (Tahap 3 - Khusus Bagian Keuangan / Costing)
+        Route::get('/hpp/create', [ProduksiController::class, 'createHpp'])->name('hpp.create')->middleware('role:produksi_create');
+        Route::get('/hpp/kalkulasi', fn(\Illuminate\Http\Request $r) => redirect()->route('produksi.hpp.create', $r->all()))->name('hpp.kalkulasi');
+        Route::get('/hpp/produksi-data/{id}', [ProduksiController::class, 'getProduksiDataForHpp'])->name('hpp.produksi-data');
+        Route::post('/hpp/store', [ProduksiController::class, 'storeHpp'])->name('hpp.store')->middleware('role:produksi_create');
+        Route::get('/hpp/{id}', [ProduksiController::class, 'showHpp'])->name('hpp.show')->whereNumber('id');
+        Route::get('/hpp/{id}/terpadu', [ProduksiController::class, 'showHppTerpadu'])->name('hpp.terpadu')->whereNumber('id');
+
         Route::get('/create', [ProduksiController::class, 'create'])->name('create')->middleware('role:produksi_create');
         Route::post('/', [ProduksiController::class, 'store'])->name('store')->middleware('role:produksi_create');
+        Route::get('/rework/create', [ProduksiController::class, 'createRework'])->name('rework.create')->middleware('role:produksi_create');
+        Route::get('/ajax-batches-rework', [ProduksiController::class, 'ajaxBatchesRework'])->name('ajax-batches-rework');
+        Route::post('/rework', [ProduksiController::class, 'storeRework'])->name('rework.store')->middleware('role:produksi_create');
         Route::get('/pakai-data/{pakaiId}', [ProduksiController::class, 'getPakaiData'])->name('pakai-data');
         Route::get('/next-karton', [ProduksiController::class, 'getNextKarton'])->name('next-karton');
         Route::get('/sync-karyawan', [ProduksiController::class, 'getKaryawanDataByDate'])->name('sync-karyawan');
+        Route::get('/kurs-jisdor', [ProduksiController::class, 'getKursJisdor'])->name('kurs-jisdor');
         Route::get('/{id}', [ProduksiController::class, 'show'])->name('show')->whereNumber('id');
+        Route::post('/{id}/assign-batch', [ProduksiController::class, 'assignBatch'])->name('assign-batch')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/adjust', [ProduksiController::class, 'adjustPage'])->name('adjust')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/{id}/adjust-hpp', [ProduksiController::class, 'adjustHpp'])->name('adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::get('/{id}/cetak-stiker', [ProduksiController::class, 'cetakStiker'])->name('cetak-stiker')->whereNumber('id');
         Route::delete('/{id}', [ProduksiController::class, 'destroy'])->name('destroy')->middleware('role:produksi_create')->whereNumber('id');
 
         // Pengemasan Barang Jadi & HPP (Packaging)
+        Route::get('/packaging/hpp/create', [PackagingController::class, 'createHpp'])->name('packaging.hpp.create')->middleware('role:produksi_create');
+        Route::get('/packaging/hpp/packaging-data/{id}', [PackagingController::class, 'getPackagingDataForHpp'])->name('packaging.hpp.packaging-data');
+        Route::post('/packaging/hpp/store', [PackagingController::class, 'storeHpp'])->name('packaging.hpp.store')->middleware('role:produksi_create');
         Route::get('/packaging/ajax-bom-preview', [PackagingController::class, 'ajaxBomPreview'])->name('packaging.ajax-bom-preview');
         Route::get('/packaging/ajax-produksi-details', [PackagingController::class, 'ajaxProduksiDetails'])->name('packaging.ajax-produksi-details');
         Route::get('/packaging/ajax-pakai-details', [PackagingController::class, 'ajaxPakaiDetails'])->name('packaging.ajax-pakai-details');
@@ -409,8 +502,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/packaging/create', [PackagingController::class, 'create'])->name('packaging.create')->middleware('role:produksi_create');
         Route::post('/packaging', [PackagingController::class, 'store'])->name('packaging.store')->middleware('role:produksi_create');
         Route::get('/packaging/{id}', [PackagingController::class, 'show'])->name('packaging.show')->whereNumber('id');
+        Route::get('/packaging/{id}/hpp', [PackagingController::class, 'showHpp'])->name('packaging.show-hpp')->whereNumber('id');
+        Route::get('/packaging/{id}/hpp-terpadu', [PackagingController::class, 'showHppTerpadu'])->name('packaging.hpp.terpadu')->whereNumber('id');
         Route::get('/packaging/{id}/adjust', [PackagingController::class, 'adjustPage'])->name('packaging.adjust')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/packaging/{id}/adjust-hpp', [PackagingController::class, 'adjustHpp'])->name('packaging.adjust-hpp')->middleware('role:produksi_create')->whereNumber('id');
+        Route::post('/packaging/{id}/finalize-hpp', [PackagingController::class, 'finalizeHpp'])->name('packaging.finalize-hpp')->middleware('role:produksi_create')->whereNumber('id');
         Route::post('/packaging/{id}/void', [PackagingController::class, 'void'])->name('packaging.void')->middleware('role:produksi_create')->whereNumber('id');
     });
 
@@ -441,8 +537,18 @@ Route::middleware('auth')->group(function () {
 
     // Modul Transaksi Penjualan (PO Penjualan / Sales Order)
     Route::prefix('penjualan')->name('penjualan.')->group(function () {
+        // Modul Penjualan Langsung / Tunai (Direct Sales - Kasir Pabrik & Potong Stok Instan)
+        Route::prefix('langsung')->name('langsung.')->group(function () {
+            Route::get('/', [DirectSalesController::class, 'index'])->name('index');
+            Route::get('/create', [DirectSalesController::class, 'create'])->name('create');
+            Route::post('/', [DirectSalesController::class, 'store'])->name('store');
+            Route::get('/{id}', [DirectSalesController::class, 'show'])->name('show')->whereNumber('id');
+            Route::get('/{id}/cetak-nota', [DirectSalesController::class, 'cetakNota'])->name('cetak-nota')->whereNumber('id');
+        });
+
         Route::get('so/{id}/export-faktur', [SoController::class, 'exportFakturPdf'])->name('so.export-faktur');
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
+        Route::post('so/{id}/update-armada', [SoController::class, 'updateArmada'])->name('so.update-armada');
         Route::post('so/{id}/confirm-delivery', [SoController::class, 'confirmDelivery'])->name('so.confirm-delivery');
         Route::post('so/{id}/void-delivery', [SoController::class, 'voidDelivery'])->name('so.void-delivery');
         Route::post('so/{id}/record-payment', [SoController::class, 'recordPayment'])->name('so.record-payment');
@@ -467,8 +573,10 @@ Route::middleware('auth')->group(function () {
 
         // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
         Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
+        Route::get('retur/so-data/{id}', [SoReturController::class, 'getSoData'])->name('retur.so-data');
         Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');
         Route::get('retur/{id}/export-pdf', [SoReturController::class, 'exportPdf'])->name('retur.export-pdf');
+        Route::get('retur/{id}/export-pemusnahan-pdf', [SoReturController::class, 'exportPemusnahanPdf'])->name('retur.export-pemusnahan-pdf');
         Route::post('retur/{id}/void', [SoReturController::class, 'void'])->name('retur.void');
     });
 
@@ -482,11 +590,18 @@ Route::middleware('auth')->group(function () {
         Route::patch('hutang/{id}/update-tempo', [HutangController::class, 'updateTempo'])->name('hutang.update-tempo')->middleware('role:hutang_create');
         Route::resource('hutang', HutangController::class)->except(['edit', 'update']);
 
-        // 2. Pelunasan Hutang (Bukti Kas Keluar - BKK)
+        // 2. Pelunasan Hutang & Kas Keluar (Bukti Kas Keluar - BKK)
         Route::post('bayar/{id}/void', [BayarHutangController::class, 'void'])->name('bayar.void')->middleware('role:bayar_hutang_void');
         Route::resource('bayar', BayarHutangController::class)->only(['index', 'create', 'store', 'show']);
 
+        // 2b. Kas Keluar Operasional (BKK Pengeluaran Langsung / Non-Hutang)
+        Route::get('kas-keluar/create', [KasKeluarController::class, 'create'])->name('kas_keluar.create')->middleware('role:bayar_hutang_create');
+        Route::post('kas-keluar', [KasKeluarController::class, 'store'])->name('kas_keluar.store')->middleware('role:bayar_hutang_create');
+        Route::get('kas-keluar/{id}', [KasKeluarController::class, 'show'])->name('kas_keluar.show')->middleware('role:bayar_hutang_view');
+        Route::post('kas-keluar/{id}/void', [KasKeluarController::class, 'void'])->name('kas_keluar.void')->middleware('role:bayar_hutang_void');
+
         // 3. Kas & Rekening Bank
+        Route::get('kas-bank/rekening-koran', [KasBankController::class, 'rekeningKoran'])->name('kas_bank.rekening_koran')->middleware('role:kas_bank_view');
         Route::get('kas-bank/mutasi', [KasBankController::class, 'mutasi'])->name('kas_bank.mutasi')->middleware('role:kas_bank_view');
         Route::get('kas-bank', [KasBankController::class, 'index'])->name('kas_bank.index')->middleware('role:kas_bank_view');
         Route::post('kas-bank', [KasBankController::class, 'store'])->name('kas_bank.store')->middleware('role:kas_bank_manage');
@@ -503,7 +618,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('coa', CoaController::class)->except(['create', 'show', 'edit']);
 
         // 6. Jurnal Umum (General Journal Ledger)
-        Route::resource('jurnal', JurnalController::class)->only(['index', 'show'])->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::resource('jurnal', JurnalController::class)->only(['index', 'create', 'store', 'show'])->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
 
         // 7. Buku Besar Interaktif (Interactive General Ledger)
         Route::get('buku-besar', [BukuBesarController::class, 'index'])
@@ -529,6 +644,23 @@ Route::middleware('auth')->group(function () {
         Route::post('verifikasi-pemakaian/{id}/reject', [VerifikasiPemakaianController::class, 'reject'])
             ->name('verifikasi_pemakaian.reject')
             ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+
+        // 9. Laporan Keuangan Komprehensif (Financial Statements)
+        Route::prefix('laporan')->name('laporan.')->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view')->group(function () {
+            Route::get('/', [LaporanKeuanganController::class, 'index'])->name('index');
+            Route::get('laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laba_rugi');
+            Route::get('neraca', [LaporanKeuanganController::class, 'neraca'])->name('neraca');
+            Route::get('neraca-saldo', [LaporanKeuanganController::class, 'neracaSaldo'])->name('neraca_saldo');
+            Route::get('arus-kas', [LaporanKeuanganController::class, 'arusKas'])->name('arus_kas');
+        });
+
+        // 10. Pengaturan Pemetaan Akun Jurnal Otomatis
+        Route::get('pengaturan-jurnal', [PengaturanJurnalController::class, 'index'])
+            ->name('pengaturan_jurnal.index')
+            ->middleware('role:coa_view,jurnal_view,hutang_view');
+        Route::post('pengaturan-jurnal', [PengaturanJurnalController::class, 'update'])
+            ->name('pengaturan_jurnal.update')
+            ->middleware('role:coa_view,jurnal_view,hutang_view');
     });
 });
 

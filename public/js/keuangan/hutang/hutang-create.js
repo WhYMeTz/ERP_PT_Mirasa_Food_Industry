@@ -52,62 +52,37 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Hitung ulang kalkulasi & sinkronisasi diskon serta perlakuan PPN saat ada perubahan di tabel
+    // Hitung ulang kalkulasi saat ada perubahan input pada tabel
     document.getElementById('itemsTableBody')?.addEventListener('input', function (e) {
         const target = e.target;
-        const row = target.closest('.item-calc-row');
-
-        if (row) {
-            const qty = parseDecimal(row.querySelector('.input-qty')?.value);
-            const harga = parseDecimal(row.querySelector('.input-harga')?.value);
-            const subtotal = qty * harga;
-
-            if (target.matches('.input-diskon-persen')) {
-                // Input % berubah -> otomatis hitung nominal diskon Rp
-                const persen = parseFloat(target.value || 0);
-                const diskonNominal = (persen > 0 && subtotal > 0) ? Math.round(subtotal * (persen / 100)) : 0;
-                const nomInput = row.querySelector('.input-diskon-nominal');
-                if (nomInput) nomInput.value = diskonNominal > 0 ? diskonNominal : 0;
-                updateRowPpnState(row, false);
-            } else if (target.matches('.input-diskon-nominal')) {
-                // Input Rp berubah -> otomatis hitung diskon %
-                const diskonNominal = parseFloat(target.value || 0);
-                const persen = (subtotal > 0 && diskonNominal > 0) ? parseFloat(((diskonNominal / subtotal) * 100).toFixed(2)) : 0;
-                const persenInput = row.querySelector('.input-diskon-persen');
-                if (persenInput) persenInput.value = persen > 0 ? persen : '';
-                updateRowPpnState(row, false);
-            } else if (target.matches('.input-qty') || target.matches('.input-harga') || target.matches('.input-potongan-item')) {
-                // Kuantitas, harga satuan, atau potongan mutu berubah
-                const persenInput = row.querySelector('.input-diskon-persen');
-                const persen = parseFloat(persenInput?.value || 0);
-                if (persen > 0) {
-                    const diskonNominal = Math.round(subtotal * (persen / 100));
-                    const nomInput = row.querySelector('.input-diskon-nominal');
-                    if (nomInput) nomInput.value = diskonNominal;
-                }
-                updateRowPpnState(row, false);
-            } else if (target.matches('.input-ppn')) {
-                // User mengoreksi nilai nominal PPN secara manual (misal selisih pembulatan sen dari supplier)
-                updateRowPpnState(row, true);
-            }
-        }
-
         if (target.matches('.calc-trigger')) {
             recalculateTotals();
         }
     });
 
-    // Listener saat tipe perlakuan PPN diubah pada dropdown
+    // Listener saat checkbox include PPN diubah pada baris
     document.getElementById('itemsTableBody')?.addEventListener('change', function (e) {
         const target = e.target;
-        if (target.matches('.input-ppn-tipe')) {
-            const row = target.closest('.item-calc-row');
-            if (row) {
-                updateRowPpnState(row, false);
-                recalculateTotals();
-            }
+        if (target.matches('.item-include-tax')) {
+            recalculateTotals();
         }
     });
+
+    const diskonGlobalEl = document.getElementById('global_diskon_persen');
+    if (diskonGlobalEl) {
+        diskonGlobalEl.addEventListener('input', function () {
+            this.dataset.manualEdited = 'true';
+            recalculateTotals();
+        });
+    }
+
+    const potonganGlobalEl = document.getElementById('global_potongan_nominal');
+    if (potonganGlobalEl) {
+        potonganGlobalEl.addEventListener('input', function () {
+            this.dataset.manualEdited = 'true';
+            recalculateTotals();
+        });
+    }
 
     const returEl = document.getElementById('potonganReturInput');
     if (returEl) {
@@ -116,6 +91,25 @@ document.addEventListener('DOMContentLoaded', function () {
             recalculateTotals();
         });
     }
+
+    const tonaseEl = document.getElementById('tonaseKgInput');
+    if (tonaseEl) {
+        tonaseEl.addEventListener('input', function () {
+            this.dataset.manualEdited = 'true';
+            calculateOngkirFromTonase();
+        });
+    }
+
+    const tarifOngkirEl = document.getElementById('ongkirTarifPerKgInput');
+    if (tarifOngkirEl) {
+        tarifOngkirEl.addEventListener('input', calculateOngkirFromTonase);
+    }
+
+    const dpEl = document.getElementById('uangMukaNominalInput');
+    if (dpEl) {
+        dpEl.addEventListener('input', recalculateTotals);
+    }
+
     document.getElementById('biayaOngkirInput')?.addEventListener('input', recalculateTotals);
     document.getElementById('biayaOngkirInput')?.addEventListener('change', recalculateTotals);
 
@@ -311,18 +305,47 @@ window.selectSupplierFromModal = function (id, name, code, grnCnt, contact, addr
         badgeEl.style.display = grnCnt > 0 ? 'inline-block' : 'none';
     }
 
-    document.getElementById('supplierPlaceholderBox').style.display = 'none';
-    document.getElementById('supplierActiveCard').style.display = 'flex';
+    const placeholderBox = document.getElementById('supplierPlaceholderBox');
+    if (placeholderBox) placeholderBox.style.display = 'none';
+    const activeCard = document.getElementById('supplierActiveCard');
+    if (activeCard) activeCard.style.display = 'flex';
 
     // Highlight matching quick pill badge (if any)
     syncActivePillBadge(id);
 
     closeSupplierModal();
 
+    // Reset manual edit markers agar data PO rekanan baru otomatis mengisi form
+    const diskonEl = document.getElementById('global_diskon_persen');
+    if (diskonEl) delete diskonEl.dataset.manualEdited;
+    const potEl = document.getElementById('global_potongan_nominal');
+    if (potEl) delete potEl.dataset.manualEdited;
+
     // Reset selection & fetch GRNs
     selectedGrnIds.clear();
     loadUnbilledGrn(id);
 };
+
+window.handleSupplierCardSelect = function (el) {
+    if (!el) return;
+    const id = parseInt(el.getAttribute('data-supplier-id'), 10);
+    const name = el.getAttribute('data-supplier-nm') || '';
+    const code = el.getAttribute('data-supplier-cd') || '';
+    const grnCnt = parseInt(el.getAttribute('data-grn-count') || '0', 10);
+    const contact = el.getAttribute('data-contact') || '';
+    const address = el.getAttribute('data-address') || '';
+    const topHari = parseInt(el.getAttribute('data-top') || '14', 10);
+    selectSupplierFromModal(id, name, code, grnCnt, contact, address, topHari);
+};
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('modalSupplierPicker');
+        if (modal && modal.style.display !== 'none') {
+            closeSupplierModal();
+        }
+    }
+});
 
 function syncActivePillBadge(supplierId) {
     document.querySelectorAll('.btn-supplier-pill').forEach(btn => {
@@ -370,6 +393,7 @@ function loadUnbilledGrn(supplierId) {
             emptyState.textContent = 'Silakan pilih mitra supplier di atas terlebih dahulu untuk menampilkan daftar GRN.';
             emptyState.style.display = 'block';
         }
+        renderReturCreditNotes([]);
         rebuildItemsTable();
         return;
     }
@@ -388,6 +412,13 @@ function loadUnbilledGrn(supplierId) {
             if (res.status === 'success') {
                 if (res.supplier) {
                     applySupplierTopData(res.supplier.top_hari, res.supplier.name, res.supplier.code, res.supplier.kontak_no, res.supplier.alamat);
+                }
+
+                // Render Dokumen Retur Pembelian (Credit Note) jika ada
+                if (res.returs) {
+                    renderReturCreditNotes(res.returs);
+                } else {
+                    renderReturCreditNotes([]);
                 }
 
                 if (res.data && res.data.length > 0) {
@@ -674,73 +705,33 @@ function updateGrnStatusBar() {
 }
 
 /* ========================================================
-   TABLE RINCIAN ITEM & AKUMULASI NILAI
+   SKEMA PAJAK PPN & TAX CALCULATION (IDENTIK PO PEMBELIAN)
    ======================================================== */
 
-/**
- * Sinkronisasi status PPN, DPP, dan nilai input per baris tabel
- */
-function updateRowPpnState(row, manualPpnEdited = false) {
-    const qty = parseDecimal(row.querySelector('.input-qty')?.value);
-    const harga = parseDecimal(row.querySelector('.input-harga')?.value);
-    const diskon = parseDecimal(row.querySelector('.input-diskon-nominal')?.value);
-    const potongan = parseDecimal(row.querySelector('.input-potongan-item')?.value);
-    const subtotal = qty * harga;
-    const nilaiBersih = Math.max(0, subtotal - diskon - potongan);
-
-    const tipeSelect = row.querySelector('.input-ppn-tipe');
-    const ppnInput = row.querySelector('.input-ppn');
-    const dppInput = row.querySelector('.input-dpp');
-    const dppBadge = row.querySelector('.ppn-dpp-badge');
-
-    const ppnTipe = tipeSelect ? tipeSelect.value : 'NON_PPN';
-
-    let ppn = manualPpnEdited ? parseDecimal(ppnInput?.value) : 0;
-    let dpp = nilaiBersih;
-
-    if (ppnTipe === 'NON_PPN') {
-        ppn = 0;
-        dpp = nilaiBersih;
-        if (ppnInput) {
-            ppnInput.value = 0;
-            ppnInput.readOnly = true;
-            ppnInput.style.background = '#f8fafc';
-            ppnInput.style.color = '#94a3b8';
-        }
-        if (dppBadge) dppBadge.style.display = 'none';
-    } else if (ppnTipe === 'PPN_11') {
-        dpp = nilaiBersih;
-        if (!manualPpnEdited) {
-            ppn = Math.round(dpp * 0.11);
-            if (ppnInput) ppnInput.value = ppn;
-        }
-        if (ppnInput) {
-            ppnInput.readOnly = false;
-            ppnInput.style.background = '#ffffff';
-            ppnInput.style.color = '#0284c7';
-        }
-        if (dppBadge) dppBadge.style.display = 'none';
-    } else if (ppnTipe === 'PPN_INCLUDE') {
-        if (!manualPpnEdited) {
-            dpp = Math.round((nilaiBersih / 1.11) * 100) / 100;
-            ppn = Math.round(nilaiBersih - dpp);
-            if (ppnInput) ppnInput.value = ppn;
-        } else {
-            dpp = Math.max(0, nilaiBersih - ppn);
-        }
-        if (ppnInput) {
-            ppnInput.readOnly = false;
-            ppnInput.style.background = '#ffffff';
-            ppnInput.style.color = '#0284c7';
-        }
-        if (dppBadge) {
-            dppBadge.style.display = 'block';
-            dppBadge.textContent = 'DPP: Rp ' + Math.round(dpp).toLocaleString('id-ID');
-        }
+window.onHeaderTaxInclusiveToggle = function (el) {
+    const isChecked = el ? el.checked : false;
+    const badge = document.getElementById('badgeTaxMode');
+    if (badge) {
+        badge.textContent = isChecked ? 'Gross' : 'Net';
+        badge.style.background = isChecked ? '#dcfce7' : '#e2e8f0';
+        badge.style.color = isChecked ? '#15803d' : '#475569';
     }
 
-    if (dppInput) dppInput.value = dpp;
-}
+    // Sinkronisasi ke seluruh checkbox baris
+    document.querySelectorAll('.item-include-tax').forEach(cb => {
+        cb.checked = isChecked;
+    });
+
+    document.querySelectorAll('.item-calc-row').forEach(row => {
+        updateRowPpnState(row, false);
+    });
+    recalculateTotals();
+};
+
+window.onHeaderPajakChange = function (selectEl) {
+    recalculateTotals();
+};
+window.applyGlobalTaxToAllRows = window.onHeaderPajakChange;
 
 function rebuildItemsTable() {
     const tbody = document.getElementById('itemsTableBody');
@@ -749,17 +740,125 @@ function rebuildItemsTable() {
     if (selectedGrnIds.size === 0) {
         tbody.innerHTML = `
             <tr id="emptyItemsRow">
-                <td colspan="8" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8; font-size: 0.825rem;">
+                <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8; font-size: 0.825rem;">
                     Centang salah satu atau beberapa Surat Jalan / GRN di atas untuk memuat rincian tagihan.
                 </td>
             </tr>
         `;
+        const tonaseInput = document.getElementById('tonaseKgInput');
+        if (tonaseInput && !tonaseInput.dataset.manualEdited) {
+            tonaseInput.value = 0;
+        }
+        calculateOngkirFromTonase();
         recalculateTotals();
         return;
     }
 
+    // Cek pewarisan status & komersial dari PO (Pajak PPN/PPh, Diskon, Potongan Mutu, TOP)
+    let anyPoInclude = false;
+    let anyPoExplicit = false;
+    let autoDiskonPersen = 0;
+    let autoPotonganMutu = 0;
+    let autoPajakId = null;
+    let hasPoData = false;
+    let poTopHari = null;
+
+    unbilledGrnData.forEach(grn => {
+        if (selectedGrnIds.has(grn.terima_id)) {
+            if (grn.has_po || grn.po_no || (grn.details && grn.details.some(d => d.po_no))) {
+                hasPoData = true;
+            }
+
+            if (typeof grn.po_is_harga_termasuk_pajak !== 'undefined') {
+                anyPoExplicit = true;
+                if (grn.po_is_harga_termasuk_pajak) anyPoInclude = true;
+            } else if (grn.is_harga_termasuk_pajak) {
+                anyPoExplicit = true;
+                anyPoInclude = true;
+            }
+
+            if (grn.po_pajak_id && !autoPajakId) {
+                autoPajakId = String(grn.po_pajak_id);
+            }
+
+            if (parseFloat(grn.po_diskon_persen || 0) > autoDiskonPersen) {
+                autoDiskonPersen = parseFloat(grn.po_diskon_persen);
+            }
+
+            if (parseFloat(grn.po_potongan_nominal || 0) > 0) {
+                autoPotonganMutu += parseFloat(grn.po_potongan_nominal);
+            }
+
+            if (grn.po_top_hari && !poTopHari) {
+                poTopHari = grn.po_top_hari;
+            }
+
+            (grn.details || []).forEach(dtl => {
+                if (parseFloat(dtl.diskon_persen || 0) > autoDiskonPersen) {
+                    autoDiskonPersen = parseFloat(dtl.diskon_persen);
+                }
+                if (parseFloat(dtl.potongan_nominal || 0) > 0 && !(parseFloat(grn.po_potongan_nominal || 0) > 0)) {
+                    autoPotonganMutu += parseFloat(dtl.potongan_nominal);
+                }
+                if (dtl.pajak_id && !autoPajakId) {
+                    autoPajakId = String(dtl.pajak_id);
+                }
+                if (dtl.is_harga_termasuk_pajak) {
+                    anyPoExplicit = true;
+                    anyPoInclude = true;
+                }
+            });
+        }
+    });
+
+    // 1. Sinkronisasi Pajak (PPN / PPh / Non PPN) dari PO
+    const globalPajakSelect = document.getElementById('global_pajak_id');
+    if (globalPajakSelect && hasPoData) {
+        if (autoPajakId) {
+            globalPajakSelect.value = autoPajakId;
+        } else {
+            globalPajakSelect.value = 'NON_PPN';
+        }
+        if (typeof onHeaderPajakChange === 'function') {
+            onHeaderPajakChange(globalPajakSelect);
+        }
+    }
+
+    // 2. Sinkronisasi Status Harga Termasuk Pajak (Include vs Net) dari PO
+    const incCheckbox = document.getElementById('is_harga_termasuk_pajak');
+    if (incCheckbox && hasPoData && anyPoExplicit) {
+        incCheckbox.checked = anyPoInclude;
+        if (typeof onHeaderTaxInclusiveToggle === 'function') {
+            onHeaderTaxInclusiveToggle(incCheckbox);
+        }
+    }
+
+    // 3. Auto-isi Diskon Global jika berasal dari PO
+    const diskonEl = document.getElementById('global_diskon_persen');
+    if (diskonEl && hasPoData && !diskonEl.dataset.manualEdited) {
+        diskonEl.value = autoDiskonPersen > 0 ? autoDiskonPersen : 0;
+    }
+
+    // 4. Auto-isi Potongan Mutu jika berasal dari PO / QC
+    const potEl = document.getElementById('global_potongan_nominal');
+    if (potEl && hasPoData && !potEl.dataset.manualEdited) {
+        potEl.value = autoPotonganMutu > 0 ? Math.round(autoPotonganMutu) : 0;
+    }
+
+    // 5. Sinkronisasi TOP Hari jika ada di PO
+    if (poTopHari && parseInt(poTopHari, 10) > 0) {
+        currentSupplierTopHari = parseInt(poTopHari, 10);
+        const topInput = document.getElementById('topHariInput');
+        if (topInput) topInput.value = currentSupplierTopHari;
+        if (typeof updateTempoDateFromTagihan === 'function') {
+            updateTempoDateFromTagihan(false);
+        }
+    }
+
     let html = '';
     let rowIndex = 0;
+    let totalNettoTonase = 0;
+    let satuanSet = new Set();
 
     unbilledGrnData.forEach(grn => {
         if (!selectedGrnIds.has(grn.terima_id)) return;
@@ -775,6 +874,11 @@ function rebuildItemsTable() {
                 ? parseFloat(dtl.netto_qty) 
                 : Math.max(0, parseFloat(dtl.terima_qty || 0) - parseFloat(dtl.reject_qty || 0));
 
+            // Akumulasi kuantitas fisik
+            const satStr = (satuan || 'KG').trim();
+            satuanSet.add(satStr);
+            totalNettoTonase += qty;
+
             const harga = parseFloat(
                 dtl.harga_satuan || 
                 dtl.harga_nominal || 
@@ -783,149 +887,76 @@ function rebuildItemsTable() {
                 0
             );
 
-            // Diskon murni (% dan nominal Rp)
-            const diskonPersen = (typeof dtl.diskon_persen !== 'undefined') ? parseFloat(dtl.diskon_persen) : 0;
-            const diskonNominal = (typeof dtl.diskon_nominal !== 'undefined') 
-                ? parseFloat(dtl.diskon_nominal) 
-                : (typeof dtl.diskon_total !== 'undefined' ? parseFloat(dtl.diskon_total) : 0);
+            const isItemInclude = typeof dtl.is_harga_termasuk_pajak !== 'undefined'
+                ? Boolean(dtl.is_harga_termasuk_pajak)
+                : Boolean(anyPoInclude || document.getElementById('is_harga_termasuk_pajak')?.checked);
 
-            // Potongan mutu / sortasi fisik timbangan
-            const potonganNominal = (typeof dtl.potongan_nominal !== 'undefined') ? parseFloat(dtl.potongan_nominal) : 0;
-
-            // PPN per-item: 'NON_PPN' | 'PPN_11' | 'PPN_INCLUDE'
-            let ppnTipe = dtl.ppn_tipe || (dtl.ppn_total > 0 || dtl.ppn_nominal > 0 ? 'PPN_11' : 'NON_PPN');
-            let ppn = (typeof dtl.ppn_total !== 'undefined')
-                ? parseFloat(dtl.ppn_total)
-                : parseFloat(dtl.ppn_nominal || 0);
-
-            const subtotal = qty * harga;
-            const nilaiBersih = Math.max(0, subtotal - diskonNominal - potonganNominal);
-
-            let dpp = nilaiBersih;
-            let netto = nilaiBersih;
-
-            if (ppnTipe === 'PPN_INCLUDE') {
-                netto = nilaiBersih;
-                if (ppn > 0) {
-                    dpp = Math.max(0, nilaiBersih - ppn);
-                } else {
-                    dpp = Math.round((nilaiBersih / 1.11) * 100) / 100;
-                    ppn = Math.round(nilaiBersih - dpp);
-                }
-            } else if (ppnTipe === 'PPN_11') {
-                dpp = nilaiBersih;
-                if (ppn <= 0) {
-                    ppn = Math.round(dpp * 0.11);
-                }
-                netto = dpp + ppn;
-            } else {
-                ppnTipe = 'NON_PPN';
-                dpp = nilaiBersih;
-                ppn = 0;
-                netto = nilaiBersih;
-            }
+            const poBadgeHtml = dtl.po_no 
+                ? `<span style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd; margin-right: 4px;">PO: ${dtl.po_no}</span>`
+                : '';
 
             html += `
-                <tr class="item-calc-row" data-index="${rowIndex}" style="border-bottom: 1px solid #f1f5f9;">
+                <tr class="item-calc-row item-row" data-index="${rowIndex}" style="border-bottom: 1px solid #f1f5f9;">
+                    <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f8fafc; width: 35px; padding: 0.65rem 0.25rem;">
+                        ${rowIndex + 1}
+                    </td>
                     <td style="padding: 0.65rem 0.75rem;">
                         <input type="hidden" name="items[${rowIndex}][terima_id]" value="${grn.terima_id}">
                         <input type="hidden" name="items[${rowIndex}][terima_dtl_id]" value="${dtl.terimadtl_id || ''}">
                         <input type="hidden" name="items[${rowIndex}][barang_id]" value="${dtl.barang_id || ''}">
-                        <div style="font-weight: 700; color: #0f172a; font-size: 0.8125rem;">
-                            ${barangNm}
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.8125rem; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                            ${poBadgeHtml}
+                            <span>${barangNm}</span>
                         </div>
                         <input type="text" 
                                name="items[${rowIndex}][deskripsi]" 
-                               value="${barangNm} (GRN: ${grn.terima_no})" 
+                               value="${barangNm}" 
                                class="form-control" 
                                style="font-size: 0.72rem; height: 26px; padding: 2px 6px; margin-top: 3px;">
                     </td>
-                    <td style="padding: 0.65rem 0.5rem; width: 105px;">
+                    <td style="padding: 0.65rem 0.5rem; width: 85px; text-align: center;">
+                        <span style="font-weight: 700; color: #475569; font-size: 0.8rem; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-block;">
+                            ${satuan}
+                        </span>
+                        <input type="hidden" name="items[${rowIndex}][satuan]" value="${satuan}">
+                    </td>
+                    <td style="padding: 0.65rem 0.5rem; width: 130px; text-align: right;">
                         <input type="number" 
                                step="0.0001" 
                                min="0.0001" 
                                name="items[${rowIndex}][qty]" 
                                value="${qty}" 
-                               class="form-control calc-trigger input-qty" 
+                               class="form-control calc-trigger input-qty item-qty" 
                                style="font-size: 0.8rem; height: 32px; text-align: right; font-weight: 700;">
                     </td>
-                    <td style="padding: 0.65rem 0.5rem; width: 60px;">
-                        <input type="text" 
-                               name="items[${rowIndex}][satuan]" 
-                               value="${satuan}" 
-                               class="form-control" 
-                               style="font-size: 0.75rem; height: 32px; text-align: center;" 
-                               readonly>
-                    </td>
-                    <td style="padding: 0.65rem 0.5rem; width: 125px;">
+                    <td style="padding: 0.65rem 0.5rem; width: 170px; text-align: right;">
                         <input type="number" 
                                step="any" 
                                min="0" 
                                name="items[${rowIndex}][harga_satuan]" 
                                value="${harga}" 
-                               class="form-control calc-trigger input-harga" 
+                               class="form-control calc-trigger input-harga item-harga" 
                                style="font-size: 0.8rem; height: 32px; text-align: right; font-weight: 700; color: #0f172a;">
+                        <label style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 0.7rem; color: #475569; margin-top: 3px; cursor: pointer; user-select: none;" title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
+                            <input type="hidden" name="items[${rowIndex}][is_harga_termasuk_pajak]" value="0">
+                            <input type="checkbox" 
+                                   name="items[${rowIndex}][is_harga_termasuk_pajak]" 
+                                   value="1" 
+                                   class="item-include-tax calc-trigger" 
+                                   ${isItemInclude ? 'checked' : ''} 
+                                   style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;">
+                            <span style="font-weight: 600;">Termasuk (Inc)</span>
+                        </label>
+                        <input type="hidden" name="items[${rowIndex}][ppn_nominal]" class="input-ppn" value="0">
+                        <input type="hidden" name="items[${rowIndex}][dpp_nominal]" class="input-dpp" value="0">
+                        <input type="hidden" name="items[${rowIndex}][diskon_nominal]" class="input-diskon-nominal" value="0">
+                        <input type="hidden" name="items[${rowIndex}][diskon_persen]" class="input-diskon-persen" value="${dtl.diskon_persen || ''}">
+                        <input type="hidden" name="items[${rowIndex}][potongan_nominal]" class="input-potongan-item" value="0">
+                        <input type="hidden" name="items[${rowIndex}][pajak_id]" class="input-pajak-id" value="${dtl.pajak_id || ''}">
+                        <input type="hidden" name="items[${rowIndex}][ppn_tipe]" class="input-ppn-tipe" value="${dtl.ppn_tipe || ''}">
                     </td>
-                    <td style="padding: 0.65rem 0.5rem; width: 165px;">
-                        <div style="display: flex; gap: 4px; align-items: center;">
-                            <div style="position: relative; width: 60px; flex-shrink: 0;">
-                                <input type="number" 
-                                       step="any" 
-                                       min="0" 
-                                       max="100" 
-                                       name="items[${rowIndex}][diskon_persen]" 
-                                       value="${diskonPersen > 0 ? diskonPersen : ''}" 
-                                       class="form-control calc-trigger input-diskon-persen" 
-                                       style="font-size: 0.775rem; height: 32px; text-align: right; padding-right: 14px;" 
-                                       placeholder="0">
-                                <span style="position: absolute; right: 4px; top: 7px; font-size: 0.7rem; color: #64748b; font-weight: 700; pointer-events: none;">%</span>
-                            </div>
-                            <input type="number" 
-                                   step="any" 
-                                   min="0" 
-                                   name="items[${rowIndex}][diskon_nominal]" 
-                                   value="${diskonNominal > 0 ? Math.round(diskonNominal) : 0}" 
-                                   class="form-control calc-trigger input-diskon-nominal" 
-                                   style="font-size: 0.775rem; height: 32px; text-align: right; flex: 1; min-width: 80px;" 
-                                   placeholder="0">
-                        </div>
-                    </td>
-                    <td style="padding: 0.65rem 0.5rem; width: 120px;">
-                        <input type="number" 
-                               step="any" 
-                               min="0" 
-                               name="items[${rowIndex}][potongan_nominal]" 
-                               value="${potonganNominal > 0 ? Math.round(potonganNominal) : 0}" 
-                               class="form-control calc-trigger input-potongan-item" 
-                               style="font-size: 0.775rem; height: 32px; text-align: right; color: #b45309; font-weight: 700;" 
-                               placeholder="0">
-                    </td>
-                    <td style="padding: 0.65rem 0.5rem; width: 175px;">
-                        <select name="items[${rowIndex}][ppn_tipe]" 
-                                class="form-control calc-trigger input-ppn-tipe" 
-                                style="font-size: 0.75rem; height: 30px; font-weight: 700; margin-bottom: 4px; padding: 2px 6px; border: 1.5px solid #cbd5e1;">
-                            <option value="NON_PPN" ${ppnTipe === 'NON_PPN' ? 'selected' : ''}>Non PPN (0%)</option>
-                            <option value="PPN_11" ${ppnTipe === 'PPN_11' ? 'selected' : ''}>PPN 11% (Exclude)</option>
-                            <option value="PPN_INCLUDE" ${ppnTipe === 'PPN_INCLUDE' ? 'selected' : ''}>Include PPN (11%)</option>
-                        </select>
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                            <input type="number" 
-                                   step="any" 
-                                   min="0" 
-                                   name="items[${rowIndex}][ppn_nominal]" 
-                                   value="${ppnTipe === 'NON_PPN' ? 0 : Math.round(ppn)}" 
-                                   class="form-control calc-trigger input-ppn" 
-                                   style="font-size: 0.775rem; height: 28px; text-align: right; color: #0284c7; font-weight: 600; flex: 1; min-width: 65px; ${ppnTipe === 'NON_PPN' ? 'background: #f8fafc; color: #94a3b8;' : ''}" 
-                                   placeholder="0"
-                                   ${ppnTipe === 'NON_PPN' ? 'readonly' : ''}>
-                            <input type="hidden" name="items[${rowIndex}][dpp_nominal]" class="input-dpp" value="${dpp}">
-                        </div>
-                        <div class="ppn-dpp-badge" style="font-size: 0.68rem; color: #0369a1; font-weight: 700; margin-top: 2px; ${ppnTipe === 'PPN_INCLUDE' ? '' : 'display: none;'}">
-                            DPP: Rp ${Math.round(dpp).toLocaleString('id-ID')}
-                        </div>
-                    </td>
-                    <td style="padding: 0.65rem 0.75rem; width: 130px; text-align: right; font-weight: 800; color: #0284c7; font-size: 0.85rem;" class="cell-netto">
-                        Rp ${Math.round(netto).toLocaleString('id-ID')}
+                    <td style="padding: 0.65rem 0.75rem; width: 160px; text-align: right; font-weight: 800; color: #0284c7; font-size: 0.85rem; font-family: monospace;" class="cell-netto row-subtotal">
+                        Rp 0
                     </td>
                 </tr>
             `;
@@ -947,80 +978,300 @@ function rebuildItemsTable() {
         returInput.value = Math.round(autoPotonganGlobal);
     }
 
+    // Deteksi satuan utama
+    let detectedSatuan = 'KG';
+    if (satuanSet.size === 1) {
+        detectedSatuan = Array.from(satuanSet)[0];
+    } else if (satuanSet.has('KG') || satuanSet.has('Kilogram') || satuanSet.has('kg')) {
+        detectedSatuan = 'KG';
+    } else if (satuanSet.size > 0) {
+        detectedSatuan = Array.from(satuanSet)[0];
+    }
+
+    const spanTonase = document.getElementById('spanSatuanTonase');
+    const badgeTonase = document.getElementById('badgeSatuanTonase');
+    const spanTarif = document.getElementById('spanSatuanTarif');
+    const badgeTarif = document.getElementById('badgeSatuanTarif');
+    if (spanTonase) spanTonase.textContent = detectedSatuan;
+    if (badgeTonase) badgeTonase.textContent = detectedSatuan;
+    if (spanTarif) spanTarif.textContent = detectedSatuan;
+    if (badgeTarif) badgeTarif.textContent = '/ ' + detectedSatuan;
+
+    const tonaseInput = document.getElementById('tonaseKgInput');
+    if (tonaseInput && !tonaseInput.dataset.manualEdited) {
+        tonaseInput.value = totalNettoTonase > 0 ? parseFloat(totalNettoTonase.toFixed(2)) : 0;
+    }
+
+    calculateOngkirFromTonase();
     recalculateTotals();
 }
 
 /**
- * Hitung seluruh nilai akumulasi tagihan secara otomatis
+ * Toggle Mode Ongkir (Hitung dari Tonase vs Input Manual Flat)
+ */
+window.toggleOngkirMode = function (mode) {
+    const tonaseBox = document.getElementById('ongkirTonaseBox');
+    if (tonaseBox) {
+        tonaseBox.style.display = (mode === 'tonase') ? 'block' : 'none';
+    }
+    if (mode === 'tonase') {
+        calculateOngkirFromTonase();
+    }
+};
+
+/**
+ * Kalkulasi Biaya Ongkos Angkut / Bongkar Muat dari Tonase / Kuantitas x Tarif
+ */
+window.calculateOngkirFromTonase = function () {
+    const tonase = parseDecimal(document.getElementById('tonaseKgInput')?.value);
+    const tarif = parseDecimal(document.getElementById('ongkirTarifPerKgInput')?.value);
+    const totalOngkir = Math.round(tonase * tarif);
+
+    const isTonaseMode = document.getElementById('ongkirModeTonase')?.checked ?? true;
+    if (isTonaseMode) {
+        const ongkirInput = document.getElementById('biayaOngkirInput');
+        if (ongkirInput) {
+            ongkirInput.value = totalOngkir > 0 ? totalOngkir : 0;
+        }
+    }
+
+    const detectedSatuan = document.getElementById('badgeSatuanTonase')?.textContent || 'KG';
+    const formulaEl = document.getElementById('ongkirFormulaText');
+    if (formulaEl) {
+        formulaEl.innerHTML = `${tonase.toLocaleString('id-ID')} ${detectedSatuan} &times; Rp ${tarif.toLocaleString('id-ID')} = <strong>Rp ${totalOngkir.toLocaleString('id-ID')}</strong>`;
+    }
+
+    recalculateTotals();
+};
+
+/**
+ * Render Daftar Dokumen Retur Pembelian (Credit Note) yang siap dipotongkan
+ */
+function renderReturCreditNotes(returs) {
+    const card = document.getElementById('cardReturCreditNote');
+    const container = document.getElementById('returItemsList');
+    const badge = document.getElementById('badgeReturCount');
+
+    if (!card || !container) return;
+
+    if (!returs || returs.length === 0) {
+        card.style.display = 'none';
+        container.innerHTML = '';
+        recalculateTotals();
+        return;
+    }
+
+    card.style.display = 'block';
+    if (badge) badge.textContent = `${returs.length} Dokumen Tersedia`;
+
+    let html = '';
+    returs.forEach(ret => {
+        const itemInfo = (ret.details && ret.details.length > 0)
+            ? `${ret.details[0].retur_qty.toLocaleString('id-ID')} ${ret.details[0].satuan} ${ret.details[0].barang_nm} &bull; Alasan: <em>"${ret.details[0].alasan_reject || ret.alasan_txt || 'Cacat Mutu'}"</em>`
+            : (ret.alasan_txt || 'Barang Rusak');
+
+        html += `
+            <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; transition: all 0.15s ease;">
+                <label style="display: flex; align-items: flex-start; gap: 0.5rem; margin: 0; cursor: pointer; flex: 1;">
+                    <input type="checkbox" 
+                           name="retur_ids[]" 
+                           value="${ret.retur_id}" 
+                           data-nominal="${ret.total_nominal}" 
+                           onchange="onReturCheckboxChange(this)" 
+                           style="margin-top: 3px; width: 16px; height: 16px; accent-color: #d97706; cursor: pointer;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                            <span class="badge" style="background: #fef3c7; color: #92400e; font-family: monospace; font-size: 0.725rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">
+                                ${ret.retur_no}
+                            </span>
+                            <span style="font-size: 0.725rem; color: #78350f; font-weight: 600;">
+                                Tgl: ${ret.retur_tgl}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.725rem; color: #475569; margin-top: 2px;">
+                            ${itemInfo}
+                        </div>
+                    </div>
+                </label>
+                <div style="text-align: right; flex-shrink: 0;">
+                    <strong style="color: #dc2626; font-family: monospace; font-size: 0.85rem;">
+                        - Rp ${Math.round(ret.total_nominal).toLocaleString('id-ID')}
+                    </strong>
+                    <div style="font-size: 0.65rem; color: #92400e; font-weight: 700;">
+                        Credit Note
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    recalculateTotals();
+}
+
+window.onReturCheckboxChange = function () {
+    recalculateTotals();
+};
+
+window.toggleManualReturBox = function () {
+    const box = document.getElementById('boxManualRetur');
+    if (box) {
+        const isHidden = (box.style.display === 'none' || !box.style.display);
+        box.style.display = isHidden ? 'flex' : 'none';
+        if (isHidden) {
+            document.getElementById('potonganReturInput')?.focus();
+        }
+    }
+};
+
+/**
+ * Hitung seluruh nilai akumulasi tagihan secara otomatis (Identik Logika PO Workstation)
  */
 function recalculateTotals() {
+    let totalQty = 0;
     let totalBruto = 0;
-    let totalDiskon = 0;
-    let totalPotonganItem = 0;
+
+    const rows = document.querySelectorAll('.item-calc-row');
+    rows.forEach(row => {
+        const qty = parseDecimal(row.querySelector('.input-qty')?.value);
+        const harga = parseDecimal(row.querySelector('.input-harga')?.value);
+        totalQty += qty;
+        totalBruto += (qty * harga);
+    });
+
+    // Kontrol Finansial Global Ringkasan (Identik PO)
+    const diskonPersen = Math.min(100, Math.max(0, parseFloat(document.getElementById('global_diskon_persen')?.value) || 0));
+    const potonganNominal = Math.max(0, parseFloat(document.getElementById('global_potongan_nominal')?.value) || 0);
+
+    const globalPajakSelect = document.getElementById('global_pajak_id');
+    const opt = globalPajakSelect ? globalPajakSelect.options[globalPajakSelect.selectedIndex] : null;
+    const tarif = opt ? (parseFloat(opt.dataset.tarif) || 0) : 0;
+    const sifat = opt ? (opt.dataset.sifat || 'TAMBAH') : 'TAMBAH';
+    const isHeaderInc = document.getElementById('is_harga_termasuk_pajak')?.checked || false;
+
+    const totalDiskon = totalBruto * (diskonPersen / 100);
+    const totalPotongan = potonganNominal;
+    const sumGrossAfterDiskon = Math.max(0, totalBruto - totalDiskon);
+
+    let totalDpp = 0;
     let totalPpn = 0;
     let totalNetto = 0;
 
-    document.querySelectorAll('.item-calc-row').forEach(row => {
+    rows.forEach(row => {
         const qty = parseDecimal(row.querySelector('.input-qty')?.value);
         const harga = parseDecimal(row.querySelector('.input-harga')?.value);
-        const diskon = parseDecimal(row.querySelector('.input-diskon-nominal')?.value);
-        const potongan = parseDecimal(row.querySelector('.input-potongan-item')?.value);
-        const ppn = parseDecimal(row.querySelector('.input-ppn')?.value);
-        const ppnTipe = row.querySelector('.input-ppn-tipe')?.value || 'NON_PPN';
+        const rowDiskonUnit = harga * (diskonPersen / 100);
+        const rowHargaNetto = Math.max(0, harga - rowDiskonUnit);
 
-        const subtotal = qty * harga;
-        const nilaiBersih = Math.max(0, subtotal - diskon - potongan);
-
-        let netto = nilaiBersih;
-        if (ppnTipe === 'PPN_INCLUDE') {
-            netto = nilaiBersih; // Harga sudah include PPN
-        } else if (ppnTipe === 'PPN_11') {
-            netto = nilaiBersih + ppn; // Exclude PPN
-        } else {
-            netto = nilaiBersih;
+        let rowPotongan = 0;
+        if (totalPotongan > 0 && sumGrossAfterDiskon > 0) {
+            const rowGross = qty * rowHargaNetto;
+            rowPotongan = (rowGross / sumGrossAfterDiskon) * totalPotongan;
         }
 
-        totalBruto += subtotal;
-        totalDiskon += diskon;
-        totalPotonganItem += potongan;
-        totalPpn += ppn;
-        totalNetto += netto;
+        const grossRowTotal = Math.max(0, (qty * rowHargaNetto) - rowPotongan);
+
+        const rowIncCheck = row.querySelector('.item-include-tax');
+        const rowIsInc = rowIncCheck ? rowIncCheck.checked : isHeaderInc;
+
+        let rowDpp = 0;
+        let rowPpn = 0;
+        let rowNetto = 0;
+
+        if (tarif <= 0 || opt?.value === 'NON_PPN') {
+            rowDpp = grossRowTotal;
+            rowPpn = 0;
+            rowNetto = grossRowTotal;
+        } else if (rowIsInc && sifat !== 'POTONG') {
+            rowDpp = Math.round((grossRowTotal / (1 + (tarif / 100))) * 100) / 100;
+            rowPpn = Math.round(grossRowTotal - rowDpp);
+            rowNetto = grossRowTotal;
+        } else {
+            rowDpp = grossRowTotal;
+            rowPpn = Math.round(rowDpp * (tarif / 100));
+            rowNetto = (sifat === 'POTONG') ? Math.max(0, rowDpp - rowPpn) : (rowDpp + rowPpn);
+        }
+
+        const inputDpp = row.querySelector('.input-dpp');
+        if (inputDpp) inputDpp.value = rowDpp;
+        const inputPpn = row.querySelector('.input-ppn');
+        if (inputPpn) inputPpn.value = rowPpn;
+        const inputDiskon = row.querySelector('.input-diskon-nominal');
+        if (inputDiskon) inputDiskon.value = Math.round(qty * rowDiskonUnit);
+        const inputDiskonPersen = row.querySelector('.input-diskon-persen');
+        if (inputDiskonPersen) inputDiskonPersen.value = diskonPersen;
+        const inputPot = row.querySelector('.input-potongan-item');
+        if (inputPot) inputPot.value = Math.round(rowPotongan);
+        const inputPajakId = row.querySelector('.input-pajak-id');
+        if (inputPajakId) inputPajakId.value = (opt?.value !== 'NON_PPN' && opt?.value) ? opt.value : '';
+        const inputPpnTipe = row.querySelector('.input-ppn-tipe');
+        if (inputPpnTipe) inputPpnTipe.value = opt?.value || 'NON_PPN';
 
         const cellNetto = row.querySelector('.cell-netto');
         if (cellNetto) {
-            cellNetto.textContent = 'Rp ' + Math.round(netto).toLocaleString('id-ID');
+            cellNetto.textContent = 'Rp ' + Math.round(rowNetto).toLocaleString('id-ID');
         }
+
+        totalDpp += rowDpp;
+        totalPpn += (sifat === 'POTONG' ? -rowPpn : rowPpn);
+        totalNetto += rowNetto;
     });
 
-    const potonganRetur = parseFloat(document.getElementById('potonganReturInput')?.value || 0);
+    // Hitung total potongan retur: akumulasi retur terpilih (Credit Note) + input manual (jika ada)
+    let totalReturSelected = 0;
+    document.querySelectorAll('input[name="retur_ids[]"]:checked').forEach(cb => {
+        totalReturSelected += parseFloat(cb.getAttribute('data-nominal') || 0);
+    });
+
+    const manualRetur = parseFloat(document.getElementById('potonganReturInput')?.value || 0);
+    const potonganRetur = totalReturSelected + manualRetur;
     const biayaOngkir = parseFloat(document.getElementById('biayaOngkirInput')?.value || 0);
     const grandTotal = Math.max(0, (totalNetto - potonganRetur) + biayaOngkir);
 
+    const uangMuka = parseFloat(document.getElementById('uangMukaNominalInput')?.value || 0);
+    const sisaHutang = Math.max(0, grandTotal - uangMuka);
+
     // Update elemen sticky panel ringkasan
+    const elQty = document.getElementById('summaryTotalQty');
+    if (elQty) elQty.textContent = totalQty.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+
     const elBruto = document.getElementById('summaryTotalBruto');
     const elDiskon = document.getElementById('summaryTotalDiskon');
-    const rowPotonganItem = document.getElementById('rowSummaryPotonganItem');
     const elPotonganItem = document.getElementById('summaryTotalPotonganItem');
+    const elDpp = document.getElementById('summaryTotalDpp');
     const elPpn = document.getElementById('summaryTotalPpn');
     const elRetur = document.getElementById('summaryPotonganRetur');
     const rowOngkir = document.getElementById('rowSummaryOngkir');
     const elOngkir = document.getElementById('summaryBiayaOngkir');
     const elGrand = document.getElementById('summaryGrandTotal');
+    const rowUangMuka = document.getElementById('rowSummaryUangMuka');
+    const elUangMuka = document.getElementById('summaryUangMukaNominal');
+    const elSisaHutang = document.getElementById('summarySisaHutang');
 
     if (elBruto) elBruto.textContent = 'Rp ' + Math.round(totalBruto).toLocaleString('id-ID');
-    if (elDiskon) elDiskon.textContent = totalDiskon > 0 ? '- Rp ' + Math.round(totalDiskon).toLocaleString('id-ID') : 'Rp 0';
-    
-    if (rowPotonganItem && elPotonganItem) {
-        if (totalPotonganItem > 0) {
-            rowPotonganItem.style.display = 'flex';
-            elPotonganItem.textContent = '- Rp ' + Math.round(totalPotonganItem).toLocaleString('id-ID');
+    if (elDiskon) elDiskon.textContent = totalDiskon > 0 ? ('- Rp ' + Math.round(totalDiskon).toLocaleString('id-ID')) : 'Rp 0';
+    if (elPotonganItem) elPotonganItem.textContent = totalPotongan > 0 ? ('- Rp ' + Math.round(totalPotongan).toLocaleString('id-ID')) : '- Rp 0';
+    if (elDpp) elDpp.textContent = 'Rp ' + Math.round(totalDpp).toLocaleString('id-ID');
+
+    if (elPpn) {
+        if (tarif <= 0 || opt?.value === 'NON_PPN' || totalPpn === 0) {
+            elPpn.textContent = 'Rp 0';
         } else {
-            rowPotonganItem.style.display = 'none';
+            elPpn.textContent = (sifat === 'POTONG' ? '- Rp ' : '+ Rp ') + Math.round(Math.abs(totalPpn)).toLocaleString('id-ID');
         }
     }
 
-    if (elPpn) elPpn.textContent = totalPpn > 0 ? '+ Rp ' + Math.round(totalPpn).toLocaleString('id-ID') : 'Rp 0';
-    if (elRetur) elRetur.textContent = potonganRetur > 0 ? '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID') : 'Rp 0';
+    const rowRetur = document.getElementById('rowSummaryRetur');
+    if (rowRetur && elRetur) {
+        if (potonganRetur > 0) {
+            rowRetur.style.display = 'flex';
+            elRetur.textContent = '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID');
+        } else {
+            rowRetur.style.display = 'none';
+        }
+    } else if (elRetur) {
+        elRetur.textContent = potonganRetur > 0 ? '- Rp ' + Math.round(potonganRetur).toLocaleString('id-ID') : 'Rp 0';
+    }
     
     if (rowOngkir && elOngkir) {
         if (biayaOngkir > 0) {
@@ -1032,4 +1283,28 @@ function recalculateTotals() {
     }
 
     if (elGrand) elGrand.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+
+    // Live KPI Widget Header (Identik PO Pembelian)
+    const elTopGrand = document.getElementById('topLiveGrandTotal');
+    if (elTopGrand) {
+        elTopGrand.textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
+    }
+    const elTopItems = document.getElementById('topLiveItemCount');
+    if (elTopItems) {
+        const rowCount = document.querySelectorAll('.item-calc-row').length;
+        elTopItems.textContent = rowCount + ' Item';
+    }
+
+    if (rowUangMuka && elUangMuka) {
+        if (uangMuka > 0) {
+            rowUangMuka.style.display = 'flex';
+            elUangMuka.textContent = '- Rp ' + Math.round(uangMuka).toLocaleString('id-ID');
+        } else {
+            rowUangMuka.style.display = 'none';
+        }
+    }
+
+    if (elSisaHutang) {
+        elSisaHutang.textContent = 'Rp ' + Math.round(sisaHutang).toLocaleString('id-ID');
+    }
 }

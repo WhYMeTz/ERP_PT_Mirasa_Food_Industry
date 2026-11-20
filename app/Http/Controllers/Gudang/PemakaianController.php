@@ -44,7 +44,7 @@ class PemakaianController extends Controller
     {
         $perPage = (int) $request->input('per_page', 20);
         $search = $request->input('search');
-        $viewType = $request->input('view', 'item'); // 'item' (Excel view) atau 'header'
+        $viewType = $request->input('view', 'header'); // Default 'header' (1 baris per dokumen BPPB), atau 'item' (Excel Grid rincian per bahan)
         $tujuan = $request->input('tujuan');
         $kategori = $request->input('kategori');
         $startDate = $request->input('start_date');
@@ -142,18 +142,8 @@ class PemakaianController extends Controller
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
         $userGudangId = ($gudangList->count() === 1 && !$user?->isSuperAdmin()) ? $gudangList->first()->gudang_id : null;
 
-        // Ambil barang peruntukan produksi: Bahan Baku, Penolong, Kemasan, serta khusus Berko (bukan seluruh WIP)
         $barangList = MstBarang::active()
-            ->where(function ($query) {
-                $query->bahanProduksi()
-                      ->orWhere(function ($wip) {
-                          $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
-                              ->where(function ($b) {
-                                  $b->where('barang_nm', 'ILIKE', '%BERKO%')
-                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
-                              });
-                      });
-            })
+            ->bahanProduksi()
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
             ->get()
@@ -161,7 +151,7 @@ class PemakaianController extends Controller
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
-                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO')) {
                     $b->kategori_kelompok = 'BAHAN_BAKU';
                     $b->kategori_label = 'Bahan Baku';
                 } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
@@ -175,13 +165,19 @@ class PemakaianController extends Controller
                 return $b;
             });
 
-        $autoNo = $this->codeGenerator->generatePakaiNo();
+        $targetDate = $request->query('date', date('Y-m-d'));
+        $autoNo = $this->codeGenerator->generatePakaiNo($targetDate);
 
-        // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
+        // Ambil daftar master lini produksi aktif (WIP dan FG)
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
-            ->where('kategori_lini', 'ILIKE', '%WIP%')
+            ->orderBy('kategori_lini', 'desc')
             ->orderBy('lini_nm', 'asc')
+            ->get();
+
+        $allGudangs = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
             ->get();
 
         $bomList = $this->bomService->getAllActive();
@@ -195,6 +191,7 @@ class PemakaianController extends Controller
 
         return view('gudang.pemakaian.create', compact(
             'gudangList',
+            'allGudangs',
             'barangList',
             'userGudangId',
             'autoNo',
@@ -212,7 +209,7 @@ class PemakaianController extends Controller
         try {
             $header = $this->pemakaianService->store($request->validated());
 
-            $msg = "Dokumen pengeluaran {$header->pakai_no} berhasil disimpan sebagai DRAFT (Stok belum dipotong). Silakan lakukan verifikasi fisik sebelum memposting.";
+            $msg = "Dokumen pengeluaran {$header->pakai_no} berhasil disimpan. Stok fisik gudang telah langsung dipotong secara real-time.";
 
             if ($request->wantsJson()) {
                 return response()->json([
@@ -253,16 +250,7 @@ class PemakaianController extends Controller
         $userGudangId = $pakai->gudang_id;
 
         $barangList = MstBarang::active()
-            ->where(function ($query) {
-                $query->bahanProduksi()
-                      ->orWhere(function ($wip) {
-                          $wip->whereHas('jenisBarang', fn($j) => $j->where('jenis_barang_cd', 'WIP'))
-                              ->where(function ($b) {
-                                  $b->where('barang_nm', 'ILIKE', '%BERKO%')
-                                    ->orWhere('barang_cd', 'ILIKE', '%BRK%');
-                              });
-                      });
-            })
+            ->bahanProduksi()
             ->with(['satuanDasar', 'jenisBarang'])
             ->orderBy('barang_nm')
             ->get()
@@ -270,7 +258,7 @@ class PemakaianController extends Controller
                 $cd = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
                 $nm = strtoupper($b->barang_nm ?? '');
 
-                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO') || str_starts_with($cd, 'WIP')) {
+                if ($cd === 'BB' || $cd === 'RAW' || str_contains($nm, 'SINGKONG') || str_contains($nm, 'UBI') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR') || str_contains($nm, 'BERKO')) {
                     $b->kategori_kelompok = 'BAHAN_BAKU';
                     $b->kategori_label = 'Bahan Baku';
                 } elseif (str_contains($nm, 'KARTON') || str_contains($nm, 'PLASTIK') || str_contains($nm, 'ROLL') || str_contains($nm, 'LAKBAN') || str_contains($nm, 'RAFIA') || str_contains($nm, 'SARUNG TANGAN') || $cd === 'PACK') {
@@ -284,14 +272,15 @@ class PemakaianController extends Controller
                 return $b;
             });
 
-        // Ambil daftar master lini produksi aktif khusus peruntukan Work In Progress (WIP)
         $liniList = MstLiniProduksi::where('deleted_st', false)
             ->where('active_st', true)
-            ->where(function ($q) use ($pakai) {
-                $q->where('kategori_lini', 'ILIKE', '%WIP%')
-                  ->orWhere('lini_nm', $pakai->tujuan_pemakaian);
-            })
+            ->orderBy('kategori_lini', 'desc')
             ->orderBy('lini_nm', 'asc')
+            ->get();
+
+        $allGudangs = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_nm')
             ->get();
 
         $bomList = $this->bomService->getAllActive();
@@ -305,6 +294,7 @@ class PemakaianController extends Controller
         return view('gudang.pemakaian.edit', compact(
             'pakai',
             'gudangList',
+            'allGudangs',
             'barangList',
             'userGudangId',
             'liniList',
@@ -319,8 +309,10 @@ class PemakaianController extends Controller
     public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
+            'pakai_no'         => ['nullable', 'string', 'max:100', \Illuminate\Validation\Rule::unique('dat_pakai_hdr', 'pakai_no')->ignore($id, 'pakai_id')],
             'pakai_tgl'        => 'required|date',
             'gudang_id'        => 'required|exists:mst_gudang,gudang_id',
+            'gudang_tujuan_id' => 'nullable|exists:mst_gudang,gudang_id',
             'tujuan_pemakaian' => 'required|string|max:100',
             'catatan_txt'      => 'nullable|string',
             'items'            => 'required|array|min:1',
@@ -403,7 +395,7 @@ class PemakaianController extends Controller
             $user = Auth::user();
             $this->pemakaianService->delete($id, $user);
 
-            $msg = "Dokumen pengeluaran DRAFT berhasil dibatalkan / dihapus.";
+            $msg = "Dokumen pengeluaran DRAFT berhasil dibatalkan dan stok fisik barang telah dikembalikan ke gudang (reversal).";
 
             if ($request->wantsJson()) {
                 return response()->json([
@@ -429,9 +421,66 @@ class PemakaianController extends Controller
     /**
      * Tampilan detail dokumen pengeluaran barang.
      */
-    public function show(int $id): View
+    public function show(int $id, Request $request = null): View|JsonResponse
     {
         $pakai = $this->pemakaianService->getById($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            $pakai->load(['gudang', 'gudangTujuan', 'details.barang.satuanDasar', 'details.barang.jenisBarang', 'produksi', 'packaging']);
+            return response()->json([
+                'status' => 'success',
+                'data'   => [
+                    'pakai_id'            => $pakai->pakai_id,
+                    'pakai_no'            => $pakai->pakai_no,
+                    'pakai_tgl'           => $pakai->pakai_tgl,
+                    'gudang_id'           => $pakai->gudang_id,
+                    'tujuan_pemakaian'    => $pakai->tujuan_pemakaian,
+                    'catatan_txt'         => $pakai->catatan_txt,
+                    'status_st'           => $pakai->status_st,
+                    'is_selesai_produksi' => $pakai->isSelesaiProduksi(),
+                    'status_label'        => $pakai->status_label,
+                    'created_dt'          => $pakai->created_dt,
+                    'created_by'          => $pakai->creator_name,
+                    'creator_name'        => $pakai->creator_name,
+                    'gudang'              => [
+                        'gudang_id' => $pakai->gudang?->gudang_id,
+                        'gudang_nm' => $pakai->gudang?->gudang_nm ?? '-',
+                        'gudang_cd' => $pakai->gudang?->gudang_cd ?? 'GUDANG',
+                        'lokasi'    => $pakai->gudang?->lokasi ?? '-',
+                    ],
+                    'gudang_tujuan'       => $pakai->gudangTujuan ? [
+                        'gudang_id' => $pakai->gudangTujuan->gudang_id,
+                        'gudang_nm' => $pakai->gudangTujuan->gudang_nm,
+                        'gudang_cd' => $pakai->gudangTujuan->gudang_cd,
+                    ] : null,
+                    'details'             => $pakai->details->map(function ($d) {
+                        return [
+                            'pakaidtl_id'    => $d->pakaidtl_id,
+                            'barang_id'      => $d->barang_id,
+                            'batch_no'       => $d->batch_no,
+                            'grade_cd'       => $d->grade_cd,
+                            'qty_keluar'     => (float) $d->qty_keluar,
+                            'keterangan_txt' => $d->keterangan_txt,
+                            'barang'         => [
+                                'barang_id'    => $d->barang?->barang_id,
+                                'barang_nm'    => $d->barang?->barang_nm ?? '-',
+                                'barang_cd'    => $d->barang?->barang_cd ?? '-',
+                                'satuan_dasar' => [
+                                    'satuan_nm' => $d->barang?->satuanDasar?->satuan_nm ?? '-',
+                                    'satuan_cd' => $d->barang?->satuanDasar?->satuan_cd ?? '-',
+                                ],
+                                'jenis_barang' => [
+                                    'jenis_barang_nm' => $d->barang?->jenisBarang?->jenis_barang_nm ?? ($d->barang?->jenisBarang?->jenis_barang_cd ?? 'Bahan'),
+                                    'jenis_barang_cd' => $d->barang?->jenisBarang?->jenis_barang_cd ?? 'BB',
+                                ],
+                            ],
+                        ];
+                    })->values(),
+                ],
+            ]);
+        }
+
+        $pakai->load(['revisiLogs']);
         return view('gudang.pemakaian.show', compact('pakai'));
     }
 
@@ -455,7 +504,6 @@ class PemakaianController extends Controller
             ], 403);
         }
 
-        // Ambil alokasi kuantitas yang sedang terikat di dokumen DRAFT lain (belum diposting/acc)
         $draftAllocations = DatPakaiDtl::where('barang_id', $barangId)
             ->whereHas('header', function ($q) use ($gudangId, $excludePakaiId) {
                 $q->where('gudang_id', $gudangId)
@@ -482,15 +530,24 @@ class PemakaianController extends Controller
             ->orderBy('stok_id', 'asc')
             ->get(['stok_id', 'batch_no', 'grade_cd', 'sisa_qty', 'harga_satuan', 'expired_tgl', 'created_at']);
 
-        $formattedBatches = $batches->values()->map(function ($b, $index) use ($draftAllocations) {
+        $firstAvailableFound = false;
+        $formattedBatches = $batches->values()->map(function ($b) use ($draftAllocations, &$firstAvailableFound) {
             $gradeCd = strtoupper(trim($b->grade_cd ?: 'A'));
             $lookupKey = trim($b->batch_no) . '_' . $gradeCd;
             $group = $draftAllocations->get($lookupKey);
 
             $sisaFisik = (float) $b->sisa_qty;
-            $draftQty = $group ? (float) $group->sum('qty_keluar') : 0.0;
-            $draftDocNos = $group ? $group->pluck('header.pakai_no')->unique()->filter()->values()->toArray() : [];
-            $sisaBebas = max(0.0, round($sisaFisik - $draftQty, 4));
+            // Dokumen pemakaian DRAFT kini langsung memotong stok fisik real-time
+            $draftQty = 0.0;
+            $draftDocNos = [];
+            $sisaBebas = $sisaFisik;
+            $isFullyBooked = $sisaBebas <= 0.0001;
+
+            $isFifoTop = false;
+            if (!$isFullyBooked && !$firstAvailableFound) {
+                $isFifoTop = true;
+                $firstAvailableFound = true;
+            }
 
             return [
                 'stok_id'        => $b->stok_id,
@@ -501,11 +558,11 @@ class PemakaianController extends Controller
                 'draft_doc_nos'  => $draftDocNos,
                 'sisa_bebas'     => $sisaBebas,
                 'is_committed'   => $draftQty > 0,
-                'is_fully_booked'=> $sisaBebas <= 0.0001,
+                'is_fully_booked'=> $isFullyBooked,
                 'harga_satuan'   => (float) $b->harga_satuan,
                 'expired_tgl'    => $b->expired_tgl ? \Carbon\Carbon::parse($b->expired_tgl)->format('d/m/Y') : null,
                 'tgl_terima'     => $b->created_at ? $b->created_at->format('d/m/Y') : '-',
-                'is_fifo_top'    => $index === 0,
+                'is_fifo_top'    => $isFifoTop,
             ];
         });
 

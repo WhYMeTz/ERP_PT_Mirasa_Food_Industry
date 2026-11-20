@@ -1,0 +1,455 @@
+/**
+ * QC INBOUND - MOBILE EDIT PLASTIK KEMASAN STYLESHEET
+ * PT Mirasa Food Industry
+ * Tema Visual: Emerald Teal / Navy / Slate (#0f766e, #0d9488, #0f172a, #ccfbf1)
+ * Didesain rapi, ergonomis layar sentuh mobile, bebas AI-slop
+ */
+
+/* Container & Wrapper */
+.plastik-edit-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding-bottom: 6.5rem; /* Ruang aman untuk floating bottom bar */
+}
+
+/* Card Section Berjenjang */
+.plastik-edit-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    margin-bottom: 1.15rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plastik-edit-card:hover {
+    border-color: #cbd5e1;
+}
+
+/* Card Header */
+.plastik-edit-card-header {
+    background: #f8fafc;
+    padding: 0.9rem 1.15rem;
+    border-bottom: 1.5px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.plastik-edit-card-header.theme-teal {
+    background: #f0fdfa;
+    border-bottom-color: #ccfbf1;
+}
+
+.plastik-edit-card-header.theme-green {
+    background: #f0fdf4;
+    border-bottom-color: #dcfce7;
+}
+
+.plastik-edit-card-header.theme-blue {
+    background: #f0f9ff;
+    border-bottom-color: #e0f2fe;
+}
+
+.plastik-edit-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.plastik-step-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 0.85rem;
+    background: #0d9488;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.plastik-step-badge.green {
+    background: #16a34a;
+}
+
+.plastik-step-badge.blue {
+    background: #0284c7;
+}
+
+.plastik-edit-card-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.plastik-edit-card-subtitle {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 1px;
+}
+
+/* Card Body */
+.plastik-edit-card-body {
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+/* 2-Kolom Sejajar Rapi */
+.plastik-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+    .plastik-grid-2col.stack-on-mobile {
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+    }
+}
+
+/* Form Groups & Labels */
+.plastik-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.plastik-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.plastik-field-label {
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.plastik-field-label .required-star {
+    color: #ef4444;
+    font-weight: 900;
+    margin-left: 2px;
+}
+
+/* Custom Segmented Buttons / Pill Toggles */
+.plastik-pill-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    width: 100%;
+}
+
+.plastik-pill-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.825rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.plastik-pill-btn:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.plastik-pill-btn input[type="radio"] {
+    display: none;
+}
+
+/* Active State Green (OK / Normal / Terima) */
+.plastik-pill-btn.is-active-ok {
+    background: #f0fdf4;
+    border-color: #22c55e;
+    color: #15803d;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
+.plastik-pill-btn.is-active-ok .pill-dot {
+    background: #16a34a;
+    box-shadow: 0 0 0 3px #bbf7d0;
+}
+
+/* Active State Red (Tolak / Menyimpang / Danger) */
+.plastik-pill-btn.is-active-danger {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #b91c1c;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.plastik-pill-btn.is-active-danger .pill-dot {
+    background: #dc2626;
+    box-shadow: 0 0 0 3px #fecaca;
+}
+
+/* Active State Teal */
+.plastik-pill-btn.is-active-teal {
+    background: #f0fdfa;
+    border-color: #0d9488;
+    color: #0f766e;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+}
+
+.plastik-pill-btn.is-active-teal .pill-dot {
+    background: #0d9488;
+    box-shadow: 0 0 0 3px #ccfbf1;
+}
+
+.pill-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+/* Subsection Box (Dalam Card) */
+.plastik-subcard-box {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.plastik-subcard-box.theme-teal {
+    background: #f0fdfa;
+    border-color: #ccfbf1;
+}
+
+.plastik-subcard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.15rem;
+}
+
+.plastik-subcard-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.plastik-subcard-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
+}
+
+/* Interactive Check Card (Cacat Kemasan: Kotor, Apek, Basah, Sobek) */
+.plastik-check-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+}
+
+@media (max-width: 480px) {
+    .plastik-check-card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.plastik-check-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 48px;
+    box-sizing: border-box;
+}
+
+.plastik-check-card:hover {
+    border-color: #94a3b8;
+}
+
+.plastik-check-card.is-checked {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.plastik-check-left {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.plastik-check-left input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #dc2626;
+    cursor: pointer;
+}
+
+.plastik-check-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.25;
+}
+
+.plastik-check-card.is-checked .plastik-check-title {
+    color: #991b1b;
+}
+
+.plastik-check-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    color: #475569;
+    flex-shrink: 0;
+}
+
+.plastik-check-card.is-checked .plastik-check-badge {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Quick Chips Selector (Ketebalan & Keutuhan) */
+.plastik-chip-group {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+}
+
+.plastik-chip-btn {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.plastik-chip-btn:hover {
+    background: #f0fdfa;
+    border-color: #0d9488;
+    color: #0f766e;
+}
+
+/* Suffix Wrapper untuk input numerik (% / pcs / lembar / kg) */
+.plastik-suffix-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.plastik-suffix-wrap .form-control {
+    padding-right: 3.25rem !important;
+}
+
+.plastik-suffix-label {
+    position: absolute;
+    right: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #64748b;
+    pointer-events: none;
+}
+
+/* Satuan Toggle Pills */
+.plastik-satuan-toggle {
+    display: inline-flex;
+    background: #e2e8f0;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 3px;
+}
+
+.plastik-satuan-btn {
+    border: none;
+    background: transparent;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 6px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.plastik-satuan-btn.active {
+    background: #ffffff;
+    color: #0f766e;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Floating Bottom Bar */
+.plastik-mobile-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    padding: 0.85rem 1rem;
+    border-top: 1.5px solid #e2e8f0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    z-index: 1000;
+}
+
+@media (min-width: 681px) {
+    .plastik-mobile-bottom-bar {
+        max-width: 680px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 14px 14px 0 0;
+        border-left: 1.5px solid #e2e8f0;
+        border-right: 1.5px solid #e2e8f0;
+    }
+}
+

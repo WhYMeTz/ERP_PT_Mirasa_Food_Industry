@@ -20,13 +20,21 @@ class DatPackagingHdr extends Model
     protected $fillable = [
         'pack_no',
         'pack_tgl',
+        'shift',
+        'operator_nama',
+        'karyawan_id',
+        'jumlah_personil',
+        'jumlah_mesin',
         'gudang_id',
+        'gudang_asal_id',
         'barang_jadi_id',
         'bom_id',
         'produksi_id',
         'pakai_id',
         'target_karton_qty',
         'hasil_karton_qty',
+        'hasil_pack_qty',
+        'satuan_hasil',
         'isi_per_karton_pcs',
         'gramatur_gr',
         'hasil_pcs_qty',
@@ -43,6 +51,10 @@ class DatPackagingHdr extends Model
         'total_biaya_produksi',
         'hpp_per_karton',
         'hpp_per_pcs',
+        'is_hpp_final',
+        'hpp_finalized_at',
+        'hpp_finalized_by',
+        'jurnal_id',
         'catatan_txt',
         'status_cd',
         'created_by',
@@ -72,10 +84,20 @@ class DatPackagingHdr extends Model
         'total_biaya_produksi'     => 'decimal:4',
         'hpp_per_karton'           => 'decimal:4',
         'hpp_per_pcs'              => 'decimal:4',
+        'is_hpp_final'             => 'boolean',
+        'hpp_finalized_at'         => 'datetime',
         'deleted_st'               => 'boolean',
         'active_st'                => 'boolean',
         'version_no'               => 'integer',
     ];
+
+    /**
+     * Relasi ke Jurnal Umum Akuntansi (Saat HPP FG Diterbitkan)
+     */
+    public function jurnal(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Keuangan\DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
+    }
 
     /**
      * Relasi ke Gudang Penyimpanan Barang Jadi (FG)
@@ -86,11 +108,27 @@ class DatPackagingHdr extends Model
     }
 
     /**
+     * Relasi ke Gudang Asal Pengambilan Bahan Kemasan
+     */
+    public function gudangAsal(): BelongsTo
+    {
+        return $this->belongsTo(MstGudang::class, 'gudang_asal_id', 'gudang_id');
+    }
+
+    /**
      * Relasi ke Master Barang Jadi (FG)
      */
     public function barangJadi(): BelongsTo
     {
         return $this->belongsTo(MstBarang::class, 'barang_jadi_id', 'barang_id');
+    }
+
+    /**
+     * Relasi ke Master Karyawan (Operator / Leader Kemas)
+     */
+    public function karyawan(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\MstKaryawan::class, 'karyawan_id', 'karyawan_id');
     }
 
     /**
@@ -118,6 +156,14 @@ class DatPackagingHdr extends Model
     }
 
     /**
+     * Relasi ke Laporan Kemas Operator (jika ditarik dari lapangan)
+     */
+    public function laporanKemasOperator(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DatLaporanKemasOperator::class, 'pack_id', 'pack_id');
+    }
+
+    /**
      * Relasi ke Rincian Bahan yang Dikonsumsi
      */
     public function details(): HasMany
@@ -134,10 +180,90 @@ class DatPackagingHdr extends Model
     }
 
     /**
+     * Dapatkan riwayat penyesuaian HPP yang boleh dilihat oleh pengguna login berdasarkan role-nya.
+     * Super Administrator & Direksi dapat melihat seluruh riwayat berita acara.
+     * Role lain hanya dapat melihat berita acara yang diterbitkan oleh role yang bersangkutan.
+     */
+    public function visibleAdjustmentLogs(?\App\Models\User $user = null)
+    {
+        $user = $user ?? auth()->user();
+        $logs = $this->adjustmentLogs;
+
+        if (!$user || $user->isSuperAdmin() || in_array(strtoupper((string) $user->role_cd), ['SUPERADMIN', 'DIREKSI'])) {
+            return $logs;
+        }
+
+        $roleCd = strtoupper((string) $user->role_cd);
+
+        return $logs->filter(function ($log) use ($user, $roleCd) {
+            if (!empty($log->role_cd)) {
+                return strtoupper($log->role_cd) === $roleCd;
+            }
+            if (!empty($log->user_id) && $log->user_id == $user->id) {
+                return true;
+            }
+            $cb = strtoupper((string) $log->created_by);
+            return str_contains($cb, $roleCd) || str_contains($cb, strtoupper((string) $user->name));
+        });
+    }
+
+    /**
+     * Total kuantitas bahan curah (WIP) terpakai (dalam Kg)
+     */
+    public function getTotalWipKgAttribute(): float
+    {
+        if ($this->relationLoaded('details')) {
+            return (float) $this->details
+                ->filter(fn($d) => strtoupper($d->kategori_bahan ?? '') === 'WIP')
+                ->sum('qty_aktual');
+        }
+
+        return (float) $this->details()
+            ->where('kategori_bahan', 'WIP')
+            ->sum('qty_aktual');
+    }
+
+    /**
      * Scope data aktif (belum dihapus secara soft-delete)
      */
     public function scopeActive($query)
     {
         return $query->where('deleted_st', false);
+    }
+
+    /**
+     * Mengecek apakah dokumen HPP pengemasan ini sudah difinalisasi oleh Keuangan
+     */
+    public function isHppFinal(): bool
+    {
+        return (bool) ($this->is_hpp_final ?? false);
+    }
+
+    /**
+     * Mengecek apakah HPP pengemasan ini sudah siap dihitung (memerlukan HPP produksi asal sudah final)
+     */
+    public function canCalculateHpp(): bool
+    {
+        if (!$this->produksi_id) {
+            return true;
+        }
+        $prod = $this->produksi;
+        return $prod && (float) ($prod->hpp_per_kg ?? 0) > 0;
+    }
+
+    /**
+     * Dapatkan status kesiapan HPP: 'FINAL', 'READY', 'WAITING_PROD_HPP'
+     */
+    public function getHppStatusAttribute(): string
+    {
+        if ($this->isHppFinal()) {
+            return 'FINAL';
+        }
+
+        if ($this->produksi_id && !$this->canCalculateHpp()) {
+            return 'WAITING_PROD_HPP';
+        }
+
+        return 'READY';
     }
 }

@@ -27,6 +27,47 @@ class CodeGeneratorController extends Controller
             case 'customer':
                 $code = $this->codeGeneratorService->generateCustomerCode($name);
                 break;
+            case 'po':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludePoId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generatePoNo($date, $excludePoId ? (int) $excludePoId : null);
+                break;
+            case 'terima':
+            case 'grn':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludeTerimaId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generateTerimaNo($date, $excludeTerimaId ? (int) $excludeTerimaId : null);
+                break;
+            case 'pemakaian':
+            case 'bppb':
+            case 'pakai':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludePakaiId = $request->query('exclude_id');
+                $pabrik = $request->query('pabrik');
+                $code = $this->codeGeneratorService->generatePakaiNo($date, $excludePakaiId ? (int) $excludePakaiId : null, $pabrik);
+                break;
+            case 'produksi':
+            case 'prd':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludeProduksiId = $request->query('exclude_id');
+                $lokasiPabrik = $request->query('pabrik', 'BARAT');
+                $code = $this->codeGeneratorService->generateProduksiNo(
+                    $date,
+                    $excludeProduksiId ? (int) $excludeProduksiId : null,
+                    $lokasiPabrik
+                );
+                break;
+            case 'qc':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludeQcId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generateQcNo($date, $excludeQcId ? (int) $excludeQcId : null);
+                break;
+            case 'packaging':
+            case 'pck':
+                $date = $request->query('date', date('Y-m-d'));
+                $excludePackId = $request->query('exclude_id');
+                $code = $this->codeGeneratorService->generatePackagingNo($date, $excludePackId ? (int) $excludePackId : null);
+                break;
             case 'so':
                 $date = $request->query('date', date('Y-m-d'));
                 $code = $this->codeGeneratorService->generateSoNo($date);

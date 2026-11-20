@@ -199,8 +199,16 @@ function togglePoIndexDropdown(event, dropdownId) {
 
 
 // =========================================================================
-// FITUR MODAL POPUP DETAIL DOKUMEN PURCHASE ORDER (QUICK VIEW)
+// FITUR MODAL POPUP DETAIL DOKUMEN PURCHASE ORDER (macOS QUICK VIEW)
 // =========================================================================
+function togglePoDetailMaximize() {
+    const dialog = document.querySelector('#modalDetailPo .mac-po-dialog');
+    if (dialog) {
+        dialog.classList.toggle('is-maximized');
+    }
+}
+window.togglePoDetailMaximize = togglePoDetailMaximize;
+
 function openPoDetailModal(poId) {
     const modal = document.getElementById('modalDetailPo');
     const spinner = document.getElementById('poDetailLoadingSpinner');
@@ -252,6 +260,8 @@ function closePoDetailModal() {
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = '';
+        const dialog = modal.querySelector('.mac-po-dialog');
+        if (dialog) dialog.classList.remove('is-maximized');
     }
 }
 window.closePoDetailModal = closePoDetailModal;
@@ -263,7 +273,16 @@ function renderPoDetail(po) {
     if (spinner) spinner.style.display = 'none';
     if (content) content.style.display = 'block';
 
-    // Set Header
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const formatRp = (num) => 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID');
+
+    // Set Header Nomor PO
     document.getElementById('poDetailNo').textContent = po.po_no || '-';
 
     // Status Badge
@@ -272,7 +291,15 @@ function renderPoDetail(po) {
     let badgeBg = '#f1f5f9';
     let badgeClr = '#475569';
 
-    if (po.status_cd === 'COMPLETED') {
+    if (po.status_cd === 'PENDING_APPROVAL') {
+        badgeText = 'Menunggu Approval';
+        badgeBg = '#fef3c7';
+        badgeClr = '#b45309';
+    } else if (po.status_cd === 'REJECTED') {
+        badgeText = 'Ditolak Atasan';
+        badgeBg = '#fee2e2';
+        badgeClr = '#b91c1c';
+    } else if (po.status_cd === 'COMPLETED') {
         badgeText = 'Selesai (100%)';
         badgeBg = '#dcfce7';
         badgeClr = '#15803d';
@@ -301,50 +328,84 @@ function renderPoDetail(po) {
     badge.style.background = badgeBg;
     badge.style.color = badgeClr;
 
-    // Parameter Dokumen
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
+    // Badge QC Inbound di Header Modal
+    const qcBadge = document.getElementById('poDetailQcBadge');
+    const qcInfo = po.qc_status_info || null;
+    if (qcBadge && qcInfo) {
+        qcBadge.style.display = 'inline-flex';
+        qcBadge.innerHTML = `${qcInfo.icon} ${qcInfo.label} ${qcInfo.tested ? `(${qcInfo.count})` : ''}`;
+        qcBadge.style.background = qcInfo.bg;
+        qcBadge.style.color = qcInfo.color;
+        qcBadge.style.borderColor = qcInfo.border;
+    } else if (qcBadge) {
+        qcBadge.style.display = 'none';
+    }
 
+    // Banner Penolakan / Permintaan Revisi Atasan
+    const rejectBanner = document.getElementById('poDetailRejectBanner');
+    if (rejectBanner) {
+        if (po.rejected_by || po.reject_reason) {
+            rejectBanner.style.display = 'block';
+            const rDate = document.getElementById('poDetailRejectDate');
+            const rAuthor = document.getElementById('poDetailRejectAuthor');
+            const rReason = document.getElementById('poDetailRejectReason');
+            if (rDate) rDate.textContent = po.rejected_at ? formatDate(po.rejected_at) : '';
+            if (rAuthor) rAuthor.textContent = po.rejected_by || 'Direksi / Reviewer';
+            if (rReason) rReason.textContent = po.reject_reason || 'Memerlukan peninjauan ulang.';
+        } else {
+            rejectBanner.style.display = 'none';
+        }
+    }
+
+    // Parameter Dokumen & Box Metadata
     document.getElementById('poDetailTgl').textContent = formatDate(po.po_tgl);
     document.getElementById('poDetailEta').textContent = formatDate(po.tgl_estimasi_datang);
-    document.getElementById('poDetailCreatedBy').textContent = po.created_by || 'SYSTEM';
+    const creatorDisplay = po.creator_name || (po.created_by == 1 ? 'Super Administrator' : po.created_by) || 'SYSTEM';
+    document.getElementById('poDetailCreatedBy').textContent = creatorDisplay;
+    const topText = po.term_of_payment || 'Standar Supplier';
+    const elTopHeader = document.getElementById('poDetailTopHeader');
+    if (elTopHeader) elTopHeader.textContent = topText;
+
+    // Riwayat Edit / Revisi di Modal Preview
+    const revRow = document.getElementById('poDetailRevisiRow');
+    const revText = document.getElementById('poDetailRevisiText');
+    if (revRow && revText) {
+        if (po.is_ada_revisi || (po.total_revisi_count && po.total_revisi_count > 0)) {
+            revRow.style.display = 'flex';
+            revText.textContent = `Diedit ${po.total_revisi_count}x (${po.terakhir_direvisi_by || 'Operator'})`;
+        } else {
+            revRow.style.display = 'none';
+        }
+    }
 
     // Supplier
     const sup = po.supplier || {};
     document.getElementById('poDetailSupplierNm').textContent = sup.supplier_nm || '-';
     document.getElementById('poDetailSupplierCd').textContent = sup.supplier_cd ? `Kode: ${sup.supplier_cd}` : '';
-    document.getElementById('poDetailSupplierAlamat').textContent = [sup.telepon ? `📞 ${sup.telepon}` : '', sup.alamat || ''].filter(Boolean).join(' • ') || '-';
+    const supContact = [sup.telepon ? `📞 ${sup.telepon}` : (sup.kontak_no ? `📞 ${sup.kontak_no}` : ''), sup.alamat_txt || sup.alamat || ''].filter(Boolean).join(' • ');
+    document.getElementById('poDetailSupplierAlamat').textContent = supContact || '-';
 
     // Gudang
     const gdg = po.gudang || {};
     document.getElementById('poDetailGudangNm').textContent = gdg.gudang_nm || '-';
     document.getElementById('poDetailGudangCd').textContent = gdg.gudang_cd ? `Kode: ${gdg.gudang_cd}` : '';
-    document.getElementById('poDetailGudangAlamat').textContent = gdg.alamat || '-';
+    document.getElementById('poDetailGudangAlamat').textContent = gdg.alamat_txt || gdg.alamat || '-';
 
-    // Progress
+    // Approval
+    const approverNm = po.approver ? po.approver.name : (po.approved_by || 'Menunggu Persetujuan');
+    const elApprover = document.getElementById('poDetailApproverNm');
+    if (elApprover) elApprover.textContent = approverNm;
+    const elApprovedAt = document.getElementById('poDetailApprovedAt');
+    if (elApprovedAt) elApprovedAt.textContent = po.approved_at ? formatDate(po.approved_at) : (po.status_cd === 'REJECTED' ? 'Ditolak' : 'Belum');
+
+    // Rincian Item Komoditas & Skema Pajak / Diskon
     const details = po.details || [];
     let totPesan = 0;
     let totTerima = 0;
     let totSisa = 0;
+    const allTaxes = new Set();
+    let maxTaxRate = 0;
 
-    details.forEach(d => {
-        totPesan += parseFloat(d.pesan_qty) || 0;
-        totTerima += parseFloat(d.terima_qty) || 0;
-        totSisa += parseFloat(d.sisa_qty) || 0;
-    });
-
-    const pct = totPesan > 0 ? Math.min(100, Math.round((totTerima / totPesan) * 100)) : 0;
-    document.getElementById('poDetailPctText').textContent = `${pct}% Terpenuhi`;
-    document.getElementById('poDetailProgressBar').style.width = `${pct}%`;
-    document.getElementById('poDetailQtyPesan').textContent = totPesan.toLocaleString('id-ID');
-    document.getElementById('poDetailQtyTerima').textContent = totTerima.toLocaleString('id-ID');
-    document.getElementById('poDetailQtySisa').textContent = totSisa.toLocaleString('id-ID');
-
-    // Rincian Item Barang
     const tbody = document.getElementById('poDetailItemsTbody');
     tbody.innerHTML = '';
 
@@ -353,43 +414,244 @@ function renderPoDetail(po) {
         const satuan = brg.satuan_dasar ? (brg.satuan_dasar.satuan_nm || brg.satuan_dasar.satuan_cd) : '-';
         const pQty = parseFloat(d.pesan_qty) || 0;
         const tQty = parseFloat(d.terima_qty) || 0;
-        const sQty = parseFloat(d.sisa_qty) || 0;
-        const harga = parseFloat(d.harga_nominal) || 0;
-        const subtotal = (parseFloat(d.subtotal_tagihan) || (pQty * harga)) || 0;
+        const sQty = (typeof d.sisa_qty !== 'undefined' && d.sisa_qty !== null) ? parseFloat(d.sisa_qty) : Math.max(0, pQty - tQty);
+        
+        totPesan += pQty;
+        totTerima += tQty;
+        totSisa += sQty;
+
+        const hargaBruto = parseFloat(d.harga_nominal) || 0;
+        const diskonPersen = parseFloat(d.diskon_persen) || 0;
+        const diskonNominal = parseFloat(d.diskon_nominal) || 0;
+        const potonganNominal = parseFloat(d.potongan_nominal) || 0;
+        const hargaNetto = (parseFloat(d.harga_netto) || (hargaBruto - diskonNominal)) || 0;
+        const subtotalFinal = (parseFloat(d.subtotal_tagihan) || parseFloat(d.subtotal_nominal) || (pQty * hargaNetto)) || 0;
+
+        // Diskon & Potongan Label (Ringkas & Rapi)
+        let diskonPotonganHtml = '';
+        if (diskonPersen > 0 || diskonNominal > 0 || potonganNominal > 0) {
+            const parts = [];
+            if (diskonPersen > 0) {
+                parts.push(`<span class="mac-badge-pill" style="background:#fef2f2; color:#dc2626; border-color:#fecaca; font-weight:800; font-size:0.675rem;">-${diskonPersen}%</span>`);
+            }
+            if (diskonNominal > 0) {
+                parts.push(`<div style="color: #dc2626; font-size: 0.675rem; white-space: nowrap;">Disc: Rp ${diskonNominal.toLocaleString('id-ID')}</div>`);
+            }
+            if (potonganNominal > 0) {
+                parts.push(`<div style="color: #b91c1c; font-size: 0.675rem; font-weight:700; white-space: nowrap;">Pot: -Rp ${potonganNominal.toLocaleString('id-ID')}</div>`);
+            }
+            diskonPotonganHtml = parts.join('');
+        } else {
+            diskonPotonganHtml = '<span style="color:#94a3b8; font-size:0.75rem;">-</span>';
+        }
+
+        // Pajak / PPN Item: Hanya Tampilkan KODE & Persentase Ringkas
+        const pjk = d.pajak || {};
+        const taxRate = parseFloat(d.ppn_persen) || parseFloat(pjk.tarif_persen) || 0;
+        if (taxRate > maxTaxRate) maxTaxRate = taxRate;
+        const isPotongItem = (pjk.sifat_pajak === 'POTONG');
+        
+        let taxCode = pjk.pajak_cd || d.ppn_tipe || (taxRate > 0 ? `PPN ${taxRate}%` : 'NON');
+        // Singkatkan jika berupa kode komoditas panjang
+        if (taxCode === 'PPH-22-KOMODITAS') taxCode = 'PPh 22';
+        else if (taxCode.length > 12) taxCode = taxCode.substring(0, 12);
+        allTaxes.add(taxCode);
+
+        const isInclude = (typeof d.is_harga_termasuk_pajak !== 'undefined' && d.is_harga_termasuk_pajak !== null) 
+            ? Boolean(d.is_harga_termasuk_pajak) 
+            : Boolean(po.is_harga_termasuk_pajak);
+        const taxNominal = parseFloat(d.ppn_nominal) || 0;
+
+        let taxCellHtml = '';
+        if (taxRate > 0 || taxNominal > 0) {
+            taxCellHtml = `
+                <span class="mac-badge-pill" style="background: ${isPotongItem ? '#fef2f2' : '#eff6ff'}; color: ${isPotongItem ? '#dc2626' : '#0284c7'}; border-color: ${isPotongItem ? '#fecaca' : '#bfdbfe'}; font-weight: 800; font-family: monospace; font-size: 0.675rem;">
+                    ${taxCode}
+                </span>
+                <div style="font-size: 0.675rem; color: ${isPotongItem ? '#dc2626' : (isInclude ? '#1e40af' : '#15803d')}; font-weight: 600; margin-top: 1px; white-space: nowrap;">
+                    ${isPotongItem ? `-${taxRate}% (Potong)` : `${taxRate}% (${isInclude ? 'Inc' : 'Exc'})`}
+                </div>
+                ${taxNominal > 0 ? `<div style="font-size: 0.675rem; color: ${isPotongItem ? '#dc2626' : '#64748b'}; font-family: monospace; white-space: nowrap;">${isPotongItem ? '- ' : ''}Rp ${taxNominal.toLocaleString('id-ID')}</div>` : ''}
+            `;
+        } else {
+            taxCellHtml = '<span class="mac-badge-pill" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0; font-size: 0.675rem;">Bebas (0%)</span>';
+        }
+
+        const sisaCellHtml = (po.closed_at && sQty > 0)
+            ? `<span style="color: #dc2626; font-weight: 700;">${sQty.toLocaleString('id-ID')}</span><span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; display:block; margin-top:2px;">Batal Sisa</span>`
+            : `<span style="color: ${sQty > 0 ? '#ea580c' : '#64748b'}; font-weight: 600;">${sQty.toLocaleString('id-ID')}</span>`;
 
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #f1f5f9';
         tr.innerHTML = `
-            <td style="padding: 0.55rem 0.75rem; text-align: center; color: #64748b;">${idx + 1}</td>
-            <td style="padding: 0.55rem 0.75rem;">
-                <strong style="color: #0f172a; display: block;">${brg.barang_nm || '-'}</strong>
-                <span style="font-family: monospace; font-size: 0.75rem; color: #64748b;">${brg.barang_cd || ''}</span>
+            <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+            <td>
+                <strong style="color: #0f172a; display: block; font-size: 0.8rem; line-height: 1.2;">${brg.barang_nm || '-'}</strong>
+                <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">${brg.barang_cd || ''}</span>
             </td>
-            <td style="padding: 0.55rem 0.75rem; text-align: center; color: #475569;">${satuan}</td>
-            <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 600; color: #0f172a;">${pQty.toLocaleString('id-ID')}</td>
-            <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 600; color: #16a34a;">${tQty.toLocaleString('id-ID')}</td>
-            <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 600; color: ${sQty > 0 ? '#ea580c' : '#64748b'};">${sQty.toLocaleString('id-ID')}</td>
-            <td style="padding: 0.55rem 0.75rem; text-align: right; color: #475569;">Rp ${harga.toLocaleString('id-ID')}</td>
-            <td style="padding: 0.55rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">Rp ${subtotal.toLocaleString('id-ID')}</td>
+            <td style="text-align: center; color: #475569; font-weight: 600;">${satuan}</td>
+            <td style="text-align: right; font-weight: 700; color: #0f172a; white-space: nowrap;">${pQty.toLocaleString('id-ID')}</td>
+            <td style="text-align: right; font-size: 0.75rem; white-space: nowrap;">
+                <span style="color: #16a34a; font-weight: 700;">${tQty.toLocaleString('id-ID')}</span> <span style="color:#cbd5e1;">/</span> ${sisaCellHtml}
+            </td>
+            <td style="text-align: right; color: #475569; white-space: nowrap;">Rp ${hargaBruto.toLocaleString('id-ID')}</td>
+            <td style="text-align: right;">${diskonPotonganHtml}</td>
+            <td style="text-align: right; font-weight: 600; color: #0f172a; white-space: nowrap;">Rp ${hargaNetto.toLocaleString('id-ID')}</td>
+            <td style="text-align: right;">${taxCellHtml}</td>
+            <td style="text-align: right; font-weight: 800; color: #0f172a; font-family: monospace; font-size: 0.825rem; white-space: nowrap;">Rp ${subtotalFinal.toLocaleString('id-ID')}</td>
         `;
         tbody.appendChild(tr);
     });
 
     if (details.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 1.5rem; color: #94a3b8;">Tidak ada rincian bahan dalam PO ini.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #94a3b8;">Tidak ada rincian bahan dalam PO ini.</td></tr>';
     }
 
-    // Rekap Finansial
-    const formatRp = (num) => 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID');
+    // Progress Realisasi
+    const pct = totPesan > 0 ? Math.min(100, Math.round((totTerima / totPesan) * 100)) : 0;
+    document.getElementById('poDetailPctText').textContent = `${pct}% Terpenuhi`;
+    document.getElementById('poDetailProgressBar').style.width = `${pct}%`;
+    document.getElementById('poDetailQtyPesan').textContent = totPesan.toLocaleString('id-ID');
+    document.getElementById('poDetailQtyTerima').textContent = totTerima.toLocaleString('id-ID');
+    document.getElementById('poDetailQtySisa').textContent = totSisa.toLocaleString('id-ID');
+
+    // Badges & Counters
+    const badgeTable = document.getElementById('poDetailTableBadgeCount');
+    if (badgeTable) badgeTable.textContent = `${details.length} Item Terdaftar`;
+    const countInfo = document.getElementById('poDetailItemCountInfo');
+    if (countInfo) countInfo.textContent = `Menampilkan ${details.length} komoditas pesanan`;
+
+    // Rekap Finansial & Kalkulasi Pajak
     document.getElementById('poDetailSubtotalBruto').textContent = formatRp(po.subtotal_bruto);
-    document.getElementById('poDetailDiskon').textContent = formatRp(parseFloat(po.diskon_total || 0) + parseFloat(po.potongan_nominal || 0));
+    
+    const diskonTotal = parseFloat(po.diskon_total) || 0;
+    const potonganTotal = parseFloat(po.potongan_nominal) || 0;
+    document.getElementById('poDetailDiskon').textContent = diskonTotal > 0 ? `- ${formatRp(diskonTotal)}` : 'Rp 0';
+    document.getElementById('poDetailPotongan').textContent = potonganTotal > 0 ? `- ${formatRp(potonganTotal)}` : 'Rp 0';
+    
+    const elDiskonNote = document.getElementById('poDetailDiskonPercentNote');
+    if (elDiskonNote) {
+        if (parseFloat(po.subtotal_bruto) > 0 && diskonTotal > 0) {
+            const avgPct = Math.round((diskonTotal / parseFloat(po.subtotal_bruto)) * 100);
+            elDiskonNote.textContent = `(Akumulasi diskon item ~${avgPct}%)`;
+        } else {
+            elDiskonNote.textContent = '';
+        }
+    }
+
     document.getElementById('poDetailDpp').textContent = formatRp(po.dpp_nominal);
-    const ppnLabel = formatRp(po.ppn_nominal) + (po.is_harga_termasuk_pajak ? ' (Termasuk)' : '');
-    document.getElementById('poDetailPpn').textContent = ppnLabel;
+
+    // Pajak Details
+    const taxNominal = parseFloat(po.ppn_nominal) || 0;
+    const hasPotongTax = (po.details || []).some(d => d.pajak && d.pajak.sifat_pajak === 'POTONG');
+    const elPpn = document.getElementById('poDetailPpn');
+    if (elPpn) {
+        if (taxNominal > 0 && hasPotongTax) {
+            elPpn.innerHTML = `<span style="color: #dc2626; font-family: monospace;">- ${formatRp(taxNominal)}</span>`;
+        } else {
+            elPpn.innerHTML = `<span style="color: #0f172a; font-family: monospace;">${taxNominal > 0 ? '+ ' : ''}${formatRp(taxNominal)}</span>`;
+        }
+    }
+    
+    const taxTreatmentText = hasPotongTax
+        ? 'Pemotongan Pajak PPh (Withholding Tax)'
+        : (po.is_harga_termasuk_pajak 
+            ? 'Harga Termasuk Pajak (Inclusive)' 
+            : 'Harga Belum Termasuk Pajak (Exclusive / Plus Pajak)');
+    const taxNameCombined = allTaxes.size > 0 ? Array.from(allTaxes).join(', ') : 'PPN Standar';
+    
+    const elTaxTreatment = document.getElementById('poDetailTaxTreatment');
+    if (elTaxTreatment) elTaxTreatment.textContent = taxTreatmentText;
+    const elTaxName = document.getElementById('poDetailTaxName');
+    if (elTaxName) elTaxName.textContent = taxNameCombined;
+    const elTaxRate = document.getElementById('poDetailTaxRate');
+    if (elTaxRate) elTaxRate.textContent = maxTaxRate > 0 ? (hasPotongTax ? `-${maxTaxRate}% (Potong)` : `${maxTaxRate}%`) : (taxNominal > 0 ? 'Dikenakan Pajak' : '0% (Non-PPN)');
+    const elTaxSubNote = document.getElementById('poDetailTaxSubNote');
+    if (elTaxSubNote) elTaxSubNote.textContent = `${taxNameCombined} • ${taxTreatmentText}`;
+
+    const elTaxSchemeHeader = document.getElementById('poDetailTaxSchemeHeader');
+    if (elTaxSchemeHeader) {
+        if (hasPotongTax) {
+            elTaxSchemeHeader.textContent = 'Potongan PPh 22';
+            elTaxSchemeHeader.style.color = '#dc2626';
+        } else {
+            elTaxSchemeHeader.textContent = po.is_harga_termasuk_pajak ? 'Include PPN (Harga Termasuk)' : 'Exclude PPN (Plus Pajak)';
+            elTaxSchemeHeader.style.color = '#0284c7';
+        }
+    }
+
+    const elTopVal = document.getElementById('poDetailTopVal');
+    if (elTopVal) elTopVal.textContent = topText;
+
     document.getElementById('poDetailTotalTagihan').textContent = formatRp(po.total_tagihan || po.total_nominal);
 
     // Catatan
-    document.getElementById('poDetailCatatan').textContent = po.catatan_txt || 'Tidak ada catatan tambahan untuk dokumen PO ini.';
+    const notesArr = [];
+    if (po.catatan_txt) notesArr.push(`Catatan Purchasing: ${po.catatan_txt}`);
+    if (po.remark_txt) notesArr.push(`Keterangan Tambahan: ${po.remark_txt}`);
+    document.getElementById('poDetailCatatan').textContent = notesArr.length > 0 ? notesArr.join('\n') : 'Tidak ada catatan tambahan untuk dokumen PO ini.';
+
+    // Riwayat Hasil Uji Mutu QC Inbound
+    const qcList = po.qc_inbound || [];
+    const qcListEl = document.getElementById('poDetailQcList');
+    const qcSummaryBadge = document.getElementById('poDetailQcSummaryBadge');
+
+    if (qcSummaryBadge && qcInfo) {
+        qcSummaryBadge.textContent = qcInfo.label;
+        qcSummaryBadge.style.background = qcInfo.bg;
+        qcSummaryBadge.style.color = qcInfo.color;
+        qcSummaryBadge.style.borderColor = qcInfo.border;
+    }
+
+    if (qcListEl) {
+        qcListEl.innerHTML = '';
+        if (qcList.length > 0) {
+            qcList.forEach(qc => {
+                const dtl = (qc.details && qc.details.length > 0) ? qc.details[0] : {};
+                const gross = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_timbang_gross) || 0), 0);
+                const netto = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_netto_lolos) || 0), 0);
+                const ref = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_refraksi) || 0), 0);
+                const rej = (qc.details || []).reduce((acc, d) => acc + (parseFloat(d.qty_reject) || 0), 0);
+                const grade = dtl.grade_cd || 'A';
+                
+                let qcBadgeHtml = '';
+                if (qc.status_qc === 'DITOLAK_TOTAL' || qc.status_qc === 'DITOLAK') {
+                    qcBadgeHtml = '<span class="badge" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; font-weight:800; font-size:0.7rem;">🔴 Ditolak QC</span>';
+                } else if (qc.status_qc === 'DITERIMA_PARSIAL' || ref > 0 || rej > 0) {
+                    qcBadgeHtml = `<span class="badge" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-weight:800; font-size:0.7rem;">🟡 Lolos Bersyarat (Gr. ${grade})</span>`;
+                } else if (qc.status_qc === 'DRAFT') {
+                    qcBadgeHtml = '<span class="badge" style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; font-weight:700; font-size:0.7rem;">⏳ Sedang Diuji</span>';
+                } else {
+                    qcBadgeHtml = `<span class="badge" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:800; font-size:0.7rem;">🟢 Lolos Mutu (Gr. ${grade})</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;';
+                card.innerHTML = `
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <strong style="color: #0284c7; font-family: monospace;">${qc.qc_no || '-'}</strong>
+                            <span style="color: #64748b; font-size: 0.75rem;">• Tgl: ${formatDate(qc.tgl_periksa)}</span>
+                        </div>
+                        <div style="color: #475569; font-size: 0.75rem; margin-top: 0.2rem;">
+                            🚛 Truk: <strong>${qc.plat_nomor_truk || '-'}</strong> ${qc.sopir_nama ? `(Sopir: ${qc.sopir_nama})` : ''} ${qc.surat_jalan_supplier ? `• SJ: ${qc.surat_jalan_supplier}` : ''}
+                        </div>
+                        <div style="color: #64748b; font-size: 0.725rem; margin-top: 0.15rem;">
+                            Netto: <strong style="color: #047857;">${netto.toLocaleString('id-ID')}</strong> (Gross: ${gross.toLocaleString('id-ID')} ${ref > 0 ? `| Ref: -${ref.toLocaleString('id-ID')}` : ''} ${rej > 0 ? `| Rej: -${rej.toLocaleString('id-ID')}` : ''})
+                        </div>
+                    </div>
+                    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                        ${qcBadgeHtml}
+                        <div style="font-size: 0.7rem; color: #64748b;">
+                            QC: <strong>${qc.petugas_qc_nama || '-'}</strong>
+                        </div>
+                    </div>
+                `;
+                qcListEl.appendChild(card);
+            });
+        } else {
+            qcListEl.innerHTML = '<div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.85rem; text-align: center; color: #94a3b8; font-size: 0.8rem;">Belum ada riwayat sampling uji mutu (QC Inbound) untuk PO ini.</div>';
+        }
+    }
 
     // Riwayat Penerimaan GRN
     const penerimaan = po.penerimaan || [];
@@ -399,7 +661,7 @@ function renderPoDetail(po) {
     if (penerimaan.length > 0) {
         penerimaan.forEach(grn => {
             const card = document.createElement('div');
-            card.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;';
+            card.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;';
             card.innerHTML = `
                 <div>
                     <strong style="color: #0284c7; font-family: monospace;">${grn.terima_no || '-'}</strong>
@@ -417,15 +679,17 @@ function renderPoDetail(po) {
             grnList.appendChild(card);
         });
     } else {
-        grnList.innerHTML = '<div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 0.75rem; text-align: center; color: #94a3b8; font-size: 0.8rem;">Belum ada riwayat penerimaan barang fisik (GRN) untuk Purchase Order ini.</div>';
+        grnList.innerHTML = '<div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.85rem; text-align: center; color: #94a3b8; font-size: 0.8rem;">Belum ada riwayat penerimaan barang fisik (GRN) untuk Purchase Order ini.</div>';
     }
 
-    // Link Tombol Footer
+    // Link Tombol Footer & Header
     const baseUrl = (window.poConfig && window.poConfig.baseUrl) ? window.poConfig.baseUrl : '/gudang/po';
     window.currentActivePoId = po.po_id;
     const btnFull = document.getElementById('btnPoDetailFullView');
+    const btnFullHeader = document.getElementById('btnPoDetailFullHeader');
     const btnPdf = document.getElementById('btnPoDetailPdf');
     if (btnFull) btnFull.href = `${baseUrl}/${po.po_id}`;
+    if (btnFullHeader) btnFullHeader.href = `${baseUrl}/${po.po_id}`;
     if (btnPdf) btnPdf.href = `${baseUrl}/${po.po_id}/export-pdf`;
 }
 
@@ -511,33 +775,27 @@ function renderPoHaccpSheet(po) {
     if (elModalNo) elModalNo.textContent = po.po_no || '-';
     if (elSheetNo) elSheetNo.textContent = po.po_no || '-';
 
+    const formatDateIndo = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const elTgl = document.getElementById('haccpSheetTgl');
+    if (elTgl) elTgl.textContent = formatDateIndo(po.po_tgl);
+
+    // Supplier Box
     const sup = po.supplier || {};
     const elSupNm = document.getElementById('haccpSheetSupplierNm');
     const elSupAlamat = document.getElementById('haccpSheetSupplierAlamat');
+    const elSupUp = document.getElementById('haccpSheetSupplierUp');
+    const elSupTelp = document.getElementById('haccpSheetSupplierTelp');
+
     if (elSupNm) elSupNm.textContent = sup.supplier_nm || '-';
-    if (elSupAlamat) {
-        elSupAlamat.textContent = [
-            sup.alamat || '',
-            sup.telepon ? `Telp: ${sup.telepon}` : ''
-        ].filter(Boolean).join(' • ') || '-';
-    }
-
-    // Gudang & Kota
-    const gdg = po.gudang || {};
-    const elGdgCity = document.getElementById('haccpSheetGudangCity');
-    const elGdgAlamat = document.getElementById('haccpSheetGudangAlamat');
-    if (elGdgCity) elGdgCity.textContent = gdg.gudang_nm ? `${gdg.gudang_nm} - Magelang` : 'Magelang';
-    if (elGdgAlamat) elGdgAlamat.textContent = gdg.alamat || 'Jl. Munggur No. 2 Ambartawang, Kec. Mungkid, Kab. Magelang, Jawa Tengah 56512';
-
-    // Tanggal Tanda Tangan
-    const formatDateIndo = (dateStr) => {
-        if (!dateStr) return new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    };
-    const elTgl = document.getElementById('haccpSheetTgl');
-    if (elTgl) elTgl.textContent = formatDateIndo(po.po_tgl);
+    if (elSupAlamat) elSupAlamat.textContent = sup.alamat || sup.alamat_txt || '-';
+    if (elSupUp) elSupUp.textContent = sup.kontak_person || '-';
+    if (elSupTelp) elSupTelp.textContent = sup.kontak_no || sup.telepon || sup.telepon_no || '-';
 
     // Link Download PDF
     const baseUrl = (window.poConfig && window.poConfig.baseUrl) ? window.poConfig.baseUrl : '/gudang/po';
@@ -550,40 +808,100 @@ function renderPoHaccpSheet(po) {
     tbody.innerHTML = '';
 
     const details = po.details || [];
+    let subtotal = 0;
+
     details.forEach((d, idx) => {
         const brg = d.barang || {};
-        const satuan = brg.satuan_dasar ? (brg.satuan_dasar.satuan_cd || brg.satuan_dasar.satuan_nm) : 'KG';
+        const satuan = brg.satuan_dasar ? (brg.satuan_dasar.satuan_cd || brg.satuan_dasar.satuan_nm) : (d.satuan_nm || 'PCS');
         const qtyPesan = parseFloat(d.pesan_qty) || 0;
+        const harga = parseFloat(d.harga_nominal) || 0;
+        const total = parseFloat(d.subtotal_nominal) || (qtyPesan * harga);
+        subtotal += total;
 
         const tr = document.createElement('tr');
+        tr.style.fontSize = '8.5pt';
         tr.innerHTML = `
-            <td style="border: 1px solid #000000; padding: 8px 6px; text-align: center; font-weight: 700; font-size: 10pt;">${idx + 1}.</td>
-            <td style="border: 1px solid #000000; padding: 8px 12px; font-size: 10pt;">
-                <strong style="color: #000000;">${brg.barang_nm || '-'}</strong>
-                ${brg.barang_cd ? `<div style="font-size: 8pt; color: #475569; font-family: monospace;">Kode: ${brg.barang_cd}</div>` : ''}
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: center; font-weight: 600;">${idx + 1}</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 8px;">
+                <strong style="text-transform: uppercase;">${brg.barang_nm || '-'}</strong>
+                ${brg.barang_cd ? `<span style="font-size: 7.5pt; color: #4b5563;">(${brg.barang_cd})</span>` : ''}
             </td>
-            <td style="border: 1px solid #000000; padding: 8px 10px; text-align: center; font-weight: 800; font-size: 10pt;">
-                ${qtyPesan.toLocaleString('id-ID')} ${satuan}
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: right; font-weight: 700;">
+                ${qtyPesan.toLocaleString('id-ID')}
             </td>
-            <td style="border: 1px solid #000000; padding: 8px 10px; font-size: 9.5pt;">
-                ${d.catatan_txt || '-'}
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: center; text-transform: uppercase;">
+                ${satuan}
+            </td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 6px; text-align: right;">
+                <span style="float: left; font-size: 7.5pt;">Rp</span> ${harga.toLocaleString('id-ID')}
+            </td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: 1px solid #e5e7eb; padding: 4px 8px; text-align: right; font-weight: 700;">
+                <span style="float: left; font-size: 7.5pt;">Rp</span> ${total.toLocaleString('id-ID')}
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Tambahkan 2-3 baris kosong seperti format formulir asli
-    const emptyRows = Math.max(1, 3 - details.length);
+    // Baris kosong
+    const emptyRows = Math.max(0, 6 - details.length);
     for (let i = 0; i < emptyRows; i++) {
         const trEmpty = document.createElement('tr');
+        trEmpty.style.height = '18px';
         trEmpty.innerHTML = `
-            <td style="border: 1px solid #000000; padding: 14px; text-align: center; color: transparent;">&nbsp;</td>
-            <td style="border: 1px solid #000000; padding: 14px;">&nbsp;</td>
-            <td style="border: 1px solid #000000; padding: 14px;">&nbsp;</td>
-            <td style="border: 1px solid #000000; padding: 14px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px; text-align: center; color: #9ca3af; font-size: 7.5pt;">${details.length + i + 1}</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 8px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 6px;">&nbsp;</td>
+            <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; padding: 4px 8px;">&nbsp;</td>
         `;
         tbody.appendChild(trEmpty);
     }
+
+    // Hitung Totals & PPN
+    let ppn = parseFloat(po.ppn_nominal) || 0;
+    if (ppn === 0 && (po.is_harga_termasuk_pajak || (po.catatan_txt && po.catatan_txt.toUpperCase().includes('PPN')))) {
+        ppn = Math.round(subtotal * 0.11);
+    }
+    const grandTotal = parseFloat(po.total_tagihan) || (subtotal + ppn);
+
+    // Update Elements
+    const elSub = document.getElementById('haccpSheetSubtotal');
+    const elPpn = document.getElementById('haccpSheetPpn');
+    const elGrand = document.getElementById('haccpSheetGrandTotal');
+    if (elSub) elSub.textContent = subtotal.toLocaleString('id-ID');
+    if (elPpn) elPpn.textContent = ppn.toLocaleString('id-ID');
+    if (elGrand) elGrand.textContent = grandTotal.toLocaleString('id-ID');
+
+    // Note, TOP & Remark
+    const elNoteEta = document.getElementById('haccpSheetNoteEta');
+    const elCatatan = document.getElementById('haccpSheetCatatan');
+    if (elNoteEta) {
+        if (po.catatan_txt) {
+            elNoteEta.textContent = po.catatan_txt;
+        } else if (po.tgl_estimasi_datang) {
+            elNoteEta.textContent = `*Mohon dikirim tanggal ${formatDateIndo(po.tgl_estimasi_datang)}`;
+        } else {
+            elNoteEta.textContent = '-';
+        }
+    }
+    if (elCatatan) elCatatan.textContent = '';
+
+    const elTop = document.getElementById('haccpSheetTop');
+    if (elTop) {
+        if (po.term_of_payment) {
+            elTop.textContent = po.term_of_payment;
+        } else if (sup.top_hari && sup.top_hari > 0) {
+            elTop.textContent = `Tempo ${sup.top_hari} Hari (Transfer)`;
+        } else {
+            elTop.textContent = 'Transfer';
+        }
+    }
+    const elRemark = document.getElementById('haccpSheetRemark');
+    if (elRemark) elRemark.textContent = po.remark_txt || '-';
+
+    const elApprover = document.getElementById('haccpSheetApprover');
+    if (elApprover) elApprover.textContent = po.approved_by || (po.approver ? po.approver.name : 'Habieb Soleh Yoenanto');
 }
 window.renderPoHaccpSheet = renderPoHaccpSheet;
 
@@ -665,4 +983,109 @@ document.addEventListener('click', function (e) {
         closeAllActionDropdowns();
     }
 });
+
+/**
+ * =========================================================================
+ * MODAL PENGIRIMAN DOKUMEN PO KE SUPPLIER VIA EMAIL
+ * =========================================================================
+ */
+function openKirimSupplierModal(poData) {
+    const modal = document.getElementById('modalKirimSupplier');
+    const form = document.getElementById('formKirimSupplier');
+    const elPoNo = document.getElementById('modalSendPoNo');
+    const elSupplierNm = document.getElementById('modalSendSupplierNm');
+    const elEmail = document.getElementById('modalSendSupplierEmail');
+    const elCc = document.getElementById('modalSendCcEmail');
+    const elNotes = document.getElementById('modalSendCustomNotes');
+    const errBox = document.getElementById('sendSupplierAlertError');
+    const btn = document.getElementById('btnSubmitSendSupplier');
+
+    if (!modal || !form) return;
+
+    if (errBox) {
+        errBox.style.display = 'none';
+        errBox.textContent = '';
+    }
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            <span>Kirim Email Sekarang</span>
+        `;
+    }
+
+    const base = window.poConfig?.baseUrl || '/gudang/po';
+    form.action = base + '/' + poData.po_id + '/send-supplier';
+
+    if (elPoNo) elPoNo.textContent = poData.po_no || '-';
+    if (elSupplierNm) elSupplierNm.textContent = poData.supplier_nm || '-';
+    if (elEmail) elEmail.value = poData.supplier_email || '';
+    if (elCc) elCc.value = poData.default_cc || '';
+    if (elNotes) elNotes.value = poData.default_notes || '';
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeKirimSupplierModal() {
+    const modal = document.getElementById('modalKirimSupplier');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+function submitKirimSupplier(event) {
+    const btn = document.getElementById('btnSubmitSendSupplier');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Sedang Memproses &amp; Mengirim...</span>
+        `;
+    }
+}
+
+/**
+ * Handler Modal Batalkan Sisa Pesanan & Selesaikan PO
+ */
+function openBatalkanSisaModal(poData) {
+    const modal = document.getElementById('modalForceClose');
+    if (!modal) return;
+
+    const form = document.getElementById('formForceClose');
+    const elPoNo = document.getElementById('mfcPoNo');
+    const elSupplier = document.getElementById('mfcSupplier');
+    const elTerima = document.getElementById('mfcTerimaQty');
+    const elSisa = document.getElementById('mfcSisaQty');
+    const textarea = document.getElementById('closed_reason');
+
+    if (textarea) textarea.value = '';
+
+    if (poData) {
+        const base = window.poConfig?.baseUrl || '/gudang/po';
+        if (form) form.action = poData.url || (base + '/' + poData.po_id + '/force-close');
+        if (elPoNo) elPoNo.textContent = poData.po_no || '-';
+        if (elSupplier) elSupplier.textContent = poData.supplier_nm || '-';
+        if (elTerima) elTerima.textContent = Number(poData.total_terima || 0).toLocaleString('id-ID');
+        if (elSisa) elSisa.textContent = Number(poData.total_sisa || 0).toLocaleString('id-ID');
+    }
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+window.openBatalkanSisaModal = openBatalkanSisaModal;
+window.openForceCloseModal = openBatalkanSisaModal;
+
+function closeForceCloseModal() {
+    const modal = document.getElementById('modalForceClose');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+window.closeForceCloseModal = closeForceCloseModal;
+
+
 

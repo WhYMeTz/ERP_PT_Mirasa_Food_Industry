@@ -29,6 +29,8 @@ class DatProduksiHdr extends Model
         'pakai_id',
         'gudang_id',
         'lini_produksi',
+        'lokasi_pabrik',
+        'bf_aktif_count',
         'shift_cd',
         'jam_produksi',
         'varietas_singkong',
@@ -39,22 +41,36 @@ class DatProduksiHdr extends Model
 
         // Biaya Bahan
         'singkong_qty',
+        'kulitan_qty',
+        'kupasan_qty',
+        'sisa_singkong_qty',
+        'reject_singkong_qty',
         'singkong_nilai',
         'minyak_sawit_qty',
         'minyak_kelapa_qty',
         'minyak_nilai',
         'minyak_rasio_persen',
+        'bumbu_qty',
         'bumbu_nilai',
+        'karton_baru_qty',
         'karton_baru_nilai',
+        'karton_bekas_qty',
         'karton_bekas_nilai',
+        'plastik_hd_qty',
         'plastik_hd_nilai',
+        'lakban_besar_qty',
         'lakban_besar_nilai',
+        'lakban_kecil_qty',
         'lakban_kecil_nilai',
+        'tali_rafia_qty',
         'tali_rafia_nilai',
         'total_bahan_nilai',
 
         // Energi & CNG
+        'cng_nm3',
         'cng_mmbtu',
+        'cng_tarif_usd',
+        'cng_kurs_jisdor',
         'cng_tarif',
         'cng_nilai',
 
@@ -68,7 +84,9 @@ class DatProduksiHdr extends Model
 
         // Overhead FOH
         'fotocopy_nilai',
+        'sarung_tangan_plastik_qty',
         'sarung_tangan_plastik_nilai',
+        'sarung_tangan_kain_qty',
         'sarung_tangan_kain_nilai',
         'qc_pengawasan_nilai',
         'listrik_air_telp_nilai',
@@ -111,6 +129,9 @@ class DatProduksiHdr extends Model
         'batch_wip_no',
         'exp_date',
         'catatan_txt',
+        'jurnal_id',
+        'hpp_finalized_at',
+        'hpp_finalized_by',
 
         // Audit Trail
         'created_by',
@@ -126,21 +147,36 @@ class DatProduksiHdr extends Model
         'qty_karton'                  => 'integer',
         'no_karton_awal'              => 'integer',
         'no_karton_akhir'             => 'integer',
+        'bf_aktif_count'              => 'integer',
         'singkong_qty'                => 'decimal:4',
+        'kulitan_qty'                 => 'decimal:4',
+        'kupasan_qty'                 => 'decimal:4',
+        'sisa_singkong_qty'           => 'decimal:4',
+        'reject_singkong_qty'         => 'decimal:4',
         'singkong_nilai'              => 'decimal:2',
         'minyak_sawit_qty'            => 'decimal:4',
         'minyak_kelapa_qty'           => 'decimal:4',
         'minyak_nilai'                => 'decimal:2',
         'minyak_rasio_persen'         => 'decimal:2',
+        'bumbu_qty'                   => 'decimal:4',
         'bumbu_nilai'                 => 'decimal:2',
+        'karton_baru_qty'             => 'decimal:2',
         'karton_baru_nilai'           => 'decimal:2',
+        'karton_bekas_qty'            => 'decimal:2',
         'karton_bekas_nilai'          => 'decimal:2',
+        'plastik_hd_qty'              => 'decimal:2',
         'plastik_hd_nilai'            => 'decimal:2',
+        'lakban_besar_qty'            => 'decimal:2',
         'lakban_besar_nilai'          => 'decimal:2',
+        'lakban_kecil_qty'            => 'decimal:2',
         'lakban_kecil_nilai'          => 'decimal:2',
+        'tali_rafia_qty'              => 'decimal:2',
         'tali_rafia_nilai'            => 'decimal:2',
         'total_bahan_nilai'           => 'decimal:2',
+        'cng_nm3'                     => 'decimal:4',
         'cng_mmbtu'                   => 'decimal:4',
+        'cng_tarif_usd'               => 'decimal:4',
+        'cng_kurs_jisdor'             => 'decimal:2',
         'cng_tarif'                   => 'decimal:2',
         'cng_nilai'                   => 'decimal:2',
         'tk_jumlah_org'               => 'integer',
@@ -150,7 +186,9 @@ class DatProduksiHdr extends Model
         'tk_tarif_per_org'            => 'decimal:2',
         'tk_total_nilai'              => 'decimal:2',
         'fotocopy_nilai'              => 'decimal:2',
+        'sarung_tangan_plastik_qty'   => 'decimal:2',
         'sarung_tangan_plastik_nilai' => 'decimal:2',
+        'sarung_tangan_kain_qty'      => 'decimal:2',
         'sarung_tangan_kain_nilai'    => 'decimal:2',
         'qc_pengawasan_nilai'         => 'decimal:2',
         'listrik_air_telp_nilai'      => 'decimal:2',
@@ -191,6 +229,61 @@ class DatProduksiHdr extends Model
     public function pemakaianBahan(): BelongsTo
     {
         return $this->belongsTo(DatPakaiHdr::class, 'pakai_id', 'pakai_id');
+    }
+
+    /**
+     * Peta Nomor Batch Bahan Baku Masuk dari Dokumen Pemakaian (BPPB)
+     * Mengelompokkan nomor batch per kategori komponen biaya (BBL, Kemasan, dll)
+     */
+    public function getBahanBakuBatchMapAttribute(): array
+    {
+        $map = [];
+        if (!$this->relationLoaded('pemakaianBahan') || !$this->pemakaianBahan) {
+            $this->loadMissing('pemakaianBahan.details.barang');
+        }
+
+        if (!$this->pemakaianBahan || !$this->pemakaianBahan->details) {
+            return $map;
+        }
+
+        foreach ($this->pemakaianBahan->details as $dtl) {
+            $barang = $dtl->barang;
+            if (!$barang) continue;
+
+            $batch = trim($dtl->batch_no ?? '');
+            if (!$batch) continue;
+
+            $nm = strtoupper($barang->barang_nm ?? '');
+            $cd = strtoupper($barang->barang_cd ?? '');
+
+            if (str_contains($nm, 'SINGKONG') || str_contains($cd, 'SNG')) {
+                $map['singkong'][] = $batch;
+            } elseif (str_contains($nm, 'MINYAK') || str_contains($cd, 'MSW') || str_contains($cd, 'MKL')) {
+                $map['minyak'][] = $batch;
+            } elseif (str_contains($nm, 'BUMBU') || str_contains($nm, 'GARAM') || str_contains($nm, 'MSG') || str_contains($cd, 'BMB')) {
+                $map['bumbu'][] = $batch;
+            } elseif (str_contains($nm, 'KARTON') && str_contains($nm, 'BARU')) {
+                $map['karton_baru'][] = $batch;
+            } elseif (str_contains($nm, 'KARTON') && str_contains($nm, 'BEKAS')) {
+                $map['karton_bekas'][] = $batch;
+            } elseif (str_contains($nm, 'PLASTIK') || str_contains($nm, 'HD')) {
+                $map['plastik_hd'][] = $batch;
+            } elseif (str_contains($nm, 'LAKBAN') && str_contains($nm, 'BESAR')) {
+                $map['lakban_besar'][] = $batch;
+            } elseif (str_contains($nm, 'LAKBAN') && str_contains($nm, 'KECIL')) {
+                $map['lakban_kecil'][] = $batch;
+            } elseif (str_contains($nm, 'RAFIA') || str_contains($nm, 'TALI')) {
+                $map['tali_rafia'][] = $batch;
+            } else {
+                $map['lainnya'][] = "{$barang->barang_nm}: {$batch}";
+            }
+        }
+
+        foreach ($map as $key => $batches) {
+            $map[$key] = array_values(array_unique($batches));
+        }
+
+        return $map;
     }
 
     /**
@@ -240,6 +333,34 @@ class DatProduksiHdr extends Model
     }
 
     /**
+     * Dapatkan riwayat penyesuaian HPP yang boleh dilihat oleh pengguna login berdasarkan role-nya.
+     * Super Administrator & Direksi dapat melihat seluruh riwayat berita acara.
+     * Role lain hanya dapat melihat berita acara yang diterbitkan oleh role yang bersangkutan.
+     */
+    public function visibleAdjustmentLogs(?\App\Models\User $user = null)
+    {
+        $user = $user ?? auth()->user();
+        $logs = $this->adjustmentLogs;
+
+        if (!$user || $user->isSuperAdmin() || in_array(strtoupper((string) $user->role_cd), ['SUPERADMIN', 'DIREKSI'])) {
+            return $logs;
+        }
+
+        $roleCd = strtoupper((string) $user->role_cd);
+
+        return $logs->filter(function ($log) use ($user, $roleCd) {
+            if (!empty($log->role_cd)) {
+                return strtoupper($log->role_cd) === $roleCd;
+            }
+            if (!empty($log->user_id) && $log->user_id == $user->id) {
+                return true;
+            }
+            $cb = strtoupper((string) $log->created_by);
+            return str_contains($cb, $roleCd) || str_contains($cb, strtoupper((string) $user->name));
+        });
+    }
+
+    /**
      * Relasi ke Dokumen Pengeluaran Bahan Kemas Gudang yang ditautkan ke produksi ini
      */
     public function pengeluaranKemasan(): HasMany
@@ -255,5 +376,42 @@ class DatProduksiHdr extends Model
     {
         return $this->hasMany(DatPackagingHdr::class, 'produksi_id', 'produksi_id')
             ->where('deleted_st', false);
+    }
+
+    /**
+     * Relasi ke Dokumen Jurnal Umum Otomatis saat HPP WIP difinalisasi
+     */
+    public function jurnal(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Keuangan\DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
+    }
+
+    /**
+     * Scope query berdasarkan lokasi pabrik (BARAT / TIMUR)
+     */
+    public function scopePabrik($query, ?string $lokasi)
+    {
+        if (empty($lokasi)) {
+            return $query;
+        }
+        return $query->where('lokasi_pabrik', strtoupper($lokasi));
+    }
+
+    /**
+     * Scope query khusus Pabrik Barat
+     */
+    public function scopeBarat($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('lokasi_pabrik', 'BARAT')->orWhereNull('lokasi_pabrik');
+        });
+    }
+
+    /**
+     * Scope query khusus Pabrik Timur
+     */
+    public function scopeTimur($query)
+    {
+        return $query->where('lokasi_pabrik', 'TIMUR');
     }
 }

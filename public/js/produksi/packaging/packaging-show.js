@@ -124,3 +124,71 @@ function closeVoidPackagingModal() {
 window.printPackagingDoc = printPackagingDoc;
 window.openVoidPackagingModal = openVoidPackagingModal;
 window.closeVoidPackagingModal = closeVoidPackagingModal;
+
+/**
+ * Buka Modal Konfirmasi Tarik & Finalisasi HPP Packaging
+ */
+function openFinalizeHppModal(packId, packNo, productNm, prodNo, wipHpp) {
+    const modal = document.getElementById('modalFinalizePackagingHpp');
+    if (!modal) return;
+
+    const form = document.getElementById('formFinalizePackagingHpp');
+    if (form) {
+        form.action = '/produksi/packaging/' + packId + '/finalize-hpp';
+    }
+
+    const labelPackNo = document.getElementById('finalizePackNoLabel');
+    if (labelPackNo) labelPackNo.textContent = packNo;
+
+    const labelProduct = document.getElementById('finalizeProductLabel');
+    if (labelProduct) labelProduct.textContent = productNm;
+
+    const labelProdNo = document.getElementById('finalizeProdNoLabel');
+    if (labelProdNo) labelProdNo.textContent = prodNo || 'Non-SPK / Batch Langsung';
+
+    const labelWipHpp = document.getElementById('finalizeWipHppLabel');
+    if (labelWipHpp) labelWipHpp.textContent = wipHpp ? ('Rp ' + wipHpp + ' / Kg') : 'Rp 0 / Kg';
+
+    modal.style.display = 'flex';
+}
+
+/**
+ * Tutup Modal Konfirmasi Finalisasi HPP
+ */
+function closeFinalizeHppModal() {
+    const modal = document.getElementById('modalFinalizePackagingHpp');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * Buka Modal Peringatan HPP Produksi Asal Belum Selesai
+ */
+function openWarningProdHppModal(packNo, prodNo) {
+    const modal = document.getElementById('modalWarningProdHpp');
+    if (!modal) return;
+
+    const labelPackNo = document.getElementById('warningPackNoLabel');
+    if (labelPackNo) labelPackNo.textContent = packNo;
+
+    const labelProdNo = document.getElementById('warningProdNoLabel');
+    if (labelProdNo) labelProdNo.textContent = prodNo || 'Dokumen Produksi';
+
+    modal.style.display = 'flex';
+}
+
+/**
+ * Tutup Modal Peringatan HPP Produksi
+ */
+function closeWarningProdHppModal() {
+    const modal = document.getElementById('modalWarningProdHpp');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+window.openFinalizeHppModal = openFinalizeHppModal;
+window.closeFinalizeHppModal = closeFinalizeHppModal;
+window.openWarningProdHppModal = openWarningProdHppModal;
+window.closeWarningProdHppModal = closeWarningProdHppModal;

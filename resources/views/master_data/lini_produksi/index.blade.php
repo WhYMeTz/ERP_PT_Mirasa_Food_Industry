@@ -3,7 +3,7 @@
 @section('title', 'Master Data Lini Produksi - ERP PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/master/lini_produksi/lini-index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/master/lini_produksi/lini-index.css') }}?v={{ filemtime(public_path('css/master/lini_produksi/lini-index.css')) }}">
 @endpush
 
 @section('content')
@@ -58,7 +58,7 @@
                     <th style="width: 180px;">Kategori</th>
                     <th style="width: 170px;">Format Batch</th>
                     <th>Keterangan</th>
-                    <th style="width: 90px; text-align: center;">Status</th>
+                    <th style="width: 140px; text-align: center;">Status</th>
                     <th style="width: 110px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
@@ -101,12 +101,31 @@
                         <td style="color: #64748b; font-size: 0.85rem;">
                             {{ $item->keterangan ?: '-' }}
                         </td>
-                        <td style="text-align: center;">
-                            @if ($item->active_st)
-                                <span class="badge badge-success">Aktif</span>
-                            @else
-                                <span class="badge badge-secondary">Nonaktif</span>
-                            @endif
+                        <td style="text-align: center; vertical-align: middle;">
+                            <div class="lini-status-cell" 
+                                 id="statusWrapper-{{ $item->lini_id }}"
+                                 title="{{ $item->active_st ? 'Klik untuk menonaktifkan status' : 'Klik untuk mengaktifkan status' }}">
+                                <label class="clean-switch {{ !Auth::user()?->canEditMasterLiniProduksi() ? 'is-disabled' : '' }}">
+                                    <input type="checkbox" 
+                                           id="toggleLini-{{ $item->lini_id }}"
+                                           class="clean-switch-input" 
+                                           data-id="{{ $item->lini_id }}" 
+                                           data-name="{{ $item->lini_cd }}"
+                                           data-url="{{ route('master.lini_produksi.toggle_status', $item->lini_id) }}" 
+                                           {{ $item->active_st ? 'checked' : '' }}
+                                           {{ !Auth::user()?->canEditMasterLiniProduksi() ? 'disabled' : '' }}
+                                           onchange="handleToggleLiniStatus(this, '{{ $item->lini_id }}')">
+                                    <span class="clean-switch-track">
+                                        <span class="clean-switch-thumb"></span>
+                                    </span>
+                                </label>
+                                <span id="statusBadge-{{ $item->lini_id }}" 
+                                      class="lini-status-badge {{ $item->active_st ? 'status-active' : 'status-inactive' }}"
+                                      onclick="document.getElementById('toggleLini-{{ $item->lini_id }}')?.click()">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">{{ $item->active_st ? 'Aktif' : 'Nonaktif' }}</span>
+                                </span>
+                            </div>
                         </td>
                         <td style="text-align: center; vertical-align: middle;">
                             @if (Auth::user()?->canEditMasterLiniProduksi() || Auth::user()?->canDeleteMasterLiniProduksi())
@@ -129,7 +148,7 @@
                                         <div class="action-dropdown-divider"></div>
                                         <button type="button" 
                                              class="action-dropdown-item danger-item"
-                                            onclick="confirmDeleteLini('{{ route('master.lini_produksi.destroy', $item->lini_id) }}', '{{ $item->lini_cd }}', '{{ $item->lini_nm }}')">
+                                             onclick="confirmDeleteLini('{{ route('master.lini_produksi.destroy', $item->lini_id) }}', '{{ $item->lini_cd }}', '{{ $item->lini_nm }}')">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             Nonaktifkan
                                         </button>
@@ -165,5 +184,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/master/lini_produksi/lini-index.js') }}"></script>
+    <script src="{{ asset('js/master/lini_produksi/lini-index.js') }}?v={{ filemtime(public_path('js/master/lini_produksi/lini-index.js')) }}"></script>
 @endpush

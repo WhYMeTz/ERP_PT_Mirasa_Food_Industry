@@ -366,9 +366,27 @@
                             @endif
                         </td>
                         <td style="text-align: center;">
-                            <span class="badge" style="background: #f1f5f9; color: #334155; font-size: 0.75rem;">
-                                {{ $item->grade_cd ?? 'A' }}
-                            </span>
+                            @php
+                                $showGrade = strtoupper(trim((string)$item->grade_cd));
+                                $showIsNonGrade = in_array($showGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || ($item->barang && !$item->barang->hasGrade());
+                            @endphp
+                            @if ($showIsNonGrade)
+                                <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-size: 0.75rem;">
+                                    Non Grade
+                                </span>
+                            @elseif ($showGrade === 'B')
+                                <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.75rem; font-weight: 700;">
+                                    Grade B
+                                </span>
+                            @elseif ($showGrade === 'REJECT')
+                                <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-size: 0.75rem; font-weight: 700;">
+                                    Afkir
+                                </span>
+                            @else
+                                <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.75rem; font-weight: 700;">
+                                    Grade {{ $showGrade ?: 'A' }}
+                                </span>
+                            @endif
                         </td>
                         <td style="text-align: right; font-weight: 700; font-size: 0.95rem; color: #047857;">
                             + {{ number_format($itemNetto, 2, ',', '.') }}

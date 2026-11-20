@@ -41,4 +41,35 @@ class DatPengeluaranDtl extends Model
     {
         return $this->belongsTo(MstBarang::class, 'barang_id', 'barang_id');
     }
+
+    /**
+     * Dapatkan tanggal expired dari batch terkait
+     */
+    public function getExpiredTglAttribute(): ?string
+    {
+        if (empty($this->batch_no)) {
+            return null;
+        }
+
+        return \App\Models\Gudang\DatStokBatch::where('batch_no', $this->batch_no)
+            ->where('barang_id', $this->barang_id)
+            ->value('expired_tgl')
+            ?? \App\Models\Produksi\DatPackagingHdr::where('batch_no', $this->batch_no)
+                ->where('barang_jadi_id', $this->barang_id)
+                ->value('expired_tgl');
+    }
+
+    /**
+     * Dapatkan tanggal produksi/kemas dari batch terkait
+     */
+    public function getPackTglAttribute(): ?string
+    {
+        if (empty($this->batch_no)) {
+            return null;
+        }
+
+        return \App\Models\Produksi\DatPackagingHdr::where('batch_no', $this->batch_no)
+            ->where('barang_jadi_id', $this->barang_id)
+            ->value('pack_tgl');
+    }
 }

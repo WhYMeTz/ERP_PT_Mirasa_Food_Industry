@@ -28,7 +28,7 @@ class StoreCustomerRequest extends FormRequest
             'klasifikasi' => [
                 'required',
                 'string',
-                'in:IFM,MANUAL,IDM_ALFA',
+                'in:IFM,MANUAL,IDM_ALFA,IDM,MIDI_ALFA',
             ],
             'wilayah' => [
                 'nullable',

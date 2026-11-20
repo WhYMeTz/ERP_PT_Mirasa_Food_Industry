@@ -239,16 +239,19 @@
                 </div>
             </td>
             <td style="width: 42%;">
+                @php
+                    $cust = $faktur->customer ?? ($order->customer ?? null);
+                @endphp
                 <div style="text-align: right; font-size: 8pt; margin-bottom: 3px;">
                     Magelang, <strong>{{ $order->so_tgl ? $order->so_tgl->translatedFormat('d-M-Y') : date('d-M-Y') }}</strong>
                 </div>
                 <div class="customer-box">
                     <div style="font-size: 7pt; color: #334155;">Kepada Yth.</div>
                     <div style="font-weight: bold; font-size: 8.5pt; color: #000000; text-transform: uppercase;">
-                        {{ $order->customer?->customer_nm }}
+                        {{ $cust?->customer_nm }}
                     </div>
-                    <div style="font-size: 7.5pt; color: #000000;">
-                        {{ $order->customer?->alamat_txt ?: ($order->customer?->kota ?: '-') }}
+                    <div style="font-size: 7.5pt; color: #000000; line-height: 1.25;">
+                        {!! nl2br(e($cust?->alamat_txt ?: ($cust?->wilayah ?: '-'))) !!}
                     </div>
                     <div style="margin-top: 3px; font-weight: bold; font-size: 7.5pt; border-top: 1px dashed #000000; padding-top: 2px;">
                         SOPIR : {{ $order->supir_nm ?: '-' }}

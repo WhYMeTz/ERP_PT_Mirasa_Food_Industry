@@ -17,7 +17,8 @@ class SupplierService
             $query->where(function ($q) use ($search) {
                 $q->where('supplier_cd', 'ILIKE', "%{$search}%")
                   ->orWhere('supplier_nm', 'ILIKE', "%{$search}%")
-                  ->orWhere('kontak_no', 'ILIKE', "%{$search}%");
+                  ->orWhere('kontak_no', 'ILIKE', "%{$search}%")
+                  ->orWhere('email', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -32,6 +33,10 @@ class SupplierService
     public function store(array $data): MstSupplier
     {
         return DB::transaction(function () use ($data) {
+            $data['top_hari'] = (isset($data['top_hari']) && $data['top_hari'] !== null && $data['top_hari'] !== '')
+                ? (int) $data['top_hari']
+                : 14;
+
             return MstSupplier::create($data);
         });
     }
@@ -40,6 +45,13 @@ class SupplierService
     {
         return DB::transaction(function () use ($id, $data) {
             $supplier = MstSupplier::findOrFail($id);
+
+            if (array_key_exists('top_hari', $data)) {
+                $data['top_hari'] = ($data['top_hari'] !== null && $data['top_hari'] !== '')
+                    ? (int) $data['top_hari']
+                    : ($supplier->top_hari ?? 14);
+            }
+
             $supplier->update($data);
             return $supplier->fresh();
         });

@@ -31,8 +31,12 @@
                     <input type="text" id="edit_kontak_no" name="kontak_no" class="form-control">
                 </div>
                 <div class="form-group">
+                    <label for="edit_email" class="form-label">Email Resmi Supplier (Untuk Kirim PO)</label>
+                    <input type="email" id="edit_email" name="email" class="form-control" placeholder="Contoh: purchasing@supplier.com">
+                </div>
+                <div class="form-group">
                     <label for="edit_top_hari" class="form-label">Term of Payment (TOP) / Tempo Bayar <span style="font-weight: 400; color: #64748b; font-size: 0.75rem;">(Hari)</span></label>
-                    <input type="number" id="edit_top_hari" name="top_hari" min="0" max="365" class="form-control" placeholder="Contoh: 14">
+                    <input type="number" id="edit_top_hari" name="top_hari" min="0" max="365" class="form-control" value="14" placeholder="Contoh: 14">
                     <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Default jangka waktu jatuh tempo tagihan setelah barang masuk (misal: 14 hari, 30 hari, atau 0 untuk COD/Tunai).</small>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">

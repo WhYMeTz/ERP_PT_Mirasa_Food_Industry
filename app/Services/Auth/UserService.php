@@ -64,6 +64,16 @@ class UserService
             $gudangIds = $data['gudang_ids'] ?? null;
             unset($data['gudang_ids']);
 
+            if (request()->hasFile('signature_file') && request()->file('signature_file')->isValid()) {
+                $file = request()->file('signature_file');
+                $filename = 'sig_user_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('images/signatures'), $filename);
+                $data['signature_path'] = $filename;
+            } elseif (array_key_exists('signature_path', $data) && empty($data['signature_path'])) {
+                $data['signature_path'] = null;
+            }
+            unset($data['signature_file']);
+
             $rawPassword = $data['password'];
             $data['password_plain'] = \Illuminate\Support\Facades\Crypt::encryptString($rawPassword);
             $data['password'] = Hash::make($rawPassword);
@@ -92,6 +102,18 @@ class UserService
 
             $gudangIds = $data['gudang_ids'] ?? null;
             unset($data['gudang_ids']);
+
+            if (request()->hasFile('signature_file') && request()->file('signature_file')->isValid()) {
+                $file = request()->file('signature_file');
+                $filename = 'sig_user_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('images/signatures'), $filename);
+                $data['signature_path'] = $filename;
+            } elseif (array_key_exists('signature_path', $data)) {
+                if (empty($data['signature_path']) || $data['signature_path'] === '__DELETE__') {
+                    $data['signature_path'] = null;
+                }
+            }
+            unset($data['signature_file']);
 
             // Update password hanya jika diisi
             if (!empty($data['password'])) {

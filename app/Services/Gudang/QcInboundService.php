@@ -2,6 +2,7 @@
 
 namespace App\Services\Gudang;
 
+use App\Models\Gudang\DatPoDtl;
 use App\Models\Gudang\DatPoHdr;
 use App\Models\Gudang\DatQcInboundDtl;
 use App\Models\Gudang\DatQcInboundHdr;
@@ -246,10 +247,9 @@ class QcInboundService
             }
         }
 
-        $items = [];
-        $hasP2 = $qc->pengujian2List->isNotEmpty();
+        $rawItems = [];
 
-        // 1. Muat Item dari Pengujian 1 (Setengah Bak Awal)
+        // 1. Muat Item dari Pengujian 1 (Kedatangan Gerbang)
         foreach ($qc->details as $d) {
             $barang = $d->barang;
             $acronym = app(CodeGeneratorService::class)->extractBarangAcronym(
@@ -257,7 +257,6 @@ class QcInboundService
                 $barang?->barang_cd
             );
             $batchPrefix = ($acronym ?: 'BRG') . '-';
-            $labelSuffix = $hasP2 ? ' (Uji 1 - 1/2 Bak)' : '';
             $poDtl = $d->poDetail;
             $hargaPo = $poDtl ? (float) $poDtl->harga_nominal : (float) ($barang?->harga_beli_standar ?? 0);
             
@@ -267,13 +266,22 @@ class QcInboundService
                 $batchNo = app(CodeGeneratorService::class)->generateBatchNo($barang->barang_cd, $tglFisik, $barang->barang_nm);
             }
 
-            $items[] = [
+            $barangHasGrade = $barang ? $barang->hasGrade() : in_array(strtoupper($qc->kategori_barang ?? ''), ['SINGKONG', 'KARTON']);
+            $resolvedGrade = strtoupper(trim((string) ($d->grade_cd ?: ($barangHasGrade ? 'A' : 'NON-GRADE'))));
+            if (!$barangHasGrade && $resolvedGrade !== 'REJECT') {
+                $resolvedGrade = 'NON-GRADE';
+            }
+
+            $rawItems[] = [
+                'stage'                      => 'Uji 1',
                 'qcdtl_id'                   => $d->qcdtl_id,
                 'podtl_id'                   => $d->podtl_id,
+                'barang'                     => $barang,
                 'barang_id'                  => $d->barang_id,
                 'barang_cd'                  => $barang?->barang_cd,
-                'barang_nm'                  => ($barang?->barang_nm ?? 'SINGKONG') . $labelSuffix,
+                'barang_nm'                  => $barang?->barang_nm ?? 'Bahan Baku',
                 'satuan_nm'                  => $barang?->satuanDasar?->satuan_nm ?? 'KG',
+                'has_grade'                  => $barangHasGrade,
                 'batch_prefix'               => $batchPrefix,
                 'batch_no'                   => $batchNo,
                 'gross_qty'                  => (float) $d->qty_timbang_gross,
@@ -282,16 +290,10 @@ class QcInboundService
                 'refraksi_qty'               => (float) $d->qty_refraksi,
                 'reject_qty'                 => (float) $d->qty_reject,
                 'netto_qty'                  => (float) $d->qty_netto_lolos,
-                'grade_cd'                   => $d->grade_cd ?: 'A',
+                'grade_cd'                   => $resolvedGrade,
                 'kondisi_fisik'              => $d->kondisi_fisik,
                 'keputusan_qc'               => $d->keputusan_qc,
                 'status_raw_material'        => $d->status_raw_material ?? 'OK',
-                'isi_kering'                 => (bool) $d->isi_kering,
-                'isi_basah'                  => (bool) $d->isi_basah,
-                'isi_gumpal'                 => (bool) $d->isi_gumpal,
-                'isi_berminyak'              => (bool) $d->isi_berminyak,
-                'kemasan_kondisi'            => $d->kemasan_kondisi ?? 'OK',
-                'catatan'                    => $d->catatan_dtl ?: ($qc->catatan_umum ?: 'Uji 1 (Setengah Bak)'),
                 'std_harga'                  => $hargaPo,
                 'diskon_persen'              => (float) ($poDtl?->diskon_persen ?? 0),
                 'ppn_tipe'                   => $poDtl?->ppn_tipe ?? 'NON_PPN',
@@ -318,13 +320,22 @@ class QcInboundService
                     $batchNo2 = app(CodeGeneratorService::class)->generateBatchNo($barang2->barang_cd, $tglFisik2, $barang2->barang_nm);
                 }
 
-                $items[] = [
+                $barang2HasGrade = $barang2 ? $barang2->hasGrade() : in_array(strtoupper($qc->kategori_barang ?? ''), ['SINGKONG', 'KARTON']);
+                $resolvedGrade2 = strtoupper(trim((string) ($d2->grade_cd ?: ($barang2HasGrade ? 'A' : 'NON-GRADE'))));
+                if (!$barang2HasGrade && $resolvedGrade2 !== 'REJECT') {
+                    $resolvedGrade2 = 'NON-GRADE';
+                }
+
+                $rawItems[] = [
+                    'stage'                      => 'Uji 2',
                     'qcdtl_id'                   => $d2->qcdtl_id,
                     'podtl_id'                   => $d2->podtl_id ?: $qc->details->first()?->podtl_id,
+                    'barang'                     => $barang2,
                     'barang_id'                  => $d2->barang_id ?: $qc->details->first()?->barang_id,
                     'barang_cd'                  => $barang2?->barang_cd,
-                    'barang_nm'                  => ($barang2?->barang_nm ?? 'SINGKONG') . ' (Uji 2 - Sisa Bak)',
+                    'barang_nm'                  => $barang2?->barang_nm ?? 'Bahan Baku',
                     'satuan_nm'                  => $barang2?->satuanDasar?->satuan_nm ?? 'KG',
+                    'has_grade'                  => $barang2HasGrade,
                     'batch_prefix'               => $batchPrefix2,
                     'batch_no'                   => $batchNo2,
                     'gross_qty'                  => (float) $d2->qty_timbang_gross,
@@ -333,22 +344,124 @@ class QcInboundService
                     'refraksi_qty'               => (float) $d2->qty_refraksi,
                     'reject_qty'                 => (float) $d2->qty_reject,
                     'netto_qty'                  => (float) $d2->qty_netto_lolos,
-                    'grade_cd'                   => $d2->grade_cd ?: 'A',
+                    'grade_cd'                   => $resolvedGrade2,
                     'kondisi_fisik'              => $d2->kondisi_fisik,
                     'keputusan_qc'               => $d2->keputusan_qc,
                     'status_raw_material'        => $d2->status_raw_material ?? 'OK',
-                    'isi_kering'                 => (bool) $d2->isi_kering,
-                    'isi_basah'                  => (bool) $d2->isi_basah,
-                    'isi_gumpal'                 => (bool) $d2->isi_gumpal,
-                    'isi_berminyak'              => (bool) $d2->isi_berminyak,
-                    'kemasan_kondisi'            => $d2->kemasan_kondisi ?? 'OK',
-                    'catatan'                    => $d2->catatan_dtl ?: ($p2->catatan_umum ?: 'Uji 2 (Sisa Bak)'),
                     'std_harga'                  => $hargaPo2,
                     'diskon_persen'              => (float) ($poDtl2?->diskon_persen ?? 0),
                     'ppn_tipe'                   => $poDtl2?->ppn_tipe ?? 'NON_PPN',
                     'pesan_qty'                  => $poDtl2 ? (float) $poDtl2->pesan_qty : 0,
                     'sisa_po'                    => $poDtl2 ? (float) $poDtl2->sisa_qty : 0,
                 ];
+            }
+        }
+
+        // 3. KELOMPOKKAN ITEM BERDASARKAN KOMODITAS & GRADE
+        // Aturan: Jika komoditas sama dan gradenya sama (misal Uji 1 Grade A & Uji 2 Grade A),
+        // otomatis gabungkan menjadi 1 BARIS AKUMULASI TRUK (gross, reject, netto dijumlahkan).
+        // HANYA pecah menjadi 2 baris terpisah jika pengujian menghasilkan GRADE YANG BERBEDA (misal Grade A & Grade B),
+        // dengan memberikan akhiran batch (-A, -B) dan label jelas agar gudang memisahkan stoknya.
+        $items = [];
+        $groupedByBarang = collect($rawItems)->groupBy('barang_id');
+
+        foreach ($groupedByBarang as $barangId => $subList) {
+            $distinctGrades = $subList->pluck('grade_cd')->filter()->unique()->values();
+
+            if ($distinctGrades->count() <= 1) {
+                // Semua pengujian komoditas ini memiliki grade yang sama -> Gabungkan jadi 1 baris bersih
+                $first = $subList->first();
+                $totalGross = (float) $subList->sum('gross_qty');
+                $totalReject = (float) $subList->sum('reject_qty');
+                $totalRefraksiQty = (float) $subList->sum('refraksi_qty');
+                $totalNetto = (float) $subList->sum('netto_qty');
+
+                $avgKadarAir = $totalGross > 0
+                    ? round($subList->sum(fn($it) => $it['kadar_air'] * $it['gross_qty']) / $totalGross, 1)
+                    : (float) $first['kadar_air'];
+                $avgRefraksiPersen = $totalGross > 0
+                    ? round(($totalRefraksiQty / $totalGross) * 100, 1)
+                    : (float) $first['refraksi_persen'];
+
+                $gradeCd = $distinctGrades->first() ?: 'A';
+
+                $items[] = [
+                    'qcdtl_id'                   => $first['qcdtl_id'],
+                    'qcdtl_ids'                  => $subList->pluck('qcdtl_id')->filter()->values()->all(),
+                    'podtl_id'                   => $first['podtl_id'],
+                    'barang_id'                  => $first['barang_id'],
+                    'barang_cd'                  => $first['barang_cd'],
+                    'barang_nm'                  => $first['barang_nm'],
+                    'satuan_nm'                  => $first['satuan_nm'],
+                    'batch_prefix'               => $first['batch_prefix'],
+                    'batch_no'                   => $first['batch_no'],
+                    'gross_qty'                  => $totalGross,
+                    'kadar_air'                  => $avgKadarAir,
+                    'refraksi_persen'            => $avgRefraksiPersen,
+                    'refraksi_qty'               => $totalRefraksiQty,
+                    'reject_qty'                 => $totalReject,
+                    'netto_qty'                  => $totalNetto,
+                    'grade_cd'                   => $gradeCd,
+                    'grade_label'                => 'Grade ' . $gradeCd,
+                    'kondisi_fisik'              => $first['kondisi_fisik'],
+                    'keputusan_qc'               => $first['keputusan_qc'],
+                    'status_raw_material'        => $first['status_raw_material'],
+                    'catatan'                    => 'Akumulasi Uji QC (Truk Lengkap)',
+                    'std_harga'                  => $first['std_harga'],
+                    'diskon_persen'              => $first['diskon_persen'],
+                    'ppn_tipe'                   => $first['ppn_tipe'],
+                    'pesan_qty'                  => $first['pesan_qty'],
+                    'sisa_po'                    => $first['sisa_po'],
+                ];
+            } else {
+                // Terdapat grade berbeda (misal Uji 1 Grade A & Uji 2 Grade B) -> Pecah sesuai kelompok grade
+                // Beri akhiran pembeda batch (-A dan -B) dan label jelas agar gudang memisahkan stoknya
+                $groupedByGrade = $subList->groupBy('grade_cd');
+                foreach ($groupedByGrade as $gradeCd => $gradeSubList) {
+                    $firstG = $gradeSubList->first();
+                    $gGross = (float) $gradeSubList->sum('gross_qty');
+                    $gReject = (float) $gradeSubList->sum('reject_qty');
+                    $gRefraksiQty = (float) $gradeSubList->sum('refraksi_qty');
+                    $gNetto = (float) $gradeSubList->sum('netto_qty');
+
+                    $stagesText = $gradeSubList->pluck('stage')->unique()->implode(' & ');
+
+                    $avgKadarAir = $gGross > 0
+                        ? round($gradeSubList->sum(fn($it) => $it['kadar_air'] * $it['gross_qty']) / $gGross, 1)
+                        : (float) $firstG['kadar_air'];
+                    $avgRefraksiPersen = $gGross > 0
+                        ? round(($gRefraksiQty / $gGross) * 100, 1)
+                        : (float) $firstG['refraksi_persen'];
+
+                    $items[] = [
+                        'qcdtl_id'                   => $firstG['qcdtl_id'],
+                        'qcdtl_ids'                  => $gradeSubList->pluck('qcdtl_id')->filter()->values()->all(),
+                        'podtl_id'                   => $firstG['podtl_id'],
+                        'barang_id'                  => $firstG['barang_id'],
+                        'barang_cd'                  => $firstG['barang_cd'],
+                        'barang_nm'                  => $firstG['barang_nm'] . ' [Grade ' . $gradeCd . ']',
+                        'satuan_nm'                  => $firstG['satuan_nm'],
+                        'batch_prefix'               => $firstG['batch_prefix'],
+                        'batch_no'                   => $firstG['batch_no'],
+                        'gross_qty'                  => $gGross,
+                        'kadar_air'                  => $avgKadarAir,
+                        'refraksi_persen'            => $avgRefraksiPersen,
+                        'refraksi_qty'               => $gRefraksiQty,
+                        'reject_qty'                 => $gReject,
+                        'netto_qty'                  => $gNetto,
+                        'grade_cd'                   => $gradeCd,
+                        'grade_label'                => 'Grade ' . $gradeCd,
+                        'kondisi_fisik'              => $firstG['kondisi_fisik'],
+                        'keputusan_qc'               => $firstG['keputusan_qc'],
+                        'status_raw_material'        => $firstG['status_raw_material'],
+                        'catatan'                    => 'Grade ' . $gradeCd . ' (' . $stagesText . ')',
+                        'std_harga'                  => $firstG['std_harga'],
+                        'diskon_persen'              => $firstG['diskon_persen'],
+                        'ppn_tipe'                   => $firstG['ppn_tipe'],
+                        'pesan_qty'                  => $firstG['pesan_qty'],
+                        'sisa_po'                    => $firstG['sisa_po'],
+                    ];
+                }
             }
         }
 
@@ -544,10 +657,54 @@ class QcInboundService
                     }
                 }
 
+                $itemBarangId = (int) $row['barang_id'];
+                $itemPodtlId = !empty($row['podtl_id']) ? (int) $row['podtl_id'] : null;
+
+                // Tentukan apakah komoditas ber-grade (Hanya Singkong & Karton yang memiliki Grade A/B)
+                $kategoriHeaderUpper = strtoupper(trim((string)($header->kategori_barang ?? ($data['kategori_barang'] ?? ''))));
+                $isBarangHasGrade = in_array($kategoriHeaderUpper, ['SINGKONG', 'KARTON']);
+                if (!$isBarangHasGrade && !empty($itemBarangId)) {
+                    $bCheck = \App\Models\MasterData\MstBarang::find($itemBarangId);
+                    if ($bCheck) {
+                        $nmCheck = strtoupper($bCheck->barang_nm ?? '');
+                        $cdCheck = strtoupper($bCheck->barang_cd ?? '');
+                        if (str_contains($nmCheck, 'SINGKONG') || str_starts_with($cdCheck, 'BB-SK') || str_contains($nmCheck, 'KARTON') || str_contains($nmCheck, 'DUS') || str_contains($nmCheck, 'BOX') || str_starts_with($cdCheck, 'BP-KT') || str_starts_with($cdCheck, 'BP-BX')) {
+                            $isBarangHasGrade = true;
+                        }
+                    }
+                }
+
+                if ($grade === 'REJECT') {
+                    // Tetap REJECT
+                } elseif ($isBarangHasGrade) {
+                    $grade = in_array(strtoupper($grade), ['A', 'B']) ? strtoupper($grade) : 'A';
+                } else {
+                    $grade = 'NON-GRADE';
+                }
+
+                // Pastikan podtl_id valid dan sesuai dengan barang_id di dalam PO bersangkutan
+                if (!empty($header->po_id)) {
+                    $matchingPoDtl = null;
+                    if ($itemPodtlId) {
+                        $matchingPoDtl = DatPoDtl::where('po_id', $header->po_id)
+                            ->where('podtl_id', $itemPodtlId)
+                            ->where('barang_id', $itemBarangId)
+                            ->first();
+                    }
+                    if (!$matchingPoDtl) {
+                        $matchingPoDtl = DatPoDtl::where('po_id', $header->po_id)
+                            ->where('barang_id', $itemBarangId)
+                            ->first();
+                        if ($matchingPoDtl) {
+                            $itemPodtlId = $matchingPoDtl->podtl_id;
+                        }
+                    }
+                }
+
                 DatQcInboundDtl::create([
                     'qc_id'                      => $header->qc_id,
-                    'podtl_id'                   => !empty($row['podtl_id']) ? (int)$row['podtl_id'] : null,
-                    'barang_id'                  => (int) $row['barang_id'],
+                    'podtl_id'                   => $itemPodtlId,
+                    'barang_id'                  => $itemBarangId,
                     'status_raw_material'        => $row['status_raw_material'] ?? 'OK',
                     'isi_kering'                 => isset($row['isi_kering']) ? (bool)$row['isi_kering'] : true,
                     'isi_basah'                  => !empty($row['isi_basah']),
@@ -865,12 +1022,33 @@ class QcInboundService
             }
         }
 
-        // Petakan item yang dikirim dari form penerimaan berdasarkan qcdtl_id
+        // Petakan item yang dikirim dari form penerimaan berdasarkan qcdtl_id, qcdtl_ids, dan barang_id + grade
         $submittedByQcDtl = [];
+        $allSubmittedQcDtlIds = [];
+        $submittedByBarangGrade = [];
+
         foreach ($submittedItems as $item) {
             $qcdtlId = !empty($item['qcdtl_id']) ? (int) $item['qcdtl_id'] : null;
             if ($qcdtlId) {
                 $submittedByQcDtl[$qcdtlId] = $item;
+                $allSubmittedQcDtlIds[$qcdtlId] = $item;
+            }
+
+            if (!empty($item['qcdtl_ids'])) {
+                $ids = is_array($item['qcdtl_ids']) ? $item['qcdtl_ids'] : explode(',', (string) $item['qcdtl_ids']);
+                foreach ($ids as $sId) {
+                    $sIdInt = (int) trim($sId);
+                    if ($sIdInt > 0) {
+                        $allSubmittedQcDtlIds[$sIdInt] = $item;
+                    }
+                }
+            }
+
+            $bId = !empty($item['barang_id']) ? (int) $item['barang_id'] : null;
+            $grade = strtoupper(trim((string) ($item['grade_cd'] ?? '')));
+            if ($bId) {
+                $submittedByBarangGrade[$bId . '_' . $grade] = $item;
+                $submittedByBarangGrade[$bId] = $item;
             }
         }
 
@@ -882,26 +1060,43 @@ class QcInboundService
             $ticketRejectTotal = 0;
 
             foreach ($ticket->details as $dtl) {
-                if (isset($submittedByQcDtl[$dtl->qcdtl_id])) {
+                $sub = $submittedByQcDtl[$dtl->qcdtl_id] 
+                    ?? ($allSubmittedQcDtlIds[$dtl->qcdtl_id] ?? null) 
+                    ?? ($submittedByBarangGrade[$dtl->barang_id . '_' . strtoupper(trim((string)$dtl->grade_cd))] ?? null) 
+                    ?? ($submittedByBarangGrade[$dtl->barang_id] ?? null);
+
+                if ($sub !== null) {
                     // Item ada dalam input penerimaan barang
-                    $sub = $submittedByQcDtl[$dtl->qcdtl_id];
-                    $tQty = max(0, (float) ($sub['terima_qty'] ?? 0));
-                    $rQty = max(0, (float) ($sub['reject_qty'] ?? 0));
-
-                    // Jika rQty tidak diinput manual tetapi tQty < (gross - refraksi), hitung selisihnya otomatis sebagai reject
-                    $grossEst = (float) $dtl->qty_timbang_gross;
-                    $refraksiEst = (float) $dtl->qty_refraksi;
-                    $maxPossibleNetto = max(0, $grossEst - $refraksiEst);
-
-                    if ($rQty <= 0 && $maxPossibleNetto > 0 && $tQty < $maxPossibleNetto) {
-                        $rQty = round($maxPossibleNetto - $tQty, 4);
-                    }
-
-                    $nettoLolosSync = max(0, round($tQty - $rQty, 4));
                     $satuanNm = $dtl->barang?->satuanDasar?->satuan_nm ?? 'KG';
 
-                    $dtl->qty_netto_lolos = $nettoLolosSync;
-                    $dtl->qty_reject = $rQty;
+                    // Cek apakah item form GRN ini merupakan gabungan beberapa detail QC (misal Uji 1 + Uji 2)
+                    $isMergedRow = !empty($sub['qcdtl_ids']) && (
+                        is_array($sub['qcdtl_ids']) 
+                            ? count($sub['qcdtl_ids']) > 1 
+                            : str_contains((string) $sub['qcdtl_ids'], ',')
+                    );
+
+                    if ($isMergedRow) {
+                        // Kuantitas detail tetap merefleksikan hasil uji lapangan masing-masing tiket
+                        $nettoLolosSync = (float) $dtl->qty_netto_lolos;
+                        $rQty = (float) $dtl->qty_reject;
+                    } else {
+                        $tQty = max(0, (float) ($sub['terima_qty'] ?? 0));
+                        $rQty = max(0, (float) ($sub['reject_qty'] ?? 0));
+
+                        // Jika rQty tidak diinput manual tetapi tQty < (gross - refraksi), hitung selisihnya otomatis sebagai reject
+                        $grossEst = (float) $dtl->qty_timbang_gross;
+                        $refraksiEst = (float) $dtl->qty_refraksi;
+                        $maxPossibleNetto = max(0, $grossEst - $refraksiEst);
+
+                        if ($rQty <= 0 && $maxPossibleNetto > 0 && $tQty < $maxPossibleNetto) {
+                            $rQty = round($maxPossibleNetto - $tQty, 4);
+                        }
+
+                        $nettoLolosSync = max(0, round($tQty - $rQty, 4));
+                        $dtl->qty_netto_lolos = $nettoLolosSync;
+                        $dtl->qty_reject = $rQty;
+                    }
 
                     if ($nettoLolosSync <= 0) {
                         $dtl->keputusan_qc = 'TOLAK_TOTAL';
@@ -919,7 +1114,7 @@ class QcInboundService
                     $dtl->catatan_dtl = trim(($baseCatatan ? $baseCatatan . ' | ' : '') . $catatanGdg);
                     $dtl->save();
 
-                    $ticketNettoTotal += $tQty;
+                    $ticketNettoTotal += $nettoLolosSync;
                     $ticketRejectTotal += $rQty;
                 } else {
                     // Item QC ini TIDAK disertakan dalam penerimaan barang (dihapus dari form GRN oleh petugas)
@@ -1096,7 +1291,7 @@ class QcInboundService
             $kategoriBarang = !empty($data['kategori_barang']) ? strtoupper(trim($data['kategori_barang'])) : ($qc->kategori_barang ?? 'SINGKONG');
 
             $supplier = !empty($data['supplier_id']) ? \App\Models\MasterData\MstSupplier::find($data['supplier_id']) : null;
-            $namaProdusen = !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : ($supplier?->supplier_nm ?? $qc->nama_produsen);
+            $namaProdusen = !empty($data['nama_produsen']) ? trim($data['nama_produsen']) : ($supplier?->supplier_nm ?? $qc->supplier?->supplier_nm ?? $qc->nama_produsen);
 
             $firstItem = !empty($data['items']) && is_array($data['items']) ? reset($data['items']) : null;
             $firstBarangId = $firstItem['barang_id'] ?? ($data['minyak_barang_id'] ?? ($data['plastik_barang_id'] ?? ($data['karton_barang_id'] ?? ($data['bp_barang_id'] ?? null))));
@@ -1171,9 +1366,15 @@ class QcInboundService
                         $rejectQty = $gross > 0 ? $gross : 1;
                         $nettoLolos = 0;
                     } else {
+                        // Jika sebelumnya berstatus DITOLAK_TOTAL (rejectQty >= gross) dan user memilih TERIMA,
+                        // otomatis reset rejectQty ke 0 agar kuantitas netto lolos terpulihkan
+                        if (($explicitKeputusan === 'TERIMA' || $explicitKeputusan === 'PASSED') && $rejectQty >= $gross && $gross > 0) {
+                            $rejectQty = 0;
+                        }
+
                         $qtyRefraksi = round($gross * ($refraksiPersen / 100), 4);
                         $nettoLolos = max(0, round($gross - $qtyRefraksi - $rejectQty, 4));
-                        $grade = !empty($row['grade_cd']) ? $row['grade_cd'] : 'A';
+                        $grade = !empty($row['grade_cd']) && $row['grade_cd'] !== 'REJECT' ? $row['grade_cd'] : 'A';
 
                         if ($nettoLolos <= 0 && $gross > 0) {
                             $keputusan = 'REJECT_TOTAL';
@@ -1188,6 +1389,28 @@ class QcInboundService
                             $keputusan = 'PASSED';
                             $allRejected = false;
                         }
+                    }
+
+                    // Tentukan apakah komoditas ber-grade (Hanya Singkong & Karton yang memiliki Grade A/B)
+                    $kategoriUpper = strtoupper(trim((string)($qc->kategori_barang ?? ($data['kategori_barang'] ?? ''))));
+                    $isBarangHasGrade = in_array($kategoriUpper, ['SINGKONG', 'KARTON']);
+                    if (!$isBarangHasGrade && !empty($barangId)) {
+                        $bCheck = \App\Models\MasterData\MstBarang::find($barangId);
+                        if ($bCheck) {
+                            $nmCheck = strtoupper($bCheck->barang_nm ?? '');
+                            $cdCheck = strtoupper($bCheck->barang_cd ?? '');
+                            if (str_contains($nmCheck, 'SINGKONG') || str_starts_with($cdCheck, 'BB-SK') || str_contains($nmCheck, 'KARTON') || str_contains($nmCheck, 'DUS') || str_contains($nmCheck, 'BOX') || str_starts_with($cdCheck, 'BP-KT') || str_starts_with($cdCheck, 'BP-BX')) {
+                                $isBarangHasGrade = true;
+                            }
+                        }
+                    }
+
+                    if ($keputusan === 'REJECT_TOTAL') {
+                        $grade = 'REJECT';
+                    } elseif ($isBarangHasGrade) {
+                        $grade = in_array(strtoupper($grade), ['A', 'B']) ? strtoupper($grade) : 'A';
+                    } else {
+                        $grade = 'NON-GRADE';
                     }
 
                     // Cari detail existing
@@ -1206,8 +1429,27 @@ class QcInboundService
                     $diffNetto = round($nettoLolos - $oldNetto, 4);
                     $deltaQtyPerBarang[$barangId] = ($deltaQtyPerBarang[$barangId] ?? 0) + $diffNetto;
 
+                    $itemPodtlId = !empty($row['podtl_id']) ? (int)$row['podtl_id'] : ($existingDtl?->podtl_id);
+                    if (!empty($qc->po_id)) {
+                        $matchingPoDtl = null;
+                        if ($itemPodtlId) {
+                            $matchingPoDtl = DatPoDtl::where('po_id', $qc->po_id)
+                                ->where('podtl_id', $itemPodtlId)
+                                ->where('barang_id', $barangId)
+                                ->first();
+                        }
+                        if (!$matchingPoDtl) {
+                            $matchingPoDtl = DatPoDtl::where('po_id', $qc->po_id)
+                                ->where('barang_id', $barangId)
+                                ->first();
+                            if ($matchingPoDtl) {
+                                $itemPodtlId = $matchingPoDtl->podtl_id;
+                            }
+                        }
+                    }
+
                     $payloadDtl = [
-                        'podtl_id'                   => !empty($row['podtl_id']) ? (int)$row['podtl_id'] : ($existingDtl?->podtl_id),
+                        'podtl_id'                   => $itemPodtlId,
                         'barang_id'                  => $barangId,
                         'status_raw_material'        => $row['status_raw_material'] ?? 'OK',
                         'isi_kering'                 => isset($row['isi_kering']) ? (bool)$row['isi_kering'] : true,

@@ -3,6 +3,61 @@
  * ERP PT Mirasa Food Industry
  */
 
+/* Chevron Breadcrumbs Bar (Gaya Akuntansi Enterprise) */
+.erp-chevron-bar {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #dce4ec;
+    border-radius: 4px;
+    background: #ffffff;
+    height: 32px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.erp-chevron-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    height: 100%;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.erp-chevron-item:hover {
+    color: #ea580c;
+    background: #f8fafc;
+}
+
+.erp-chevron-item.active {
+    color: #0f172a;
+    font-weight: 700;
+    background: #ffffff;
+}
+
+.erp-chevron-sep {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 100%;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.erp-chevron-end {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+    width: 12px;
+    margin-left: -1px;
+}
+
 /* Full-width Container Layout (Consistent with gudang/pemakaian/create) */
 .verifikasi-fullwidth-container {
     width: 100%;
@@ -57,6 +112,50 @@
     border-color: #0284c7 !important;
     box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
     background: #ffffff !important;
+}
+
+.excel-grid-table .batch-select {
+    height: 42px !important;
+    font-size: 0.875rem !important;
+    font-family: monospace !important;
+    font-weight: 600 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+}
+
+.excel-grid-table .batch-select:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+    outline: none;
+}
+
+.excel-grid-table .batch-select option:disabled {
+    color: #94a3b8 !important;
+    background-color: #f1f5f9 !important;
+    text-decoration: line-through;
+    font-style: italic;
+    cursor: not-allowed !important;
+}
+
+.excel-grid-table .col-sisa-stok .sisa-box-wrapper {
+    transition: all 0.2s ease;
+}
+
+.excel-grid-table .col-sisa-stok .sisa-box-wrapper:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.excel-grid-table .btn-fill-max {
+    transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.excel-grid-table .btn-fill-max:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.excel-grid-table .btn-fill-max:active {
+    transform: translateY(0);
 }
 
 /* Category & Grade Pills */

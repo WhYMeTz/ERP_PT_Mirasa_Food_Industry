@@ -204,6 +204,26 @@
                             </select>
                             <small class="so-help-text">Menentukan format seri faktur (PM.A / PM.B) dan tarif pajak per baris produk</small>
                         </div>
+
+                        {{-- Grid: Parameter Armada Pengiriman (Supir & Nopol Truk) --}}
+                        <div class="so-grid-2">
+                            <div class="so-form-group">
+                                <label for="supir_nm" class="so-form-label">
+                                    <span>Nama Supir / Pengemudi</span>
+                                    <span class="so-label-badge success">Armada</span>
+                                </label>
+                                <input type="text" id="supir_nm" name="supir_nm" value="{{ old('supir_nm') }}" placeholder="Contoh: Pak Slamet / Budi..." class="form-control">
+                                <small class="so-help-text">Diteruskan otomatis ke Surat Jalan Gudang</small>
+                            </div>
+
+                            <div class="so-form-group">
+                                <label for="nopol_kendaraan" class="so-form-label">
+                                    <span>No. Polisi Armada Truk</span>
+                                </label>
+                                <input type="text" id="nopol_kendaraan" name="nopol_kendaraan" value="{{ old('nopol_kendaraan') }}" placeholder="Contoh: AD 8234 KL" class="form-control" style="text-transform: uppercase; font-family: monospace;">
+                                <small class="so-help-text">Plat armada yang ditugaskan</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

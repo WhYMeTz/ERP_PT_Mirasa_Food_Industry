@@ -15,6 +15,8 @@ class MstCustomer extends Model
 
     public const KLASIFIKASI_IFM = 'IFM';
     public const KLASIFIKASI_MANUAL = 'MANUAL';
+    public const KLASIFIKASI_MIDI_ALFA = 'MIDI_ALFA';
+    public const KLASIFIKASI_IDM = 'IDM';
     public const KLASIFIKASI_IDM_ALFA = 'IDM_ALFA';
 
     protected $fillable = [
@@ -51,6 +53,16 @@ class MstCustomer extends Model
 
     public function isModernTrade(): bool
     {
-        return $this->klasifikasi === self::KLASIFIKASI_IDM_ALFA;
+        return in_array($this->klasifikasi, [self::KLASIFIKASI_IDM, self::KLASIFIKASI_MIDI_ALFA, self::KLASIFIKASI_IDM_ALFA]);
+    }
+
+    public function isIdm(): bool
+    {
+        return $this->klasifikasi === self::KLASIFIKASI_IDM;
+    }
+
+    public function isMidiAlfa(): bool
+    {
+        return in_array($this->klasifikasi, [self::KLASIFIKASI_MIDI_ALFA, self::KLASIFIKASI_IDM_ALFA]);
     }
 }

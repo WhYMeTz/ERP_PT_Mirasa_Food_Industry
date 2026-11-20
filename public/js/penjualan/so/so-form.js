@@ -116,7 +116,7 @@ function initCustomerListener() {
         const inTop = document.getElementById('top_txt');
         if (inTop) {
             inTop.value = topTxt || '';
-            inTop.placeholder = topTxt ? 'Contoh: 7 Hari / 1 Nota' : (klasifikasi === 'IDM_ALFA' ? 'Tidak ada TOP (Modern Trade)' : 'Contoh: 7 Hari / 1 Nota');
+            inTop.placeholder = topTxt ? 'Contoh: 7 Hari / 1 Nota' : (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klasifikasi) ? 'Tidak ada TOP (Modern Trade)' : 'Contoh: 7 Hari / 1 Nota');
         }
 
         // Update Status PPN Header jika ada default dari master customer
@@ -143,7 +143,7 @@ function initCustomerListener() {
             if (lblPo) lblPo.textContent = 'No. Nota / Sales Lapangan';
             if (inPo) inPo.placeholder = 'Contoh: J.02.03 / M.01.20 / P.04.15...';
             if (helpPo) helpPo.textContent = 'Nomor referensi nota penjualan atau kode sales lapangan (Contoh: J.02.03, M.01.20, P.04.15)';
-        } else if (klasifikasi === 'IDM_ALFA') {
+        } else if (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klasifikasi)) {
             if (lblPo) lblPo.textContent = 'No. PO Modern Trade';
             if (inPo) inPo.placeholder = 'Contoh: OZ01POE26000866 / 5H5Q44496...';
             if (helpPo) helpPo.textContent = 'Nomor PO pesanan resmi (Contoh: OZ01POE26000866, 5H5Q44496, SQZ1POE26000869)';
@@ -165,10 +165,14 @@ function initCustomerListener() {
                 badgeKlas.textContent = 'Manual (Sales/Toko)';
                 badgeKlas.style.background = '#dcfce7';
                 badgeKlas.style.color = '#15803d';
-            } else if (klasifikasi === 'IDM_ALFA') {
-                badgeKlas.textContent = 'Modern Trade (IDM/ALFA)';
-                badgeKlas.style.background = '#f3e8ff';
-                badgeKlas.style.color = '#7e22ce';
+            } else if (klasifikasi === 'IDM') {
+                badgeKlas.textContent = 'Modern Trade (IDM)';
+                badgeKlas.style.background = '#eff6ff';
+                badgeKlas.style.color = '#1d4ed8';
+            } else if (klasifikasi === 'MIDI_ALFA' || klasifikasi === 'IDM_ALFA') {
+                badgeKlas.textContent = 'Modern Trade (Midi/Alfa)';
+                badgeKlas.style.background = '#fef2f2';
+                badgeKlas.style.color = '#b91c1c';
             } else {
                 badgeKlas.textContent = this.value ? 'Customer Umum' : 'Belum Memilih Customer';
                 badgeKlas.style.background = '#f1f5f9';
@@ -192,6 +196,9 @@ function initCustomerListener() {
         } else if (infoBox) {
             infoBox.style.display = 'none';
         }
+
+        // Sync product options according to customer classification
+        syncProductOptionsForCustomer(klasifikasi);
 
         // Fetch Nomor Faktur yang sesuai
         if (this.value) {
@@ -253,6 +260,28 @@ function initDateListener() {
     });
 }
 
+// Sync all row items product options according to customer classification
+function syncProductOptionsForCustomer(klasifikasi) {
+    const isIfm = (klasifikasi || '').toUpperCase() === 'IFM';
+    document.querySelectorAll('#itemsBody .item-barang-select').forEach(sel => {
+        Array.from(sel.options).forEach(opt => {
+            if (!opt.value) return;
+            const code = (opt.dataset.code || '').toUpperCase();
+            const text = (opt.textContent || '').toUpperCase();
+            const isIfmProduct = code.includes('FCC') || code.includes('IFL') || text.includes('IFL') || text.includes('INDOFOOD');
+            if (!isIfm && isIfmProduct) {
+                opt.disabled = true;
+                if (!opt.textContent.includes('[Khusus Mitra IFM]')) {
+                    opt.textContent = opt.textContent.replace(' (Stok:', ' [Khusus Mitra IFM] (Stok:');
+                }
+            } else {
+                opt.disabled = false;
+                opt.textContent = opt.textContent.replace(' [Khusus Mitra IFM]', '');
+            }
+        });
+    });
+}
+
 // Tambah Baris Baru pada Tabel Inputan
 function addRow(data = {}) {
     rowCounter++;
@@ -262,6 +291,11 @@ function addRow(data = {}) {
 
     const MASTER_BARANG = window.soConfig?.barangs || [];
     const stockMap = window.soConfig?.stockMap || {};
+
+    const selCust = document.getElementById('customerSelect');
+    const optCust = selCust?.selectedOptions?.[0];
+    const klasifikasi = (optCust?.dataset?.klasifikasi || '').toUpperCase();
+    const isIfm = klasifikasi === 'IFM';
 
     const tr = document.createElement('tr');
     tr.id = `row_${idx}`;
@@ -275,6 +309,17 @@ function addRow(data = {}) {
         const satuanNm = b.satuan_dasar ? b.satuan_dasar.satuan_nm : 'Karton';
         const hargaJual = b.harga_jual || b.harga_standar || b.harga_beli_standar || 0;
 
+        const cd = (b.barang_cd || '').toUpperCase();
+        const nm = (b.barang_nm || '').toUpperCase();
+        const isIfmProduct = cd.includes('FCC') || cd.includes('IFL') || nm.includes('IFL') || nm.includes('INDOFOOD');
+
+        let disabledAttr = '';
+        let extraLabel = '';
+        if (!isIfm && isIfmProduct) {
+            disabledAttr = 'disabled';
+            extraLabel = ' [Khusus Mitra IFM]';
+        }
+
         return `
             <option value="${id}" 
                     data-code="${b.barang_cd || ''}" 
@@ -282,8 +327,9 @@ function addRow(data = {}) {
                     data-satuan="${satuanNm}"
                     data-harga="${hargaJual}"
                     data-stok="${stok}"
+                    ${disabledAttr}
                     ${isSelected}>
-                ${b.barang_nm} (Stok: ${stok} ${satuanNm})
+                ${b.barang_nm}${extraLabel} (Stok: ${stok} ${satuanNm})
             </option>
         `;
     }).join('');
@@ -302,6 +348,7 @@ function addRow(data = {}) {
                 <span class="stock-badge ready item-stock-badge" style="display: none;">
                     Stok FG: <strong class="item-stock-val">0</strong>
                 </span>
+                <div class="item-batch-info" style="font-size: 0.72rem; color: #475569; margin-top: 2px; display: none;"></div>
             </div>
         </td>
         <td>
@@ -315,6 +362,7 @@ function addRow(data = {}) {
         </td>
         <td>
             <input type="number" step="any" min="0" name="items[${idx}][harga_satuan]" value="${data.harga_satuan || 0}" required class="form-control item-harga" style="text-align: right; font-family: monospace; font-weight: 600;">
+            <div class="item-price-source" style="font-size: 0.675rem; color: #059669; font-weight: 600; margin-top: 3px; display: none; line-height: 1.2;"></div>
         </td>
         <td>
             <input type="number" step="any" min="0" max="100" name="items[${idx}][diskon_persen]" value="${data.diskon_persen || 0}" class="form-control item-diskon" style="text-align: right;">
@@ -353,6 +401,9 @@ function addRow(data = {}) {
     const btnRemove = tr.querySelector('.btn-remove-row');
     const badge = tr.querySelector('.item-stock-badge');
     const stockVal = tr.querySelector('.item-stock-val');
+    const priceSourceEl = tr.querySelector('.item-price-source');
+
+    let isInitialLoad = !!data.barang_id;
 
     selBarang.addEventListener('change', function() {
         const opt = this.options[this.selectedIndex];
@@ -360,9 +411,27 @@ function addRow(data = {}) {
             inCode.value = opt.getAttribute('data-code') || '';
             inJenis.value = opt.getAttribute('data-jenis') || '';
             inSatuan.value = opt.getAttribute('data-satuan') || '';
-            if (Number(inHarga.value) === 0) {
-                inHarga.value = opt.getAttribute('data-harga') || 0;
+
+            // Sinkronisasi Harga Satuan dari Katalog Barang
+            const hargaBarang = parseFloat(opt.getAttribute('data-harga') || 0);
+
+            if (isInitialLoad && data.harga_satuan !== undefined && Number(data.harga_satuan) > 0) {
+                // Form edit / draft
+                inHarga.value = data.harga_satuan;
+            } else {
+                inHarga.value = hargaBarang;
             }
+
+            if (priceSourceEl && hargaBarang > 0) {
+                priceSourceEl.style.display = 'block';
+                priceSourceEl.style.color = '#059669';
+                priceSourceEl.innerHTML = `<span style="font-weight:700;">✓</span> Standar Katalog: ${formatRupiah(hargaBarang)}`;
+            } else if (priceSourceEl) {
+                priceSourceEl.style.display = 'none';
+            }
+
+            // Reset flag inisialisasi setelah interaksi pertama
+            isInitialLoad = false;
 
             const stok = parseFloat(opt.getAttribute('data-stok') || 0);
             const satuan = opt.getAttribute('data-satuan') || 'Karton';
@@ -375,14 +444,44 @@ function addRow(data = {}) {
                 badge.className = 'stock-badge ready item-stock-badge';
                 stockVal.textContent = `${stok} ${satuan}`;
             }
+
+            const batchInfoEl = tr.querySelector('.item-batch-info');
+            if (batchInfoEl && opt.value) {
+                fetch(`/penjualan/so/ajax/stock-check?barang_id=${opt.value}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.data && res.data.batches && res.data.batches.length > 0) {
+                            const b = res.data.batches[0];
+                            const expFmt = b.expired_tgl ? b.expired_tgl.substring(0, 10).split('-').reverse().join('/') : '-';
+                            batchInfoEl.innerHTML = `📦 <strong>Batch Siap:</strong> ${b.batch_no} &bull; <span style="color:#be123c;">Exp: ${expFmt}</span>`;
+                            batchInfoEl.style.display = 'block';
+                        } else {
+                            batchInfoEl.style.display = 'none';
+                        }
+                    })
+                    .catch(() => {
+                        if (batchInfoEl) batchInfoEl.style.display = 'none';
+                    });
+            }
         } else {
             badge.style.display = 'none';
+            const batchInfoEl = tr.querySelector('.item-batch-info');
+            if (batchInfoEl) batchInfoEl.style.display = 'none';
+            if (priceSourceEl) priceSourceEl.style.display = 'none';
             inCode.value = '';
             inJenis.value = '';
             inSatuan.value = '';
         }
         calculateRow(tr);
         calculateGrandTotal();
+    });
+
+    // Deteksi jika user menyesuaikan harga secara manual
+    inHarga.addEventListener('input', function() {
+        if (priceSourceEl && priceSourceEl.style.display !== 'none') {
+            priceSourceEl.style.color = '#d97706';
+            priceSourceEl.innerHTML = `✏️ <em>Harga disesuaikan manual</em>`;
+        }
     });
 
     if (data.barang_id) {

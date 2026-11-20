@@ -8,6 +8,7 @@ use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstCustomer;
 use App\Models\Penjualan\DatSoHdr;
 use App\Services\Common\CodeGeneratorService;
+use App\Services\Penjualan\PengeluaranBarangService;
 use App\Services\Penjualan\SoService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
@@ -20,7 +21,8 @@ class SoController extends Controller
 {
     public function __construct(
         protected SoService $soService,
-        protected CodeGeneratorService $codeGenerator
+        protected CodeGeneratorService $codeGenerator,
+        protected PengeluaranBarangService $pengeluaranService
     ) {}
 
     /**
@@ -173,50 +175,28 @@ class SoController extends Controller
     }
 
     /**
-     * Konfirmasi Pengiriman Surat Jalan & Pemotongan Stok Barang Jadi (FEFO).
+     * Update cepat data armada pengiriman (Supir, Nopol, No. Surat Jalan) dari Sales.
      */
-    public function confirmDelivery(Request $request, int $id): RedirectResponse
+    public function updateArmada(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
-            'tgl_kirim_aktual' => 'required|date',
-            'supir_nm'         => 'nullable|string|max:100',
-            'nopol_kendaraan'  => 'nullable|string|max:30',
-        ], [
-            'tgl_kirim_aktual.required' => 'Tanggal pengiriman wajib diisi.',
+            'supir_nm'           => 'nullable|string|max:100',
+            'nopol_kendaraan'    => 'nullable|string|max:30',
+            'surat_jalan_no'     => 'nullable|string|max:50',
+            'tgl_kirim_estimasi' => 'nullable|date',
         ]);
 
         try {
-            $order = $this->soService->confirmDelivery($id, $validated, auth()->user()?->nama_lengkap);
+            $order = $this->soService->updateArmada($id, $validated, auth()->user()?->nama_lengkap);
 
             return redirect()
                 ->route('penjualan.so.show', $order->so_id)
-                ->with('toast_success', "Pengiriman barang {$order->so_no} berhasil dikonfirmasi! Stok Gudang Barang Jadi (FG) telah otomatis dipotong via FEFO dengan Surat Jalan {$order->surat_jalan_no}.");
+                ->with('toast_success', "Data armada & supir untuk PO {$order->so_no} berhasil diperbarui.");
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal memproses pengiriman: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memperbarui data armada: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Batalkan Pengiriman Barang & Kembalikan Stok ke Gudang FG.
-     */
-    public function voidDelivery(Request $request, int $id): RedirectResponse
-    {
-        $request->validate([
-            'reason' => 'required|string|max:255',
-        ], [
-            'reason.required' => 'Alasan pembatalan pengiriman wajib diisi.',
-        ]);
-
-        try {
-            $order = $this->soService->voidDelivery($id, $request->input('reason'), auth()->user()?->nama_lengkap);
-
-            return redirect()
-                ->route('penjualan.so.show', $order->so_id)
-                ->with('toast_success', "Pengiriman barang {$order->so_no} berhasil dibatalkan dan seluruh stok fisik telah dikembalikan ke Gudang Barang Jadi.");
-        } catch (Exception $e) {
-            return back()->with('error', 'Gagal membatalkan pengiriman: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Catat Penerimaan Pembayaran Kas Masuk (BKM) dari Pelanggan.
@@ -260,10 +240,13 @@ class SoController extends Controller
             'tindakan_cd'         => 'required|in:POTONG_TAGIHAN,TUKAR_GULING',
             'alasan_txt'          => 'nullable|string|max:500',
             'items'               => 'required|array|min:1',
-            'items.*.sodtl_id'    => 'required|integer',
-            'items.*.qty_retur'   => 'required|numeric|min:0',
-            'items.*.kondisi_cd'  => 'nullable|string|max:50',
-            'items.*.catatan_txt' => 'nullable|string|max:255',
+            'items.*.sodtl_id'             => 'required|integer',
+            'items.*.qty_retur'            => 'required|numeric|min:0',
+            'items.*.perlakuan_cd'         => 'nullable|string|in:MASUK_PERSEDIAAN,DIMUSNAHKAN,CAMPUR',
+            'items.*.qty_masuk_persediaan' => 'nullable|numeric|min:0',
+            'items.*.qty_dimusnahkan'      => 'nullable|numeric|min:0',
+            'items.*.kondisi_cd'           => 'nullable|string|max:50',
+            'items.*.catatan_txt'          => 'nullable|string|max:255',
         ], [
             'retur_tgl.required'   => 'Tanggal retur wajib diisi.',
             'gudang_id.required'   => 'Pilih gudang tujuan barang masuk.',
@@ -278,9 +261,17 @@ class SoController extends Controller
                 ? "Sisa tagihan SO otomatis dikurangi Rp " . number_format((float) $retur->total_nilai, 0, ',', '.')
                 : "Stok telah dicatat untuk ditukar guling secara fisik";
 
+            $successMsg = "Retur Penjualan {$retur->retur_no} ({$retur->total_qty} unit) berhasil dicatat! {$actionMsg}.";
+
+            if ($request->input('redirect_to') === 'retur_index') {
+                return redirect()
+                    ->route('penjualan.retur.index')
+                    ->with('toast_success', $successMsg);
+            }
+
             return redirect()
                 ->route('penjualan.so.show', $id)
-                ->with('toast_success', "Retur Penjualan {$retur->retur_no} ({$retur->total_qty} unit) berhasil dicatat! {$actionMsg}.");
+                ->with('toast_success', $successMsg);
         } catch (Exception $e) {
             return back()->with('error', 'Gagal memproses retur penjualan: ' . $e->getMessage());
         }
@@ -389,6 +380,105 @@ class SoController extends Controller
     }
 
     /**
+     * Konfirmasi Pengiriman Cepat (1-Klik dari PO Penjualan) & Pemotongan Stok FEFO Gudang FG.
+     */
+    public function confirmDelivery(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'tgl_kirim_aktual' => 'required|date',
+            'supir_nm'         => 'nullable|string|max:100',
+            'nopol_kendaraan'  => 'nullable|string|max:30',
+            'catatan_txt'      => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $order = DatSoHdr::with('details.barang')->findOrFail($id);
+
+            // Siapkan baris item yang akan dikirim (default kirim seluruh sisa pesanan jika tidak dispesifikasi)
+            $itemsInput = $request->input('items', []);
+            $itemsPayload = [];
+
+            if (!empty($itemsInput)) {
+                foreach ($itemsInput as $it) {
+                    if ((float)($it['kirim_qty'] ?? 0) > 0) {
+                        $itemsPayload[] = [
+                            'sodtl_id'    => (int) $it['sodtl_id'],
+                            'kirim_qty'   => (float) $it['kirim_qty'],
+                            'catatan_txt' => $it['catatan_txt'] ?? null,
+                        ];
+                    }
+                }
+            } else {
+                foreach ($order->details as $dtl) {
+                    $sisa = max(0, (float)$dtl->pesan_qty - (float)$dtl->kirim_qty);
+                    if ($sisa > 0) {
+                        $itemsPayload[] = [
+                            'sodtl_id'  => $dtl->sodtl_id,
+                            'kirim_qty' => $sisa,
+                        ];
+                    }
+                }
+            }
+
+            if (empty($itemsPayload)) {
+                return back()->with('error', 'Seluruh barang pada pesanan ini sudah terkirim penuh.');
+            }
+
+            $payload = [
+                'so_id'           => $order->so_id,
+                'pengeluaran_tgl' => $request->input('tgl_kirim_aktual', now()->toDateString()),
+                'supir_nm'        => $request->input('supir_nm') ?: $order->supir_nm,
+                'nopol_kendaraan' => $request->input('nopol_kendaraan') ?: $order->nopol_kendaraan,
+                'ekspedisi_nm'    => $request->input('ekspedisi_nm', 'Truk Box MFI'),
+                'catatan_txt'     => $request->input('catatan_txt'),
+                'items'           => $itemsPayload,
+            ];
+
+            $userName = auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Administrator');
+            $pengeluaran = $this->pengeluaranService->createPengeluaran($payload, $userName);
+
+            $printUrl = route('penjualan.pengeluaran.export-pdf', $pengeluaran->pengeluaran_id);
+
+            return redirect()
+                ->route('penjualan.so.show', $order->so_id)
+                ->with('toast_success', "Pengiriman berhasil diproses! Surat Jalan {$pengeluaran->pengeluaran_no} resmi terbit dan stok fisik Gudang FG telah dipotong.")
+                ->with('auto_open_pdf', $printUrl);
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal memproses pengiriman: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Batalkan Pengiriman Barang (Void Surat Jalan) dari Halaman PO Penjualan.
+     */
+    public function voidDelivery(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ], [
+            'reason.required' => 'Alasan pembatalan wajib diisi.',
+        ]);
+
+        try {
+            $order = DatSoHdr::with('pengeluaran')->findOrFail($id);
+            $activeSj = $order->pengeluaran->where('status_cd', '!=', 'BATAL')->first();
+
+            if (!$activeSj) {
+                return back()->with('error', 'Tidak ditemukan Surat Jalan aktif yang dapat dibatalkan.');
+            }
+
+            $userName = auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Administrator');
+            $this->pengeluaranService->voidPengeluaran($activeSj->pengeluaran_id, $request->input('reason'), $userName);
+
+            return redirect()
+                ->route('penjualan.so.show', $order->so_id)
+                ->with('toast_success', "Surat Jalan {$activeSj->pengeluaran_no} telah dibatalkan. Stok fisik 100% dikembalikan ke Gudang FG.");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal membatalkan pengiriman: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Soft delete dokumen PO Penjualan.
      */
     public function destroy(int $id): RedirectResponse
@@ -460,18 +550,45 @@ class SoController extends Controller
         $custNmUpper = strtoupper($order->customer?->customer_nm ?? '');
         $custCdUpper = strtoupper($order->customer?->customer_cd ?? '');
         $klasifikasi = $order->customer?->klasifikasi;
-        $isIfm = $tipeParam === 'ifm' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && (
+        // 1. Deteksi Khusus IFM (Indofood)
+        $isIfm = $tipeParam === 'ifm' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && $tipeParam !== 'alfa' && $tipeParam !== 'midi' && $tipeParam !== 'idm' && (
             $klasifikasi === 'IFM' ||
             str_contains($custNmUpper, 'INDOFOOD') ||
             str_contains($custNmUpper, 'IFM') ||
             str_contains($custNmUpper, 'FORTUNA') ||
-            str_contains($custCdUpper, 'IFM') ||
-            str_contains($custCdUpper, 'INDOFOOD')
+            str_contains($custCdUpper, 'IFM')
+        ));
+
+        // 2. Deteksi Khusus ALFA & MIDI (Alfamart & Alfamidi - Layout Sama Sesuai Standar Mirasa)
+        $isAlfaMidi = $tipeParam === 'alfa' || $tipeParam === 'midi' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && $tipeParam !== 'ifm' && $tipeParam !== 'idm' && (
+            $klasifikasi === 'MIDI_ALFA' ||
+            str_contains($custCdUpper, 'ALFA') ||
+            str_contains($custCdUpper, 'MIDI') ||
+            str_contains($custNmUpper, 'ALFA') ||
+            str_contains($custNmUpper, 'SUMBER ALFARIA') ||
+            str_contains($custNmUpper, 'MIDI') ||
+            str_contains($custNmUpper, 'MIDI UTAMA')
+        ));
+
+        // 3. Deteksi Khusus IDM (Indomaret)
+        $isIdm = $tipeParam === 'idm' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && $tipeParam !== 'ifm' && $tipeParam !== 'alfa' && $tipeParam !== 'midi' && (
+            $klasifikasi === 'IDM' ||
+            str_contains($custCdUpper, 'IDM') ||
+            str_contains($custCdUpper, 'DC-YOGYA') ||
+            str_contains($custNmUpper, 'INDOMARET')
         ));
 
         if ($isIfm) {
             $viewName = 'penjualan.so.pdf_surat_jalan_ifm';
             $prefix = 'SURAT_JALAN_IFM-';
+            $isPpn = false;
+        } elseif ($isAlfaMidi) {
+            $viewName = 'penjualan.so.pdf_surat_jalan_alfa';
+            $prefix = (str_contains($custCdUpper, 'MIDI') || str_contains($custNmUpper, 'MIDI')) ? 'SURAT_JALAN_MIDI-' : 'SURAT_JALAN_ALFA-';
+            $isPpn = false;
+        } elseif ($isIdm) {
+            $viewName = 'penjualan.so.pdf_surat_jalan_idm';
+            $prefix = 'SURAT_JALAN_IDM-';
             $isPpn = false;
         } else {
             $fakturUpper = strtoupper($order->faktur_no ?? '');
@@ -484,12 +601,15 @@ class SoController extends Controller
             $prefix = $isPpn ? 'SURAT_JALAN_PPN-' : 'SURAT_JALAN_NON_PPN-';
         }
 
+        $pengeluaran = $order->pengeluaran()->latest('pengeluaran_id')->first();
+
         $pdf = Pdf::loadView($viewName, [
-            'order'      => $order,
-            'logoBase64' => $logoBase64,
-            'printedAt'  => now()->translatedFormat('d F Y H:i'),
-            'printedBy'  => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Administrator'),
-            'isPpn'      => $isPpn,
+            'order'        => $order,
+            'pengeluaran'  => $pengeluaran,
+            'logoBase64'   => $logoBase64,
+            'printedAt'    => now()->translatedFormat('d F Y H:i'),
+            'printedBy'    => auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Administrator'),
+            'isPpn'        => $isPpn,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

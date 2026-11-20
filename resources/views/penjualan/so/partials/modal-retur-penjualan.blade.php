@@ -88,24 +88,38 @@
 
                 {{-- BARIS 4: TABEL ITEM BARANG YANG DIRETUR --}}
                 <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                        <label style="font-size: 0.825rem; font-weight: 700; color: #1e293b; margin: 0;">
-                            Pilih Barang &amp; Masukkan Jumlah Retur <span style="color: #dc2626;">*</span>
-                        </label>
-                        <span style="font-size: 0.75rem; color: #64748b;">Hanya barang yang terkirim yang dapat diretur</span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 700; color: #1e293b; margin: 0; display: block;">
+                                Rincian Barang &amp; Disposisi Fisik Retur <span style="color: #dc2626;">*</span>
+                            </label>
+                            <span style="font-size: 0.75rem; color: #64748b;">
+                                Pilih apakah barang retur <strong>Masuk Persediaan (Sortir KW 2)</strong> atau <strong>Dimusnahkan di Pabrik (Scrap)</strong>.
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.35rem;">
+                            <span style="font-size: 0.725rem; color: #64748b; font-weight: 600;">Setel Serentak:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setAllDisposisi('MASUK_PERSEDIAAN')" style="font-size: 0.725rem; padding: 2px 8px; border-radius: 4px; font-weight: 700; color: #166534; border-color: #86efac; background: #f0fdf4;">
+                                ✓ Semua Masuk KW 2
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setAllDisposisi('DIMUSNAHKAN')" style="font-size: 0.725rem; padding: 2px 8px; border-radius: 4px; font-weight: 700; color: #991b1b; border-color: #fecaca; background: #fef2f2;">
+                                ✕ Semua Dimusnahkan
+                            </button>
+                        </div>
                     </div>
 
-                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem;">
                             <thead>
-                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                                    <th style="padding: 0.5rem 0.75rem; text-align: left; width: 40px;">No</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Nama Produk / Varian</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: right; width: 85px;">Terkirim</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: right; width: 85px;">Sisa Kirim</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: right; width: 110px;">Qty Retur</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: left; width: 140px;">Kondisi Barang</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: right; width: 120px;">Subtotal Nilai</th>
+                                <tr style="background: #0f172a; color: #f8fafc; border-bottom: 1px solid #334155;">
+                                    <th style="padding: 0.6rem 0.65rem; text-align: center; width: 35px; font-size: 0.75rem; font-weight: 700;">No</th>
+                                    <th style="padding: 0.6rem 0.65rem; text-align: left; font-size: 0.75rem; font-weight: 700;">Nama Produk / Varian</th>
+                                    <th style="padding: 0.6rem 0.65rem; text-align: right; width: 75px; font-size: 0.75rem; font-weight: 700;">Terkirim</th>
+                                    <th style="padding: 0.6rem 0.65rem; text-align: right; width: 75px; font-size: 0.75rem; font-weight: 700;">Sisa</th>
+                                    <th style="padding: 0.6rem 0.65rem; text-align: right; width: 85px; font-size: 0.75rem; font-weight: 700;">Qty Retur</th>
+                                    <th style="padding: 0.6rem 0.65rem; text-align: left; width: 130px; font-size: 0.75rem; font-weight: 700;">Kondisi Produk</th>
+                                    <th style="padding: 0.6rem 0.75rem; text-align: left; width: 230px; font-size: 0.75rem; font-weight: 700;">Disposisi Fisik Barang</th>
+                                    <th style="padding: 0.6rem 0.75rem; text-align: right; width: 115px; font-size: 0.75rem; font-weight: 700;">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -117,25 +131,26 @@
                                             ? ((float) $dtl->subtotal_tagihan / (float) $dtl->pesan_qty) 
                                             : (float) $dtl->harga_satuan;
                                     @endphp
-                                    <tr style="border-bottom: 1px solid #f1f5f9; background: {{ $maxReturnable <= 0 ? '#f8fafc' : '#ffffff' }};">
-                                        <td style="padding: 0.6rem 0.75rem; text-align: center; color: #64748b;">
+                                    <tr id="returRow_{{ $idx }}" data-idx="{{ $idx }}" style="border-bottom: 1px solid #e2e8f0; background: {{ $maxReturnable <= 0 ? '#f8fafc' : '#ffffff' }};">
+                                        <td style="padding: 0.6rem 0.65rem; text-align: center; color: #64748b;">
                                             {{ $idx + 1 }}
                                             <input type="hidden" name="items[{{ $idx }}][sodtl_id]" value="{{ $dtl->sodtl_id }}">
+                                            <input type="hidden" name="items[{{ $idx }}][perlakuan_cd]" id="returPerlakuan_{{ $idx }}" value="MASUK_PERSEDIAAN">
                                         </td>
-                                        <td style="padding: 0.6rem 0.75rem;">
-                                            <strong style="color: #0f172a; display: block;">{{ $dtl->barang?->barang_nm }}</strong>
-                                            <span style="font-family: monospace; font-size: 0.725rem; color: #64748b;">{{ $dtl->barang?->barang_cd }}</span>
+                                        <td style="padding: 0.6rem 0.65rem;">
+                                            <strong style="color: #0f172a; display: block; font-size: 0.825rem;">{{ $dtl->barang?->barang_nm }}</strong>
+                                            <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">{{ $dtl->barang?->barang_cd }}</span>
                                             @if($alreadyRetur > 0)
-                                                <span style="display: block; font-size: 0.7rem; color: #ea580c; font-weight: 600;">(Telah diretur sebelumnya: {{ number_format($alreadyRetur, 0) }} unit)</span>
+                                                <span style="display: block; font-size: 0.675rem; color: #ea580c; font-weight: 600;">(Retur terdahulu: {{ number_format($alreadyRetur, 0) }})</span>
                                             @endif
                                         </td>
-                                        <td style="padding: 0.6rem 0.75rem; text-align: right; font-family: monospace; color: #475569;">
+                                        <td style="padding: 0.6rem 0.65rem; text-align: right; font-family: monospace; color: #475569;">
                                             {{ number_format((float) $dtl->kirim_qty, 0) }}
                                         </td>
-                                        <td style="padding: 0.6rem 0.75rem; text-align: right; font-family: monospace; font-weight: 700; color: {{ $maxReturnable > 0 ? '#15803d' : '#94a3b8' }};">
+                                        <td style="padding: 0.6rem 0.65rem; text-align: right; font-family: monospace; font-weight: 700; color: {{ $maxReturnable > 0 ? '#15803d' : '#94a3b8' }};">
                                             {{ number_format($maxReturnable, 0) }}
                                         </td>
-                                        <td style="padding: 0.6rem 0.75rem; text-align: right;">
+                                        <td style="padding: 0.6rem 0.65rem; text-align: right;">
                                             @if($maxReturnable > 0)
                                                 <input type="number" 
                                                        name="items[{{ $idx }}][qty_retur]" 
@@ -146,20 +161,72 @@
                                                        data-price="{{ $effectivePrice }}" 
                                                        data-idx="{{ $idx }}"
                                                        oninput="recalcReturRow(this)"
-                                                       style="width: 90px; text-align: right; padding: 0.35rem 0.5rem; border: 1.5px solid #cbd5e1; border-radius: 4px; font-weight: 700; font-family: monospace;">
+                                                       class="form-control"
+                                                       style="width: 78px; text-align: right; padding: 0.3rem 0.4rem; border: 1.5px solid #cbd5e1; border-radius: 4px; font-weight: 700; font-family: monospace; font-size: 0.85rem; display: inline-block;">
                                             @else
                                                 <span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">Nihil</span>
                                             @endif
                                         </td>
-                                        <td style="padding: 0.6rem 0.75rem;">
+                                        <td style="padding: 0.6rem 0.65rem;">
                                             @if($maxReturnable > 0)
-                                                <select name="items[{{ $idx }}][kondisi_cd]" style="width: 100%; padding: 0.35rem 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.775rem;">
-                                                    <option value="RUSAK_KEMASAN">Kemasan Sobek / Rusak</option>
-                                                    <option value="BOCOR_KEMPES">Bocor / Kempes</option>
-                                                    <option value="CACAT_PRODUKSI">Cacat / Gosong</option>
-                                                    <option value="EXPIRED">Dekat Kadaluarsa</option>
+                                                <select name="items[{{ $idx }}][kondisi_cd]" class="form-control" style="width: 100%; padding: 0.3rem 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.75rem;">
+                                                    <option value="RUSAK_KEMASAN">Kemasan Rusak / Sobek</option>
+                                                    <option value="BOCOR_KEMPES">Bocor / Kempes Udara</option>
+                                                    <option value="CACAT_PRODUKSI">Cacat Mutu / Gosong</option>
+                                                    <option value="EXPIRED">Mendekati Kadaluarsa</option>
                                                     <option value="LAINNYA">Lainnya / Sortir</option>
                                                 </select>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td style="padding: 0.6rem 0.75rem;">
+                                            @if($maxReturnable > 0)
+                                                {{-- Segmented Controller Disposisi --}}
+                                                <div class="disposisi-btn-group">
+                                                    <button type="button" 
+                                                            class="disposisi-btn active-persediaan" 
+                                                            data-mode="MASUK_PERSEDIAAN" 
+                                                            onclick="setRowDisposisi({{ $idx }}, 'MASUK_PERSEDIAAN')">
+                                                        <span>Masuk KW 2</span>
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="disposisi-btn" 
+                                                            data-mode="DIMUSNAHKAN" 
+                                                            onclick="setRowDisposisi({{ $idx }}, 'DIMUSNAHKAN')">
+                                                        <span>Dimusnahkan</span>
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="disposisi-btn" 
+                                                            data-mode="CAMPUR" 
+                                                            onclick="setRowDisposisi({{ $idx }}, 'CAMPUR')">
+                                                        <span>Pecah Qty</span>
+                                                    </button>
+                                                </div>
+
+                                                {{-- Split Qty Inputs Box (Hidden by default, muncul saat Pecah Qty) --}}
+                                                <div id="returSplitBox_{{ $idx }}" class="split-qty-box" style="display: none;">
+                                                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                        <span style="font-size: 0.675rem; color: #166534; font-weight: 700;">KW2:</span>
+                                                        <input type="number" 
+                                                               id="returQtyMasuk_{{ $idx }}" 
+                                                               name="items[{{ $idx }}][qty_masuk_persediaan]" 
+                                                               min="0" 
+                                                               value="0" 
+                                                               class="split-qty-input"
+                                                               oninput="onSplitQtyChange({{ $idx }}, 'MASUK')">
+                                                    </div>
+                                                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                        <span style="font-size: 0.675rem; color: #991b1b; font-weight: 700;">Musnah:</span>
+                                                        <input type="number" 
+                                                               id="returQtyMusnah_{{ $idx }}" 
+                                                               name="items[{{ $idx }}][qty_dimusnahkan]" 
+                                                               min="0" 
+                                                               value="0" 
+                                                               class="split-qty-input"
+                                                               oninput="onSplitQtyChange({{ $idx }}, 'MUSNAH')">
+                                                    </div>
+                                                </div>
                                             @else
                                                 -
                                             @endif
@@ -170,15 +237,27 @@
                                     </tr>
                                 @endforeach
                             </tbody>
-                            <tfoot style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
+                            <tfoot style="background: #f8fafc; border-top: 2px solid #cbd5e1; font-weight: 700;">
                                 <tr>
-                                    <td colspan="4" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569;">
-                                        Total Retur:
+                                    <td colspan="4" style="padding: 0.65rem 0.75rem; text-align: right; color: #475569; font-size: 0.8rem;">
+                                        Total Ringkasan Retur:
                                     </td>
-                                    <td style="padding: 0.65rem 0.75rem; text-align: right; font-family: monospace; color: #0f172a;">
+                                    <td style="padding: 0.65rem 0.65rem; text-align: right; font-family: monospace; color: #0f172a; font-size: 0.85rem;">
                                         <span id="lblTotalReturQty">0</span> Karton
                                     </td>
                                     <td></td>
+                                    <td style="padding: 0.65rem 0.75rem;">
+                                        <div style="display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.75rem;">
+                                            <div style="display: flex; justify-content: space-between; color: #166534;">
+                                                <span>• Masuk Sortir KW 2:</span>
+                                                <strong id="lblTotalReturMasuk" style="font-family: monospace;">0 Karton</strong>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; color: #991b1b;">
+                                                <span>• Dimusnahkan (Scrap):</span>
+                                                <strong id="lblTotalReturMusnah" style="font-family: monospace;">0 Karton</strong>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td style="padding: 0.65rem 0.75rem; text-align: right; font-family: monospace; color: #ea580c; font-size: 0.95rem;">
                                         <span id="lblTotalReturNilai">Rp 0</span>
                                     </td>

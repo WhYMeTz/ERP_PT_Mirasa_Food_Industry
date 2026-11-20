@@ -1,123 +1,230 @@
-{{-- MODAL POPUP DETAIL DOKUMEN PURCHASE ORDER (QUICK VIEW) --}}
-<div id="modalDetailPo" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10000; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px);">
-    <div class="modal-dialog" style="background: #ffffff; border-radius: 12px; max-width: 920px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #e2e8f0; animation: modalZoomIn 0.18s ease-out;">
+{{-- MODAL POPUP DETAIL DOKUMEN PURCHASE ORDER (macOS Window Style ERP Mirasa) --}}
+<div id="modalDetailPo" class="modal-backdrop" onclick="if(event.target === this) closePoDetailModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1.25rem; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+    <div class="modal-dialog mac-po-dialog">
         
-        {{-- HEADER MODAL --}}
-        <div class="modal-header" style="padding: 1.15rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                <div style="width: 38px; height: 38px; border-radius: 8px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7; flex-shrink: 0;">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                </div>
-                <div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <h2 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin: 0;">
-                            Detail Dokumen: <span id="poDetailNo" style="color: #0284c7; font-family: monospace;">-</span>
-                        </h2>
-                        <span id="poDetailStatusBadge" class="badge" style="font-size: 0.75rem; font-weight: 700;">-</span>
-                    </div>
-                    <small style="color: #64748b; font-size: 0.775rem;">Pratinjau cepat rincian pemesanan, jadwal kirim, rincian bahan, dan penerimaan fisik.</small>
-                </div>
+        {{-- 1. macOS Window Titlebar --}}
+        <div class="mac-po-titlebar">
+            {{-- Window Controls: Traffic Lights --}}
+            <div class="mac-po-traffic" aria-label="Window Controls">
+                <button type="button" class="mac-po-dot red" onclick="closePoDetailModal()" title="Tutup (Esc)">
+                    <span class="mac-po-icon">&times;</span>
+                </button>
+                <button type="button" class="mac-po-dot yellow" onclick="closePoDetailModal()" title="Minimalkan">
+                    <span class="mac-po-icon">&minus;</span>
+                </button>
+                <button type="button" class="mac-po-dot green" onclick="togglePoDetailMaximize()" title="Maksimalkan / Normal">
+                    <span class="mac-po-icon">&plus;</span>
+                </button>
             </div>
-            <button type="button" class="modal-close" onclick="closePoDetailModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; line-height: 1;">&times;</button>
+
+            {{-- Centered macOS Window Title --}}
+            <div class="mac-po-title">
+                <svg width="15" height="15" fill="none" stroke="#0284c7" viewBox="0 0 24 24" style="flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Dokumen PO: <strong id="poDetailNo" style="font-family: monospace; color: #0284c7;">-</strong></span>
+                <span id="poDetailStatusBadge" class="mac-po-title-chip">-</span>
+                <span id="poDetailQcBadge" class="mac-po-title-chip" style="display: none;">-</span>
+            </div>
+
+            {{-- Right Controls: Buka Detail Full & Esc Shortcut --}}
+            <div class="mac-po-actions-right">
+                <a id="btnPoDetailFullHeader" href="#" class="mac-po-btn-full" title="Buka Halaman Rincian Lengkap PO">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    <span>Buka Detail Full</span>
+                </a>
+                <kbd class="mac-po-kbd">esc</kbd>
+            </div>
         </div>
 
-        {{-- BODY MODAL --}}
-        <div class="modal-body" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        {{-- 2. macOS Window Body --}}
+        <div class="mac-po-body">
             
             {{-- SPINNER LOADING --}}
-            <div id="poDetailLoadingSpinner" style="text-align: center; padding: 3rem 1rem;">
+            <div id="poDetailLoadingSpinner" style="text-align: center; padding: 4rem 1rem;">
                 <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: spinPo 0.8s linear infinite;"></div>
-                <p style="color: #64748b; font-size: 0.875rem; margin-top: 1rem;">Memuat rincian dokumen Purchase Order...</p>
+                <p style="color: #64748b; font-size: 0.875rem; margin-top: 1rem; font-weight: 600;">Memuat rincian Purchase Order &amp; kalkulasi finansial...</p>
             </div>
 
             {{-- CONTENT CONTAINER --}}
             <div id="poDetailContentBody" style="display: none;">
                 
-                {{-- 1. KARTU GRID INFORMASI UTAMA (3 KOLOM) --}}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                {{-- BANNER PERINGATAN REVISI / PENOLAKAN DARI ATASAN (JIKA ADA) --}}
+                <div id="poDetailRejectBanner" style="display: none; background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 10px; padding: 0.95rem 1.25rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: #ffe4e6; display: flex; align-items: center; justify-content: center; color: #e11d48; flex-shrink: 0; margin-top: 2px;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <strong style="color: #9f1239; font-size: 0.875rem;">Catatan Penolakan / Permintaan Revisi dari Atasan</strong>
+                                <span id="poDetailRejectDate" style="font-size: 0.75rem; color: #be123c; font-weight: 600;">-</span>
+                            </div>
+                            <div style="margin-top: 0.35rem; font-size: 0.825rem; color: #881337;">
+                                <strong>Direksi / Reviewer:</strong> <span id="poDetailRejectAuthor">-</span>
+                            </div>
+                            <div style="margin-top: 0.35rem; padding: 0.5rem 0.75rem; background: #ffffff; border: 1px solid #fda4af; border-radius: 6px; font-size: 0.8125rem; color: #9f1239; font-style: italic; line-height: 1.4;" id="poDetailRejectReason">
+                                -
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 1. GRID INFORMASI UTAMA (macOS INSPECTOR 2x2 BALANCED GRID) --}}
+                <div class="mac-po-meta-grid">
                     
-                    {{-- Box 1: Informasi Dokumen --}}
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem;">
-                        <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">
-                            📄 Parameter Dokumen
-                        </span>
-                        <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8125rem;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Tanggal Terbit:</span>
-                                <strong id="poDetailTgl" style="color: #0f172a;">-</strong>
+                    {{-- Box 1: Mitra Supplier (Pemasok) --}}
+                    <div class="mac-po-card">
+                        <div class="mac-po-card-header">
+                            <span class="mac-po-card-label">
+                                <svg width="14" height="14" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                <span>Mitra Supplier</span>
+                            </span>
+                            <span class="mac-badge-pill" style="background: #fef3c7; color: #92400e; border-color: #fde68a; font-size: 0.675rem;">Pemasok</span>
+                        </div>
+                        <div class="mac-po-card-body">
+                            <div class="mac-po-entity-title-row">
+                                <strong id="poDetailSupplierNm" class="mac-po-entity-name">-</strong>
+                                <span id="poDetailSupplierCd" class="mac-po-code-chip">-</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Estimasi Kedatangan (ETA):</span>
-                                <strong id="poDetailEta" style="color: #0284c7;">-</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Dibuat Oleh:</span>
-                                <span id="poDetailCreatedBy" style="color: #334155; font-weight: 600;">-</span>
+                            <div class="mac-po-entity-address">
+                                <svg width="13" height="13" fill="none" stroke="#64748b" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span id="poDetailSupplierAlamat">-</span>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Box 2: Supplier Mitra --}}
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem;">
-                        <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">
-                            🏢 Mitra Supplier
-                        </span>
-                        <div style="font-size: 0.8125rem;">
-                            <strong id="poDetailSupplierNm" style="color: #0f172a; display: block; font-size: 0.875rem;">-</strong>
-                            <div style="color: #0284c7; font-family: monospace; font-size: 0.75rem; margin-top: 0.15rem;" id="poDetailSupplierCd">-</div>
-                            <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;" id="poDetailSupplierAlamat">-</div>
+                    {{-- Box 2: Lokasi Gudang Penerima --}}
+                    <div class="mac-po-card">
+                        <div class="mac-po-card-header">
+                            <span class="mac-po-card-label">
+                                <svg width="14" height="14" fill="none" stroke="#059669" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                <span>Gudang Penerima</span>
+                            </span>
+                            <span class="mac-badge-pill" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0; font-size: 0.675rem;">Fasilitas Masuk</span>
+                        </div>
+                        <div class="mac-po-card-body">
+                            <div class="mac-po-entity-title-row">
+                                <strong id="poDetailGudangNm" class="mac-po-entity-name">-</strong>
+                                <span id="poDetailGudangCd" class="mac-po-code-chip green">-</span>
+                            </div>
+                            <div class="mac-po-entity-address">
+                                <svg width="13" height="13" fill="none" stroke="#64748b" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span id="poDetailGudangAlamat">-</span>
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Box 3: Lokasi Gudang Tujuan --}}
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem;">
-                        <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">
-                            📍 Gudang Tujuan Bongkar
-                        </span>
-                        <div style="font-size: 0.8125rem;">
-                            <strong id="poDetailGudangNm" style="color: #0f172a; display: block; font-size: 0.875rem;">-</strong>
-                            <div style="color: #166534; font-family: monospace; font-size: 0.75rem; margin-top: 0.15rem;" id="poDetailGudangCd">-</div>
-                            <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;" id="poDetailGudangAlamat">-</div>
+                    {{-- Box 3: Parameter Jadwal & Ketentuan Transaksi --}}
+                    <div class="mac-po-card">
+                        <div class="mac-po-card-header">
+                            <span class="mac-po-card-label">
+                                <svg width="14" height="14" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Jadwal &amp; Ketentuan Transaksi</span>
+                            </span>
+                            <span class="mac-badge-pill" style="background: #f0f9ff; color: #0284c7; border-color: #bae6fd; font-size: 0.675rem;">Parameter</span>
+                        </div>
+                        <div class="mac-po-kv-list">
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Tgl Terbit PO:</span>
+                                <span class="mac-po-kv-val" id="poDetailTgl" style="font-weight: 700; color: #0f172a;">-</span>
+                            </div>
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Estimasi Tiba (ETA):</span>
+                                <span class="mac-po-kv-val" id="poDetailEta" style="font-weight: 700; color: #0284c7;">-</span>
+                            </div>
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Termin Pembayaran (TOP):</span>
+                                <span class="mac-po-kv-val">
+                                    <strong id="poDetailTopHeader" style="color: #059669;">-</strong>
+                                </span>
+                            </div>
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Dibuat Oleh:</span>
+                                <span class="mac-po-kv-val" id="poDetailCreatedBy" style="color: #334155; font-weight: 600;">-</span>
+                            </div>
+                            <div id="poDetailRevisiRow" class="mac-po-kv-row" style="display: none; border-top: 1px dashed #fde68a; background: #fffbeb; padding: 4px 8px; border-radius: 6px; margin-top: 4px;">
+                                <span class="mac-po-kv-key" style="color: #b45309; font-weight: 700;">Revisi Dokumen:</span>
+                                <span class="mac-po-kv-val">
+                                    <span id="poDetailRevisiText" class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.7rem; font-weight:700;">-</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
+
+                    {{-- Box 4: Alur Persetujuan & Kebijakan Pajak --}}
+                    <div class="mac-po-card">
+                        <div class="mac-po-card-header">
+                            <span class="mac-po-card-label">
+                                <svg width="14" height="14" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>Otorisasi &amp; Skema Perpajakan</span>
+                            </span>
+                            <span class="mac-badge-pill" style="background: #eef2ff; color: #4338ca; border-color: #c7d2fe; font-size: 0.675rem;">Status &amp; Pajak</span>
+                        </div>
+                        <div class="mac-po-kv-list">
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Pemberi Izin (Approver):</span>
+                                <span class="mac-po-kv-val" id="poDetailApproverNm" style="font-weight: 700; color: #0f172a;">-</span>
+                            </div>
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Tgl Disetujui:</span>
+                                <span class="mac-po-kv-val" id="poDetailApprovedAt" style="color: #059669; font-weight: 700;">-</span>
+                            </div>
+                            <div class="mac-po-kv-row">
+                                <span class="mac-po-kv-key">Skema Pajak PPN:</span>
+                                <span class="mac-po-kv-val">
+                                    <strong id="poDetailTaxSchemeHeader" style="color: #0284c7;">-</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 {{-- 2. PROGRESS PEMENUHAN FISIK REALISASI --}}
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                        <span style="font-size: 0.8rem; font-weight: 700; color: #166534;">
-                            📊 Status Pemenuhan Fisik Kedatangan Barang
+                        <span style="font-size: 0.785rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #166534; display: flex; align-items: center; gap: 6px;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            Status Pemenuhan Fisik Kedatangan Barang
                         </span>
                         <span id="poDetailPctText" style="font-size: 0.85rem; font-weight: 800; color: #15803d;">0%</span>
                     </div>
-                    <div style="width: 100%; height: 7px; background: #dcfce7; border-radius: 9999px; overflow: hidden;">
-                        <div id="poDetailProgressBar" style="width: 0%; height: 100%; background: #22c55e; border-radius: 9999px; transition: width 0.3s ease;"></div>
+                    <div style="width: 100%; height: 7px; background: #f1f5f9; border-radius: 9999px; overflow: hidden;">
+                        <div id="poDetailProgressBar" style="width: 0%; height: 100%; background: #10b981; border-radius: 9999px; transition: width 0.35s ease;"></div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #166534; margin-top: 0.4rem;">
-                        <span>Total Pesan: <strong id="poDetailQtyPesan">0</strong></span>
-                        <span>Total Diterima: <strong id="poDetailQtyTerima">0</strong></span>
-                        <span>Sisa Belum Tiba: <strong id="poDetailQtySisa" style="color: #c2410c;">0</strong></span>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.775rem; color: #334155; margin-top: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <span>Total Pesan: <strong id="poDetailQtyPesan" style="color: #0f172a;">0</strong></span>
+                        <span>Total Diterima: <strong id="poDetailQtyTerima" style="color: #059669;">0</strong></span>
+                        <span>Sisa Belum Tiba: <strong id="poDetailQtySisa" style="color: #ea580c;">0</strong></span>
                     </div>
                 </div>
 
-                {{-- 3. TABEL RINCIAN BAHAN BAKU & BARANG --}}
-                <div style="margin-bottom: 1.25rem;">
-                    <h3 style="font-size: 0.875rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                        <span>Daftar Bahan Baku &amp; Harga Satuan PO</span>
-                    </h3>
-                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                {{-- 3. TABEL RINCIAN BAHAN BAKU & FINANSIAL LENGKAP --}}
+                <div class="mac-po-table-wrap">
+                    <div style="padding: 0.75rem 1rem; background: #ffffff; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <span style="font-size: 0.785rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                            <svg width="15" height="15" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                            Rincian Item Komoditas &amp; Skema Finansial
+                        </span>
+                        <span id="poDetailTableBadgeCount" class="mac-badge-pill" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+                            0 Item Terdaftar
+                        </span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="mac-po-table">
                             <thead>
-                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 700; text-align: left;">
-                                    <th style="padding: 0.6rem 0.75rem; width: 40px; text-align: center;">No</th>
-                                    <th style="padding: 0.6rem 0.75rem;">Nama Bahan Baku / Barang</th>
-                                    <th style="padding: 0.6rem 0.75rem; text-align: center; width: 70px;">Satuan</th>
-                                    <th style="padding: 0.6rem 0.75rem; text-align: right; width: 85px;">Qty Pesan</th>
-                                    <th style="padding: 0.6rem 0.75rem; text-align: right; width: 85px;">Diterima</th>
-                                    <th style="padding: 0.6rem 0.75rem; text-align: right; width: 85px;">Sisa</th>
-                                    <th style="padding: 0.6rem 0.75rem; text-align: right; width: 110px;">Harga Satuan</th>
-                                    <th style="padding: 0.6rem 0.75rem; text-align: right; width: 125px;">Subtotal</th>
+                                <tr>
+                                    <th style="width: 32px; text-align: center;">#</th>
+                                    <th style="text-align: left;">Komoditas &amp; Kode</th>
+                                    <th style="width: 60px; text-align: center;">Satuan</th>
+                                    <th style="width: 75px; text-align: right;">Qty</th>
+                                    <th style="width: 85px; text-align: right;">Terima / Sisa</th>
+                                    <th style="width: 80px; text-align: right;">Bruto</th>
+                                    <th style="width: 90px; text-align: right;">Diskon / Pot</th>
+                                    <th style="width: 80px; text-align: right;">Netto</th>
+                                    <th style="width: 95px; text-align: right;">Kode PPN</th>
+                                    <th style="width: 105px; text-align: right;">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody id="poDetailItemsTbody">
@@ -127,53 +234,121 @@
                     </div>
                 </div>
 
-                {{-- 4. FINANCIAL SUMMARY & CATATAN --}}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                {{-- 4. FINANCIAL SUMMARY & CATATAN (macOS INSPECTOR STYLE) --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
                     
-                    {{-- Catatan / Syarat Dokumen --}}
-                    <div style="background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.85rem 1rem;">
-                        <span style="font-size: 0.75rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.35rem;">
-                            📝 Catatan / Ketentuan PO:
-                        </span>
-                        <p id="poDetailCatatan" style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.5; font-style: italic;">
-                            -
-                        </p>
+                    {{-- Kolom Kiri: Catatan & Skema Pajak Dokumen --}}
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {{-- Kartu Skema Pajak & Ketentuan Pembayaran --}}
+                        <div class="mac-po-card">
+                            <span class="mac-po-card-label">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                <span>Informasi Skema Perpajakan &amp; TOP</span>
+                            </span>
+                            <div style="display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.8125rem;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: #64748b;">Perlakuan Pajak:</span>
+                                    <strong id="poDetailTaxTreatment" style="color: #0f172a;">-</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: #64748b;">Jenis Pajak Dikenakan:</span>
+                                    <span id="poDetailTaxName" style="color: #0284c7; font-weight: 700;">-</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: #64748b;">Tarif Pajak (%):</span>
+                                    <span id="poDetailTaxRate" style="color: #0f172a; font-weight: 600;">-</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: #64748b;">Termin Pembayaran:</span>
+                                    <span id="poDetailTopVal" style="color: #059669; font-weight: 700;">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Kartu Catatan / Syarat Dokumen --}}
+                        <div class="mac-po-card">
+                            <span class="mac-po-card-label">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                                <span>Catatan &amp; Remark Dokumen</span>
+                            </span>
+                            <p id="poDetailCatatan" style="font-size: 0.8125rem; color: #475569; margin: 0; line-height: 1.5; white-space: pre-line;">
+                                Tidak ada catatan tambahan untuk dokumen PO ini.
+                            </p>
+                        </div>
                     </div>
 
-                    {{-- Rekapitulasi Finansial --}}
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem;">
-                        <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8125rem;">
-                            <div style="display: flex; justify-content: space-between; color: #64748b;">
-                                <span>Subtotal Bruto:</span>
+                    {{-- Kolom Kanan: Rincian Lengkap Finansial (macOS Inspector) --}}
+                    <div class="mac-fin-summary-card">
+                        <span class="mac-po-card-label">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Kalkulasi Tagihan &amp; Finansial</span>
+                        </span>
+                        
+                        <div style="display: flex; flex-direction: column;">
+                            <div class="mac-fin-row">
+                                <span style="color: #64748b;">Subtotal Bruto (Kotor):</span>
                                 <strong id="poDetailSubtotalBruto" style="color: #0f172a;">Rp 0</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; color: #64748b;">
-                                <span>Diskon / Potongan:</span>
-                                <span id="poDetailDiskon" style="color: #dc2626;">Rp 0</span>
+                            <div class="mac-fin-row">
+                                <div>
+                                    <span style="color: #64748b;">Total Diskon Item:</span>
+                                    <small id="poDetailDiskonPercentNote" style="display: block; font-size: 0.7rem; color: #94a3b8;"></small>
+                                </div>
+                                <span id="poDetailDiskon" style="color: #dc2626; font-weight: 600;">- Rp 0</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; color: #64748b;">
-                                <span>DPP (Dasar Pengenaan Pajak):</span>
-                                <span id="poDetailDpp" style="color: #0f172a;">Rp 0</span>
+                            <div class="mac-fin-row">
+                                <span style="color: #64748b;">Potongan Tambahan / Kas:</span>
+                                <span id="poDetailPotongan" style="color: #dc2626; font-weight: 600;">- Rp 0</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; color: #64748b;">
-                                <span>PPN:</span>
-                                <span id="poDetailPpn" style="color: #0f172a;">Rp 0</span>
+                            <div class="mac-fin-row" style="background: #f8fafc; margin: 0.2rem -0.5rem; padding: 0.45rem 0.5rem; border-radius: 6px;">
+                                <span style="color: #334155; font-weight: 700;">DPP (Dasar Pengenaan Pajak):</span>
+                                <strong id="poDetailDpp" style="color: #0f172a;">Rp 0</strong>
                             </div>
-                            <div style="height: 1px; background: #cbd5e1; margin: 0.25rem 0;"></div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem;">
-                                <strong style="color: #0f172a;">Total Tagihan PO:</strong>
-                                <strong id="poDetailTotalTagihan" style="color: #0284c7; font-size: 1.05rem;">Rp 0</strong>
+                            <div class="mac-fin-row">
+                                <div>
+                                    <span style="color: #64748b;">Pajak (PPN / PPh):</span>
+                                    <small id="poDetailTaxSubNote" style="display: block; font-size: 0.7rem; color: #0284c7;"></small>
+                                </div>
+                                <span id="poDetailPpn" style="color: #0f172a; font-weight: 700;">Rp 0</span>
+                            </div>
+                            
+                            {{-- Grand Total Box --}}
+                            <div class="mac-fin-total-box">
+                                <div>
+                                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #047857; display: block;">
+                                        Total Tagihan Resmi PO
+                                    </span>
+                                    <small style="color: #059669; font-size: 0.7rem;">Sudah termasuk seluruh kalkulasi pajak &amp; diskon</small>
+                                </div>
+                                <strong id="poDetailTotalTagihan" style="color: #065f46; font-size: 1.25rem; font-family: monospace; font-weight: 800;">
+                                    Rp 0
+                                </strong>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
-                {{-- 5. RIWAYAT PENERIMAAN FISIK DI GERBANG (GRN) --}}
+                {{-- 5. RIWAYAT INSPEKSI MUTU & SAMPLING QC INBOUND --}}
+                <div id="poDetailQcSection" style="margin-bottom: 1.25rem;">
+                    <span class="mac-po-card-label" style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 1rem;">🔬</span>
+                            <span>Riwayat Uji Mutu &amp; Sampling Truk (QC Inbound)</span>
+                        </span>
+                        <span id="poDetailQcSummaryBadge" class="mac-badge-pill" style="font-size: 0.7rem;">-</span>
+                    </span>
+                    <div id="poDetailQcList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {{-- Diisi dinamis via JS --}}
+                    </div>
+                </div>
+
+                {{-- 6. RIWAYAT PENERIMAAN FISIK DI GERBANG (GRN) --}}
                 <div id="poDetailGrnSection">
-                    <h3 style="font-size: 0.875rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    <span class="mac-po-card-label" style="margin-bottom: 0.5rem;">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                         <span>Riwayat Penerimaan Barang Fisik (Surat Jalan / GRN)</span>
-                    </h3>
+                    </span>
                     <div id="poDetailGrnList" style="display: flex; flex-direction: column; gap: 0.5rem;">
                         {{-- Diisi dinamis via JS --}}
                     </div>
@@ -182,44 +357,31 @@
             </div>
         </div>
 
-        {{-- FOOTER MODAL --}}
-        <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-            <div style="font-size: 0.75rem; color: #94a3b8;">
-                ERP PT Mirasa &bull; Sistem Pengadaan Terpadu
+        {{-- 3. macOS Window Statusbar / Footer --}}
+        <div class="mac-po-statusbar">
+            <div>
+                <span id="poDetailItemCountInfo" style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
+                    Menampilkan 0 komoditas
+                </span>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="closePoDetailModal()">
+                <button type="button" class="mac-po-btn mac-po-btn-secondary" onclick="closePoDetailModal()">
                     Tutup
                 </button>
-                <button type="button" id="btnPoDetailOpenHaccp" onclick="closePoDetailModal(); openPoHaccpModal(window.currentActivePoId)" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; color: #0284c7; font-weight: 700; border-color: #bae6fd; background: #f0f9ff;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>Pratinjau Form HACCP</span>
+                <button type="button" id="btnPoDetailOpenHaccp" onclick="closePoDetailModal(); openPoHaccpModal(window.currentActivePoId)" class="mac-po-btn mac-po-btn-secondary" style="color: #0284c7; border-color: #bae6fd; background: #f0f9ff;">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Form HACCP</span>
                 </button>
-                <a id="btnPoDetailPdf" href="#" target="_blank" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; color: #475569;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <a id="btnPoDetailPdf" href="#" target="_blank" class="mac-po-btn mac-po-btn-secondary">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                     <span>Cetak PDF</span>
                 </a>
-                <a id="btnPoDetailFullView" href="#" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    <span>Halaman Lengkap</span>
+                <a id="btnPoDetailFullView" href="#" class="mac-po-btn mac-po-btn-primary">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    <span>Buka Detail Full &rarr;</span>
                 </a>
             </div>
         </div>
+
     </div>
 </div>
-
-<style>
-@keyframes spinPo {
-    to { transform: rotate(360deg); }
-}
-@keyframes modalZoomIn {
-    from {
-        opacity: 0;
-        transform: scale(0.96);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-</style>

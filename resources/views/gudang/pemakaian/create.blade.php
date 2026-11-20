@@ -7,19 +7,39 @@
 @endpush
 
 @section('content')
+{{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+    <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Gudang</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Pemakaian Bahan</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="erp-chevron-item active">
+            <span>Catat Pemakaian (BPPB)</span>
+        </span>
+        <span class="erp-chevron-end">
+            <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+        </span>
+    </nav>
+</div>
+
 {{-- HEADER BAR: JUDUL & WIDGET TOTAL LIVE DI POJOK KANAN (DENGAN FLOATING WRAPPER) --}}
 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Daftar Pemakaian
-        </a>
         <div style="display: flex; align-items: center; gap: 0.65rem;">
             <h1 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0;">
                 Form Pemakaian Bahan (BPPB)
             </h1>
-            <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 6px;">
-                ⏳ DRAFT GUDANG
+            <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 6px;" title="Stok fisik gudang langsung dipotong saat disimpan">
+                🏭 PROSES PRODUKSI
             </span>
         </div>
     </div>
@@ -66,33 +86,39 @@
         </button>
     </div>
 
-    {{-- PANEL TOOLBAR TERPADU (1 KOTAK RAMPING 2 BARIS: INFO DOKUMEN & RESEP BOM) --}}
+    {{-- PANEL TOOLBAR TERPADU (INFO DOKUMEN & RESEP BOM) --}}
     <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-        {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, TUJUAN --}}
-        <div style="display: grid; grid-template-columns: 1.1fr 1fr 1.6fr 1.8fr; gap: 0.85rem; align-items: flex-end; margin-bottom: 0.85rem;">
-            <div>
+        {{-- BARIS 1: NO BPPB, TANGGAL, GUDANG ASAL, LOKASI GUDANG / PABRIK, LINI PRODUKSI --}}
+        <div class="toolbar-form-grid">
+            {{-- KOLOM 1: NO BPPB --}}
+            <div class="toolbar-field-col">
                 <label for="pakai_no" class="toolbar-label">
-                    No. BPPB <span style="color:#ef4444;">*</span>
+                    <span>No. BPPB</span> <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="text" id="pakai_no" name="pakai_no" value="{{ old('pakai_no', $autoNo) }}" class="toolbar-input" style="font-family: monospace; font-weight: 700;" required>
+                <small id="pakai_no_help" class="toolbar-help-text" style="display: none;"></small>
             </div>
-            <div>
+
+            {{-- KOLOM 2: TANGGAL FISIK --}}
+            <div class="toolbar-field-col">
                 <label for="pakai_tgl" class="toolbar-label">
-                    Tanggal Fisik <span style="color:#ef4444;">*</span>
+                    <span>Tanggal Fisik</span> <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="date" id="pakai_tgl" name="pakai_tgl" value="{{ old('pakai_tgl', date('Y-m-d')) }}" class="toolbar-input" required>
             </div>
-            <div>
+
+            {{-- KOLOM 3: GUDANG ASAL --}}
+            <div class="toolbar-field-col">
                 <label for="gudang_id" class="toolbar-label">
-                    Gudang Asal Barang <span style="color:#ef4444;">*</span>
+                    <span>Gudang Asal Barang</span> <span style="color:#ef4444;">*</span>
                 </label>
                 @if ($userGudangId)
                     @php $lockedGdg = $gudangList->firstWhere('gudang_id', $userGudangId); @endphp
                     <input type="text" class="toolbar-input" value="{{ $lockedGdg?->display_name }} ({{ $lockedGdg?->gudang_cd }})" disabled style="background: #f1f5f9; font-weight: 600;">
                     <input type="hidden" name="gudang_id" id="gudang_id" value="{{ $userGudangId }}">
                 @else
-                    <select name="gudang_id" id="gudang_id" class="toolbar-select" required>
-                        <option value="">-- Pilih Lokasi Asal Gudang --</option>
+                    <select name="gudang_id" id="gudang_id" class="toolbar-select" required onchange="onGudangChanged()">
+                        <option value="">-- Pilih Gudang Asal --</option>
                         @foreach ($gudangList as $gdg)
                             <option value="{{ $gdg->gudang_id }}" {{ old('gudang_id') == $gdg->gudang_id ? 'selected' : '' }}>
                                 {{ $gdg->display_name }} ({{ $gdg->gudang_cd }})
@@ -101,18 +127,51 @@
                     </select>
                 @endif
             </div>
-            <div>
+
+            {{-- KOLOM 4: LOKASI GUDANG / PABRIK PRODUKSI --}}
+            <div class="toolbar-field-col">
+                <label for="gudang_tujuan_id" class="toolbar-label">
+                    <span>Gudang / Pabrik Tujuan</span>
+                </label>
+                <select name="gudang_tujuan_id" id="gudang_tujuan_id" class="toolbar-select" onchange="onGudangTujuanChanged(this)">
+                    <option value="">-- Pilih Gudang Produksi --</option>
+                    @foreach ($allGudangs as $gdgTujuan)
+                        <option value="{{ $gdgTujuan->gudang_id }}" {{ old('gudang_tujuan_id') == $gdgTujuan->gudang_id ? 'selected' : '' }}>
+                            {{ $gdgTujuan->gudang_nm }} [{{ $gdgTujuan->gudang_cd }}]
+                        </option>
+                    @endforeach
+                </select>
+                <input type="hidden" name="lokasi_pabrik" id="lokasi_pabrik" value="{{ old('lokasi_pabrik', 'MFI') }}">
+            </div>
+
+            {{-- KOLOM 5: LINI KERJA (WIP / FG) --}}
+            <div class="toolbar-field-col">
                 <label for="tujuan_pemakaian" class="toolbar-label">
-                    Tujuan Pemakaian / Lini Kerja (WIP) <span style="color:#ef4444;">*</span>
+                    <span>Tujuan Lini Produksi</span> <span style="color:#ef4444;">*</span>
                 </label>
                 <select name="tujuan_pemakaian" id="tujuan_pemakaian" class="toolbar-select" required onchange="updateSidebarInfo()">
-                    <option value="">-- Pilih Lini Produksi (WIP) --</option>
-                    @if(isset($liniList) && $liniList->isNotEmpty())
-                        @foreach($liniList as $lini)
-                            <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', 'PRODUKSI BERKO') === $lini->lini_nm ? 'selected' : '' }}>
-                                {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
-                            </option>
-                        @endforeach
+                    <option value="">-- Pilih Lini Produksi --</option>
+                    @php
+                        $wipLini = $liniList->filter(fn($l) => str_contains(strtoupper($l->kategori_lini ?? ''), 'WIP'));
+                        $fgLini = $liniList->filter(fn($l) => !str_contains(strtoupper($l->kategori_lini ?? ''), 'WIP'));
+                    @endphp
+                    @if($wipLini->isNotEmpty())
+                        <optgroup label="🏭 Lini Produksi WIP (Setengah Jadi)">
+                            @foreach($wipLini as $lini)
+                                <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian', 'PRODUKSI BERKO') === $lini->lini_nm ? 'selected' : '' }}>
+                                    {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+                    @if($fgLini->isNotEmpty())
+                        <optgroup label="📦 Lini Pengemasan / FG">
+                            @foreach($fgLini as $lini)
+                                <option value="{{ $lini->lini_nm }}" {{ old('tujuan_pemakaian') === $lini->lini_nm ? 'selected' : '' }}>
+                                    {{ $lini->lini_nm }} {{ $lini->keterangan ? '('.$lini->keterangan.')' : '' }}
+                                </option>
+                            @endforeach
+                        </optgroup>
                     @endif
                 </select>
             </div>
@@ -197,11 +256,12 @@
                 <thead>
                     <tr>
                         <th style="width: 45px; text-align: center;">No</th>
-                        <th style="min-width: 320px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
-                        <th style="min-width: 340px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 180px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
-                        <th style="width: 90px; text-align: center;">Satuan</th>
-                        <th style="width: 55px; text-align: center;">Hapus</th>
+                        <th style="min-width: 280px;">Kategori &amp; Nama Bahan Produksi <span style="color:#ef4444;">*</span></th>
+                        <th style="min-width: 320px;">Pilihan Grade &amp; Batch (FIFO) <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 175px; text-align: center;">Sisa di Gudang</th>
+                        <th style="width: 165px; text-align: right;">Qty Keluar <span style="color:#ef4444;">*</span></th>
+                        <th style="width: 85px; text-align: center;">Satuan</th>
+                        <th style="width: 50px; text-align: center;">Hapus</th>
                     </tr>
                 </thead>
                 <tbody id="itemsBody">
@@ -209,7 +269,7 @@
                 </tbody>
                 <tfoot>
                     <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;">
-                        <td colspan="3" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <td colspan="4" style="padding: 0.75rem 1rem; text-align: right; color: #475569; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.05em;">
                             Total Akumulasi Fisik:
                             <span style="margin-left: 0.85rem; text-transform: none; font-size: 0.8rem; display: inline-flex; gap: 0.5rem; vertical-align: middle;">
                                 <span style="background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
@@ -238,8 +298,8 @@
                 ✓
             </div>
             <div>
-                <strong style="color: #0f172a; font-size: 0.875rem; display: block;">Dokumen Disimpan Sebagai DRAFT Pengeluaran Fisik</strong>
-                <span style="font-size: 0.75rem; color: #64748b;">Stok dipotong &amp; Jurnal Umum terbit setelah diverifikasi Admin Produksi / Office.</span>
+                <strong style="color: #0f172a; font-size: 0.875rem; display: block;">Dokumen Pengeluaran Bahan Baku Produksi</strong>
+                <span style="font-size: 0.75rem; color: #64748b;">Stok fisik langsung terpotong saat disimpan &amp; status berubah otomatis setelah laporan produksi diinput.</span>
             </div>
         </div>
 
@@ -264,10 +324,15 @@
 @include('gudang.pemakaian.partials.modal-warning-stock-limit')
 @include('gudang.pemakaian.partials.modal-warning-fifo')
 @include('gudang.pemakaian.partials.modal-warning-grade-shortage')
+@include('gudang.pemakaian.partials.modal-confirm-previous-month')
 @endsection
 
 @push('scripts')
 <script>
+    window.currentServerYearMonth = '{{ date('Y-m') }}';
+    window.originalPakaiNo = @json(old('pakai_no', $autoNo));
+    window.originalPakaiTgl = '{{ old('pakai_tgl', date('Y-m-d')) }}';
+    window.hasOldServerInput = {{ ((isset($errors) && $errors->any()) || old('pakai_no')) ? 'true' : 'false' }};
     window.appConfig = {
         barangList: @json($barangList),
         batchesUrl: "{{ route('gudang.pemakaian.batches', [], false) }}",

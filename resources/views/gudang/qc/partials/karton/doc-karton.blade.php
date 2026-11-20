@@ -576,11 +576,20 @@
     <div style="border: 2px solid #000000; margin-bottom: 0.5rem; padding: 6px 10px; font-size: 0.78rem;">
         <span style="font-weight: 800; text-decoration: underline;">KOMENTAR</span>
         <div style="margin-top: 4px;">
+            @php
+                $komentarDoc = trim((string)($qc->catatan_umum ?: ($qc->catatan_qc ?: '')));
+                if (!$komentarDoc && $firstDetail?->catatan_dtl) {
+                    $komentarDoc = trim(preg_replace('/\s*\|\s*Grade\s+[AB]\s*(\([^\)]*\))?/i', '', $firstDetail->catatan_dtl));
+                }
+                if (!$komentarDoc) {
+                    $komentarDoc = 'Kualitas Karton Box Sesuai Standar HACCP';
+                }
+            @endphp
             @if($isEdit)
-                <textarea name="catatan_umum" rows="2" class="excel-cell-input" style="border: 1px solid #cbd5e1; padding: 4px 6px;" placeholder="Catatan kondisi kualitas kedatangan karton box...">{{ old('catatan_umum', $firstDetail?->catatan_dtl ?: $qc->catatan_umum) }}</textarea>
+                <textarea name="catatan_umum" rows="2" class="excel-cell-input" style="border: 1px solid #cbd5e1; padding: 4px 6px;" placeholder="Catatan kondisi kualitas kedatangan karton box...">{{ old('catatan_umum', $komentarDoc) }}</textarea>
             @else
                 <div style="min-height: 24px; color: #1e293b;">
-                    {{ $firstDetail?->catatan_dtl ?: ($qc->catatan_umum ?: 'Kualitas Karton Box Sesuai Standar HACCP') }}
+                    {{ $komentarDoc }}
                 </div>
             @endif
         </div>
@@ -591,9 +600,9 @@
         $rawSatuan = $firstDetail?->satuan ?? ($qc->satuan ?? 'pcs');
         $satuanLower = strtolower($rawSatuan);
         
-        $nettoVal = $firstDetail?->qty_netto_lolos ?? $totalNetto;
-        $rejectVal = $firstDetail?->qty_reject ?? $totalReject;
-        $pabrikVal = $qc->jumlah_di_pabrik ?? $totalGross;
+        $nettoVal = $totalNetto > 0 ? (float) $totalNetto : (float) ($firstDetail?->qty_netto_lolos ?? 0);
+        $rejectVal = $totalReject > 0 ? (float) $totalReject : (float) ($firstDetail?->qty_reject ?? 0);
+        $pabrikVal = $qc->jumlah_di_pabrik !== null ? (float) $qc->jumlah_di_pabrik : (float) $totalGross;
 
         // Jika Ditolak Total tapi rejectVal masih 0, ambil kuantitas pabrik/gross
         if ($qc->status_qc === 'DITOLAK_TOTAL' && $rejectVal <= 0) {
@@ -629,13 +638,31 @@
             </div>
         @else
             <div style="display: inline-flex; align-items: center; gap: 2.5rem; flex-wrap: wrap;">
-                <div style="display: inline-flex; align-items: center;">
+                <div style="display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
                     @if($qc->status_qc !== 'DITOLAK_TOTAL')
                         <span style="font-weight: 900; font-size: 1rem; margin-right: 6px; color: #000000;">✓</span>
                     @endif
                     <strong style="font-weight: 800; color: #000000;">TERIMA :</strong>
                     <u style="font-weight: 800; margin-left: 6px; margin-right: 4px; text-underline-offset: 3px;">{{ $nettoFormatted }}</u>
                     <span>{{ $satuanLower }}</span>
+
+                    @php
+                        $docGradeA = $qc->details->firstWhere('grade_cd', 'A');
+                        $docGradeB = $qc->details->firstWhere('grade_cd', 'B');
+                    @endphp
+                    @if ($docGradeA && $docGradeB && (float)$docGradeA->qty_netto_lolos > 0 && (float)$docGradeB->qty_netto_lolos > 0)
+                        <span style="font-size: 0.73rem; font-weight: 800; color: #15803d; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac; margin-left: 4px;">
+                            (Gr. A: {{ number_format((float)$docGradeA->qty_netto_lolos, 0, ',', '.') }} | Gr. B: {{ number_format((float)$docGradeB->qty_netto_lolos, 0, ',', '.') }})
+                        </span>
+                    @elseif ($docGradeB && (float)$docGradeB->qty_netto_lolos > 0)
+                        <span style="font-size: 0.73rem; font-weight: 800; color: #b45309; background: #fef3c7; padding: 1px 6px; border-radius: 4px; border: 1px solid #fde68a; margin-left: 4px;">
+                            (Grade B - Puteran)
+                        </span>
+                    @elseif ($qc->status_qc !== 'DITOLAK_TOTAL')
+                        <span style="font-size: 0.73rem; font-weight: 800; color: #15803d; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac; margin-left: 4px;">
+                            (Grade A - Baru)
+                        </span>
+                    @endif
                 </div>
 
                 <div style="display: inline-flex; align-items: center; color: #dc2626;">

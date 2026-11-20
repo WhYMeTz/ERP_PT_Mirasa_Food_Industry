@@ -147,7 +147,20 @@ class ReturPembelianController extends Controller
         $selectedPo = null;
 
         if ($selectedPoId) {
-            $selectedPo = DatPoHdr::with(['supplier', 'details.barang.satuanDasar'])->find((int) $selectedPoId);
+            $selectedPo = DatPoHdr::with(['supplier', 'details.barang.satuanDasar', 'penerimaan.details'])->find((int) $selectedPoId);
+        }
+
+        $defaultSj = '';
+        if ($selectedPo && $selectedPo->penerimaan) {
+            $sjList = [];
+            foreach ($selectedPo->penerimaan as $terima) {
+                if (!empty($terima->suratjalan_no)) {
+                    $sjList[] = trim($terima->suratjalan_no);
+                } elseif (!empty($terima->terima_no)) {
+                    $sjList[] = trim($terima->terima_no);
+                }
+            }
+            $defaultSj = implode(', ', array_unique(array_filter($sjList)));
         }
 
         $user = auth()->user();
@@ -188,6 +201,7 @@ class ReturPembelianController extends Controller
             'barangList',
             'poList',
             'selectedPo',
+            'defaultSj',
             'nextReturNo'
         ));
     }
@@ -282,6 +296,18 @@ class ReturPembelianController extends Controller
         ])->findOrFail($poId);
 
         $items = [];
+        $sjList = [];
+        if ($po->penerimaan) {
+            foreach ($po->penerimaan as $terima) {
+                if (!empty($terima->suratjalan_no)) {
+                    $sjList[] = trim($terima->suratjalan_no);
+                } elseif (!empty($terima->terima_no)) {
+                    $sjList[] = trim($terima->terima_no);
+                }
+            }
+        }
+        $sjString = implode(', ', array_unique(array_filter($sjList)));
+
         foreach ($po->details as $dtl) {
             // Hanya muat item yang kuantitas terimanya sudah lebih dari 0
             if ((float) $dtl->terima_qty > 0) {
@@ -313,12 +339,13 @@ class ReturPembelianController extends Controller
         return response()->json([
             'status' => 'success',
             'data'   => [
-                'po_id'       => $po->po_id,
-                'po_no'       => $po->po_no,
-                'supplier_id' => $po->supplier_id,
-                'supplier_nm' => $po->supplier?->supplier_nm,
-                'gudang_id'   => $po->gudang_id,
-                'items'       => $items,
+                'po_id'                  => $po->po_id,
+                'po_no'                  => $po->po_no,
+                'supplier_id'            => $po->supplier_id,
+                'supplier_nm'            => $po->supplier?->supplier_nm,
+                'gudang_id'              => $po->gudang_id,
+                'suratjalan_supplier_no' => $sjString,
+                'items'                  => $items,
             ],
         ]);
     }

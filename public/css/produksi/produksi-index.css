@@ -3,6 +3,24 @@
    PT Mirasa Food Industry
 */
 
+/* Navigasi Tab Entitas Pabrik (Semua, MFI, BMB) */
+.pabrik-tab-btn {
+    transition: all 0.2s ease;
+}
+.pabrik-tab-active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+.pabrik-tab-inactive {
+    background: transparent !important;
+    color: #475569 !important;
+}
+.pabrik-tab-inactive:hover {
+    background: #e2e8f0 !important;
+    color: #0284c7 !important;
+}
+
 /* Badge Shift */
 .badge-shift-a {
     display: inline-flex;
@@ -44,6 +62,103 @@
     font-size: 0.72rem;
     font-weight: 700;
     white-space: nowrap;
+}
+
+/* Badge Grade KW 1 & KW 2 (Clean Enterprise Typography) */
+.badge-grade-kw1 {
+    display: inline-block;
+    padding: 0.18rem 0.55rem;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.badge-grade-kw2 {
+    display: inline-block;
+    padding: 0.18rem 0.55rem;
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* Standard Action Header Buttons (ERP Mirasa Standard: Green Export, Purple Import, Amber Rework) */
+.btn-export-excel {
+    background: #ffffff;
+    border: 1.5px solid #059669;
+    color: #059669;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.btn-export-excel:hover {
+    background: #ecfdf5;
+    border-color: #047857;
+    color: #047857;
+}
+
+.btn-import-excel {
+    background: #ffffff;
+    border: 1.5px solid #7c3aed;
+    color: #7c3aed;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.btn-import-excel:hover {
+    background: #faf5ff;
+    border-color: #6d28d9;
+    color: #6d28d9;
+}
+
+.btn-rework-amber {
+    background: #ffffff;
+    border: 1.5px solid #d97706;
+    color: #b45309;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.btn-rework-amber:hover {
+    background: #fffbeb;
+    border-color: #b45309;
+    color: #92400e;
 }
 
 /* Smart Action Dropdown Button (Sama Persis dengan Standar Modul PO) */
@@ -292,33 +407,33 @@
    ═════════════════════════════════════════════════════════════ */
 .table-responsive-hasil {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     overflow: hidden;
 }
 
 .table-hasil {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.825rem;
     text-align: left;
 }
 
 .table-hasil th {
     background: #f8fafc;
-    color: #475569;
-    font-size: 0.725rem;
+    color: #334155;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.75rem 0.85rem;
-    border-bottom: 1px solid #e2e8f0;
+    letter-spacing: 0.04em;
+    padding: 0.85rem 1rem;
+    border-bottom: 2px solid #cbd5e1;
     white-space: nowrap;
 }
 
 .table-hasil td {
-    padding: 0.75rem 0.85rem;
+    padding: 0.85rem 1rem;
     border-bottom: 1px solid #f1f5f9;
     color: #1e293b;
     vertical-align: middle;
@@ -336,7 +451,21 @@
     background: #f8fafc;
     font-weight: 700;
     border-top: 2px solid #cbd5e1;
-    padding: 0.8rem 0.85rem;
+    padding: 0.85rem 1rem;
+}
+
+/* Badge Batch Ditangguhkan (Buffer Stock IFM) */
+.badge-batch-pending {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    background: #fffbeb;
+    color: #b45309;
+    border: 1.5px solid #f59e0b;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
 }
 
 /* Multi-Tier Compact Cell Typography */
@@ -865,10 +994,14 @@
     white-space: nowrap;
 }
 
-/* Filter Pills Navigation */
+/* Filter Pills Navigation (Clean Enterprise Segmented Control) */
 .filter-pills-bar {
-    display: flex;
-    gap: 0.45rem;
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    gap: 0.25rem;
     align-items: center;
     flex-wrap: wrap;
     margin-bottom: 0.85rem;
@@ -877,42 +1010,43 @@
 .filter-pill-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.85rem;
-    border-radius: 9999px;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
+    border: 1px solid transparent;
+    background: transparent;
     color: #475569;
     text-decoration: none;
     transition: all 0.15s ease;
 }
 
 .filter-pill-link:hover {
-    background: #f8fafc;
-    border-color: #94a3b8;
+    background: #ffffff;
     color: #0f172a;
+    border-color: #e2e8f0;
 }
 
 .filter-pill-link.active {
-    background: #0284c7;
-    color: #ffffff;
-    border-color: #0284c7;
-    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.35);
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #cbd5e1;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .filter-pill-link.active .pill-counter {
-    background: rgba(255, 255, 255, 0.25);
-    color: #ffffff;
+    background: #f1f5f9;
+    color: #0f172a;
 }
 
 .pill-counter {
     font-size: 0.7rem;
     padding: 0.1rem 0.45rem;
-    border-radius: 9999px;
-    background: #f1f5f9;
+    border-radius: 4px;
+    background: #e2e8f0;
     color: #64748b;
     font-weight: 700;
 }
@@ -1459,6 +1593,757 @@
     justify-content: flex-end;
     gap: 0.65rem;
 }
+
+/* ========================================================
+   VIEW SWITCHER & TABEL DOKUMEN PRODUKSI (ERP MIRASA STANDARD)
+   ======================================================== */
+.view-switcher-bar {
+    background: #ffffff;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.view-mode-tabs {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 0.2rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.view-mode-tab-item {
+    text-decoration: none;
+    padding: 0.35rem 0.85rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #64748b;
+    transition: all 0.15s ease-in-out;
+}
+
+.view-mode-tab-item:hover {
+    color: #0f172a;
+}
+
+.view-mode-tab-item.active {
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ═════════════════════════════════════════════════════════════
+   ENTERPRISE ITEM LIST: RINCIAN OUTPUT FISIK HASIL PRODUKSI
+   Desain flex modern, bersih, proporsional, dan sangat mudah dibaca
+   ═════════════════════════════════════════════════════════════ */
+.prod-item-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Header Sub-Kolom Rincian Hasil Olahan Fisik */
+.prod-item-header-grid {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.8fr) minmax(140px, 1.2fr) minmax(110px, 1fr);
+    gap: 0.85rem;
+    padding: 0 0.25rem;
+    align-items: center;
+}
+
+.prod-item-header-grid .sub-col-title {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: left;
+}
+
+.prod-item-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.8fr) minmax(140px, 1.2fr) minmax(110px, 1fr);
+    align-items: center;
+    padding: 0.35rem 0.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 0.85rem;
+    background: transparent;
+}
+
+.prod-item-row:last-child {
+    border-bottom: none;
+}
+
+/* Kolom 1: Nama Produk & Kode Barang (Rata Kiri) */
+.prod-item-left {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    min-width: 0;
+    text-align: left;
+}
+
+.prod-item-name {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.825rem;
+    letter-spacing: -0.01em;
+}
+
+.prod-item-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+}
+
+.prod-item-batch {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.675rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+}
+
+/* Kolom 2: Output Fisik (Rata Kiri Terstruktur) */
+.prod-item-qty {
+    text-align: left;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.825rem;
+}
+
+.prod-item-qty strong {
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.prod-item-qty .unit-text {
+    color: #64748b;
+    font-size: 0.725rem;
+    font-weight: 600;
+    margin-left: 0.15rem;
+}
+
+.prod-item-qty .kg-alt {
+    color: #0369a1;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.3rem;
+}
+
+/* Kolom 3: Sisa Stok Gudang (Rata Kiri) */
+.prod-item-stock {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.badge-stock-pill {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.badge-stock-empty {
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* Metadata Dokumen & Gudang Typography */
+.prod-doc-title {
+    font-weight: 700;
+    color: #0284c7;
+    font-size: 0.875rem;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+}
+
+.prod-doc-title:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.prod-doc-meta {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    line-height: 1.3;
+}
+
+.prod-doc-po {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.prod-doc-po span {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    color: #334155;
+}
+
+.badge-rework-tag {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.prod-gdg-title {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.825rem;
+}
+
+.prod-gdg-code {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    margin-top: 0.1rem;
+}
+
+.prod-batch-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    color: #1e293b;
+    background: #f8fafc;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+}
+
+.prod-exp-date {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.prod-total-kg {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.prod-total-unit {
+    font-size: 0.725rem;
+    font-family: sans-serif;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.prod-total-sub {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.badge-hpp-pill {
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.badge-hpp-pill.done {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-hpp-pill.pending {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+.hpp-nominal-sub {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   STANDAR TABEL ERP MIRASA DENGAN ZEBRA STRIPING HALUS
+   Warna transparan semu selang-seling yang nyaman di mata
+   ═════════════════════════════════════════════════════════════ */
+.table-prod-main {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.table-prod-main thead th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.825rem;
+    border-top: none;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table-prod-main tbody tr.prod-main-row {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Baris ganjil: Putih bersih */
+.table-prod-main tbody tr.prod-main-row:nth-child(odd) > td {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease;
+}
+
+/* Baris genap: Abu-abu semu transparan lembut yang jelas terlihat (#f1f5f9) */
+.table-prod-main tbody tr.prod-main-row:nth-child(even) > td {
+    background-color: #f1f5f9 !important;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease;
+}
+
+/* Hover interaktif */
+.table-prod-main tbody tr.prod-main-row:hover > td {
+    background-color: #e2e8f0 !important;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   UNIFIED HPP HUB NAVIGATION & TOOLBAR (TAB 1 & TAB 2 CONSOLIDATION)
+   Enterprise Mirasa Standard: High information density, crisp 1px borders
+   ═════════════════════════════════════════════════════════════ */
+.hpp-hub-header {
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.hpp-hub-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.hpp-hub-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.825rem;
+    color: #64748b;
+}
+
+.hpp-master-nav {
+    display: flex;
+    gap: 0.5rem;
+    background: #f8fafc;
+    padding: 0.35rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1.25rem;
+}
+
+.hpp-master-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    background: transparent;
+    border: 1.5px solid transparent;
+    transition: all 0.15s ease-in-out;
+    color: #64748b;
+}
+
+.hpp-master-tab:hover {
+    background: #ffffff;
+    color: #1e293b;
+    border-color: #cbd5e1;
+}
+
+.hpp-master-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #059669;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hpp-master-tab.active-purple {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #7c3aed;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hpp-master-tab.active-purple .hpp-master-tab-icon {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+.hpp-master-tab.active-purple .hpp-master-tab-tag {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border-color: #ddd6fe;
+}
+
+.hpp-master-tab-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    flex-shrink: 0;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+.hpp-master-tab.active .hpp-master-tab-icon {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.hpp-master-tab-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.hpp-master-tab-title {
+    font-weight: 800;
+    font-size: 0.925rem;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+.hpp-master-tab-desc {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+}
+
+.hpp-master-tab.active .hpp-master-tab-desc {
+    color: #475569;
+}
+
+.hpp-master-tab-tag {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.hpp-master-tab.active .hpp-master-tab-tag {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+/* Sub-toolbar: Segmented mode filter (Harian vs Bulanan) + Kalender Dropdown */
+.hpp-sub-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding: 0.65rem 0.85rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.hpp-view-segmented {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    gap: 3px;
+}
+
+.hpp-view-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #64748b;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.hpp-view-btn:hover {
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.hpp-view-btn.active {
+    background: #ffffff;
+    color: #059669;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hpp-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+}
+
+.hpp-select-control {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    height: 32px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.hpp-select-control:focus {
+    border-color: #059669;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ULTRA-MODERN GYRO-ORBIT LOADING TRANSITION (Universal "Memuat...")
+   ═════════════════════════════════════════════════════════════════ */
+.hpp-top-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #059669 0%, #10b981 60%, #38bdf8 100%);
+    box-shadow: 0 1px 6px rgba(16, 185, 129, 0.45);
+    z-index: 9999999;
+    transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.hpp-master-tab.is-switching,
+.hpp-view-btn.is-switching {
+    opacity: 0.72;
+    cursor: wait !important;
+}
+
+.hpp-transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.22);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9999998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hpp-transition-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modern Frosted Pill Capsule */
+.hpp-modern-pill-loader {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 9999px;
+    padding: 0.65rem 1.45rem 0.65rem 0.95rem;
+    box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.16),
+                0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+                0 2px 6px rgba(15, 23, 42, 0.04);
+    transform: translateY(8px) scale(0.95);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.hpp-transition-overlay.is-visible .hpp-modern-pill-loader {
+    transform: translateY(0) scale(1);
+}
+
+/* Modern Gyroscope Dual-Orbit Spinner */
+.hpp-gyro-container {
+    width: 34px;
+    height: 34px;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hpp-gyro-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.hpp-gyro-outer {
+    stroke-dasharray: 55, 100;
+    stroke-dashoffset: 0;
+    transform-origin: center;
+    animation: hppGyroSpinOuter 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.hpp-gyro-inner {
+    stroke-dasharray: 32, 65;
+    stroke-dashoffset: 0;
+    transform-origin: center;
+    animation: hppGyroSpinInner 0.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite reverse;
+}
+
+.hpp-gyro-core {
+    transform-origin: center;
+    animation: hppCorePulse 1.4s ease-in-out infinite;
+}
+
+/* Typography & Animated Sequential Dots */
+.hpp-modern-label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.015em;
+    display: inline-flex;
+    align-items: center;
+}
+
+.hpp-modern-dots {
+    display: inline-flex;
+    margin-left: 2px;
+}
+
+.hpp-dot {
+    display: inline-block;
+    animation: hppDotWave 1.4s infinite ease-in-out;
+}
+
+.hpp-dot-1 {
+    animation-delay: 0s;
+}
+
+.hpp-dot-2 {
+    animation-delay: 0.2s;
+}
+
+.hpp-dot-3 {
+    animation-delay: 0.4s;
+}
+
+@keyframes hppGyroSpinOuter {
+    0% {
+        transform: rotate(0deg);
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dashoffset: -30;
+    }
+    100% {
+        transform: rotate(360deg);
+        stroke-dashoffset: -100;
+    }
+}
+
+@keyframes hppGyroSpinInner {
+    0% {
+        transform: rotate(0deg);
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dashoffset: -20;
+    }
+    100% {
+        transform: rotate(360deg);
+        stroke-dashoffset: -65;
+    }
+}
+
+@keyframes hppCorePulse {
+    0%, 100% {
+        transform: scale(0.85);
+        opacity: 0.85;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 1;
+        filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.8));
+    }
+}
+
+@keyframes hppDotWave {
+    0%, 20% {
+        opacity: 0.2;
+        transform: translateY(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+    100% {
+        opacity: 0.2;
+        transform: translateY(0);
+    }
+}
+
+
+
+
 
 
 

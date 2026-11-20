@@ -5,6 +5,7 @@ namespace App\Models\Keuangan;
 use App\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MstKasBank extends Model
@@ -18,6 +19,7 @@ class MstKasBank extends Model
         'kode_akun',
         'nama_akun',
         'tipe_akun',
+        'coa_id',
         'nomor_rekening',
         'atas_nama',
         'bank_nama',
@@ -39,6 +41,43 @@ class MstKasBank extends Model
         'deleted_st'     => 'boolean',
         'active_st'      => 'boolean',
     ];
+
+    public function coa(): BelongsTo
+    {
+        return $this->belongsTo(MstCoa::class, 'coa_id', 'coa_id');
+    }
+
+    public function getCoaKodeAkun(): string
+    {
+        if ($this->coa_id && $this->coa) {
+            return $this->coa->kode_akun;
+        }
+
+        if ($this->coa_id) {
+            $coa = MstCoa::find($this->coa_id);
+            if ($coa) {
+                return $coa->kode_akun;
+            }
+        }
+
+        $directCoa = MstCoa::where('kode_akun', $this->kode_akun)->first();
+        if ($directCoa) {
+            return $directCoa->kode_akun;
+        }
+
+        $upperName = strtoupper($this->nama_akun . ' ' . $this->bank_nama . ' ' . $this->kode_akun);
+        if (str_contains($upperName, 'BCA')) {
+            return '1103';
+        }
+        if (str_contains($upperName, 'MANDIRI') || str_contains($upperName, 'MDR')) {
+            return '1107';
+        }
+        if ($this->tipe_akun === 'KAS') {
+            return '1100';
+        }
+
+        return '1100';
+    }
 
     public function mutasiList(): HasMany
     {

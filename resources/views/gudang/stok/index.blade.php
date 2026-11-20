@@ -204,10 +204,11 @@
                         'nilai_total'        => (float) $item->total_sisa_nilai,
                         'active_batch_count' => (int) $item->active_batch_count,
                         'status'             => $statusCat,
-                        'batches'            => $item->stokBatches->map(function($b) {
+                        'batches'            => $item->stokBatches->map(function($b) use ($item) {
                             return [
                                 'batch_no'     => $b->batch_no,
-                                'grade_cd'     => $b->grade_cd ?? 'A',
+                                'grade_cd'     => $b->grade_cd ?: ($item->hasGrade() ? 'A' : 'NON-GRADE'),
+                                'has_grade'    => $item->hasGrade(),
                                 'gudang_nm'    => $b->gudang?->gudang_nm ?? '-',
                                 'sisa_qty'     => (float) $b->sisa_qty,
                                 'qty_awal'     => (float) $b->qty_awal,
@@ -443,9 +444,19 @@
                         </span>
                     </td>
                     <td style="padding: 0.45rem 0.65rem; text-align: center;">
-                        <span style="font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; ${b.grade_cd === 'B' ? 'background: #fef3c7; color: #b45309; border: 1px solid #fde68a;' : (b.grade_cd === 'REJECT' ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #15803d; border: 1px solid #86efac;')}">
-                            ${b.grade_cd === 'B' ? '🟡 Grade B' : (b.grade_cd === 'REJECT' ? '❌ Afkir' : '🟢 Grade A')}
-                        </span>
+                        ${(() => {
+                            const bGradeUpper = (b.grade_cd || '').toUpperCase();
+                            const isNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE'].includes(bGradeUpper) || b.has_grade === false;
+                            if (isNonGrade) {
+                                return `<span style="font-weight: 700; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">⚪ Non Grade</span>`;
+                            } else if (bGradeUpper === 'B') {
+                                return `<span style="font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">🟡 Grade B</span>`;
+                            } else if (bGradeUpper === 'REJECT') {
+                                return `<span style="font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;">❌ Afkir</span>`;
+                            } else {
+                                return `<span style="font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; background: #dcfce7; color: #15803d; border: 1px solid #86efac;">🟢 Grade A</span>`;
+                            }
+                        })()}
                     </td>
                     <td style="padding: 0.45rem 0.65rem; color: #334155;">${b.gudang_nm}</td>
                     <td style="padding: 0.45rem 0.65rem; color: #64748b;">${b.tgl_terima}</td>
@@ -672,11 +683,19 @@
                                                     </span>
                                                 </td>
                                                 <td style="padding: 0.45rem 0.65rem; text-align: center;">
-                                                    @if ($b->grade_cd === 'B')
+                                                    @php
+                                                        $bgUpper = strtoupper(trim((string)$b->grade_cd));
+                                                        $bIsNonGrade = in_array($bgUpper, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || !$item->hasGrade();
+                                                    @endphp
+                                                    @if ($bIsNonGrade)
+                                                        <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.72rem; padding: 2px 7px;">
+                                                            ⚪ Non Grade
+                                                        </span>
+                                                    @elseif ($bgUpper === 'B')
                                                         <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
                                                             🟡 Grade B
                                                         </span>
-                                                    @elseif ($b->grade_cd === 'REJECT')
+                                                    @elseif ($bgUpper === 'REJECT')
                                                         <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; font-size: 0.72rem; padding: 2px 7px;">
                                                             ❌ Afkir
                                                         </span>

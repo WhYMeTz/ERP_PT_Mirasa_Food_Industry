@@ -130,8 +130,8 @@ function populateFakturData(data) {
     const badgeKlasifikasi = document.getElementById('badgeKlasifikasi');
     if (badgeKlasifikasi) {
         const klas = customer.klasifikasi || 'MANUAL';
-        badgeKlasifikasi.textContent = klas;
-        badgeKlasifikasi.className = 'badge-klasifikasi ' + klas.toLowerCase();
+        badgeKlasifikasi.textContent = (klas === 'MIDI_ALFA') ? 'Midi/Alfa' : klas;
+        badgeKlasifikasi.className = 'badge-klasifikasi ' + (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klas) ? 'modern' : klas.toLowerCase());
     }
 
     // 2. Referensi PO & Pengiriman

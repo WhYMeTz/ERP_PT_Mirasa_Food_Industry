@@ -111,4 +111,20 @@ class TarifProduksiController extends Controller
             'all'       => $this->tarifService->getAllTarif(),
         ]);
     }
+
+    /**
+     * Sinkronkan kurs JISDOR dari portal resmi Bank Indonesia
+     */
+    public function syncJisdor(): RedirectResponse
+    {
+        $synced = $this->tarifService->syncFromBankIndonesia();
+        if (!empty($synced)) {
+            $latest = array_key_first($synced);
+            return redirect()->route('master.tarif_produksi.index')
+                ->with('toast_success', "✅ Sinkronisasi Kurs JISDOR Bank Indonesia berhasil! Kurs aktif ({$latest}): Rp " . number_format($synced[$latest], 2, ',', '.'));
+        }
+
+        return redirect()->route('master.tarif_produksi.index')
+            ->with('toast_success', "Koneksi portal BI tidak merespon, menggunakan kurs hari kerja terakhir.");
+    }
 }

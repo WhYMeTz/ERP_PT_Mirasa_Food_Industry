@@ -21,10 +21,14 @@ class DatPakaiHdr extends Model
         'pakai_no',
         'pakai_tgl',
         'gudang_id',
+        'gudang_tujuan_id',
+        'lokasi_pabrik',
         'produksi_id',
         'tujuan_pemakaian',
         'catatan_txt',
         'status_st',
+        'is_ada_koreksi',
+        'catatan_verifikasi',
         'posted_at',
         'posted_by',
         'jurnal_id',
@@ -36,10 +40,11 @@ class DatPakaiHdr extends Model
     ];
 
     protected $casts = [
-        'pakai_tgl'  => 'date',
-        'posted_at'  => 'datetime',
-        'deleted_st' => 'boolean',
-        'active_st'  => 'boolean',
+        'pakai_tgl'       => 'date',
+        'posted_at'       => 'datetime',
+        'is_ada_koreksi'  => 'boolean',
+        'deleted_st'      => 'boolean',
+        'active_st'       => 'boolean',
     ];
 
     public function isDraft(): bool
@@ -50,6 +55,82 @@ class DatPakaiHdr extends Model
     public function isPosted(): bool
     {
         return ($this->status_st ?? '') === 'POSTED';
+    }
+
+    /**
+     * Cek apakah pemakaian bahan sudah selesai diproses oleh bagian produksi / pengemasan
+     */
+    public function isSelesaiProduksi(): bool
+    {
+        return ($this->status_st ?? '') === 'POSTED' || !empty($this->produksi_id);
+    }
+
+    /**
+     * Label status operasional pabrik yang ramah operator (Opsi A)
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->isSelesaiProduksi() ? 'SELESAI PRODUKSI' : 'PROSES PRODUKSI';
+    }
+
+    /**
+     * Metadata visual badge status operasional pabrik
+     */
+    public function getStatusBadgeAttribute(): array
+    {
+        if ($this->isSelesaiProduksi()) {
+            return [
+                'label'  => 'SELESAI PRODUKSI',
+                'bg'     => '#d1fae5',
+                'color'  => '#065f46',
+                'border' => '#a7f3d0',
+                'icon'   => '✓',
+            ];
+        }
+
+        return [
+            'label'  => 'PROSES PRODUKSI',
+            'bg'     => '#fef3c7',
+            'color'  => '#92400e',
+            'border' => '#fde68a',
+            'icon'   => '🏭',
+        ];
+    }
+
+    /**
+     * Nama lengkap pembuat dokumen (Admin Gudang yang input)
+     */
+    public function getCreatorNameAttribute(): string
+    {
+        if (!empty($this->created_by)) {
+            if (is_numeric($this->created_by)) {
+                $user = \App\Models\User::find($this->created_by);
+                if ($user) {
+                    $role = $user->role_cd ? " ({$user->role_cd})" : '';
+                    return $user->name . $role;
+                }
+            }
+            return $this->created_by;
+        }
+        return 'Admin Gudang';
+    }
+
+    /**
+     * Relasi ke Pengguna Pembuat Dokumen
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by', 'id');
+    }
+
+    /**
+     * Relasi ke Riwayat Audit & Koreksi Verifikasi
+     */
+    public function revisiLogs(): HasMany
+    {
+        return $this->hasMany(DatPakaiRevisiLog::class, 'pakai_id', 'pakai_id')
+            ->where('deleted_st', false)
+            ->orderBy('revisi_tgl', 'desc');
     }
 
     /**
@@ -66,6 +147,14 @@ class DatPakaiHdr extends Model
     public function gudang(): BelongsTo
     {
         return $this->belongsTo(MstGudang::class, 'gudang_id', 'gudang_id');
+    }
+
+    /**
+     * Relasi ke Gudang Tujuan / Area Pemakai (Jika ditujukan ke Gudang Tertentu)
+     */
+    public function gudangTujuan(): BelongsTo
+    {
+        return $this->belongsTo(MstGudang::class, 'gudang_tujuan_id', 'gudang_id');
     }
 
     /**

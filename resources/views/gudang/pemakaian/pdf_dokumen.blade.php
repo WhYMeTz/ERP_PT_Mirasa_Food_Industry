@@ -174,10 +174,10 @@
                 <div class="doc-title">BUKTI PENGELUARAN BAHAN</div>
                 <div class="doc-number">{{ $pakai->pakai_no }}</div>
                 <div style="margin-top: 3px;">
-                    @if($pakai->isDraft())
-                        <span class="badge-draft">STATUS: DRAFT</span>
+                    @if($pakai->isSelesaiProduksi())
+                        <span class="badge-posted">STATUS: SELESAI PRODUKSI</span>
                     @else
-                        <span class="badge-posted">STATUS: POSTED</span>
+                        <span class="badge-draft">STATUS: PROSES PRODUKSI</span>
                     @endif
                 </div>
             </td>
@@ -196,7 +196,12 @@
             <td class="meta-label">Gudang Asal</td>
             <td class="meta-val">{{ $pakai->gudang?->gudang_nm ?? '-' }} ({{ $pakai->gudang?->gudang_cd }})</td>
             <td class="meta-label">Tujuan Lini</td>
-            <td class="meta-val"><strong>{{ $pakai->tujuan_pemakaian }}</strong></td>
+            <td class="meta-val">
+                <strong>{{ $pakai->tujuan_pemakaian }}</strong>
+                @if($pakai->gudangTujuan)
+                    <br><span style="font-size: 7.5pt; color: #0369a1; font-weight: bold;">[Lokasi: {{ $pakai->gudangTujuan->gudang_nm }}]</span>
+                @endif
+            </td>
         </tr>
         <tr>
             <td class="meta-label">Catatan Fisik</td>

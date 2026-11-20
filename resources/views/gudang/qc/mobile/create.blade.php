@@ -3,13 +3,13 @@
 @section('title', 'Form Uji QC Bahan Masuk (HACCP 7 Komoditas) - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/singkong/singkong.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/plastik/plastik.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-create.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/singkong/singkong.css') }}?v={{ filemtime(public_path('css/gudang/qc/singkong/singkong.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}?v={{ filemtime(public_path('css/gudang/qc/minyak/minyak.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/plastik/plastik.css') }}?v={{ filemtime(public_path('css/gudang/qc/plastik/plastik.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}?v={{ filemtime(public_path('css/gudang/qc/karton/karton.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/bahan-penolong/bahan-penolong.css') }}?v={{ filemtime(public_path('css/gudang/qc/bahan-penolong/bahan-penolong.css')) }}">
 @endpush
 
 @section('content')
@@ -177,7 +177,7 @@
                                     'umur_singkong'=> $p1->umur_singkong_bln,
                                     'tgl_panen'    => $p1->tgl_panen ? $p1->tgl_panen->format('Y-m-d') : null,
                                     'nama_jenis'   => $p1->nama_jenis,
-                                    'sj_qty'       => (float) $p1->jumlah_surat_jalan,
+                                    'sj_qty'       => (float) ($p1->jumlah_surat_jalan ?: ($firstDtl?->qty_timbang_gross ?: $p1->jumlah_di_pabrik)),
                                     'pabrik_qty'   => (float) $p1->jumlah_di_pabrik,
                                     'barang_id'    => $firstDtl?->barang_id,
                                     'grade_cd'     => $firstDtl?->grade_cd ?? 'A',
@@ -327,7 +327,7 @@
                             @php
                                 $poCats = $getPoCommodities($p);
                                 $itemNames = $p->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
-                                $totalSisa = $p->details->sum(fn($d) => max(0, (float)$d->pesan_qty - (float)$d->terima_qty));
+                                $totalSisa = $p->details->sum(fn($d) => $d->sisa_belum_qc_qty);
                             @endphp
                             <option value="{{ $p->po_id }}"
                                     data-komoditas="{{ implode(',', $poCats) }}"
@@ -365,7 +365,7 @@
                     <div class="form-group" style="margin-bottom: 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.25rem;">
                             <label class="form-label" style="font-weight: 800; margin: 0; color: #0f172a;">
-                                🏢 Mitra Supplier / Produsen <span style="color:#ef4444;">*</span>
+                                🏢 Mitra Supplier <span style="color:#ef4444;">*</span>
                             </label>
                             <span id="supplierFilterBadge" style="font-size: 0.7rem; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 6px;">
                                 {{ $isMinyak ? 'Filter: 🏭 Vendor Minyak' : 'Filter: Singkong' }}
@@ -396,7 +396,7 @@
 
                         {{-- SELECT MITRA SUPPLIER / PRODUSEN --}}
                         <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700;">
-                            <option value="">-- Pilih Supplier / Produsen --</option>
+                            <option value="">-- Pilih Mitra Supplier --</option>
                             @foreach ($suppliers as $s)
                                 @php
                                     $jenisCd = $s->jenisSupplier?->jenis_supplier_cd ?: (str_starts_with($s->supplier_cd, 'SKG-') ? 'RAW' : 'BP');
@@ -467,19 +467,7 @@
                     </div>
                 </div>
 
-                {{-- NAMA PRODUSEN & NEGARA PRODUSEN (KHUSUS KOMODITAS VENDOR / NON-SINGKONG) --}}
-                <div id="wrapProdusenNegara" style="display: {{ ($isMinyak || ($curKomoditas ?? '') !== 'SINGKONG') ? 'grid' : 'none' }}; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-weight: 700;">Nama Produsen (Pabrik Pembuat)</label>
-                        <input type="text" name="nama_produsen" id="namaProdusenInput" class="form-control" placeholder="Contoh: PT. SMART Tbk / Wilmar / Musim Mas" value="{{ old('nama_produsen') }}">
-                        <span style="font-size: 0.7rem; color: #64748b; margin-top: 2px; display: block;">Terisi otomatis dari supplier (dapat diubah jika produsennya berbeda)</span>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-weight: 700;">Negara Produsen</label>
-                        <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}">
-                    </div>
-                </div>
+                <input type="hidden" name="negara_produsen" value="{{ old('negara_produsen', 'Indonesia') }}">
 
                 {{-- 4. ARMADA: PLAT TRUK & SOPIR --}}
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
@@ -500,7 +488,7 @@
                         <label class="form-label" style="font-weight: 700;" id="labelJumlahSJ">
                             {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '📄 Jumlah di Surat Jalan (KG)' : '📄 Jumlah di Surat Jalan (KG) *' }}
                         </label>
-                        <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="0.00" value="{{ old('jumlah_surat_jalan') }}" oninput="syncQuantityFields()" style="font-weight: 800; font-size: 1.05rem;">
+                        <input type="number" step="0.01" min="0" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="0.00" value="{{ old('jumlah_surat_jalan', $parentQc?->jumlah_surat_jalan ?? $parentQc?->details?->first()?->qty_timbang_gross) }}" oninput="syncQuantityFields()" style="font-weight: 800; font-size: 1.05rem;">
                         <span id="hintJumlahSJ" style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem; display: block; line-height: 1.35;">
                             {{ ($defaultTahap ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Total muatan seluruh armada pada Surat Jalan (auto-fill dari Uji 1).' : 'Total muatan seluruh armada pada Surat Jalan (contoh: 7.000 KG).' }}
                         </span>
@@ -768,14 +756,25 @@
                 'gudang_id'   => $p->gudang_id,
                 'komoditas'   => $getPoCommodities($p),
                 'items'       => $p->details->map(function ($d) {
+                    $pesanQty = (float) $d->pesan_qty;
+                    $terimaQty = (float) $d->terima_qty;
+                    $qcTestedQty = (float) $d->qc_tested_qty;
+                    $sisaBelumQc = max(0, $pesanQty - max($terimaQty, $qcTestedQty));
+                    $isSelesaiQc = $sisaBelumQc <= 0 || ($terimaQty >= $pesanQty);
+                    $qcStatus = $isSelesaiQc ? 'SELESAI' : ($qcTestedQty > 0 ? 'SEBAGIAN' : 'BELUM');
+
                     return [
-                        'podtl_id'  => $d->podtl_id,
-                        'barang_id' => $d->barang_id,
-                        'barang_nm' => $d->barang?->barang_nm,
-                        'satuan'    => $d->barang?->satuanDasar?->satuan_nm ?? 'KG',
-                        'pesan_qty' => (float) $d->pesan_qty,
-                        'terima_qty'=> (float) $d->terima_qty,
-                        'sisa_qty'  => max(0, (float) $d->pesan_qty - (float) $d->terima_qty),
+                        'podtl_id'       => $d->podtl_id,
+                        'barang_id'      => $d->barang_id,
+                        'barang_nm'      => $d->barang?->barang_nm,
+                        'satuan'         => $d->barang?->satuanDasar?->satuan_nm ?? 'KG',
+                        'pesan_qty'      => $pesanQty,
+                        'terima_qty'     => $terimaQty,
+                        'sisa_qty'       => max(0, $pesanQty - $terimaQty),
+                        'qc_tested_qty'  => $qcTestedQty,
+                        'sisa_belum_qc'  => $sisaBelumQc,
+                        'qc_status'      => $qcStatus,
+                        'is_selesai_qc'  => $isSelesaiQc,
                     ];
                 })->values(),
             ]
@@ -803,11 +802,11 @@
             } @else null @endif,
         };
     </script>
-    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/plastik/plastik.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/bahan-penolong/bahan-penolong.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/singkong/singkong.js') }}?v={{ filemtime(public_path('js/gudang/qc/singkong/singkong.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}?v={{ filemtime(public_path('js/gudang/qc/minyak/minyak.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/plastik/plastik.js') }}?v={{ filemtime(public_path('js/gudang/qc/plastik/plastik.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}?v={{ filemtime(public_path('js/gudang/qc/karton/karton.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/bahan-penolong/bahan-penolong.js') }}?v={{ filemtime(public_path('js/gudang/qc/bahan-penolong/bahan-penolong.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/mobile/qc-create.js') }}?v={{ filemtime(public_path('js/gudang/qc/mobile/qc-create.js')) }}"></script>
 @endpush
 @endsection

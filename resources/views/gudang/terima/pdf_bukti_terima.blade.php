@@ -249,7 +249,13 @@
                     <td style="text-align: center; font-size: 6.5pt; color: #475569; white-space: nowrap;">
                         {{ $dtl->expired_tgl ? \Carbon\Carbon::parse($dtl->expired_tgl)->format('d/m/Y') : '-' }}
                     </td>
-                    <td style="text-align: center; font-size: 6.5pt; color: #334155;">{{ $dtl->grade_cd ?? 'A' }}</td>
+                    <td style="text-align: center; font-size: 6.5pt; color: #334155;">
+                        @php
+                            $pdfGrade = strtoupper(trim((string)$dtl->grade_cd));
+                            $pdfIsNonGrade = in_array($pdfGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || ($dtl->barang && !$dtl->barang->hasGrade());
+                        @endphp
+                        {{ $pdfIsNonGrade ? 'Non Grade' : ($pdfGrade ?: 'A') }}
+                    </td>
                     <td style="text-align: right; font-weight: bold; color: #047857; white-space: nowrap; padding-right: 5px;">
                         {{ number_format($qty, 2, ',', '.') }}
                     </td>

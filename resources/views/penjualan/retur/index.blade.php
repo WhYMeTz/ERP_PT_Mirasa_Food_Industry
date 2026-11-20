@@ -20,10 +20,10 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <a href="{{ route('penjualan.so.index', ['status' => 'DELIVERED']) }}" class="btn btn-primary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <button type="button" onclick="openCreateReturModal()" class="btn btn-primary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            <span>+ Catat Retur Baru</span>
-        </a>
+            <span>Catat Retur Baru</span>
+        </button>
         <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <span>Daftar Seluruh PO Penjualan</span>
@@ -146,15 +146,15 @@
             <thead>
                 <tr>
                     <th style="width: 35px; text-align: center;">No</th>
-                    <th style="min-width: 140px;">No. Retur &amp; Tgl</th>
-                    <th style="min-width: 140px;">Dokumen SO / Faktur</th>
-                    <th style="min-width: 180px;">Mitra Customer</th>
-                    <th style="min-width: 150px;">Gudang &amp; Batch Masuk</th>
-                    <th style="width: 110px;">Tindakan</th>
-                    <th style="min-width: 200px;">Rincian Barang Diretur</th>
-                    <th style="width: 85px; text-align: right;">Total Qty</th>
-                    <th style="width: 125px; text-align: right;">Total Nilai</th>
-                    <th style="width: 100px; text-align: center;">Status</th>
+                    <th style="min-width: 135px;">No. Retur &amp; Tgl</th>
+                    <th style="min-width: 135px;">Dokumen SO / Faktur</th>
+                    <th style="min-width: 160px;">Mitra Customer</th>
+                    <th style="width: 105px;">Tindakan</th>
+                    <th style="min-width: 180px;">Rincian Barang</th>
+                    <th style="min-width: 160px;">Disposisi Fisik Barang</th>
+                    <th style="width: 80px; text-align: right;">Total Qty</th>
+                    <th style="width: 120px; text-align: right;">Total Nilai</th>
+                    <th style="width: 95px; text-align: center;">Status</th>
                     <th style="width: 75px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
@@ -162,6 +162,11 @@
                 @forelse($returns as $idx => $item)
                     @php
                         $menuId = 'smartActionRetur_' . $item->retur_id;
+                        $qtyMasuk = (float) $item->total_qty_masuk_persediaan;
+                        $qtyMusnah = (float) $item->total_qty_dimusnahkan;
+                        if ($qtyMasuk == 0 && $qtyMusnah == 0) {
+                            $qtyMasuk = (float) $item->total_qty; // fallback data lama
+                        }
                     @endphp
                     <tr style="background: {{ $item->status_cd === 'VOID' ? '#fff1f2' : '#ffffff' }};">
                         <td style="text-align: center; color: #64748b;">
@@ -174,7 +179,7 @@
                             </div>
                             @if($item->alasan_txt)
                                 <div style="font-size: 0.725rem; color: #475569; margin-top: 3px; font-style: italic;">
-                                    "{{ Str::limit($item->alasan_txt, 40) }}"
+                                    "{{ Str::limit($item->alasan_txt, 35) }}"
                                 </div>
                             @endif
                         </td>
@@ -191,12 +196,6 @@
                             <span style="display: block; font-size: 0.725rem; color: #64748b;">{{ $item->customer?->customer_cd ?? '-' }}</span>
                         </td>
                         <td>
-                            <strong style="color: #334155;">{{ $item->gudang?->gudang_nm ?? '-' }}</strong>
-                            <div style="font-size: 0.725rem; font-family: monospace; color: #64748b; margin-top: 2px;">
-                                Batch: RET-{{ $item->order?->so_no }}
-                            </div>
-                        </td>
-                        <td>
                             @if($item->tindakan_cd === 'POTONG_TAGIHAN')
                                 <span class="badge-tindakan-potong">Potong Tagihan</span>
                             @else
@@ -211,6 +210,20 @@
                                     <span style="font-size: 0.725rem; color: #64748b;">({{ $dtl->kondisi_label }})</span>
                                 </div>
                             @endforeach
+                        </td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                                @if($qtyMasuk > 0)
+                                    <span class="badge-disposisi-persediaan" title="Masuk ke persediaan sortir untuk diolah kembali jadi KW 2">
+                                        ✓ Masuk KW 2: <strong>{{ number_format($qtyMasuk, 0) }}</strong>
+                                    </span>
+                                @endif
+                                @if($qtyMusnah > 0)
+                                    <span class="badge-disposisi-musnah" title="Barang cacat/rusak/expired langsung dimusnahkan resmi di pabrik">
+                                        ✕ Dimusnahkan: <strong>{{ number_format($qtyMusnah, 0) }}</strong>
+                                    </span>
+                                @endif
+                            </div>
                         </td>
                         <td style="text-align: right; font-family: monospace; font-weight: 700; font-size: 0.85rem;">
                             {{ number_format((float) $item->total_qty, 0) }}
@@ -236,6 +249,13 @@
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                     <span>Cetak Berita Acara (PDF)</span>
                                 </a>
+
+                                @if($qtyMusnah > 0)
+                                    <a href="{{ route('penjualan.retur.export-pemusnahan-pdf', $item->retur_id) }}" target="_blank" class="action-dropdown-item" style="color: #dc2626;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Cetak BAP Pemusnahan (PDF)</span>
+                                    </a>
+                                @endif
 
                                 @if($item->status_cd === 'CONFIRMED')
                                     <button type="button" class="action-dropdown-item danger-item" onclick="openVoidModal({{ $item->retur_id }}, '{{ $item->retur_no }}')">
@@ -268,7 +288,8 @@
     @endif
 </div>
 
-{{-- MODAL VOID RETUR --}}
+{{-- MODAL CREATE RETUR & MODAL VOID RETUR --}}
+@include('penjualan.retur.partials.modal-create-retur')
 @include('penjualan.retur.partials.modal-void-retur')
 
 @endsection

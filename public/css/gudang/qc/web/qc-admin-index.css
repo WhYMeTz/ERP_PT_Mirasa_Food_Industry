@@ -331,7 +331,7 @@
 
 .qc-stages-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     gap: 1rem;
     padding: 1rem 1.25rem;
     background: #f8fafc;
@@ -344,15 +344,15 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .qc-stage-card.stage-uji1 {
-    border-color: #bae6fd;
+    border-top: 3px solid #0284c7;
 }
 
 .qc-stage-card.stage-uji2 {
-    border-color: #e9d5ff;
+    border-top: 3px solid #6366f1;
 }
 
 .qc-stage-card-header {
@@ -361,19 +361,22 @@
     justify-content: space-between;
     align-items: center;
     font-weight: 700;
-    font-size: 0.825rem;
+    font-size: 0.8125rem;
+    background: #f8fafc;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .qc-stage-card.stage-uji1 .qc-stage-card-header {
-    background: #f0f9ff;
-    color: #0369a1;
-    border-bottom: 1px solid #bae6fd;
+    background: #f8fafc;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .qc-stage-card.stage-uji2 .qc-stage-card-header {
-    background: #faf5ff;
-    color: #6b21a8;
-    border-bottom: 1px solid #e9d5ff;
+    background: #f8fafc;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .qc-stat-grid-4 {
@@ -381,7 +384,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 0.35rem;
     padding: 0.75rem 0.85rem;
-    background: #f8fafc;
+    background: #ffffff;
     border-bottom: 1px solid #f1f5f9;
 }
 

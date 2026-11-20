@@ -143,10 +143,10 @@
             </div>
             <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">
                 Kode: <span style="font-family: monospace;">{{ $cust?->customer_cd ?: '-' }}</span> &bull; 
-                Klasifikasi: <span class="badge-klasifikasi {{ strtolower($klas) }}">{{ $klas }}</span>
+                Klasifikasi: <span class="badge-klasifikasi {{ in_array($klas, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : strtolower($klas) }}">{{ $klas === 'MIDI_ALFA' ? 'Midi/Alfa' : $klas }}</span>
             </div>
             <div style="font-size: 0.785rem; color: #475569; margin-top: 0.4rem; line-height: 1.4;">
-                {{ $cust?->alamat_txt ?: ($cust?->wilayah ?: '-') }}
+                {!! nl2br(e($cust?->alamat_txt ?: ($cust?->wilayah ?: '-'))) !!}
             </div>
             <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #f1f5f9; font-size: 0.75rem; color: #64748b;">
                 Syarat Pembayaran: <strong style="color: #1e293b;">{{ $faktur->top_txt ?: '-' }}</strong>

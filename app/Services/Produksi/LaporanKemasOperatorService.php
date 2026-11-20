@@ -49,6 +49,9 @@ class LaporanKemasOperatorService
             'bumbuBarang',
             'plastikBarang',
             'kartonBarang',
+            'kartonPuteranBarang',
+            'kartonBaruBarang',
+            'kartonRejectBarang',
             'lakbanBarang',
             'kemasanLainBarang',
             'packagingHdr',
@@ -131,6 +134,9 @@ class LaporanKemasOperatorService
             'bumbuBarang.satuanDasar',
             'plastikBarang.satuanDasar',
             'kartonBarang.satuanDasar',
+            'kartonPuteranBarang.satuanDasar',
+            'kartonBaruBarang.satuanDasar',
+            'kartonRejectBarang.satuanDasar',
             'lakbanBarang.satuanDasar',
             'expiredBarang.satuanDasar',
             'kemasanLainBarang.satuanDasar',
@@ -155,6 +161,9 @@ class LaporanKemasOperatorService
             'bumbuBarang.satuanDasar',
             'plastikBarang.satuanDasar',
             'kartonBarang.satuanDasar',
+            'kartonPuteranBarang.satuanDasar',
+            'kartonBaruBarang.satuanDasar',
+            'kartonRejectBarang.satuanDasar',
             'lakbanBarang.satuanDasar',
             'expiredBarang.satuanDasar',
             'kemasanLainBarang.satuanDasar',
@@ -241,6 +250,33 @@ class LaporanKemasOperatorService
                 ];
             }
 
+            // Perhitungan Pemakaian Karton (Mendukung split Karton Puteran, Karton Baru & Karton Reject Manual)
+            $kartonPuteranQty = (float) ($payload['karton_puteran_qty'] ?? 0);
+            $kartonBaruQty = (float) ($payload['karton_baru_qty'] ?? 0);
+            $kartonRejectQty = (float) ($payload['karton_reject_qty'] ?? 0);
+            $kartonPuteranBarangId = !empty($payload['karton_puteran_barang_id']) ? (int) $payload['karton_puteran_barang_id'] : null;
+            $kartonBaruBarangId = !empty($payload['karton_baru_barang_id']) ? (int) $payload['karton_baru_barang_id'] : null;
+            $kartonRejectBarangId = !empty($payload['karton_reject_barang_id']) ? (int) $payload['karton_reject_barang_id'] : null;
+
+            if ($kartonPuteranQty > 0 && empty($kartonPuteranBarangId)) {
+                $kartonPuteranBarangId = MstBarang::where('barang_cd', 'KIF00G-PUT')->value('barang_id');
+            }
+            if ($kartonBaruQty > 0 && empty($kartonBaruBarangId)) {
+                $kartonBaruBarangId = MstBarang::where('barang_cd', 'KIF00G-BP1')->value('barang_id');
+            }
+            if ($kartonRejectQty > 0 && empty($kartonRejectBarangId)) {
+                $kartonRejectBarangId = MstBarang::where('barang_cd', 'KMS-KTN-REJ')->value('barang_id');
+            }
+
+            $kartonTotalQty = (float) ($payload['karton_qty'] ?? 0);
+            if (($kartonPuteranQty > 0 || $kartonBaruQty > 0 || $kartonRejectQty > 0) && ($kartonPuteranQty + $kartonBaruQty + $kartonRejectQty) > 0) {
+                $kartonTotalQty = $kartonPuteranQty + $kartonBaruQty + $kartonRejectQty;
+            }
+
+            $primaryKartonId = !empty($payload['karton_barang_id']) 
+                ? (int) $payload['karton_barang_id'] 
+                : ($kartonPuteranBarangId ?: ($kartonBaruBarangId ?: ($kartonRejectBarangId ?: null)));
+
             $laporan = DatLaporanKemasOperator::create([
                 'laporan_no'             => $laporanNo,
                 'tgl_kemas'              => $tglKemas,
@@ -264,9 +300,15 @@ class LaporanKemasOperatorService
                 'plastik_barang_id'      => !empty($payload['plastik_barang_id']) ? $payload['plastik_barang_id'] : null,
                 'plastik_qty'            => (float) ($payload['plastik_qty'] ?? 0),
                 'plastik_rusak_pcs'      => (float) ($payload['plastik_rusak_pcs'] ?? 0),
-                'karton_barang_id'       => !empty($payload['karton_barang_id']) ? $payload['karton_barang_id'] : null,
-                'karton_qty'             => (float) ($payload['karton_qty'] ?? 0),
-                'karton_rusak_lembar'    => (float) ($payload['karton_rusak_lembar'] ?? 0),
+                'karton_barang_id'         => $primaryKartonId,
+                'karton_puteran_barang_id' => $kartonPuteranBarangId,
+                'karton_baru_barang_id'    => $kartonBaruBarangId,
+                'karton_reject_barang_id'  => $kartonRejectBarangId,
+                'karton_qty'               => $kartonTotalQty,
+                'karton_puteran_qty'       => $kartonPuteranQty,
+                'karton_baru_qty'          => $kartonBaruQty,
+                'karton_reject_qty'        => $kartonRejectQty,
+                'karton_rusak_lembar'      => (float) ($payload['karton_rusak_lembar'] ?? 0),
                 'lakban_atas_gr'         => $lakbanAtasGr,
                 'lakban_bawah_gr'        => $lakbanBawahGr,
                 'lakban_barang_id'       => !empty($payload['lakban_barang_id']) ? $payload['lakban_barang_id'] : null,

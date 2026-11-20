@@ -19,20 +19,15 @@
             </a>
             <div class="sj-title-row">
                 <h1 class="sj-page-title" style="font-family: monospace;">{{ $pengeluaran->pengeluaran_no }}</h1>
-                @if ($pengeluaran->status_cd === 'SAMPAI_TUJUAN')
-                    <span class="badge-status sampai">
-                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                        Sampai Tujuan
-                    </span>
-                @elseif ($pengeluaran->status_cd === 'BATAL')
+                @if ($pengeluaran->status_cd === 'BATAL')
                     <span class="badge-status batal">
-                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                         Dibatalkan (Void)
                     </span>
                 @else
-                    <span class="badge-status terkirim">
-                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                        Terkirim (Dalam Perjalanan)
+                    <span class="badge-status dikeluarkan">
+                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                        Dikeluarkan
                     </span>
                 @endif
             </div>
@@ -69,11 +64,18 @@
             @endif
 
             @if ($pengeluaran->status_cd !== 'BATAL')
-                <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"
-                        style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #dc2626; border-color: #b91c1c; color: #ffffff;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    <span>Batalkan (Void SJ)</span>
-                </button>
+                @if ($pengeluaran->faktur && $pengeluaran->faktur->status_pembayaran !== 'BATAL' && !$pengeluaran->faktur->deleted_st)
+                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;" title="Dokumen ini terkunci karena Faktur Penjualan ({{ $pengeluaran->faktur->faktur_no }}) sudah terbit. Batalkan faktur terlebih dahulu jika ingin void SJ.">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Terkunci (Faktur Terbit)</span>
+                    </span>
+                @else
+                    <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #dc2626; border-color: #b91c1c; color: #ffffff;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Batalkan (Void SJ)</span>
+                    </button>
+                @endif
             @endif
         </div>
     </div>
@@ -118,8 +120,8 @@
                         <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Mitra Customer:</td>
                         <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
                             {{ $customer?->customer_nm ?? '-' }}
-                            <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : ($klasifikasi === 'IDM_ALFA' ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
-                                {{ $klasifikasi }}
+                            <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
+                                {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
                             </span>
                         </td>
                     </tr>
@@ -235,7 +237,7 @@
                     <tr>
                         <th style="width: 45px; text-align: center;">No.</th>
                         <th>Kode &amp; Nama Produk</th>
-                        <th style="width: 200px;">Nomor Batch Produksi (FEFO)</th>
+                        <th style="width: 250px;">Nomor Batch &amp; Traceability (FEFO)</th>
                         <th style="text-align: right; width: 140px;">Kuantitas Keluar</th>
                         <th style="width: 100px;">Satuan</th>
                     </tr>
@@ -251,9 +253,19 @@
                                 <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">Kode: {{ $dtl->barang?->barang_cd ?? '-' }}</div>
                             </td>
                             <td>
-                                <span style="font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; color: #334155; font-size: 0.8125rem;">
-                                    {{ $dtl->batch_no ?: 'NON-BATCH' }}
-                                </span>
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <span style="font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; color: #334155; font-size: 0.8125rem; width: fit-content;">
+                                        Batch: {{ $dtl->batch_no ?: 'NON-BATCH' }}
+                                    </span>
+                                    <div style="font-size: 0.72rem; color: #64748b; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                        @if ($dtl->pack_tgl)
+                                            <span>Prod: <strong>{{ \Carbon\Carbon::parse($dtl->pack_tgl)->format('d/m/Y') }}</strong></span>
+                                        @endif
+                                        @if ($dtl->expired_tgl)
+                                            <span style="color: #dc2626;">Exp: <strong>{{ \Carbon\Carbon::parse($dtl->expired_tgl)->format('d/m/Y') }}</strong></span>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                             <td style="text-align: right; font-weight: 800; font-size: 0.95rem; color: #0f172a; font-feature-settings: 'tnum';">
                                 {{ number_format($dtl->kirim_qty, 0, ',', '.') }}

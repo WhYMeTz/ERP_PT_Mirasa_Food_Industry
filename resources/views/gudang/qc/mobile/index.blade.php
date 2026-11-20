@@ -233,6 +233,17 @@
                                 @else
                                     <span class="badge-status-lab" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800;">🟢 Grade A</span>
                                 @endif
+                            @elseif ($kat === 'KARTON')
+                                @php
+                                    $grade = $cardItemDtl?->grade_cd ?? 'A';
+                                @endphp
+                                @if ($grade === 'B')
+                                    <span class="badge-status-lab" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 800;">🟡 Grade B</span>
+                                @elseif ($grade === 'REJECT')
+                                    <span class="badge-status-reject" style="font-weight: 800;">❌ Afkir</span>
+                                @else
+                                    <span class="badge-status-lab" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800;">🟢 Grade A</span>
+                                @endif
                             @elseif ($kat === 'MINYAK')
                                 @if ($cardItemDtl && $cardItemDtl->ffa_qc !== null)
                                     @if ((float)$cardItemDtl->ffa_qc <= 0.20)
@@ -376,10 +387,22 @@
                     {{-- TOMBOL EDIT KHUSUS SAMPLING QC --}}
                     @if (Auth::user()?->canEditQcMobile())
                         @if (!$isLocked)
-                            <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'index']) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                <span>Edit</span>
-                            </a>
+                            @php
+                                $mP2Child = ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') !== 'PENGUJIAN_2') ? $qc->pengujian2List->first() : null;
+                            @endphp
+                            @if ($mP2Child)
+                                <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'index']) }}" class="qc-btn-action qc-btn-edit" title="Edit Pengujian 1 (Gerbang)">
+                                    <span>✏️ Uji 1</span>
+                                </a>
+                                <a href="{{ route('qc.inbound.edit', [$mP2Child->qc_id, 'view' => 'mobile', 'ref' => 'index']) }}" class="qc-btn-action" style="background: #faf5ff; color: #7e22ce; border-color: #d8b4fe;" title="Edit Pengujian 2 (Produksi)">
+                                    <span>🍟 Uji 2</span>
+                                </a>
+                            @else
+                                <a href="{{ route('qc.inbound.edit', [$qc->qc_id, 'view' => 'mobile', 'ref' => 'index']) }}" class="qc-btn-action qc-btn-edit" title="Edit / Koreksi Parameter Mutu Sampling">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <span>Edit</span>
+                                </a>
+                            @endif
                         @else
                             <button type="button" class="qc-btn-action qc-btn-locked" title="Tiket terkunci karena sudah diproses Gudang menjadi GRN #{{ $qc->terima->terima_no }}">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>

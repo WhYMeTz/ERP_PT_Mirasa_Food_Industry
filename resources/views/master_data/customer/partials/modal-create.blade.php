@@ -34,11 +34,12 @@
                         <select id="create_klasifikasi" name="klasifikasi" class="form-control" onchange="handleKlasifikasiChange('create')" required>
                             <option value="MANUAL">MANUAL (Toko Retail / Sales Biasa)</option>
                             <option value="IFM">IFM (PT Indofood Fortuna Makmur)</option>
-                            <option value="IDM_ALFA">IDM/ALFA (Modern Trade: Indomaret, Alfa, Midi)</option>
+                            <option value="MIDI_ALFA">Midi/Alfa (Modern Trade: Alfamart &amp; Alfamidi)</option>
+                            <option value="IDM">IDM (Modern Trade: Indomaret / DC Jogja)</option>
                         </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="create_wilayah" class="form-label">Wilayah / Kota</label>
+                        <label for="create_wilayah" class="form-label">Wilayah / Rute (Opsional)</label>
                         <input type="text" id="create_wilayah" name="wilayah" class="form-control" placeholder="Contoh: SEMARANG / CIKOKOL - TANGERANG">
                     </div>
                 </div>
@@ -67,8 +68,9 @@
                     <input type="text" id="create_customer_kontak" name="kontak_no" class="form-control" placeholder="Contoh: 021-57958822 (Bpk. Hendra)">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label for="create_customer_alamat" class="form-label">Alamat Pengiriman</label>
+                    <label for="create_customer_alamat" class="form-label">Alamat Lengkap Customer (Faktur &amp; Surat Jalan)</label>
                     <textarea id="create_customer_alamat" name="alamat_txt" class="form-control" rows="2" placeholder="Contoh: Kawasan Industri Indofood, Blok B No. 4, Cikarang"></textarea>
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Alamat ini akan otomatis ditarik dan dicetak pada Faktur Penjualan serta Surat Jalan.</small>
                 </div>
             </div>
             <div class="modal-footer">

@@ -27,6 +27,7 @@
             
             {{-- Hidden Field Alokasi Pembayaran --}}
             <input type="hidden" name="allocations[0][hutang_id]" id="qp_hutang_id">
+            <input type="hidden" name="supplier_id" id="qp_supplier_id">
             <input type="hidden" name="kas_bank_id" id="qp_kas_bank_id">
 
             <div style="padding: 1.25rem 1.5rem; max-height: calc(85vh - 130px); overflow-y: auto;">

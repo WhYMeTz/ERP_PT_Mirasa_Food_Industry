@@ -2,6 +2,10 @@
 
 @section('title', 'Detail Dokumen Pemakaian Bahan ' . $pakai->pakai_no . ' - ERP PT Mirasa')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/gudang/pemakaian/pemakaian-form.css') }}?v={{ file_exists(public_path('css/gudang/pemakaian/pemakaian-form.css')) ? filemtime(public_path('css/gudang/pemakaian/pemakaian-form.css')) : time() }}">
+@endpush
+
 @section('content')
 <style>
     @media print {
@@ -47,26 +51,54 @@
     </div>
 </div>
 
+{{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
+<div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+    <nav class="erp-chevron-bar" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Gudang</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <a href="{{ route('gudang.pemakaian.index') }}" class="erp-chevron-item">
+            <span>Pemakaian Bahan</span>
+        </a>
+        <span class="erp-chevron-sep">
+            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="erp-chevron-item active">
+            <span>{{ $pakai->pakai_no }}</span>
+        </span>
+        <span class="erp-chevron-end">
+            <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
+        </span>
+    </nav>
+</div>
+
 <div class="no-print" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <a href="{{ route('gudang.pemakaian.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-            &larr; Kembali ke Daftar Pemakaian Bahan
-        </a>
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <span>{{ $pakai->pakai_no }}</span>
-            <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.85rem;">{{ $pakai->tujuan_pemakaian }}</span>
-            @if($pakai->isDraft())
-                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.8rem; border: 1px solid #fde68a; font-weight: 700; padding: 0.25rem 0.65rem;">
-                    ⏳ DRAFT (Menunggu Verifikasi)
+            <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.85rem;">🏭 {{ $pakai->tujuan_pemakaian }}</span>
+            @if($pakai->gudangTujuan)
+                <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.85rem;">🏬 Lokasi: {{ $pakai->gudangTujuan->gudang_nm }}</span>
+            @endif
+            @if($pakai->isSelesaiProduksi())
+                <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 0.8rem; border: 1px solid #a7f3d0; font-weight: 700; padding: 0.25rem 0.65rem;">
+                    ✓ SELESAI PRODUKSI
                 </span>
             @else
-                <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 0.8rem; border: 1px solid #a7f3d0; font-weight: 700; padding: 0.25rem 0.65rem;">
-                    ✓ POSTED (Terverifikasi)
+                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.8rem; border: 1px solid #fde68a; font-weight: 700; padding: 0.25rem 0.65rem;">
+                    🏭 PROSES PRODUKSI
                 </span>
             @endif
         </h1>
         <p style="color: #64748b; font-size: 0.875rem;">
-            Dokumen pengeluaran bahan dari {{ $pakai->gudang?->gudang_nm }} pada {{ \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d F Y') }}.
+            Dokumen pengeluaran bahan dari <strong>{{ $pakai->gudang?->gudang_nm }}</strong>
+            @if($pakai->gudangTujuan)
+                ke gudang <strong>{{ $pakai->gudangTujuan->gudang_nm }}</strong>
+            @endif
+            untuk Lini Produksi <strong>{{ $pakai->tujuan_pemakaian }}</strong> pada {{ \Carbon\Carbon::parse($pakai->pakai_tgl)->format('d F Y') }}.
         </p>
         @if($pakai->produksi)
             <div style="margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
@@ -78,30 +110,17 @@
         @endif
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        @if($pakai->isDraft())
+        @if(!$pakai->isSelesaiProduksi())
             @if(Auth::user()?->canEditPemakaian())
                 <a href="{{ route('gudang.pemakaian.edit', $pakai->pakai_id) }}" class="btn btn-secondary" style="font-weight: 700; color: #0284c7; border: 1.5px solid #bae6fd; background: #f0f9ff; display: inline-flex; align-items: center; gap: 0.35rem;">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     Edit Dokumen
                 </a>
             @endif
-            @if(Auth::user()?->canVerifyPemakaian())
-                <button type="button" onclick="openModalPostingPemakaian()" class="btn btn-primary" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.15rem; box-shadow: 0 2px 4px rgba(5,150,105,0.25);">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Verifikasi &amp; Terbitkan Jurnal
-                </button>
-            @endif
             @if(Auth::user()?->canDeletePemakaian())
                 <button type="button" onclick="openDeletePemakaianModal({{ $pakai->pakai_id }}, '{{ $pakai->pakai_no }}', '{{ addslashes($pakai->tujuan_pemakaian ?? '') }}')" class="btn btn-secondary" style="font-weight: 700; color: #dc2626; border: 1.5px solid #fecaca; background: #fef2f2; display: inline-flex; align-items: center; gap: 0.35rem;">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     Hapus
-                </button>
-            @endif
-        @else
-            @if($pakai->jurnal_id)
-                <button type="button" onclick="openModalDetailJurnal({{ $pakai->jurnal_id }})" class="btn btn-secondary" style="font-weight: 700; color: #065f46; border: 1.5px solid #a7f3d0; background: #f0fdf4; display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    Lihat Jurnal Umum
                 </button>
             @endif
         @endif
@@ -121,27 +140,21 @@
     </div>
 </div>
 
-{{-- BANNER STATUS VERIFIKASI OPERASIONAL --}}
+{{-- BANNER STATUS OPERASIONAL PABRIK --}}
 <div class="no-print">
-    @if($pakai->isDraft())
+    @if(!$pakai->isSelesaiProduksi())
         <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 0.85rem;">
                 <div style="width: 44px; height: 44px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; border: 1px solid #fde68a;">
-                    ⏳
+                    🏭
                 </div>
                 <div>
-                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">Status Dokumen: DRAFT (Menunggu Verifikasi &amp; Posting)</h4>
+                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">Status Dokumen: PROSES PRODUKSI (Stok Fisik Telah Dipotong)</h4>
                     <p style="margin: 0.2rem 0 0; font-size: 0.825rem; color: #b45309; line-height: 1.45;">
-                        Dokumen ini dicatat oleh petugas gudang sebagai bukti pengeluaran fisik. <strong>Stok belum dipotong</strong> dan <strong>Jurnal Umum belum terbit</strong>. Office / Admin Produksi akan memvalidasi sebelum stok terpotong secara sistem.
+                        Bahan telah dikeluarkan dari gudang secara real-time dan saat ini sedang berada di lini kerja produksi. Dokumen akan otomatis berstatus <strong>SELESAI PRODUKSI</strong> begitu tim produksi mencatatkan lembar hasil olahan/kemasan.
                     </p>
                 </div>
             </div>
-            @if(Auth::user()?->canVerifyPemakaian())
-                <button type="button" onclick="openModalPostingPemakaian()" class="btn btn-primary" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.15rem; flex-shrink: 0;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Verifikasi &amp; Terbitkan Jurnal
-                </button>
-            @endif
         </div>
     @else
         <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
@@ -150,18 +163,12 @@
                     ✓
                 </div>
                 <div>
-                    <h4 style="margin: 0; font-size: 0.925rem; font-weight: 700; color: #065f46;">Dokumen Telah Terverifikasi &amp; Terposting</h4>
+                    <h4 style="margin: 0; font-size: 0.925rem; font-weight: 700; color: #065f46;">Dokumen Telah Selesai Diproduksi</h4>
                     <p style="margin: 0.15rem 0 0; font-size: 0.8rem; color: #047857;">
-                        Diverifikasi pada <strong>{{ $pakai->posted_at ? $pakai->posted_at->format('d/m/Y H:i') : '-' }}</strong> oleh <strong>{{ $pakai->posted_by ?? 'SYSTEM' }}</strong>. Stok fisik gudang telah dipotong dan Jurnal Umum telah diterbitkan.
+                        Bahan telah tuntas diproses dan dicatatkan ke dalam Laporan Hasil Produksi.
                     </p>
                 </div>
             </div>
-            @if($pakai->jurnal_id)
-                <button type="button" onclick="openModalDetailJurnal({{ $pakai->jurnal_id }})" class="btn btn-secondary btn-sm" style="font-weight: 700; background: #ffffff; color: #065f46; border: 1.5px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    Lihat Jurnal Umum
-                </button>
-            @endif
         </div>
     @endif
 </div>
@@ -169,7 +176,13 @@
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header">
         <h2 style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">Rincian Pengeluaran Bahan</h2>
-        <span style="font-size: 0.85rem; color: #64748b;">Gudang: <strong>{{ $pakai->gudang?->gudang_nm }}</strong></span>
+        <span style="font-size: 0.85rem; color: #64748b;">
+            Gudang Asal: <strong>{{ $pakai->gudang?->gudang_nm }}</strong>
+            @if($pakai->gudangTujuan)
+                &bull; Gudang Tujuan / Lokasi Produksi: <strong>{{ $pakai->gudangTujuan->gudang_nm }}</strong>
+            @endif
+            &bull; Lini Produksi: <strong style="color: #991b1b;">{{ $pakai->tujuan_pemakaian }}</strong>
+        </span>
     </div>
     <div style="overflow-x: auto;">
         <table>
@@ -284,8 +297,6 @@
     </div>
 </div>
 
-{{-- MODALS PARTIALS (DRAFT VERIFICATION, DELETE CONFIRM & JOURNAL PREVIEW) --}}
-@include('gudang.pemakaian.partials.modal-posting')
+{{-- MODALS PARTIALS (DELETE CONFIRM) --}}
 @include('gudang.pemakaian.partials.modal-delete-confirm')
-@include('keuangan.jurnal.partials.modal-detail-jurnal')
 @endsection

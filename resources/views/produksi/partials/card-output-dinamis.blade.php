@@ -1,19 +1,36 @@
 <div class="card" style="margin-bottom: 1.25rem; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); background: #ffffff;">
-    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-        <div style="min-width: 0;">
-            <strong style="color: #0f172a; font-size: 0.925rem; display: flex; align-items: center; gap: 0.4rem;">
-                <span>2. Hasil Barang Produksi (Barang Jadi &amp; Olahan Curah)</span>
+    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem; display: block !important;">
+        <div>
+            <strong style="color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>2. Hasil Penggorengan (Rilis, Tidak Jadi Rilis / Hold, &amp; Afkir)</span>
             </strong>
-            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.15rem;">
-                Pencatatan rincian output barang yang dihasilkan (Barang Jadi FG, Curah WIP, Berko &amp; Limbah Lengket).
+            <span style="font-size: 0.775rem; color: #64748b; display: block; margin-top: 0.2rem;">
+                Pencatatan rincian output hasil penggorengan: Lolos Rilis (FCC Indofood, Ekspor, Curah), Tidak Jadi Rilis (Hold Gudang), serta Afkir Langsung (Berko, Lengket, Remahan).
             </span>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+
+        {{-- Baris Badge Ringkasan Output & Porsi (Tepat di Bawah Subjudul) --}}
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; width: 100%;">
             <span id="badgeTotalOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap;">
-                Total Output: 0.00 kg
+                Total Timbangan: 0.00 kg
+            </span>
+            <span id="badgeRilisOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #059669; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap;" title="Total hasil penggorengan yang lolos rilis">
+                Lolos Rilis: 0.00 kg
+            </span>
+            <span id="badgeHoldOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang tidak jadi rilis yang disimpan ke gudang hold / karantina">
+                Hold Gudang: 0.00 kg
+            </span>
+            <span id="badgeAfkirOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang cacat masak yang langsung diafkir di hari itu">
+                Afkir Langsung: 0.00 kg
+            </span>
+            <span id="badgeTotalPorsi" style="font-size: 0.775rem; font-weight: 700; color: #0369a1; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
+                Total Porsi: 0.00%
             </span>
             <span id="badgeBerkoOutput" style="font-size: 0.775rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
                 Berko: 0.00 kg
+            </span>
+            <span id="badgeRemahanOutput" style="font-size: 0.775rem; font-weight: 700; color: #4338ca; background: #e0e7ff; border: 1px solid #c7d2fe; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
+                Remahan: 0.00 kg
             </span>
             <span id="badgeLengketOutput" style="font-size: 0.775rem; font-weight: 700; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;">
                 Limbah Lengket: 0.00 kg
@@ -24,10 +41,10 @@
     <div style="padding: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
             <span style="font-size: 0.825rem; font-weight: 700; color: #1e293b;">
-                Daftar Barang Hasil Produksi:
+                Daftar Hasil Penggorengan &amp; Curah:
             </span>
             <button type="button" onclick="addFgRow()" class="btn btn-sm btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.775rem;">
-                <span>+ Tambah Baris Barang</span>
+                <span>+ Tambah Baris Hasil</span>
             </button>
         </div>
 
@@ -36,22 +53,92 @@
                 <thead>
                     <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; color: #334155; font-weight: 700; font-size: 0.725rem; text-transform: uppercase;">
                         <th style="padding: 0.5rem 0.75rem; width: 35px; text-align: center;">No</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 85px; text-align: center;">Jenis</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 80px; text-align: center;">Jenis</th>
                         <th style="padding: 0.5rem 0.75rem; min-width: 260px;">Nama &amp; Kode Barang</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 130px; text-align: right;">QTY Hasil</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 90px; text-align: center;">Satuan</th>
-                        <th style="padding: 0.5rem 0.75rem; width: 130px; text-align: right;">Total Berat (Kg)</th>
-                        <th style="padding: 0.5rem 0.75rem; min-width: 140px; text-align: center;">Kode Batch (Otomatis)</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 125px; text-align: right;">QTY Hasil</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 85px; text-align: center;">Satuan</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 125px; text-align: right;">Total Berat (Kg)</th>
+                        <th style="padding: 0.5rem 0.75rem; width: 95px; text-align: right;">Porsi (%)</th>
+                        <th style="padding: 0.5rem 0.75rem; min-width: 135px; text-align: center;">Kode Batch (Otomatis)</th>
                         <th style="padding: 0.5rem 0.75rem; width: 50px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyOutputFg">
                     @php
-                        $fgItems = isset($barangHasilList) ? $barangHasilList->filter(fn($b) => !str_starts_with($b->barang_cd, 'WIP') && ($b->jenisBarang?->jenis_barang_cd ?? '') !== 'WIP') : collect([]);
-                        $wipItems = isset($barangHasilList) ? $barangHasilList->filter(fn($b) => str_starts_with($b->barang_cd, 'WIP') || ($b->jenisBarang?->jenis_barang_cd ?? '') === 'WIP') : collect([]);
+                        $allOutputs = isset($barangHasilList) ? $barangHasilList : collect([]);
+
+                        // 1. Khusus Pesanan Indofood (FCC Non Bumbu 6 kg/box) - Lolos Rilis
+                        $fccItems = $allOutputs->filter(function($b) {
+                            if ($b->kategori_output_cd === 'FCC_NON_BUMBU') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
+                            return str_starts_with($cd, 'WIP-FCC') || str_contains($nm, 'IFL') || str_contains($nm, 'INDOFOOD') || str_contains($nm, 'TANPA BUMBU');
+                        });
+
+                        // 2. Produk Ekspor (Lolos Rilis)
+                        $exportItems = $allOutputs->filter(function($b) use ($fccItems) {
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'EKSPOR') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
+                            return str_contains($nm, 'EKSPOR') || str_contains($cd, 'FG-EA') || str_contains($cd, 'FG-EC');
+                        });
+
+                        // 3. Curah Berbumbu (Hasil Seasoning)
+                        $seasoningItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems) {
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_BERBUMBU') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
+                            return str_contains($nm, 'ASIN') || str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'LEMON') || str_contains($nm, 'PEDAS') || str_contains($nm, 'BARCO') || str_contains($nm, 'SAWIT') || str_contains($nm, 'BALQI') || str_contains($nm, 'UCAMP') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR');
+                        });
+
+                        // 4. Tidak Jadi Rilis (Hold QC Gudang / Karantina)
+                        $holdItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems) {
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_HOLD') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            $grade = strtoupper($b->grade_cd ?? '');
+                            return str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || $grade === 'HOLD';
+                        });
+
+                        // 5. Reject / Langsung Afkir / Limbah Dapur (Berko, Remahan, Lengket, Afkir)
+                        $afkirItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems, $holdItems) {
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_AFKIR') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            return str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET') || str_contains($nm, 'REMAHAN') || str_contains($nm, 'AFKIR') || str_contains($cd, 'BRK') || str_contains($cd, 'LGT') || str_contains($cd, 'RMH') || str_contains($cd, 'AFK');
+                        });
+
+                        // 6. Curah Tawar Normal Lainnya
+                        $tawarItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems, $holdItems, $afkirItems) {
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($afkirItems->contains('barang_id', $b->barang_id)) return false;
+                            return true;
+                        });
+
                         $oldBarangId = old('output_items.0.barang_id');
-                        $oldJenis = old('output_items.0.jenis_cd', '-');
-                        $oldSatuan = old('output_items.0.satuan_cd', '-');
+                        $oldJenis = old('output_items.0.jenis_cd', 'WIP');
+                        $oldSatuan = old('output_items.0.satuan_cd', 'KG');
                     @endphp
                     <tr id="fgRow_0" class="row-output-fg" style="border-bottom: 1px solid #e2e8f0;">
                         <td style="padding: 0.5rem 0.75rem; text-align: center; font-weight: 700; color: #64748b;" class="fg-row-number">
@@ -61,32 +148,81 @@
                             <span id="badgeJenis_0" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">
                                 {{ $oldJenis }}
                             </span>
-                            <input type="hidden" name="output_items[0][jenis_cd]" id="inputJenis_0" value="{{ $oldJenis !== '-' ? $oldJenis : '' }}">
+                            <input type="hidden" name="output_items[0][jenis_cd]" id="inputJenis_0" value="{{ $oldJenis !== '-' ? $oldJenis : 'WIP' }}">
                         </td>
                         <td style="padding: 0.5rem 0.75rem;">
                             <select name="output_items[0][barang_id]" class="form-control select-fg-barang" style="font-size: 0.8rem; font-weight: 600;" onchange="onFgBarangChange(this, 0)">
-                                <option value="">-- Pilih Barang Hasil Produksi --</option>
-                                @if($fgItems->isNotEmpty())
-                                    <optgroup label="── BARANG JADI (FINISH GOOD / FG) ──">
-                                        @foreach($fgItems as $b)
-                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KARTON'; @endphp
-                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="FG" data-satuan="{{ $satuan }}" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endif
-                                @if($wipItems->isNotEmpty())
-                                    <optgroup label="── OLAHAN SETENGAH JADI (WIP CURAH) ──">
-                                        @foreach($wipItems as $b)
+                                <option value="">-- Pilih Hasil Penggorengan (WIP / FCC / Ekspor) --</option>
+                                
+                                @if($fccItems->isNotEmpty())
+                                    <optgroup label="1. KHUSUS INDOFOOD (FCC NON-BUMBU 6 KG/BOX - RILIS)">
+                                        @foreach($fccItems as $b)
                                             @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
-                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }})
+                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [FCC Non Bumbu]
                                             </option>
                                         @endforeach
                                     </optgroup>
                                 @endif
+
+                                @if($exportItems->isNotEmpty())
+                                    <optgroup label="2. PRODUK EKSPOR (LOLOS RILIS)">
+                                        @foreach($exportItems as $b)
+                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
+                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="{{ str_starts_with($b->barang_cd, 'FG') ? 'FG' : 'WIP' }}" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [Ekspor]
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+
+                                @if($seasoningItems->isNotEmpty())
+                                    <optgroup label="3. CURAH BERBUMBU (HASIL SEASONING)">
+                                        @foreach($seasoningItems as $b)
+                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
+                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Berbumbu]
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+
+                                @if($tawarItems->isNotEmpty())
+                                    <optgroup label="4. CURAH TAWAR (POLOS)">
+                                        @foreach($tawarItems as $b)
+                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
+                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="RILIS" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Curah Tawar]
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+
+                                @if($holdItems->isNotEmpty())
+                                    <optgroup label="5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">
+                                        @foreach($holdItems as $b)
+                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
+                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="HOLD" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Hold]
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+
+                                @if($afkirItems->isNotEmpty())
+                                    <optgroup label="6. HASIL LANGSUNG AFKIR / LIMBAH DAPUR">
+                                        @foreach($afkirItems as $b)
+                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
+                                            <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="AFKIR" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
+                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Sampingan]
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+
+
                             </select>
+                            <input type="hidden" name="output_items[0][grade_cd]" id="gradeCd_0" class="select-fg-grade" value="{{ old('output_items.0.grade_cd', 'RILIS') }}">
                         </td>
                         <td style="padding: 0.5rem 0.75rem;">
                             <input type="number" step="0.0001" min="0" name="output_items[0][qty_hasil]" id="qtyHasil_0" class="form-control calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a;" placeholder="0" value="{{ old('output_items.0.qty_hasil', '') }}" oninput="onQtyHasilInput(0)">
@@ -98,11 +234,18 @@
                         <td style="padding: 0.5rem 0.75rem;">
                             <input type="number" step="0.0001" min="0" name="output_items[0][qty_kg]" id="qtyKg_0" class="form-control input-fg-qty-kg calc-trigger" style="text-align: right; font-weight: 700; color: #0f172a; background: #ffffff;" placeholder="0" value="{{ old('output_items.0.qty_kg', '') }}" oninput="calcAll()">
                         </td>
+                        <td style="padding: 0.5rem 0.75rem; text-align: right;">
+                            <span class="label-fg-porsi" id="porsiFg_0" style="font-weight: 700; font-size: 0.8rem; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                                0,00%
+                            </span>
+                        </td>
                         <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                            <span class="badge-batch-wip" id="badgeFgBatch_0" style="font-size: 0.75rem; font-weight: 700; color: #065f46; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                            <span class="badge-batch-wip" id="badgeFgBatch_0" data-batch-state="{{ old('batch_option', 'include') === 'exclude' ? 'excluded' : 'active' }}" onclick="toggleSingleRowBatch(0)" style="font-size: 0.75rem; font-weight: 700; color: #065f46; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; cursor: pointer; user-select: none;" title="Status: Diterbitkan. Klik untuk menangguhkan (Buffer Stock)">
                                 {{ old('output_items.0.batch_no', date('d m Y')) }}
                             </span>
                             <input type="hidden" name="output_items[0][batch_no]" id="batchFg_0" value="{{ old('output_items.0.batch_no', date('d m Y')) }}">
+                            <input type="hidden" name="output_items[0][hpp_satuan]" id="hppSatuan_0" value="{{ old('output_items.0.hpp_satuan', 0) }}">
+                            <input type="hidden" name="output_items[0][total_nilai]" id="totalNilai_0" value="{{ old('output_items.0.total_nilai', 0) }}">
                         </td>
                         <td style="padding: 0.5rem 0.75rem; text-align: center;">
                             <button type="button" class="btn btn-sm btn-remove-fg" id="btnRemoveFg_0" style="padding: 0.2rem 0.45rem; font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; color: #94a3b8; font-weight: 600; opacity: 0.4; cursor: not-allowed;" title="Baris utama tidak dapat dihapus" disabled>
@@ -114,25 +257,8 @@
             </table>
         </div>
 
-        {{-- AREA CATATAN & PO BUYER --}}
-        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; align-items: start; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #e2e8f0;">
-            <div>
-                <label for="catatan_txt" style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                    Catatan Produksi / Kualitas Shift
-                </label>
-                <textarea name="catatan_txt" id="catatan_txt" class="form-control" rows="2" style="font-size: 0.825rem; resize: vertical;" placeholder="Catatan shift, deviasi bumbu, atau kendala pengerjaan...">{{ old('catatan_txt', $produksi->catatan_txt ?? '') }}</textarea>
-            </div>
-            <div>
-                <label for="po_ifl_no" style="display: block; font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: space-between;">
-                    <span>No. Dokumen PO Buyer IFL</span>
-                    <span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8;">Opsional</span>
-                </label>
-                <input type="text" name="po_ifl_no" id="po_ifl_no" class="form-control" style="font-family: monospace; font-weight: 700; font-size: 0.85rem; height: 38px; color: #0f172a;" placeholder="Contoh: PO-IFL/2026/10/088" value="{{ old('po_ifl_no', $produksi->po_ifl_no ?? '') }}">
-                <small style="color: #64748b; font-size: 0.7rem; margin-top: 0.35rem; display: block;">
-                    Diisi jika hasil produksi dialokasikan untuk pemenuhan PO buyer khusus.
-                </small>
-            </div>
-        </div>
+        {{-- Hidden Input PO Buyer IFL --}}
+        <input type="hidden" name="po_ifl_no" id="po_ifl_no" value="{{ old('po_ifl_no', $produksi->po_ifl_no ?? '') }}">
 
         {{-- Hidden Inputs untuk Sinkronisasi Otomatis Limbah HACCP ke Controller & Database --}}
         <input type="hidden" name="waste_lengket_qty" id="waste_lengket_qty" value="{{ old('waste_lengket_qty', $produksi->waste_lengket_qty ?? 0) }}">

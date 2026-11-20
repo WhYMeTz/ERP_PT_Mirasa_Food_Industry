@@ -110,7 +110,7 @@ function openDeleteBarangModal(id, code, name) {
 /**
  * Buka modal edit barang dan isi nilainya
  */
-function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar) {
+function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konversi, batasMin, hargaStandar, hargaJual, hargaIdmAlfa, hargaMidi, hargaSmg, hargaCkl, kategoriOutput) {
     const elKode = document.getElementById('edit_barang_cd');
     const elNama = document.getElementById('edit_barang_nm');
     const elJenis = document.getElementById('edit_jenis_barang_id');
@@ -119,6 +119,12 @@ function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konve
     const elKonversi = document.getElementById('edit_konversi_qty');
     const elBatasMin = document.getElementById('edit_batas_minimum_qty');
     const elHargaStandar = document.getElementById('edit_harga_beli_standar');
+    const elHargaJual = document.getElementById('edit_harga_jual');
+    const elHargaIdmAlfa = document.getElementById('edit_harga_jual_idm_alfa');
+    const elHargaMidi = document.getElementById('edit_harga_jual_alfamidi');
+    const elHargaSmg = document.getElementById('edit_harga_jual_ifm_smg');
+    const elHargaCkl = document.getElementById('edit_harga_jual_ifm_ckl');
+    const elKatOutput = document.getElementById('edit_kategori_output_cd');
     const elId = document.getElementById('edit_barang_id');
     const formEdit = document.getElementById('formEditBarang');
 
@@ -129,8 +135,20 @@ function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konve
     if (elSatuanBesar) elSatuanBesar.value = satuanBesarId || '';
     if (elKonversi) elKonversi.value = konversi;
     if (elBatasMin) elBatasMin.value = batasMin || 0;
-    if (elHargaStandar) elHargaStandar.value = hargaStandar || 0;
+    if (elHargaStandar) elHargaStandar.value = parseFloat(hargaStandar) > 0 ? parseFloat(hargaStandar) : '';
+    if (elHargaJual) elHargaJual.value = parseFloat(hargaJual) > 0 ? parseFloat(hargaJual) : '';
+    if (elHargaIdmAlfa) elHargaIdmAlfa.value = parseFloat(hargaIdmAlfa) > 0 ? parseFloat(hargaIdmAlfa) : '';
+    if (elHargaMidi) elHargaMidi.value = parseFloat(hargaMidi) > 0 ? parseFloat(hargaMidi) : '';
+    if (elHargaSmg) elHargaSmg.value = parseFloat(hargaSmg) > 0 ? parseFloat(hargaSmg) : '';
+    if (elHargaCkl) elHargaCkl.value = parseFloat(hargaCkl) > 0 ? parseFloat(hargaCkl) : '';
+    if (elKatOutput) elKatOutput.value = kategoriOutput || '';
     if (elId) elId.value = id;
+
+    // Toggle visibilitas Kategori Output hanya tampil saat jenis barang adalah WIP atau FG
+    toggleKategoriOutputVisibility(elJenis, 'grp_edit_kategori_output', 'edit_kategori_output_cd');
+    if (elKatOutput && kategoriOutput) {
+        elKatOutput.value = kategoriOutput;
+    }
 
     const baseUrl = window.masterBarangBaseUrl || '/master-barang';
     if (formEdit) formEdit.action = baseUrl.replace(/\/$/, '') + '/' + id;
@@ -138,8 +156,27 @@ function editBarang(id, kode, nama, jenisId, satuanDasarId, satuanBesarId, konve
     openModal('modalEditBarang');
 }
 
+/**
+ * Toggle Kategori Output Produksi hanya tampil saat Jenis Barang = WIP atau FG
+ */
+function toggleKategoriOutputVisibility(selectElem, targetBoxId = 'grp_kategori_output', inputSelectId = 'kategori_output_cd') {
+    if (!selectElem) return;
+    const opt = selectElem.options[selectElem.selectedIndex];
+    const cd = (opt?.dataset?.cd || opt?.textContent || '').toUpperCase();
+    const isWipOrFg = cd.includes('WIP') || cd.includes('FG');
+    const box = document.getElementById(targetBoxId);
+    if (box) {
+        box.style.display = isWipOrFg ? 'block' : 'none';
+        if (!isWipOrFg) {
+            const inputSelect = document.getElementById(inputSelectId);
+            if (inputSelect) inputSelect.value = '';
+        }
+    }
+}
+
 // Expose fungsi ke scope global window
 window.toggleSmartActionDropdown = toggleSmartActionDropdown;
 window.closeAllActionDropdowns = closeAllActionDropdowns;
 window.openDeleteBarangModal = openDeleteBarangModal;
 window.editBarang = editBarang;
+window.toggleKategoriOutputVisibility = toggleKategoriOutputVisibility;

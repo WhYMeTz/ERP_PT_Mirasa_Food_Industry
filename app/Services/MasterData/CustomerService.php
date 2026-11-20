@@ -17,6 +17,7 @@ class CustomerService
             $query->where(function ($q) use ($search) {
                 $q->where('customer_cd', 'LIKE', "%{$search}%")
                   ->orWhere('customer_nm', 'LIKE', "%{$search}%")
+                  ->orWhere('alamat_txt', 'LIKE', "%{$search}%")
                   ->orWhere('wilayah', 'LIKE', "%{$search}%")
                   ->orWhere('klasifikasi', 'LIKE', "%{$search}%")
                   ->orWhere('kode_pelanggan', 'LIKE', "%{$search}%")

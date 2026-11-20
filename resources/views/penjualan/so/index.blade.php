@@ -15,7 +15,7 @@
     <div style="display: flex; gap: 0.5rem; align-items: center;">
         <a href="{{ route('penjualan.so.create') }}" class="btn btn-primary">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            + Buat PO Penjualan
+            Buat PO Penjualan
         </a>
     </div>
 </div>
@@ -228,7 +228,7 @@
                     <th style="min-width: 130px;">Kode Customer</th>
                     <th style="min-width: 200px;">Nama Customer</th>
                     <th style="min-width: 170px;">Status &amp; Realisasi</th>
-                    <th style="min-width: 130px; text-align: right;">Total Tagihan</th>
+                    <th style="min-width: 140px; text-align: right;">Total Nilai Pesanan</th>
                     <th style="min-width: 240px; text-align: right;">Aksi &amp; Export Dokumen</th>
                 </tr>
             </thead>
@@ -246,6 +246,9 @@
                             'APPROVED'  => 10,
                             default     => 0
                         };
+
+                        $activeSjItem = $so->pengeluaran ? $so->pengeluaran->where('status_cd', '!=', 'BATAL')->first() : null;
+                        $activeFaktur = $activeSjItem?->faktur ?? \App\Models\Penjualan\DatFakturHdr::where('so_id', $so->so_id)->where('deleted_st', false)->where('status_pembayaran', '!=', 'BATAL')->first();
                     @endphp
                     <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
@@ -266,9 +269,18 @@
                                     <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;">
                                         {{ $so->so_no }}
                                     </a>
-                                    @if($so->faktur_no)
-                                        <div style="font-family: monospace; font-size: 0.75rem; color: #15803d; font-weight: 700;">
+                                    @if($activeFaktur)
+                                        <div style="font-family: monospace; font-size: 0.725rem; color: #15803d; font-weight: 700;">
+                                            Faktur: {{ $activeFaktur->faktur_no }}
+                                        </div>
+                                    @elseif($so->faktur_no)
+                                        <div style="font-family: monospace; font-size: 0.725rem; color: #15803d; font-weight: 700;">
                                             Faktur: {{ $so->faktur_no }}
+                                        </div>
+                                    @endif
+                                    @if($activeSjItem)
+                                        <div style="font-family: monospace; font-size: 0.7rem; color: #475569;">
+                                            SJ: {{ $activeSjItem->pengeluaran_no }}
                                         </div>
                                     @endif
                                     <small style="display: block; font-size: 0.725rem; color: #64748b;">
@@ -297,9 +309,9 @@
                             <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 2px;">
                                 @php
                                     $cKlas = $so->customer?->klasifikasi;
-                                    $cBg = match($cKlas) { 'IFM' => '#e0f2fe', 'IDM_ALFA' => '#f3e8ff', default => '#f0fdf4' };
-                                    $cClr = match($cKlas) { 'IFM' => '#0284c7', 'IDM_ALFA' => '#7e22ce', default => '#15803d' };
-                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM_ALFA' => 'IDM/ALFA', default => 'MANUAL' };
+                                    $cBg = match($cKlas) { 'IFM' => '#e0f2fe', 'IDM' => '#eff6ff', 'MIDI_ALFA', 'IDM_ALFA' => '#fef2f2', default => '#f0fdf4' };
+                                    $cClr = match($cKlas) { 'IFM' => '#0284c7', 'IDM' => '#1d4ed8', 'MIDI_ALFA', 'IDM_ALFA' => '#b91c1c', default => '#15803d' };
+                                    $cLbl = match($cKlas) { 'IFM' => 'IFM', 'IDM' => 'IDM', 'MIDI_ALFA' => 'Midi/Alfa', 'IDM_ALFA' => 'Midi/Alfa', default => 'MANUAL' };
                                 @endphp
                                 @if($cKlas)
                                     <span style="font-size: 0.65rem; font-weight: 700; background: {{ $cBg }}; color: {{ $cClr }}; padding: 1px 5px; border-radius: 3px;">
@@ -355,15 +367,26 @@
                         <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
                             <div>Rp {{ number_format((float) $so->total_tagihan, 0, ',', '.') }}</div>
                             <div style="margin-top: 3px;">
-                                @if ($so->status_bayar === 'LUNAS')
-                                    <span class="badge badge-success" style="font-size: 0.675rem; font-weight: 700;">Lunas (100%)</span>
-                                @elseif ($so->status_bayar === 'SEBAGIAN')
-                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700;">
-                                        Sebagian ({{ $so->persen_bayar }}%)
+                                @if ($activeFaktur)
+                                    <span class="badge" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.675rem; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Faktur Penjualan No: {{ $activeFaktur->faktur_no }}">
+                                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                        Faktur Terbit
+                                    </span>
+                                    @if ($activeFaktur->status_pembayaran === 'LUNAS')
+                                        <div style="font-size: 0.65rem; color: #059669; font-weight: 700; margin-top: 1px;">(Lunas 100%)</div>
+                                    @elseif ($activeFaktur->status_pembayaran === 'SEBAGIAN')
+                                        <div style="font-size: 0.65rem; color: #b45309; font-weight: 700; margin-top: 1px;">(Sebagian)</div>
+                                    @else
+                                        <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; margin-top: 1px;">(Belum Lunas)</div>
+                                    @endif
+                                @elseif ($activeSjItem)
+                                    <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Barang telah dikirim Gudang ({{ $activeSjItem->pengeluaran_no }}). Menunggu penerbitan Faktur Penjualan oleh Office.">
+                                        <svg width="8" height="8" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                        Menunggu Faktur
                                     </span>
                                 @else
-                                    <span class="badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-size: 0.675rem; font-weight: 700;">
-                                        Belum Bayar
+                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-size: 0.675rem; font-weight: 600;">
+                                        Belum Dikirim
                                     </span>
                                 @endif
                             </div>
@@ -385,32 +408,45 @@
                                     <span>Lihat Detail</span>
                                 </a>
 
-                                @if($so->sisa_tagihan > 0 && !$so->isCancelled())
-                                    <a href="{{ route('penjualan.so.show', $so->so_id) }}#pembayaran" class="action-dropdown-item" style="color: #0284c7;">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                        <span>Catat Pembayaran (BKM)</span>
+                                @if ($activeSjItem)
+                                    {{-- Cetak Dokumen Surat Jalan Resmi (Batch & Exp Date Riil) --}}
+                                    <a href="{{ route('penjualan.pengeluaran.export-pdf', $activeSjItem->pengeluaran_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                        <span>Cetak Surat Jalan (PDF)</span>
                                     </a>
-                                @endif
 
-                                @if($so->isDeliverable())
+                                    @if ($activeFaktur)
+                                        {{-- Jika Faktur Sudah Terbit: Cetak & Lihat Dokumen Faktur --}}
+                                        <a href="{{ route('penjualan.faktur.export-pdf', $activeFaktur->faktur_id) }}" target="_blank" class="action-dropdown-item" style="color: #059669; font-weight: 600;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                            <span>Cetak Faktur (PDF)</span>
+                                        </a>
+                                        <a href="{{ route('penjualan.faktur.show', $activeFaktur->faktur_id) }}" class="action-dropdown-item">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                                            <span>Lihat Faktur Penjualan</span>
+                                        </a>
+                                    @else
+                                        {{-- Wewenang Office: Terbitkan Faktur Penjualan secara Mandiri --}}
+                                        <div class="action-dropdown-divider"></div>
+                                        <a href="{{ route('penjualan.faktur.create', ['pengeluaran_id' => $activeSjItem->pengeluaran_id]) }}" class="action-dropdown-item" style="color: #059669; font-weight: 700;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            <span>+ Terbitkan Faktur Penjualan</span>
+                                        </a>
+                                    @endif
+                                @elseif (!in_array($so->status_cd, ['COMPLETED', 'CANCELLED']))
+                                    {{-- Kirim Barang Cepat via FEFO --}}
                                     <button type="button" 
                                             class="action-dropdown-item" 
-                                            onclick="openConfirmDeliveryModal({{ $so->so_id }}, '{{ $so->so_no }}', '{{ addslashes($so->customer?->customer_nm ?? '') }}')"
-                                            style="color: #059669;">
+                                            style="color: #059669; font-weight: 700;" 
+                                            onclick="openConfirmDeliveryModal({{ $so->so_id }}, '{{ $so->so_no }}', '{{ addslashes($so->customer?->customer_nm ?? '') }}', '{{ addslashes($so->supir_nm ?? '') }}', '{{ addslashes($so->nopol_kendaraan ?? '') }}')">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        <span>Konfirmasi Kirim (FEFO)</span>
+                                        <span>Kirim Barang (FEFO)</span>
                                     </button>
+                                    <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="action-dropdown-item" style="color: #64748b;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <span>Draf SJ</span>
+                                    </a>
                                 @endif
-
-                                <a href="{{ route('penjualan.so.export-faktur', $so->so_id) }}" target="_blank" class="action-dropdown-item">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    <span>Cetak Faktur (PDF)</span>
-                                </a>
-
-                                <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="action-dropdown-item">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                                    <span>Cetak Surat Jalan (PDF)</span>
-                                </a>
 
                                 @if(!in_array($so->status_cd, ['COMPLETED', 'CANCELLED']))
                                     <div class="action-dropdown-divider"></div>
@@ -439,10 +475,21 @@
                                         Rincian Produk Pesanan ({{ $so->so_no }}):
                                     </strong>
                                     <div style="display: flex; gap: 0.75rem; align-items: center;">
-                                        <a href="{{ route('penjualan.so.export-faktur', $so->so_id) }}" target="_blank" style="font-size: 0.75rem; color: #0284c7; text-decoration: none; font-weight: 600;">
-                                            📄 Export Faktur (PDF)
-                                        </a>
-                                        <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" style="font-size: 0.75rem; color: #16a34a; text-decoration: none; font-weight: 600;">
+                                        @if ($activeFaktur)
+                                            <a href="{{ route('penjualan.faktur.export-pdf', $activeFaktur->faktur_id) }}" target="_blank" style="font-size: 0.75rem; color: #059669; text-decoration: none; font-weight: 600;">
+                                                📄 Export Faktur (PDF)
+                                            </a>
+                                        @elseif ($activeSjItem)
+                                            <a href="{{ route('penjualan.faktur.create', ['pengeluaran_id' => $activeSjItem->pengeluaran_id]) }}" style="font-size: 0.75rem; color: #d97706; text-decoration: none; font-weight: 700;">
+                                                + Terbitkan Faktur
+                                            </a>
+                                        @endif
+                                        @php
+                                            $subrowSjRoute = $activeSjItem 
+                                                ? route('penjualan.pengeluaran.export-pdf', $activeSjItem->pengeluaran_id) 
+                                                : route('penjualan.so.export-surat-jalan', $so->so_id);
+                                        @endphp
+                                        <a href="{{ $subrowSjRoute }}" target="_blank" style="font-size: 0.75rem; color: #16a34a; text-decoration: none; font-weight: 600;">
                                             🚚 Export Surat Jalan (PDF)
                                         </a>
                                         <a href="{{ route('penjualan.so.show', $so->so_id) }}" style="font-size: 0.75rem; color: #64748b; text-decoration: none;">
@@ -536,6 +583,11 @@
 @endsection
 
 @push('scripts')
+    <script>
+        window.appConfig = {
+            autoOpenPdf: @json(session('auto_open_pdf'))
+        };
+    </script>
     <script src="{{ asset('js/penjualan/so/so-index.js') }}"></script>
     <script>
         function toggleFilterDrawer() {

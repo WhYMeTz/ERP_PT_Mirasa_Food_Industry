@@ -42,9 +42,6 @@ class PackagingController extends Controller
 
         $dataList = $this->packagingService->getAllPaginated(15, $filters);
         $metrics = $this->packagingService->getMetrics($filters);
-        $unprocessedCount = \App\Models\Produksi\DatLaporanKemasOperator::where('deleted_st', false)
-            ->where('status_cd', 'SUBMITTED')
-            ->count();
 
         // Ambil daftar barang jadi aktif untuk filter (Khusus FG)
         $barangJadiList = MstBarang::active()
@@ -52,7 +49,7 @@ class PackagingController extends Controller
             ->orderBy('barang_nm')
             ->get(['barang_id', 'barang_cd', 'barang_nm']);
 
-        return view('produksi.packaging.index', compact('dataList', 'metrics', 'filters', 'barangJadiList', 'unprocessedCount'));
+        return view('produksi.packaging.index', compact('dataList', 'metrics', 'filters', 'barangJadiList'));
     }
 
     /**
@@ -187,6 +184,17 @@ class PackagingController extends Controller
                     }
                 }
 
+                // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
+                if ($b->barang_cd === 'KMS-KTN-REJ' || str_contains($nm, 'REJECT') || str_contains($nm, 'MANUAL')) {
+                    $hargaStandar = 0.00; // Manual karton tidak masuk hitungan HPP
+                } elseif ($b->barang_cd === 'KIF00G-BP1' || (str_contains($nm, 'IFM') && str_contains($nm, 'KARTON'))) {
+                    if ($hargaStandar > 2000) {
+                        $hargaStandar = round($hargaStandar / 5, 2); // Khusus IFM langsung dibagi 5 = Rp 1.748,20
+                    }
+                } elseif ($b->barang_cd === 'KIF00G-PUT') {
+                    $hargaStandar = 1748.20;
+                }
+
                 return [
                     'barang_id'      => $b->barang_id,
                     'barang_cd'      => $b->barang_cd,
@@ -203,14 +211,213 @@ class PackagingController extends Controller
         $produksiList = DatProduksiHdr::with(['details.barang.satuanDasar'])
             ->where('deleted_st', false)
             ->where('status_cd', '!=', 'VOID')
-            ->where('produksi_tgl', '>=', now()->subDays(30)->toDateString())
+            ->where('produksi_tgl', '>=', now()->subDays(60)->toDateString())
             ->orderBy('produksi_tgl', 'asc')
             ->orderBy('produksi_id', 'asc')
             ->get();
 
+        // Hitung pemakaian dan sisa kuantitas WIP per produksi & barang_id agar stok yang habis terkunci otomatis
+        foreach ($produksiList as $p) {
+            $totalPackedWip = \App\Models\Produksi\DatPackagingDtl::whereHas('header', function ($q) use ($p) {
+                $q->where('deleted_st', false)
+                  ->where('status_cd', '!=', 'VOID')
+                  ->where('produksi_id', $p->produksi_id);
+            })->where('kategori_bahan', 'WIP')
+              ->selectRaw('barang_id, SUM(qty_aktual) as total_pakai')
+              ->groupBy('barang_id')
+              ->pluck('total_pakai', 'barang_id')
+              ->toArray();
+
+            foreach ($p->details as $dtl) {
+                $used = (float) ($totalPackedWip[$dtl->barang_id] ?? 0);
+                $initial = (float) ($dtl->qty_kg > 0 ? $dtl->qty_kg : $dtl->qty_hasil);
+                $dtl->sisa_wip_kg = max(0, round($initial - $used, 2));
+                $dtl->is_wip_habis = ($dtl->sisa_wip_kg <= 0.05);
+            }
+        }
+
         $tarifs = $this->tarifKemasanService->getAllTarif();
 
-        return view('produksi.packaging.create', compact('gudangList', 'barangJadiList', 'kemasanBarangList', 'produksiList', 'selectedLaporan', 'tarifLakbanDefault', 'tarifs'));
+        // 1. Varian Output WIP Hasil Masak Dapur (Hanya yang masih memiliki sisa stok / belum habis terkemas)
+        $wipList = \App\Models\Produksi\DatProduksiDtl::with(['produksi', 'barang.satuanDasar'])
+            ->where('deleted_st', false)
+            ->whereHas('produksi', function ($q) {
+                $q->where('deleted_st', false)
+                  ->where('status_cd', '!=', 'VOID');
+            })
+            ->where('qty_kg', '>', 0)
+            ->orderByDesc('output_id')
+            ->get()
+            ->filter(function ($wip) {
+                $totalPacked = (float) \App\Models\Produksi\DatPackagingDtl::whereHas('header', function ($q) use ($wip) {
+                    $q->where('deleted_st', false)
+                      ->where('status_cd', '!=', 'VOID')
+                      ->where('produksi_id', $wip->produksi_id);
+                })->where('kategori_bahan', 'WIP')
+                  ->where('barang_id', $wip->barang_id)
+                  ->sum('qty_aktual');
+
+                $wip->sisa_qty_kg = max(0, round((float)$wip->qty_kg - $totalPacked, 2));
+                return $wip->sisa_qty_kg > 0.05;
+            })
+            ->values();
+
+        // 2. Karyawan (Operator & Leader Kemas)
+        $karyawanList = \App\Models\MasterData\MstKaryawan::where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('karyawan_nm')
+            ->get();
+
+        $bumbuList = MstBarang::where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%bumbu%')
+                  ->orWhere('barang_nm', 'ILIKE', '%seasoning%')
+                  ->orWhere('barang_nm', 'ILIKE', '%perasa%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BBL%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BBQ%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BCL%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BCS%')
+                  ->orWhere('barang_cd', 'ILIKE', 'BSS%');
+            })
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $plastikList = MstBarang::where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%plastik%')
+                  ->orWhere('barang_nm', 'ILIKE', '%roll%')
+                  ->orWhere('barang_nm', 'ILIKE', '%kemas%')
+                  ->orWhere('barang_nm', 'ILIKE', '%pouch%');
+            })
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $kartonList = MstBarang::where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%karton%')
+                  ->orWhere('barang_nm', 'ILIKE', '%dus%')
+                  ->orWhere('barang_nm', 'ILIKE', '%box%');
+            })
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $lakbanList = MstBarang::with('satuanDasar')
+            ->where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%lakban%')
+                  ->orWhere('barang_nm', 'ILIKE', '%selotip%')
+                  ->orWhere('barang_nm', 'ILIKE', '%tape%')
+                  ->orWhere('barang_cd', 'ILIKE', 'LKB%');
+            })
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $expiredList = MstBarang::with('satuanDasar')
+            ->where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%exp%')
+                  ->orWhere('barang_nm', 'ILIKE', '%kadaluarsa%')
+                  ->orWhere('barang_cd', 'ILIKE', '%exp%');
+            })
+            ->where('barang_nm', 'NOT ILIKE', '%export%')
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $kemasanLainList = MstBarang::with('satuanDasar')
+            ->where(function ($q) {
+                $q->where('barang_nm', 'ILIKE', '%bal%')
+                  ->orWhere('barang_nm', 'ILIKE', '%rafia%')
+                  ->orWhere('barang_nm', 'ILIKE', '%tali%')
+                  ->orWhere('barang_nm', 'ILIKE', '%label%')
+                  ->orWhere('barang_nm', 'ILIKE', '%stiker%')
+                  ->orWhere('barang_nm', 'ILIKE', '%sarung tangan%')
+                  ->orWhere('barang_nm', 'ILIKE', '%plastik%')
+                  ->orWhere('barang_nm', 'ILIKE', '%klip%');
+            })
+            ->where('barang_nm', 'NOT ILIKE', '%bumbu%')
+            ->where('barang_nm', 'NOT ILIKE', '%lakban%')
+            ->where('barang_nm', 'NOT ILIKE', '%karton%')
+            ->where('barang_nm', 'NOT ILIKE', '%keripik%')
+            ->whereHas('jenisBarang', fn($q) => $q->whereNotIn('jenis_barang_cd', ['FG', 'WIP', 'BB', 'RAW']))
+            ->where('active_st', true)
+            ->where('deleted_st', false)
+            ->orderBy('barang_nm')
+            ->get();
+
+        $kartonPuteran = MstBarang::where('barang_cd', 'KIF00G-PUT')->first();
+        $kartonBaru = MstBarang::where('barang_cd', 'KIF00G-BP1')->first();
+        $kartonReject = MstBarang::where('barang_cd', 'KMS-KTN-REJ')->first();
+        $stokKartonPuteran = $kartonPuteran ? (float) \App\Models\Gudang\DatStokBatch::where('barang_id', $kartonPuteran->barang_id)->where('deleted_st', false)->sum('sisa_qty') : 0;
+        $stokKartonBaru = $kartonBaru ? (float) \App\Models\Gudang\DatStokBatch::where('barang_id', $kartonBaru->barang_id)->where('deleted_st', false)->sum('sisa_qty') : 0;
+        $stokKartonReject = $kartonReject ? (float) \App\Models\Gudang\DatStokBatch::where('barang_id', $kartonReject->barang_id)->where('deleted_st', false)->sum('sisa_qty') : 0;
+
+        // Peta Informasi Batch Aktif (FIFO) & Sisa Stok Fisik Seluruh Kemasan
+        $allPkgBarangIds = collect()
+            ->merge($bumbuList->pluck('barang_id'))
+            ->merge($plastikList->pluck('barang_id'))
+            ->merge($kartonList->pluck('barang_id'))
+            ->merge($lakbanList->pluck('barang_id'))
+            ->merge($expiredList->pluck('barang_id'))
+            ->merge($kemasanLainList->pluck('barang_id'))
+            ->when($kartonPuteran, fn($c) => $c->push($kartonPuteran->barang_id))
+            ->when($kartonBaru, fn($c) => $c->push($kartonBaru->barang_id))
+            ->unique()
+            ->filter();
+
+        $activeBatches = \App\Models\Gudang\DatStokBatch::with('gudang')
+            ->whereIn('barang_id', $allPkgBarangIds)
+            ->where('deleted_st', false)
+            ->where('sisa_qty', '>', 0)
+            ->orderBy('created_at', 'asc')
+            ->get(['barang_id', 'batch_no', 'sisa_qty', 'gudang_id'])
+            ->groupBy('barang_id');
+
+        $batchInfoMap = [];
+        foreach ($activeBatches as $bId => $batchGroup) {
+            $firstBatch = $batchGroup->first();
+            $batchInfoMap[$bId] = [
+                'batch_no'  => $firstBatch?->batch_no ?? '-',
+                'sisa_qty'  => (float) $batchGroup->sum('sisa_qty'),
+                'gudang_nm' => $firstBatch?->gudang?->gudang_nm ?? 'Gudang Bahan Kemasan',
+            ];
+        }
+
+        $initialPackTgl = old('pack_tgl', $selectedLaporan?->laporan_tgl?->format('Y-m-d') ?? date('Y-m-d'));
+        $initialLabor = app(\App\Services\Produksi\ProduksiService::class)->getLaborDataFromKaryawan($initialPackTgl, 'Langsung Packing');
+
+        return view('produksi.packaging.create', compact(
+            'gudangList', 
+            'barangJadiList', 
+            'kemasanBarangList', 
+            'produksiList', 
+            'wipList',
+            'selectedLaporan', 
+            'initialLabor',
+            'tarifLakbanDefault', 
+            'tarifs',
+            'karyawanList',
+            'bumbuList',
+            'plastikList',
+            'kartonList',
+            'lakbanList',
+            'expiredList',
+            'kemasanLainList',
+            'kartonPuteran',
+            'kartonBaru',
+            'kartonReject',
+            'stokKartonPuteran',
+            'stokKartonBaru',
+            'stokKartonReject',
+            'batchInfoMap'
+        ));
     }
 
     /**
@@ -321,6 +528,13 @@ class PackagingController extends Controller
             return response()->json(['success' => false, 'message' => 'Data dokumen pemakaian gudang tidak ditemukan.'], 404);
         }
 
+        if (!in_array($pakai->status_st, ['POSTED', 'DRAFT'])) {
+            return response()->json([
+                'success' => false,
+                'message' => "Dokumen BPPB [{$pakai->pakai_no}] berstatus tidak valid (Status: {$pakai->status_st})."
+            ], 422);
+        }
+
         $items = [];
         foreach ($pakai->details as $dtl) {
             $b = $dtl->barang;
@@ -393,8 +607,232 @@ class PackagingController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // 1. Normalisasi tanggal kemas
+        $packTgl = $request->input('pack_tgl') ?: $request->input('tgl_kemas', date('Y-m-d'));
+        $request->merge(['pack_tgl' => $packTgl]);
+
+        // 2. Normalisasi Gudang FG default jika kosong
+        if (!$request->filled('gudang_id')) {
+            $defaultGudang = \App\Models\MasterData\MstGudang::where('tipe_gudang_cd', 'FG')->active()->first()
+                ?: \App\Models\MasterData\MstGudang::active()->first();
+            if ($defaultGudang) {
+                $request->merge(['gudang_id' => $defaultGudang->gudang_id]);
+            }
+        }
+
+        // 3. Auto-Assemble Items dari Form Fisik Terstruktur (Tanpa Beban Nominal Rp untuk User)
+        if (!$request->has('items') || empty($request->input('items'))) {
+            $items = [];
+
+            // A. Curah WIP
+            $wipId = $request->input('wip_barang_id');
+            $outputId = $request->input('output_id');
+            $prodId = $request->input('produksi_id');
+            $batchNo = $request->input('batch_no');
+
+            if ($outputId) {
+                $output = \App\Models\Produksi\DatProduksiDtl::find($outputId);
+                if ($output) {
+                    $wipId = $wipId ?: $output->barang_id;
+                    $prodId = $prodId ?: $output->produksi_id;
+                    $batchNo = $batchNo ?: $output->batch_no;
+                }
+            }
+
+            $wipQty = (float) $request->input('wip_qty_kg', 0);
+            if ($wipId && $wipQty > 0) {
+                $wipBarang = MstBarang::find($wipId);
+                $wipHpp = 0;
+                if (!empty($output) && (float) $output->hpp_satuan > 0) {
+                    $wipHpp = (float) $output->hpp_satuan;
+                } elseif ($prodId) {
+                    $prodHdr = \App\Models\Produksi\DatProduksiHdr::find($prodId);
+                    $wipHpp = (float) ($prodHdr?->hpp_per_kg ?? 0);
+                }
+                
+                // Fallback: cek kartu stok batch gudang (DatStokBatch) berdasarkan batch_no
+                if ($wipHpp <= 0 && $wipId && $batchNo) {
+                    $stkBatch = \App\Models\Gudang\DatStokBatch::where('barang_id', $wipId)
+                        ->where('batch_no', $batchNo)
+                        ->where('harga_satuan', '>', 0)
+                        ->first();
+                    if ($stkBatch) {
+                        $wipHpp = (float) $stkBatch->harga_satuan;
+                    }
+                }
+
+                if ($wipHpp <= 0) {
+                    $wipHpp = (float) ($wipBarang?->harga_beli_standar ?? 25500);
+                }
+
+                $items[] = [
+                    'barang_id'      => (int) $wipId,
+                    'kategori_bahan' => 'WIP',
+                    'batch_no'       => $batchNo,
+                    'qty_standar'    => $wipQty,
+                    'qty_aktual'     => $wipQty,
+                    'satuan_cd'      => 'KG',
+                    'harga_satuan'   => $wipHpp,
+                ];
+            }
+
+            // B. Bumbu Tabur
+            $bumbuId = $request->input('bumbu_barang_id');
+            $bumbuQty = (float) $request->input('bumbu_qty_kg', 0);
+            $bumbuSatuan = strtoupper($request->input('bumbu_satuan', 'KG'));
+            if ($bumbuId && $bumbuQty > 0) {
+                $bumbuBarang = MstBarang::find($bumbuId);
+                // Normalisasi kuantitas ke KG jika operator memilih inputan Gram
+                $bumbuQtyKg = in_array($bumbuSatuan, ['GR', 'GRAM', 'G']) ? round($bumbuQty / 1000, 4) : $bumbuQty;
+                $items[] = [
+                    'barang_id'      => (int) $bumbuId,
+                    'kategori_bahan' => 'BUMBU',
+                    'batch_no'       => null,
+                    'qty_standar'    => $bumbuQtyKg,
+                    'qty_aktual'     => $bumbuQtyKg,
+                    'satuan_cd'      => in_array($bumbuSatuan, ['GR', 'GRAM', 'G']) ? 'GRAM' : 'KG',
+                    'harga_satuan'   => (float) ($bumbuBarang?->harga_beli_standar ?? 38499),
+                ];
+            }
+
+            // C. Plastik Kemasan
+            $plastikId = $request->input('plastik_barang_id');
+            $plastikQty = (float) $request->input('plastik_qty', 0);
+            $plastikSatuan = strtoupper($request->input('plastik_satuan', ''));
+            if ($plastikId && $plastikQty > 0) {
+                $plastikBarang = MstBarang::find($plastikId);
+                $satuanPls = $plastikSatuan ?: ($plastikBarang?->satuanDasar?->satuan_cd ?? 'PCS');
+                $items[] = [
+                    'barang_id'      => (int) $plastikId,
+                    'kategori_bahan' => 'KEMASAN',
+                    'batch_no'       => null,
+                    'qty_standar'    => $plastikQty,
+                    'qty_aktual'     => $plastikQty,
+                    'satuan_cd'      => $satuanPls,
+                    'harga_satuan'   => (float) ($plastikBarang?->harga_beli_standar ?? 364830),
+                ];
+            }
+
+            // D. Karton Box: Puteran & Baru
+            $puteranQty = (float) $request->input('karton_puteran_qty', 0);
+            $kartonPuteranBarangId = (int) ($request->input('karton_puteran_barang_id') ?: 82);
+            $puteranSatuan = strtoupper($request->input('karton_puteran_satuan', 'LEMBAR'));
+            if ($puteranQty > 0) {
+                $items[] = [
+                    'barang_id'      => $kartonPuteranBarangId,
+                    'kategori_bahan' => 'KEMASAN',
+                    'batch_no'       => null,
+                    'qty_standar'    => $puteranQty,
+                    'qty_aktual'     => $puteranQty,
+                    'satuan_cd'      => $puteranSatuan,
+                    'harga_satuan'   => 1748.20,
+                ];
+            }
+
+            $baruQty = (float) $request->input('karton_baru_qty', 0);
+            $kartonBaruBarangId = (int) ($request->input('karton_baru_barang_id') ?: 29);
+            $baruSatuan = strtoupper($request->input('karton_baru_satuan', 'LEMBAR'));
+            if ($baruQty > 0) {
+                $kartonBaruObj = MstBarang::find($kartonBaruBarangId);
+                $hBeli = (float) ($kartonBaruObj?->harga_beli_standar ?? 8741);
+                $items[] = [
+                    'barang_id'      => $kartonBaruBarangId,
+                    'kategori_bahan' => 'KEMASAN',
+                    'batch_no'       => null,
+                    'qty_standar'    => $baruQty,
+                    'qty_aktual'     => $baruQty,
+                    'satuan_cd'      => $baruSatuan,
+                    'harga_satuan'   => round($hBeli / 5, 2),
+                ];
+            }
+
+            // Fallback jika karton diinput single
+            if ($puteranQty <= 0 && $baruQty <= 0) {
+                $kId = $request->input('karton_barang_id');
+                $kQty = (float) ($request->input('karton_qty') ?: $request->input('hasil_karton_qty', 0));
+                if ($kId && $kQty > 0) {
+                    $kBarang = MstBarang::find($kId);
+                    $items[] = [
+                        'barang_id'      => (int) $kId,
+                        'kategori_bahan' => 'KEMASAN',
+                        'batch_no'       => null,
+                        'qty_standar'    => $kQty,
+                        'qty_aktual'     => $kQty,
+                        'satuan_cd'      => 'LEMBAR',
+                        'harga_satuan'   => (float) ($kBarang?->harga_beli_standar ?? 1748.20),
+                    ];
+                }
+            }
+
+            // E. Lakban Segel Dus
+            $lakbanId = $request->input('lakban_barang_id');
+            $lakbanQty = (float) ($request->input('lakban_qty') ?: $request->input('lakban_roll_qty', 0));
+            $lakbanSatuan = strtoupper($request->input('lakban_satuan', ''));
+            if ($lakbanId && $lakbanQty > 0) {
+                $lakbanBarang = MstBarang::find($lakbanId);
+                $satuan = $lakbanSatuan ?: strtoupper($lakbanBarang?->satuanDasar?->satuan_cd ?? 'ROLL');
+                $hLakban = (float) ($lakbanBarang?->harga_beli_standar ?? (in_array($satuan, ['GR', 'GRAM', 'G']) ? 36.70 : 45880));
+                $items[] = [
+                    'barang_id'      => (int) $lakbanId,
+                    'kategori_bahan' => 'KEMASAN',
+                    'batch_no'       => null,
+                    'qty_standar'    => $lakbanQty,
+                    'qty_aktual'     => $lakbanQty,
+                    'satuan_cd'      => $satuan,
+                    'harga_satuan'   => $hLakban,
+                ];
+            }
+
+            // F. Expired Label
+            $expId = $request->input('expired_barang_id');
+            $expQty = (float) $request->input('expired_qty', 0);
+            $expSatuan = strtoupper($request->input('expired_satuan', ''));
+            if ($expId && $expQty > 0) {
+                $expBarang = MstBarang::find($expId);
+                $items[] = [
+                    'barang_id'      => (int) $expId,
+                    'kategori_bahan' => 'KEMASAN',
+                    'batch_no'       => null,
+                    'qty_standar'    => $expQty,
+                    'qty_aktual'     => $expQty,
+                    'satuan_cd'      => $expSatuan ?: ($expBarang?->satuanDasar?->satuan_cd ?? 'LEMBAR'),
+                    'harga_satuan'   => (float) ($expBarang?->harga_beli_standar ?? 250),
+                ];
+            }
+
+            // G. Kemasan Tambahan Dinamis
+            $kemasanTambahan = $request->input('kemasan_tambahan', []);
+            if (is_array($kemasanTambahan)) {
+                foreach ($kemasanTambahan as $kt) {
+                    $ktId = !empty($kt['barang_id']) ? (int) $kt['barang_id'] : null;
+                    $ktQty = !empty($kt['qty']) ? (float) $kt['qty'] : 0;
+                    $ktSatuan = !empty($kt['satuan']) ? strtoupper($kt['satuan']) : null;
+                    if ($ktId && $ktQty > 0) {
+                        $ktBarang = MstBarang::find($ktId);
+                        $items[] = [
+                            'barang_id'      => $ktId,
+                            'kategori_bahan' => 'KEMASAN',
+                            'batch_no'       => null,
+                            'qty_standar'    => $ktQty,
+                            'qty_aktual'     => $ktQty,
+                            'satuan_cd'      => $ktSatuan ?: ($ktBarang?->satuanDasar?->satuan_cd ?? 'PCS'),
+                            'harga_satuan'   => (float) ($ktBarang?->harga_beli_standar ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            $request->merge(['items' => $items]);
+        }
+
+        // 4. Validasi Data
         $validated = $request->validate([
             'pack_tgl'                 => 'required|date',
+            'shift'                    => 'nullable|string|in:A,B,C',
+            'operator_nama'            => 'nullable|string|max:150',
+            'karyawan_id'              => 'nullable|exists:mst_karyawan,karyawan_id',
+            'jumlah_personil'          => 'nullable|integer|min:0',
+            'jumlah_mesin'             => 'nullable|integer|min:1',
             'barang_jadi_id'           => 'required|exists:mst_barang,barang_id',
             'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
             'bom_id'                   => 'nullable|exists:mst_bom_hdr,bom_id',
@@ -402,6 +840,8 @@ class PackagingController extends Controller
             'pakai_id'                 => 'nullable|exists:dat_pakai_hdr,pakai_id',
             'target_karton_qty'        => 'nullable|numeric|min:0.01',
             'hasil_karton_qty'         => 'required|numeric|min:0.01',
+            'hasil_pack_qty'           => 'nullable|numeric|min:0',
+            'satuan_hasil'             => 'nullable|string|max:20',
             'isi_per_karton_pcs'       => 'nullable|numeric|min:1',
             'gramatur_gr'              => 'nullable|numeric|min:0',
             'batch_no'                 => 'nullable|string|max:100',
@@ -410,9 +850,13 @@ class PackagingController extends Controller
             'lakban_bawah_gr'          => 'nullable|numeric|min:0',
             'lakban_jumlah_gr'         => 'nullable|numeric|min:0',
             'lakban_nilai'             => 'nullable|numeric|min:0',
+            'karton_rusak_lembar'      => 'nullable|numeric|min:0',
+            'plastik_rusak_pcs'        => 'nullable|numeric|min:0',
+            'lakban_rusak_m'           => 'nullable|numeric|min:0',
             'total_biaya_tenaga_kerja' => 'nullable|numeric|min:0',
             'total_biaya_lain'         => 'nullable|numeric|min:0',
             'catatan_txt'              => 'nullable|string|max:1000',
+            'catatan'                  => 'nullable|string|max:1000',
             'items'                    => 'required|array|min:1',
             'items.*.barang_id'        => 'required|exists:mst_barang,barang_id',
             'items.*.kategori_bahan'   => 'required|string|max:30',
@@ -430,12 +874,42 @@ class PackagingController extends Controller
         ]);
 
         $validated['target_karton_qty'] = $validated['target_karton_qty'] ?? $validated['hasil_karton_qty'];
+        if (empty($validated['catatan_txt']) && !empty($validated['catatan'])) {
+            $validated['catatan_txt'] = $validated['catatan'];
+        }
+
+        $kartonRusak = (float) $request->input('karton_rusak_lembar', 0);
+        $plastikRusak = (float) $request->input('plastik_rusak_pcs', 0);
+        $lakbanRusak = (float) $request->input('lakban_rusak_m', 0);
+
+        if ($kartonRusak > 0 || $plastikRusak > 0 || $lakbanRusak > 0) {
+            $scrapParts = [];
+            if ($kartonRusak > 0) $scrapParts[] = "Dus Afkir: {$kartonRusak} lbr";
+            if ($plastikRusak > 0) $scrapParts[] = "Plastik Reject: {$plastikRusak} pcs";
+            if ($lakbanRusak > 0) $scrapParts[] = "Lakban Kusut: {$lakbanRusak} m";
+            $scrapNote = "[Scrap Kemasan IFM]: " . implode(', ', $scrapParts);
+
+            if (!empty($validated['catatan_txt'])) {
+                if (!str_contains($validated['catatan_txt'], 'Dus Afkir') && !str_contains($validated['catatan_txt'], 'Dus afkir')) {
+                    $validated['catatan_txt'] .= " | " . $scrapNote;
+                }
+            } else {
+                $validated['catatan_txt'] = $scrapNote;
+            }
+        }
 
         try {
             $header = $this->packagingService->storePackaging($validated, auth()->user()?->name);
 
             // Tautkan status laporan operator jika ditarik dari operator lapangan
             if ($request->filled('laporan_operator_id')) {
+                \App\Models\Produksi\DatLaporanKemasOperator::where('laporan_id', (int) $request->input('laporan_operator_id'))
+                    ->update([
+                        'karton_rusak_lembar' => $kartonRusak,
+                        'plastik_rusak_pcs'   => $plastikRusak,
+                        'lakban_rusak_m'      => $lakbanRusak,
+                    ]);
+
                 app(\App\Services\Produksi\LaporanKemasOperatorService::class)->markAsProcessed(
                     (int) $request->input('laporan_operator_id'),
                     $header->pack_id,
@@ -444,14 +918,15 @@ class PackagingController extends Controller
             }
 
             return redirect()->route('produksi.packaging.show', $header->pack_id)
-                ->with('success', "Proses pengemasan nomor {$header->pack_no} berhasil disimpan! HPP terbentuk: Rp " . number_format($header->hpp_per_karton, 0, ',', '.') . "/Karton.");
+                ->with('success', "Proses pengemasan nomor {$header->pack_no} berhasil disimpan.");
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal memproses pengemasan: ' . $e->getMessage());
         }
     }
 
     /**
-     * Menampilkan dokumen berita acara pengemasan & rincian HPP.
+     * Menampilkan Surat Bukti Hasil Pengemasan & Serah Terima Fisik Gudang Barang Jadi (FG)
+     * Bebas dari komponen biaya & nominal HPP untuk operasional gudang dan lantai kemas.
      */
     public function show(int $id): View
     {
@@ -462,7 +937,8 @@ class PackagingController extends Controller
             'bom',
             'produksi',
             'pemakaian.details.barang',
-            'adjustmentLogs'
+            'laporanKemasOperator',
+            'jurnal',
         ])->findOrFail($id);
 
         // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View
@@ -474,6 +950,48 @@ class PackagingController extends Controller
             ->get();
 
         return view('produksi.packaging.show', compact('header', 'sameDatePackaging'));
+    }
+
+    /**
+     * Menampilkan Lembar Bukti Hasil Pengemasan & Harga Pokok (HPP Kemas)
+     * Khusus untuk bagian Finance / Akuntansi Biaya Manufaktur.
+     */
+    public function showHpp(int $id): View
+    {
+        $header = DatPackagingHdr::with([
+            'barangJadi.satuanDasar', 
+            'gudang', 
+            'details.barang.satuanDasar', 
+            'bom',
+            'produksi',
+            'pemakaian.details.barang',
+            'adjustmentLogs',
+            'laporanKemasOperator',
+            'jurnal',
+        ])->findOrFail($id);
+
+        // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View
+        $sameDatePackaging = DatPackagingHdr::with(['barangJadi'])
+            ->whereDate('pack_tgl', $header->pack_tgl)
+            ->where('deleted_st', false)
+            ->where('status_cd', '!=', 'VOID')
+            ->orderBy('pack_id', 'asc')
+            ->get();
+
+        return view('produksi.packaging.show-hpp', compact('header', 'sameDatePackaging'));
+    }
+
+    /**
+     * Alihkan akses HPP Terpadu dari modul Pengemasan ke Lembar Rincian Terpadu SPK Dapur asal.
+     */
+    public function showHppTerpadu(int $id): RedirectResponse
+    {
+        $header = DatPackagingHdr::findOrFail($id);
+        if ($header->produksi_id) {
+            return redirect()->route('produksi.hpp.terpadu', ['id' => $header->produksi_id, 'pack_id' => $id]);
+        }
+        return redirect()->route('produksi.packaging.show-hpp', $id)
+            ->with('error', 'Dokumen pengemasan ini tidak terhubung ke dokumen SPK Masak Dapur spesifik.');
     }
 
     /**
@@ -489,6 +1007,11 @@ class PackagingController extends Controller
             'produksi',
             'adjustmentLogs'
         ])->findOrFail($id);
+
+        if ($header->isHppFinal()) {
+            return redirect()->route('produksi.packaging.rekap')
+                ->with('error', "Dokumen {$header->pack_no} telah berstatus HPP FINAL dan terkunci. Penyesuaian HPP hanya dapat dilakukan sebelum status final.");
+        }
 
         // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View
         $sameDatePackaging = DatPackagingHdr::with(['barangJadi'])
@@ -521,15 +1044,37 @@ class PackagingController extends Controller
         ]);
 
         try {
+            $targetHeader = DatPackagingHdr::findOrFail($id);
+            if ($targetHeader->isHppFinal()) {
+                return redirect()->route('produksi.packaging.rekap')
+                    ->with('error', "Dokumen {$targetHeader->pack_no} telah berstatus HPP FINAL dan terkunci. Penyesuaian HPP tidak dapat diproses.");
+            }
+
             $user = Auth::user()?->name ?? (Auth::user()?->username ?? 'SYSTEM');
             $log = $this->packagingService->adjustPackagingHpp($id, $request->all(), $user);
 
-            $msg = "✅ Berhasil melakukan adjustment HPP Pengemasan (No. BA: {$log->adj_no})! ";
-            $msg .= "HPP baru: Rp " . number_format($log->hpp_karton_sesudah, 0, ',', '.') . "/Karton (Rp " . number_format($log->hpp_pcs_sesudah, 0, ',', '.') . "/Pcs). Persediaan FG di gudang telah disinkronkan.";
+            $msg = "Adjustment HPP Pengemasan {$log->adj_no} berhasil disimpan.";
 
             return redirect()->route('produksi.packaging.show', $id)->with('success', $msg);
         } catch (Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Gagal melakukan adjustment HPP: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menarik data biaya WIP riil dan memfinalkan HPP Pengemasan Barang Jadi (FG).
+     */
+    public function finalizeHpp(Request $request, int $id): RedirectResponse
+    {
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $header = $this->packagingService->finalizeHppPackaging($id, $user);
+
+            $msg = "HPP Pengemasan {$header->pack_no} berhasil difinalisasi.";
+
+            return redirect()->back()->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
@@ -649,5 +1194,66 @@ class PackagingController extends Controller
         $pdf = Pdf::loadView('produksi.pdf.rekap-hpp-packaging', compact('report', 'year', 'month', 'monthName'))
             ->setPaper('legal', 'landscape');
         return $pdf->stream("Rekap_HPP_Packaging_{$monthName}_{$year}.pdf");
+    }
+
+    /**
+     * Halaman Formulir Kalkulasi Lembar HPP Pengemasan (Tahap 2 Costing).
+     */
+    public function createHpp(Request $request): View
+    {
+        $selectedPackId = $request->filled('pack_id') ? (int) $request->input('pack_id') : null;
+        $packagingList = $this->packagingService->getPackagingListForHpp($selectedPackId);
+
+        return view('produksi.packaging.hpp.create', compact('packagingList', 'selectedPackId'));
+    }
+
+    /**
+     * AJAX endpoint mengambil data rincian catatan hasil pengemasan untuk Lembar HPP.
+     */
+    public function getPackagingDataForHpp(int $id): JsonResponse
+    {
+        try {
+            $data = $this->packagingService->getPackagingDataForHpp($id);
+            return response()->json([
+                'status' => 'success',
+                'data'   => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memuat rincian dokumen pengemasan: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Simpan & finalkan lembar kalkulasi HPP Pengemasan Barang Jadi (FG).
+     */
+    public function storeHpp(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'pack_id'                  => 'required|exists:dat_packaging_hdr,pack_id',
+            'total_biaya_wip'          => 'required|numeric|min:0',
+            'total_biaya_kemasan'      => 'required|numeric|min:0',
+            'jumlah_personil'          => 'required|integer|min:0',
+            'total_biaya_tenaga_kerja' => 'required|numeric|min:0',
+            'total_biaya_lain'         => 'nullable|numeric|min:0',
+            'wip_items'                => 'nullable|array',
+            'kemasan_items'            => 'nullable|array',
+        ], [
+            'pack_id.required'         => 'Dokumen pengemasan fisik wajib dipilih.',
+            'total_biaya_tenaga_kerja' => 'Total biaya tenaga kerja kemas wajib diisi.',
+        ]);
+
+        try {
+            $user = auth()->user()?->name ?? 'System';
+            $header = $this->packagingService->storePackagingHppCalculation((int) $validated['pack_id'], $request->all(), $user);
+
+            $msg = "HPP Pengemasan {$header->pack_no} berhasil difinalisasi.";
+
+            return redirect()->route('produksi.packaging.rekap')->with('success', $msg);
+        } catch (Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal memfinalkan HPP Pengemasan: ' . $e->getMessage());
+        }
     }
 }

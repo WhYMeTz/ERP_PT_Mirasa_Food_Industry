@@ -75,7 +75,7 @@
                 const sup = document.getElementById('supplierSelect')?.value;
                 const gud = document.getElementById('gudangSelect')?.value;
                 if (!sup) {
-                    alert('Silakan pilih Mitra Supplier / Produsen Bahan terlebih dahulu!');
+                    alert('Silakan pilih Mitra Supplier Bahan terlebih dahulu!');
                     document.getElementById('supplierSelect')?.focus();
                     return;
                 }
@@ -382,6 +382,90 @@
         }
     };
 
+    // =========================================================================
+    // KUNCI FIELD DARI PO (INTEGRITAS DATA PO - SUPPLIER, GUDANG & MASTER BARANG)
+    // =========================================================================
+    window.toggleBpPoLockFields = function (isLocked, po) {
+        const sSelect = document.getElementById('supplierSelect');
+        const gSelect = document.getElementById('gudangSelect');
+        const bSelect = document.getElementById('bpBarangSelect');
+        const produsenInput = document.getElementById('inputNamaProdusen');
+
+        const badgeSupplier = document.getElementById('badgeLockSupplier');
+        const badgeGudang = document.getElementById('badgeLockGudang');
+        const badgeBarang = document.getElementById('badgeLockBarang');
+
+        if (isLocked) {
+            // Lock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'none';
+                sSelect.style.backgroundColor = '#f1f5f9';
+                sSelect.style.borderColor = '#cbd5e1';
+                sSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeSupplier) {
+                badgeSupplier.style.display = 'inline-flex';
+                if (po?.supplier_nm) badgeSupplier.innerText = `🔒 Terkunci (${po.supplier_nm})`;
+            }
+
+            // Lock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'none';
+                gSelect.style.backgroundColor = '#f1f5f9';
+                gSelect.style.borderColor = '#cbd5e1';
+                gSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'inline-flex';
+
+            // Lock Master Barang Bahan Penolong
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'none';
+                bSelect.style.backgroundColor = '#f1f5f9';
+                bSelect.style.borderColor = '#cbd5e1';
+                bSelect.setAttribute('tabindex', '-1');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'inline-flex';
+
+            if (produsenInput && po?.supplier_nm) {
+                produsenInput.value = po.supplier_nm;
+                produsenInput.readOnly = true;
+                produsenInput.style.backgroundColor = '#f1f5f9';
+            }
+        } else {
+            // Unlock Supplier
+            if (sSelect) {
+                sSelect.style.pointerEvents = 'auto';
+                sSelect.style.backgroundColor = '#ffffff';
+                sSelect.style.borderColor = '#e2e8f0';
+                sSelect.removeAttribute('tabindex');
+            }
+            if (badgeSupplier) badgeSupplier.style.display = 'none';
+
+            // Unlock Gudang
+            if (gSelect) {
+                gSelect.style.pointerEvents = 'auto';
+                gSelect.style.backgroundColor = '#ffffff';
+                gSelect.style.borderColor = '#e2e8f0';
+                gSelect.removeAttribute('tabindex');
+            }
+            if (badgeGudang) badgeGudang.style.display = 'none';
+
+            // Unlock Master Barang Bahan Penolong
+            if (bSelect) {
+                bSelect.style.pointerEvents = 'auto';
+                bSelect.style.backgroundColor = '#ffffff';
+                bSelect.style.borderColor = '#e2e8f0';
+                bSelect.removeAttribute('tabindex');
+            }
+            if (badgeBarang) badgeBarang.style.display = 'none';
+
+            if (produsenInput) {
+                produsenInput.readOnly = false;
+                produsenInput.style.backgroundColor = '#ffffff';
+            }
+        }
+    };
+
     // 10. Multi-Item PO Selector Cards
     window.onPoSelected = function (select, targetPodtlId = null) {
         const poId = select?.value;
@@ -391,6 +475,7 @@
         if (!poId) {
             if (boxSelector) boxSelector.style.display = 'none';
             if (podtlHidden) podtlHidden.value = '';
+            window.toggleBpPoLockFields(false);
             return;
         }
 
@@ -408,6 +493,9 @@
         if (gudangSelect && gudangId) {
             gudangSelect.value = gudangId;
         }
+
+        const poData = (window.appConfig && window.appConfig.poListData && window.appConfig.poListData[poId]) ? window.appConfig.poListData[poId] : null;
+        window.toggleBpPoLockFields(true, poData || { supplier_nm: opt?.text?.split('•')?.[1]?.trim() });
 
         renderPoItemsCards(poId, targetPodtlId);
     };
@@ -451,26 +539,71 @@
         if (targetPodtlId) {
             const foundIdx = items.findIndex(it => String(it.podtl_id) === String(targetPodtlId));
             if (foundIdx !== -1) targetIdx = foundIdx;
+        } else {
+            // Prioritaskan item yang belum selesai QC
+            const unTestedIdx = items.findIndex(it => !it.is_selesai_qc && (typeof it.sisa_belum_qc === 'undefined' || it.sisa_belum_qc > 0));
+            if (unTestedIdx !== -1) targetIdx = unTestedIdx;
         }
 
         let html = '';
         items.forEach((item, idx) => {
             const isSelected = idx === targetIdx;
-            const sisaFmt = parseFloat(item.sisa_qty).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            const sisa = (typeof item.sisa_belum_qc !== 'undefined') ? item.sisa_belum_qc : (item.sisa_qty > 0 ? item.sisa_qty : item.pesan_qty);
+            const isCompleted = !!item.is_selesai_qc || sisa <= 0;
+            const isPartial = !isCompleted && (item.qc_tested_qty > 0);
+            const sisaFmt = parseFloat(sisa).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
             const pesanFmt = parseFloat(item.pesan_qty).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            const testedFmt = parseFloat(item.qc_tested_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+            let badgeHtml = '';
+            let radioCircleHtml = '<div class="po-item-radio-circle"></div>';
+            let subHtml = `PO: ${pesanFmt} KG`;
+
+            if (isCompleted) {
+                radioCircleHtml = '<span class="po-item-check-icon" style="color: #16a34a; font-weight: 900; font-size: 1.1rem; width: 20px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">✓</span>';
+                badgeHtml = `
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                        <span class="po-item-badge-sisa badge-completed" style="background: #dcfce7; border-color: #86efac; color: #166534; font-weight: 800;">
+                            ✅ Selesai Diuji
+                        </span>
+                        <span style="font-size: 0.68rem; color: #16a34a; font-weight: 700;">Diuji: ${testedFmt} KG</span>
+                    </div>
+                `;
+                subHtml += ` &bull; <strong style="color: #16a34a;">Sudah Diuji: ${testedFmt} KG</strong>`;
+            } else if (isPartial) {
+                badgeHtml = `
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                        <span class="po-item-badge-sisa badge-partial" style="background: #fef3c7; border-color: #fde68a; color: #b45309; font-weight: 800;">
+                            ⚠️ Uji Sebagian
+                        </span>
+                        <span style="font-size: 0.68rem; color: #b45309; font-weight: 700;">Sisa Belum QC: ${sisaFmt} KG</span>
+                    </div>
+                `;
+                subHtml += ` &bull; <span style="color: #b45309; font-weight: 700;">Sudah Diuji: ${testedFmt} KG</span>`;
+            } else {
+                badgeHtml = `
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                        <span class="po-item-badge-sisa badge-pending" style="background: #ede9fe; border-color: #ddd6fe; color: #6d28d9; font-weight: 800;">
+                            ⏳ Belum Diuji
+                        </span>
+                        <span style="font-size: 0.68rem; color: #6d28d9; font-weight: 700;">Sisa: ${sisaFmt} KG</span>
+                    </div>
+                `;
+                subHtml += ` &bull; <span style="color: #64748b;">Belum Ada Uji</span>`;
+            }
 
             html += `
-                <div class="po-item-card ${isSelected ? 'is-active' : ''}"
+                <div class="po-item-card ${isSelected ? 'is-active' : ''} ${isCompleted ? 'is-completed' : (isPartial ? 'is-partial' : 'is-pending')}"
                      id="poItemCard_${item.podtl_id}"
-                     onclick="selectPoItem('${item.podtl_id}', '${item.barang_id}', '${item.sisa_qty}', '${item.barang_nm ? item.barang_nm.replace(/'/g, "\\'") : ''}')">
+                     onclick="selectPoItem('${item.podtl_id}', '${item.barang_id}', '${sisa}', '${item.barang_nm ? item.barang_nm.replace(/'/g, "\\'") : ''}')">
                     <div class="po-item-card-left">
-                        <div class="po-item-radio-circle"></div>
+                        ${radioCircleHtml}
                         <div class="po-item-info">
                             <span class="po-item-nama">${item.barang_nm || 'Item Bahan'}</span>
-                            <span class="po-item-sub">PO: ${pesanFmt} KG &bull; Sisa Belum Datang: <strong>${sisaFmt} KG</strong></span>
+                            <span class="po-item-sub">${subHtml}</span>
                         </div>
                     </div>
-                    <span class="po-item-badge-sisa">${sisaFmt} KG</span>
+                    ${badgeHtml}
                 </div>
             `;
         });
@@ -480,7 +613,8 @@
         // Auto pilih item
         if (items.length > 0) {
             const chosen = items[targetIdx];
-            selectPoItem(chosen.podtl_id, chosen.barang_id, chosen.sisa_qty, chosen.barang_nm);
+            const chosenSisa = (typeof chosen.sisa_belum_qc !== 'undefined') ? chosen.sisa_belum_qc : (chosen.sisa_qty > 0 ? chosen.sisa_qty : chosen.pesan_qty);
+            selectPoItem(chosen.podtl_id, chosen.barang_id, chosenSisa, chosen.barang_nm);
         }
     }
 
@@ -512,6 +646,7 @@
 
     function applyPoDetailData(poData) {
         if (!poData || !poData.items || poData.items.length === 0) return;
+        window.toggleBpPoLockFields(true, poData);
         const firstItem = poData.items[0];
         const bSel = document.getElementById('bpBarangSelect');
         if (bSel && firstItem.barang_id) {
@@ -560,7 +695,7 @@
 
         const supplierSelect = document.getElementById('supplierSelect');
         if (!supplierSelect || !supplierSelect.value) {
-            alert('Silakan pilih Mitra Supplier / Produsen Bahan terlebih dahulu!');
+            alert('Silakan pilih Mitra Supplier Bahan terlebih dahulu!');
             window.switchBpTab(1);
             supplierSelect?.focus();
             return;
@@ -620,6 +755,8 @@
         injectHiddenInput('items[0][qty_reject]', finalReject);
         injectHiddenInput('items[0][qty_netto_lolos]', finalNetto);
         injectHiddenInput('items[0][keputusan_qc]', kesimpulan === 'TOLAK' ? 'REJECT_TOTAL' : (finalReject > 0 ? 'REJECT_PARTIAL' : 'PASSED'));
+        injectHiddenInput('items[0][grade_cd]', kesimpulan === 'TOLAK' ? 'REJECT' : 'NON-GRADE');
+        injectHiddenInput('grade_cd', kesimpulan === 'TOLAK' ? 'REJECT' : 'NON-GRADE');
         injectHiddenInput('qty_terima', finalNetto);
         injectHiddenInput('qty_tolak', finalReject);
         injectHiddenInput('items[0][status_raw_material]', document.getElementById('inputRawMaterial')?.value || 'OK');
@@ -925,6 +1062,12 @@
             } else {
                 const bSel = document.getElementById('bpBarangSelect');
                 if (bSel) window.onBpBarangChanged(bSel);
+            }
+        } else {
+            const poSelect = document.getElementById('poSelect');
+            if (poSelect && poSelect.value) {
+                const poData = (window.appConfig && window.appConfig.poListData && window.appConfig.poListData[poSelect.value]) ? window.appConfig.poListData[poSelect.value] : null;
+                window.toggleBpPoLockFields(true, poData);
             }
         }
 

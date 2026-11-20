@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\Keuangan\DatHutangHdr;
 use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstPajak;
 use App\Models\MasterData\MstSupplier;
 use App\Services\Keuangan\HutangService;
 use App\Services\Keuangan\KasBankService;
@@ -67,11 +68,19 @@ class HutangController extends Controller
         $selectedSupplierId = $request->input('supplier_id');
 
         $unbilledGrn = [];
+        $uncreditedReturs = [];
         if ($selectedSupplierId) {
             $unbilledGrn = $this->hutangService->getUnbilledGrnList((int) $selectedSupplierId);
+            $uncreditedReturs = $this->hutangService->getUncreditedReturList((int) $selectedSupplierId);
         }
 
-        return view('keuangan.hutang.create', compact('suppliers', 'gudangs', 'selectedSupplierId', 'unbilledGrn', 'unbilledSupplierSummary'));
+        $pajakList = MstPajak::active()
+            ->pembelian()
+            ->orderBy('is_default', 'desc')
+            ->orderBy('pajak_nm')
+            ->get();
+
+        return view('keuangan.hutang.create', compact('suppliers', 'gudangs', 'selectedSupplierId', 'unbilledGrn', 'unbilledSupplierSummary', 'pajakList', 'uncreditedReturs'));
     }
 
     /**
@@ -83,6 +92,15 @@ class HutangController extends Controller
         $input = $request->all();
         if (isset($input['biaya_ongkir'])) {
             $input['biaya_ongkir'] = str_replace(',', '.', (string)$input['biaya_ongkir']);
+        }
+        if (isset($input['tonase_kg'])) {
+            $input['tonase_kg'] = str_replace(',', '.', (string)$input['tonase_kg']);
+        }
+        if (isset($input['ongkir_tarif_per_kg'])) {
+            $input['ongkir_tarif_per_kg'] = str_replace(',', '.', (string)$input['ongkir_tarif_per_kg']);
+        }
+        if (isset($input['uang_muka_nominal'])) {
+            $input['uang_muka_nominal'] = str_replace(',', '.', (string)$input['uang_muka_nominal']);
         }
         if (isset($input['total_potongan_retur'])) {
             $input['total_potongan_retur'] = str_replace(',', '.', (string)$input['total_potongan_retur']);
@@ -107,6 +125,9 @@ class HutangController extends Controller
                 if (isset($item['ppn_nominal'])) {
                     $input['items'][$idx]['ppn_nominal'] = str_replace(',', '.', (string)$item['ppn_nominal']);
                 }
+                if (isset($item['dpp_nominal'])) {
+                    $input['items'][$idx]['dpp_nominal'] = str_replace(',', '.', (string)$item['dpp_nominal']);
+                }
             }
         }
         $request->merge($input);
@@ -116,6 +137,9 @@ class HutangController extends Controller
             'tgl_tagihan'          => 'required|date',
             'tgl_jatuh_tempo'      => 'required|date|after_or_equal:tgl_tagihan',
             'biaya_ongkir'         => 'nullable|numeric|min:0',
+            'tonase_kg'            => 'nullable|numeric|min:0',
+            'ongkir_tarif_per_kg'  => 'nullable|numeric|min:0',
+            'uang_muka_nominal'    => 'nullable|numeric|min:0',
             'total_potongan_retur' => 'nullable|numeric|min:0',
             'items'                => 'required|array|min:1',
             'items.*.barang_id'    => 'nullable|exists:mst_barang,barang_id',
@@ -320,11 +344,13 @@ class HutangController extends Controller
     {
         $supplierId = $request->input('supplier_id');
         $grnList = $this->hutangService->getUnbilledGrnList($supplierId ? (int) $supplierId : null);
+        $returList = $this->hutangService->getUncreditedReturList($supplierId ? (int) $supplierId : null);
         $supplier = $supplierId ? MstSupplier::find((int) $supplierId) : null;
 
         return response()->json([
             'status'   => 'success',
             'data'     => $grnList,
+            'returs'   => $returList,
             'supplier' => $supplier ? [
                 'id'        => $supplier->supplier_id,
                 'name'      => $supplier->supplier_nm,

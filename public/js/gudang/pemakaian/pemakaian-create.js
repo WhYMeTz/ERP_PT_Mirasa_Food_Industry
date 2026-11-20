@@ -35,6 +35,12 @@
             sideTujuan.innerText = tujuanInput.value ? tujuanInput.value : '- Belum Diisi -';
         }
     }
+    window.updateSidebarInfo = updateSidebarInfo;
+
+    function onGudangTujuanChanged(selectEl) {
+        updateSidebarInfo();
+    }
+    window.onGudangTujuanChanged = onGudangTujuanChanged;
 
     // Event Handler saat gudang asal diubah
     function onGudangChanged() {
@@ -165,12 +171,13 @@
         const row = btn.closest('tr');
         const barangSelect = row.querySelector('.barang-select');
 
+        const curBatch = row.querySelector('.batch-select')?.value;
         if ((!row._allBatches || row._allBatches.length === 0) && barangSelect && barangSelect.value) {
-            fetchBatchesForRow(row, barangSelect.value, grade);
+            fetchBatchesForRow(row, barangSelect.value, grade, curBatch);
             return;
         }
 
-        renderBatchOptionsInRow(row, grade);
+        renderBatchOptionsInRow(row, grade, curBatch);
     }
 
     // Tambah baris baru
@@ -196,7 +203,7 @@
                     ${barangOptions}
                 </select>
             </td>
-            <td style="padding: 0.65rem 0.65rem;">
+            <td style="padding: 0.65rem 0.65rem; vertical-align: top;">
                 <div class="grade-pill-group" style="display: flex; gap: 0.35rem; margin-bottom: 0.45rem; align-items: center; flex-wrap: nowrap;">
                     <button type="button" class="btn-chip active" onclick="window.pemakaianApp.setRowGradeFilter(this, '')">Semua</button>
                     <button type="button" class="btn-chip btn-chip-grade-a" onclick="window.pemakaianApp.setRowGradeFilter(this, 'A')">🟢 Grade A</button>
@@ -209,8 +216,16 @@
                 </select>
                 <div class="batch-info" style="font-size: 0.775rem; color: #059669; font-weight: 600; margin-top: 0.35rem;"></div>
             </td>
-            <td style="padding: 0.65rem 0.65rem;">
-                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" placeholder="0" required oninput="window.pemakaianApp.calcRow(this)">
+            <td class="col-sisa-stok" style="padding: 0.65rem 0.5rem; text-align: center; vertical-align: top;">
+                <div class="sisa-box-wrapper" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.45rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em;">Sisa di Gudang</span>
+                    <div class="sisa-val" style="font-size: 1.35rem; font-weight: 800; color: #94a3b8; font-family: monospace; line-height: 1.2; margin: 2px 0;">-</div>
+                    <div class="sisa-sub" style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">Pilih Batch</div>
+                </div>
+            </td>
+            <td style="padding: 0.65rem 0.65rem; vertical-align: top;">
+                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" placeholder="0" required oninput="window.pemakaianApp.calcRow(this)" style="font-size: 1.15rem; font-weight: 800; font-family: monospace; text-align: right; height: 42px;">
+                <div class="qty-warning" style="margin-top: 0.35rem;"></div>
             </td>
             <td style="text-align: center; padding: 0.65rem 0.65rem;">
                 <span class="row-satuan" style="font-weight: 800; color: #334155; font-size: 0.95rem;">-</span>
@@ -237,6 +252,8 @@
             updateRowNumbers();
             calculateGrandTotal();
             triggerAutoSave();
+            // Pulihkan kuantitas batch yang dilepas ke baris lain
+            syncBatchOptionsAcrossRows();
         } else {
             alert('Minimal harus ada 1 item barang yang dikeluarkan.');
         }
@@ -259,11 +276,61 @@
 
     // ═══════════════════════════════════════════════════════════════════════════
     // FITUR AUTO-SAVE & PULIHKAN DRAFT BROWSER (ANTI-HILANG SAAT REFRESH / F5)
+    // DILENGKAPI KADALUARSA OTOMATIS JIKA PINDAH HALAMAN > 1 MENIT
     // ═══════════════════════════════════════════════════════════════════════════
     const DRAFT_STORAGE_KEY = 'erp_mirasa_pemakaian_create_draft';
+    const DRAFT_MAX_AWAY_MS = 60 * 1000; // 1 Menit (60.000 ms) batas kadaluarsa saat berpindah halaman
     let autoSaveTimer = null;
+    let draftHeartbeatTimer = null;
+    let isDraftPurged = false;
+
+    function touchDraftTimestamp() {
+        if (isDraftPurged) return;
+        try {
+            const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (!raw) return;
+            const data = JSON.parse(raw);
+            if (!data) return;
+            data.last_active_timestamp = Date.now();
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+            // Abaikan kesalahan minor storage
+        }
+    }
+
+    function startDraftHeartbeat() {
+        if (draftHeartbeatTimer) clearInterval(draftHeartbeatTimer);
+        // Perbarui timestamp keaktifan setiap 5 detik selama pengguna tetap di halaman form
+        draftHeartbeatTimer = setInterval(() => {
+            touchDraftTimestamp();
+        }, 5000);
+    }
+
+    function stopDraftHeartbeat() {
+        if (draftHeartbeatTimer) {
+            clearInterval(draftHeartbeatTimer);
+            draftHeartbeatTimer = null;
+        }
+    }
+
+    // Rekam timestamp saat pengguna meninggalkan halaman (pindah URL / navigasi keluar)
+    window.addEventListener('beforeunload', () => {
+        touchDraftTimestamp();
+    });
+
+    // Hentikan heartbeat saat tab diminimalkan atau disembunyikan agar timer kadaluarsa berjalan presisi
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            touchDraftTimestamp();
+            stopDraftHeartbeat();
+        } else {
+            touchDraftTimestamp();
+            startDraftHeartbeat();
+        }
+    });
 
     function triggerAutoSave() {
+        if (isDraftPurged) return;
         if (autoSaveTimer) clearTimeout(autoSaveTimer);
         autoSaveTimer = setTimeout(() => {
             saveFormDraft();
@@ -271,6 +338,7 @@
     }
 
     function saveFormDraft() {
+        if (isDraftPurged) return;
         try {
             const rows = [];
             document.querySelectorAll('#itemsBody tr').forEach(tr => {
@@ -308,6 +376,7 @@
             });
 
             const gdgVal = document.getElementById('gudang_id')?.value || '';
+            const gdgTujuanVal = document.getElementById('gudang_tujuan_id')?.value || '';
             const tglVal = document.getElementById('pakai_tgl')?.value || '';
             const tujuanVal = document.getElementById('tujuan_pemakaian')?.value || '';
             const catVal = document.getElementById('catatan_txt')?.value || '';
@@ -315,8 +384,10 @@
             const targetVal = document.getElementById('target_produksi_qty')?.value || '100';
             const filterVal = document.getElementById('bom_grade_filter')?.value || '';
 
+            const now = Date.now();
             const data = {
                 gudang_id: gdgVal,
+                gudang_tujuan_id: gdgTujuanVal,
                 pakai_tgl: tglVal,
                 tujuan_pemakaian: tujuanVal,
                 catatan_txt: catVal,
@@ -324,11 +395,13 @@
                 target_produksi_qty: targetVal,
                 bom_grade_filter: filterVal,
                 items: rows,
-                saved_at: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                saved_at: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                saved_timestamp: now,
+                last_active_timestamp: now
             };
 
             // Simpan hanya jika pengguna sudah mengisi data
-            if (rows.length > 0 || catVal || (tujuanVal && tujuanVal !== 'PRODUKSI BERKO')) {
+            if (rows.length > 0 || catVal || gdgTujuanVal || (tujuanVal && tujuanVal !== 'PRODUKSI BERKO')) {
                 localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
                 updateDraftNoticeIndicator(true, false, data.saved_at);
             }
@@ -339,6 +412,11 @@
 
     function clearFormDraft() {
         try {
+            isDraftPurged = true;
+            if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+                autoSaveTimer = null;
+            }
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             updateDraftNoticeIndicator(false);
         } catch (e) {
@@ -347,10 +425,9 @@
     }
 
     function clearAndResetDraft() {
-        if (confirm('Apakah Anda ingin membersihkan draft tersimpan dan memulai form kosong baru?')) {
-            clearFormDraft();
-            location.reload();
-        }
+        clearFormDraft();
+        // Bersihkan state dan muat ulang halaman bersih
+        window.location.href = window.location.pathname;
     }
 
     function updateDraftNoticeIndicator(visible, isRestored = false, timeStr = '') {
@@ -361,13 +438,13 @@
         if (visible) {
             badge.style.display = 'flex';
             if (isRestored) {
-                text.innerHTML = `<strong>✓ Data input sebelumnya berhasil dipulihkan otomatis dari browser.</strong> Layar aman di-refresh kembali kapan saja.`;
+                text.innerHTML = `<strong>✓ Data input sebelumnya dipulihkan otomatis dari browser.</strong> Layar aman saat refresh (otomatis dibersihkan jika pindah halaman lain > 1 menit).`;
                 badge.style.background = '#ecfdf5';
                 badge.style.borderColor = '#a7f3d0';
                 badge.style.color = '#065f46';
             } else {
                 const atText = timeStr ? ` (pukul ${timeStr})` : '';
-                text.innerHTML = `<strong>💾 Draft tersimpan otomatis di browser${atText}.</strong> Jika layar ter-refresh / tidak sengaja tertutup, data tidak akan hilang.`;
+                text.innerHTML = `<strong>💾 Draft tersimpan otomatis di browser${atText}.</strong> Aman saat refresh layar (otomatis dibersihkan jika pindah halaman lain > 1 menit).`;
                 badge.style.background = '#f0f9ff';
                 badge.style.borderColor = '#bae6fd';
                 badge.style.color = '#0369a1';
@@ -384,6 +461,20 @@
             const data = JSON.parse(raw);
             if (!data) return false;
 
+            // Validasi kadaluarsa saat berpindah halaman:
+            // Jika pengguna meninggalkan halaman form pemakaian lebih dari 1 menit (60 detik),
+            // maka draft dibersihkan agar form kembali kosong saat dibuka ulang.
+            const now = Date.now();
+            const lastActive = data.last_active_timestamp || data.saved_timestamp || 0;
+            const awayDuration = now - lastActive;
+
+            if (lastActive > 0 && awayDuration > DRAFT_MAX_AWAY_MS) {
+                console.info(`Draft form pemakaian otomatis kadaluarsa (ditinggal ${Math.round(awayDuration / 1000)}s di halaman lain). Membersihkan form...`);
+                clearFormDraft();
+                return false;
+            }
+            if (!data) return false;
+
             const items = data.items || [];
             if (items.length === 0 && !data.catatan_txt && !data.tujuan_pemakaian) {
                 return false;
@@ -393,6 +484,10 @@
             if (data.gudang_id) {
                 const gdg = document.getElementById('gudang_id');
                 if (gdg) gdg.value = data.gudang_id;
+            }
+            if (data.gudang_tujuan_id) {
+                const gdgTujuan = document.getElementById('gudang_tujuan_id');
+                if (gdgTujuan) gdgTujuan.value = data.gudang_tujuan_id;
             }
             if (data.pakai_tgl) {
                 const tgl = document.getElementById('pakai_tgl');
@@ -476,30 +571,39 @@
                 batchOptions = '<option value="">-- Pilih Barang Dulu --</option>';
             }
         } else {
+            let firstAvailInBomRow = false;
             batchesToShow.forEach(b => {
-                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '⭐ [FIFO Tertua] ' : '';
-                const gCd = (b.grade_cd || 'A').toUpperCase();
-                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
-                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-
                 const sisaFisik = parseFloat(b.sisa_qty || 0);
                 const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
                 const draftQty = parseFloat(b.draft_qty || 0);
                 const draftDocs = Array.isArray(b.draft_doc_nos) ? b.draft_doc_nos.join(', ') : (b.draft_doc_nos || '');
                 const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
 
+                let isFifoTop = false;
+                if (!isFullyBooked && sisaBebas > 0.0001 && !firstAvailInBomRow) {
+                    isFifoTop = true;
+                    firstAvailInBomRow = true;
+                }
+
+                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
+                const prefix = isFifoTop ? '⭐ [FIFO Tertua] ' : '';
+                const gCd = (b.grade_cd || 'A').toUpperCase();
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
+                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
+
                 let labelText = '';
                 if (draftQty > 0) {
                     if (isFullyBooked) {
-                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
+                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     } else {
                         labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     }
                 } else {
                     labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
                 }
+
+                const disabledAttr = (isFullyBooked && sisaBebas <= 0.0001) ? 'disabled style="color: #94a3b8; background: #f8fafc;"' : '';
 
                 batchOptions += `<option value="${b.batch_no}" 
                     data-stok-id="${b.stok_id || ''}" 
@@ -512,6 +616,7 @@
                     data-harga="${b.harga_satuan || 0}" 
                     data-masuk="${b.tgl_terima || '-'}" 
                     data-exp="${b.expired_tgl || '-'}" 
+                    ${disabledAttr}
                     ${isSelected}>
                     ${labelText}
                 </option>`;
@@ -546,8 +651,16 @@
                 </select>
                 <div class="batch-info" style="font-size: 0.775rem; color: #059669; font-weight: 600; margin-top: 0.35rem;"></div>
             </td>
-            <td style="padding: 0.65rem 0.65rem;">
-                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" value="${item.qty_keluar || ''}" placeholder="0" required oninput="window.pemakaianApp.calcRow(this)">
+            <td class="col-sisa-stok" style="padding: 0.65rem 0.5rem; text-align: center; vertical-align: top;">
+                <div class="sisa-box-wrapper" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.45rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em;">Sisa di Gudang</span>
+                    <div class="sisa-val" style="font-size: 1.35rem; font-weight: 800; color: #94a3b8; font-family: monospace; line-height: 1.2; margin: 2px 0;">-</div>
+                    <div class="sisa-sub" style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">Memuat Batch...</div>
+                </div>
+            </td>
+            <td style="padding: 0.65rem 0.65rem; vertical-align: top;">
+                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" value="${item.qty_keluar || ''}" placeholder="0" required oninput="window.pemakaianApp.calcRow(this)" style="font-size: 1.15rem; font-weight: 800; font-family: monospace; text-align: right; height: 42px;">
+                <div class="qty-warning" style="margin-top: 0.35rem;"></div>
             </td>
             <td style="text-align: center; padding: 0.65rem 0.65rem;">
                 <span class="row-satuan" style="font-weight: 800; color: #334155; font-size: 0.95rem;">${item.satuan_nm || itemObj?.satuan_dasar?.satuan_nm || '-'}</span>
@@ -563,10 +676,11 @@
         rowIndex++;
         updateRowNumbers();
 
-        if (item.batch_no) {
+        if (item.barang_id) {
+            // Selalu tarik ketersediaan batch fisik & status komitmen draft secara live dari server
+            fetchBatchesForRow(tr, item.barang_id, curGrade, item.batch_no);
+        } else if (item.batch_no) {
             calcRow(tr.querySelector('.qty-input'));
-        } else if (item.barang_id && (!tr._allBatches || tr._allBatches.length === 0)) {
-            fetchBatchesForRow(tr, item.barang_id, curGrade);
         }
     }
 
@@ -597,30 +711,39 @@
         if (batchesToShow.length === 0) {
             batchOptions = '<option value="">(Stok Fisik Habis di Gudang ini)</option>';
         } else {
+            let firstAvailInBomRow = false;
             batchesToShow.forEach(b => {
-                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
-                const prefix = b.is_fifo_top ? '⭐ [FIFO Tertua] ' : '';
-                const gCd = (b.grade_cd || 'A').toUpperCase();
-                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
-                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
-                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
-
                 const sisaFisik = parseFloat(b.sisa_qty || 0);
                 const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
                 const draftQty = parseFloat(b.draft_qty || 0);
                 const draftDocs = Array.isArray(b.draft_doc_nos) ? b.draft_doc_nos.join(', ') : (b.draft_doc_nos || '');
                 const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
 
+                let isFifoTop = false;
+                if (!isFullyBooked && sisaBebas > 0.0001 && !firstAvailInBomRow) {
+                    isFifoTop = true;
+                    firstAvailInBomRow = true;
+                }
+
+                const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
+                const prefix = isFifoTop ? '⭐ [FIFO Tertua] ' : '';
+                const gCd = (b.grade_cd || 'A').toUpperCase();
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
+                const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
+
                 let labelText = '';
                 if (draftQty > 0) {
                     if (isFullyBooked) {
-                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
+                        labelText = `⛔ [HABIS DIBOOKING DRAFT] ${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     } else {
                         labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft [${draftDocs}])`;
                     }
                 } else {
                     labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
                 }
+
+                const disabledAttr = (isFullyBooked && sisaBebas <= 0.0001) ? 'disabled style="color: #94a3b8; background: #f8fafc;"' : '';
 
                 batchOptions += `<option value="${b.batch_no}" 
                     data-stok-id="${b.stok_id || ''}" 
@@ -633,6 +756,7 @@
                     data-harga="${b.harga_satuan || 0}" 
                     data-masuk="${b.tgl_terima || '-'}" 
                     data-exp="${b.expired_tgl || '-'}" 
+                    ${disabledAttr}
                     ${isSelected}>
                     ${labelText}
                 </option>`;
@@ -695,8 +819,16 @@
                     ${badgeHtml}
                 </div>
             </td>
-            <td style="padding: 0.65rem 0.65rem;">
-                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" value="${item.qty_keluar}" placeholder="0" required oninput="window.pemakaianApp.calcRow(this)">
+            <td class="col-sisa-stok" style="padding: 0.65rem 0.5rem; text-align: center; vertical-align: top;">
+                <div class="sisa-box-wrapper" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.45rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em;">Sisa di Gudang</span>
+                    <div class="sisa-val" style="font-size: 1.35rem; font-weight: 800; color: #94a3b8; font-family: monospace; line-height: 1.2; margin: 2px 0;">-</div>
+                    <div class="sisa-sub" style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">Memuat Batch...</div>
+                </div>
+            </td>
+            <td style="padding: 0.65rem 0.65rem; vertical-align: top;">
+                <input type="number" step="0.0001" min="0.0001" name="items[${rowIndex}][qty_keluar]" class="form-control qty-input" value="${item.qty_keluar}" placeholder="0" required oninput="window.pemakaianApp.calcRow(this)" style="font-size: 1.15rem; font-weight: 800; font-family: monospace; text-align: right; height: 42px;">
+                <div class="qty-warning" style="margin-top: 0.35rem;"></div>
             </td>
             <td style="text-align: center; padding: 0.65rem 0.65rem;">
                 <span class="row-satuan" style="font-weight: 800; color: #334155; font-size: 0.95rem;">${item.satuan_nm}</span>
@@ -902,6 +1034,7 @@
         }
 
         if (barangId) {
+            updateSisaStokCell(row, null);
             // Reset tombol filter grade ke "Semua" agar memuat seluruh batch secara default
             const group = row.querySelector('.grade-pill-group');
             if (group) {
@@ -915,13 +1048,41 @@
             if (row.querySelector('.batch-info')) row.querySelector('.batch-info').textContent = '';
             row._allBatches = [];
             if (satuanEl) satuanEl.textContent = '-';
+            updateSisaStokCell(row, null);
         }
 
         calcRow(selectEl);
+        if (!isSyncingOtherRows) {
+            syncBatchOptionsAcrossRows(row);
+        }
+    }
+
+    let isSyncingOtherRows = false;
+    // Sinkronisasi opsi batch ke baris-baris lain saat ada kuantitas yang diambil atau batch yang diubah
+    function syncBatchOptionsAcrossRows(triggerRow = null) {
+        if (isSyncingOtherRows) return;
+        isSyncingOtherRows = true;
+        try {
+            const rows = document.querySelectorAll('#itemsBody tr');
+            rows.forEach(r => {
+                if (r !== triggerRow) {
+                    const barangId = r.querySelector('.barang-select')?.value;
+                    const batchSelect = r.querySelector('.batch-select');
+                    const curBatch = batchSelect?.value;
+                    const curGrade = (r.querySelector('.grade-input')?.value || 'A').toUpperCase();
+
+                    if (barangId && r._allBatches && r._allBatches.length > 0) {
+                        renderBatchOptionsInRow(r, curGrade, curBatch);
+                    }
+                }
+            });
+        } finally {
+            isSyncingOtherRows = false;
+        }
     }
 
     // Render options batch ke select row
-    function renderBatchOptionsInRow(row, gradeFilter = '') {
+    function renderBatchOptionsInRow(row, gradeFilter = '', preferredBatchNo = null) {
         const batchSelect = row.querySelector('.batch-select');
         const batchInfo = row.querySelector('.batch-info');
         if (!batchSelect) return;
@@ -952,44 +1113,118 @@
             }
         }
 
-        let html = '';
+        // Hitung kuantitas batch yang sudah dipakai di baris-baris lain dalam form ini (khusus barang yang sama)
+        const usedQtyByOtherRows = {};
+        const usedDetailByOtherRows = {};
+        const rowBarangId = row.querySelector('.barang-select')?.value || '';
+        document.querySelectorAll('#itemsBody tr').forEach(r => {
+            if (r !== row) {
+                const barVal = r.querySelector('.barang-select')?.value || '';
+                const bVal = r.querySelector('.batch-select')?.value;
+                const gVal = (r.querySelector('.grade-input')?.value || '').toUpperCase();
+                const qVal = parseFloat(r.querySelector('.qty-input')?.value || 0);
+                const rNum = r.querySelector('.row-num')?.textContent.trim() || 'Baris';
+                if (barVal && rowBarangId && parseInt(barVal) === parseInt(rowBarangId) && bVal && qVal > 0) {
+                    const key = `${bVal}_${gVal}`;
+                    usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
+                    usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
+
+                    if (!usedDetailByOtherRows[key]) usedDetailByOtherRows[key] = [];
+                    usedDetailByOtherRows[key].push(`Baris #${rNum} (${qVal.toLocaleString('id-ID')})`);
+                }
+            }
+        });
+
+        let firstAvailableIdx = -1;
         filtered.forEach((b, idx) => {
-            const isTop = (idx === 0);
+            const gCd = (b.grade_cd || 'A').toUpperCase();
+            const sisaFisik = parseFloat(b.sisa_qty || 0);
+            const sisaBebasServer = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+            const draftQty = parseFloat(b.draft_qty || 0);
+            const usedByOthers = usedQtyByOtherRows[`${b.batch_no}_${gCd}`] || usedQtyByOtherRows[b.batch_no] || 0;
+            const netSisaBebas = Math.max(0, sisaBebasServer - usedByOthers);
+            const isUsedUp = (sisaBebasServer > 0.0001 && netSisaBebas <= 0.0001);
+            const booked = b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0) || isUsedUp;
+
+            if (!booked && netSisaBebas > 0.0001 && firstAvailableIdx === -1) {
+                firstAvailableIdx = idx;
+            }
+        });
+
+        // Tentukan batch mana yang terpilih
+        let selectedIdx = -1;
+        if (preferredBatchNo) {
+            selectedIdx = filtered.findIndex(b => b.batch_no === preferredBatchNo);
+            if (selectedIdx !== -1) {
+                const b = filtered[selectedIdx];
+                const gCd = (b.grade_cd || 'A').toUpperCase();
+                const sisaBebasServer = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : parseFloat(b.sisa_qty || 0);
+                const usedByOthers = usedQtyByOtherRows[`${b.batch_no}_${gCd}`] || usedQtyByOtherRows[b.batch_no] || 0;
+                const netSisaBebas = Math.max(0, sisaBebasServer - usedByOthers);
+                if (netSisaBebas <= 0.0001) {
+                    // Batch pilihan sudah habis dipakai di baris lain -> alihkan otomatis ke batch tertua berikutnya yang masih tersedia
+                    selectedIdx = firstAvailableIdx;
+                }
+            }
+        }
+
+        if (selectedIdx === -1) {
+            selectedIdx = firstAvailableIdx;
+        }
+
+        let html = '';
+        if (firstAvailableIdx === -1) {
+            html += `<option value="" disabled ${selectedIdx === -1 ? 'selected' : ''} style="color: #dc2626; font-weight: 700; background: #fee2e2;">⛔ SEMUA BATCH HABIS DIPAKAI DI BARIS LAIN</option>`;
+        }
+
+        filtered.forEach((b, idx) => {
+            const isSelected = (idx === selectedIdx);
+            const isTop = (idx === firstAvailableIdx);
             const prefix = isTop ? '⭐ [FIFO Tertua] ' : '';
             const gCd = (b.grade_cd || 'A').toUpperCase();
-            const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
             const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
-            const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
             
             const sisaFisik = parseFloat(b.sisa_qty || 0);
-            const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
+            const sisaBebasServer = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
             const draftQty = parseFloat(b.draft_qty || 0);
             const draftDocs = (b.draft_doc_nos || []).join(', ');
-            const isFullyBooked = b.is_fully_booked || (sisaBebas <= 0.0001 && draftQty > 0);
+
+            const usedByOthers = usedQtyByOtherRows[`${b.batch_no}_${gCd}`] || usedQtyByOtherRows[b.batch_no] || 0;
+            const usedDetails = (usedDetailByOtherRows[`${b.batch_no}_${gCd}`] || []).join(', ');
+            const netSisaBebas = Math.max(0, sisaBebasServer - usedByOthers);
+            const isUsedUpInForm = (sisaBebasServer > 0.0001 && netSisaBebas <= 0.0001);
+            const isFullyBooked = b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0) || isUsedUpInForm;
 
             let labelText = '';
-            if (draftQty > 0) {
-                if (isFullyBooked) {
-                    labelText = `⛔ [HABIS DIBOOKING DRAFT] ${prefix}${b.batch_no} • [${gradeBadge}] (Sisa Bebas: 0 | Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
-                } else {
-                    labelText = `⚠️ [DRAFT ALLOCATED] ${prefix}${b.batch_no} • [${gradeBadge}] Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} (Fisik: ${sisaFisik.toLocaleString('id-ID')} | ⚠️ ${draftQty.toLocaleString('id-ID')} di Draft ${draftDocs})`;
-                }
+            if (isUsedUpInForm) {
+                labelText = `⛔ ${b.batch_no} • [Grade ${gCd}] (HABIS - Dipakai di ${usedDetails || 'baris lain'})`;
+            } else if (b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0)) {
+                labelText = `⛔ ${b.batch_no} • [Grade ${gCd}] (HABIS di Draft [${draftDocs}])`;
+            } else if (usedByOthers > 0) {
+                labelText = `⚠️ ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')} | ${usedByOthers.toLocaleString('id-ID')} dipakai di ${usedDetails || 'baris lain'})`;
+            } else if (draftQty > 0) {
+                labelText = `⚠️ ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
             } else {
-                labelText = `${prefix}${b.batch_no} • [${gradeBadge}] (Sisa: ${sisaFisik.toLocaleString('id-ID')})${tglTerima}${expInfo}`;
+                labelText = `${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
             }
+
+            const disabledAttr = (isFullyBooked && netSisaBebas <= 0.0001) 
+                ? 'disabled style="color: #94a3b8; background: #f1f5f9; text-decoration: line-through; cursor: not-allowed;"' 
+                : '';
 
             html += `<option value="${b.batch_no}" 
                 data-stok-id="${b.stok_id || ''}" 
                 data-grade="${gCd}" 
                 data-sisa="${sisaFisik}" 
-                data-sisa-bebas="${sisaBebas}"
+                data-sisa-bebas="${netSisaBebas}"
                 data-draft-qty="${draftQty}"
                 data-draft-docs="${draftDocs}"
-                data-is-fully-booked="${isFullyBooked ? 1 : 0}"
+                data-is-fully-booked="${(isFullyBooked && netSisaBebas <= 0.0001) ? 1 : 0}"
                 data-harga="${b.harga_satuan || 0}" 
                 data-masuk="${b.tgl_terima || '-'}" 
                 data-exp="${b.expired_tgl || '-'}" 
-                ${isTop ? 'selected' : ''}>
+                ${disabledAttr}
+                ${isSelected ? 'selected' : ''}>
                 ${labelText}
             </option>`;
         });
@@ -999,7 +1234,7 @@
     }
 
     // Ambil data batch stok fisik dari backend AJAX
-    function fetchBatchesForRow(row, barangId, forcedGrade = null) {
+    function fetchBatchesForRow(row, barangId, forcedGrade = null, preferredBatchNo = null) {
         const gudangId = getSelectedGudangId();
         const batchSelect = row.querySelector('.batch-select');
         const batchInfo = row.querySelector('.batch-info');
@@ -1012,9 +1247,11 @@
             return;
         }
 
-        batchSelect.innerHTML = '<option value="">Memuat data batch FIFO...</option>';
-        if (batchInfo) {
-            batchInfo.innerHTML = '<span style="color: #64748b;">Memeriksa stok fisik & urutan batch FIFO di gudang...</span>';
+        if (!preferredBatchNo && (!batchSelect.value || batchSelect.value === '')) {
+            batchSelect.innerHTML = '<option value="">Memuat data batch FIFO...</option>';
+            if (batchInfo) {
+                batchInfo.innerHTML = '<span style="color: #64748b;">Memeriksa stok fisik & urutan batch FIFO di gudang...</span>';
+            }
         }
 
         const baseUrl = window.appConfig?.batchesUrl || '/gudang/pemakaian/batches';
@@ -1040,7 +1277,7 @@
                         }
                     }
 
-                    renderBatchOptionsInRow(row, gradeFilter);
+                    renderBatchOptionsInRow(row, gradeFilter, preferredBatchNo);
                 } else {
                     batchSelect.innerHTML = '<option value="">Gagal memuat batch</option>';
                     if (batchInfo) {
@@ -1057,6 +1294,134 @@
             });
     }
 
+    // Perbarui Tampilan Kolom "Sisa di Gudang" dengan Angka Jumbo & Tombol Ambil Semua
+    function updateSisaStokCell(row, sisaBebas, sisaFisik, draftQty, draftDocs, isFullyBooked, satuan = '') {
+        const sisaCell = row.querySelector('.col-sisa-stok');
+        if (!sisaCell) return;
+
+        if (sisaBebas === null || isNaN(sisaBebas)) {
+            sisaCell.innerHTML = `
+                <div class="sisa-box-wrapper" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0.45rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Sisa di Gudang</span>
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #94a3b8; font-family: monospace;">-</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">Pilih Batch Dulu</div>
+                </div>
+            `;
+            return;
+        }
+
+        const satuanText = (satuan && satuan !== '-') ? ` ${satuan}` : '';
+        const sisaFormatted = sisaBebas.toLocaleString('id-ID');
+
+        if (isFullyBooked || sisaBebas <= 0.0001) {
+            sisaCell.innerHTML = `
+                <div class="sisa-box-wrapper" style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 8px; padding: 0.45rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.685rem; font-weight: 800; color: #dc2626; text-transform: uppercase;">⛔ Stok Habis</span>
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #b91c1c; font-family: monospace;">0</div>
+                    <div style="font-size: 0.685rem; color: #991b1b; font-weight: 600;">Terikat di Draft</div>
+                </div>
+            `;
+        } else if (draftQty > 0) {
+            sisaCell.innerHTML = `
+                <div class="sisa-box-wrapper" style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 8px; padding: 0.4rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.685rem; font-weight: 800; color: #b45309; text-transform: uppercase;">⚠️ Sisa Bebas</span>
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #92400e; font-family: monospace; line-height: 1.15;">
+                        ${sisaFormatted}<span style="font-size: 0.725rem; font-weight: 700; color: #b45309;">${satuanText}</span>
+                    </div>
+                    <div style="font-size: 0.685rem; color: #78350f; font-weight: 600; margin-top: 1px;">
+                        (${draftQty.toLocaleString('id-ID')} di draft)
+                    </div>
+                    <button type="button" class="btn-fill-max" onclick="window.pemakaianApp.fillMaxQtyForRow(this)" style="background: #f59e0b; color: #ffffff; border: none; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; margin-top: 3px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.15);" title="Salin seluruh sisa bebas ke Qty Keluar">
+                        Ambil Bebas (${sisaFormatted})
+                    </button>
+                </div>
+            `;
+        } else {
+            sisaCell.innerHTML = `
+                <div class="sisa-box-wrapper" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 0.4rem 0.5rem; min-height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <span style="font-size: 0.685rem; font-weight: 800; color: #166534; text-transform: uppercase;">✓ Stok Tersedia</span>
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #15803d; font-family: monospace; line-height: 1.15;">
+                        ${sisaFormatted}<span style="font-size: 0.725rem; font-weight: 700; color: #166534;">${satuanText}</span>
+                    </div>
+                    <div style="font-size: 0.685rem; color: #166534; font-weight: 600; margin-top: 1px;">
+                        Siap Digunakan
+                    </div>
+                    <button type="button" class="btn-fill-max" onclick="window.pemakaianApp.fillMaxQtyForRow(this)" style="background: #059669; color: #ffffff; border: none; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; margin-top: 3px; cursor: pointer; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Salin seluruh stok tersedia ke Qty Keluar">
+                        Ambil Semua (${sisaFormatted})
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    // Tombol Ambil Semua: Otomatis mengisi nilai sisa bebas ke kolom Qty Keluar
+    function fillMaxQtyForRow(btn) {
+        const row = btn.closest('tr');
+        if (!row) return;
+        const batchSelect = row.querySelector('.batch-select');
+        const selectedOpt = batchSelect ? batchSelect.selectedOptions[0] : null;
+        if (!selectedOpt || !selectedOpt.value) return;
+
+        const sisaFisik = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
+        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') !== null ? selectedOpt.getAttribute('data-sisa-bebas') : sisaFisik);
+
+        const qtyInput = row.querySelector('.qty-input');
+        if (qtyInput && sisaBebas > 0) {
+            qtyInput.value = sisaBebas;
+            calcRow(qtyInput);
+            calculateGrandTotal();
+            triggerAutoSave();
+        }
+    }
+
+    // Helper menemukan batch terlama dengan sisa bebas > 0
+    function findOldestAvailableBatch(row, targetGrade = null) {
+        const batchSelect = row.querySelector('.batch-select');
+        if (!batchSelect || batchSelect.options.length === 0) return null;
+
+        const usedQtyByOtherRows = {};
+        document.querySelectorAll('#itemsBody tr').forEach(r => {
+            if (r !== row) {
+                const bVal = r.querySelector('.batch-select')?.value;
+                const gVal = (r.querySelector('.grade-input')?.value || '').toUpperCase();
+                const qVal = parseFloat(r.querySelector('.qty-input')?.value || 0);
+                if (bVal && qVal > 0) {
+                    const key = bVal + '_' + gVal;
+                    usedQtyByOtherRows[key] = (usedQtyByOtherRows[key] || 0) + qVal;
+                    usedQtyByOtherRows[bVal] = (usedQtyByOtherRows[bVal] || 0) + qVal;
+                }
+            }
+        });
+
+        for (let i = 0; i < batchSelect.options.length; i++) {
+            const opt = batchSelect.options[i];
+            if (!opt.value) continue;
+
+            const optGrade = (opt.getAttribute('data-grade') || 'A').toUpperCase();
+            if (targetGrade && optGrade !== targetGrade) continue;
+
+            const optSisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
+            const optFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
+            const usedOther = usedQtyByOtherRows[opt.value + '_' + optGrade] || usedQtyByOtherRows[opt.value] || 0;
+            const netAvailable = optSisaBebas - usedOther;
+
+            if (!optFullyBooked && netAvailable > 0.0001) {
+                return {
+                    opt: opt,
+                    index: i,
+                    batch_no: opt.value,
+                    grade: optGrade,
+                    tgl_masuk: opt.getAttribute('data-masuk') || '-',
+                    sisa_bebas: netAvailable,
+                    sisa_fisik: parseFloat(opt.getAttribute('data-sisa') || 0),
+                    harga: parseFloat(opt.getAttribute('data-harga') || 0),
+                    stok_id: opt.getAttribute('data-stok-id') || ''
+                };
+            }
+        }
+        return null;
+    }
+
     // Tampilkan rincian status batch normal / badge peringatan
     function renderNormalBatchInfo(row) {
         const batchSelect = row.querySelector('.batch-select');
@@ -1066,103 +1431,82 @@
         const selectedOpt = batchSelect.selectedOptions[0];
         if (!selectedOpt || !selectedOpt.value) {
             batchInfo.innerHTML = '';
+            updateSisaStokCell(row, null);
             return;
         }
 
         const sisa = parseFloat(selectedOpt.getAttribute('data-sisa') || 0);
-        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') || sisa);
+        const sisaBebas = parseFloat(selectedOpt.getAttribute('data-sisa-bebas') !== null ? selectedOpt.getAttribute('data-sisa-bebas') : sisa);
         const draftQty = parseFloat(selectedOpt.getAttribute('data-draft-qty') || 0);
         const draftDocs = selectedOpt.getAttribute('data-draft-docs') || '';
         const tglMasuk = selectedOpt.getAttribute('data-masuk') || '-';
         const grade = (row.querySelector('.grade-input')?.value || selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
+        const satuanNm = row.querySelector('.row-satuan')?.textContent.trim() || '';
+        const isFullyBooked = (selectedOpt.getAttribute('data-is-fully-booked') === '1') || (sisaBebas <= 0.0001 && draftQty > 0);
+
+        // Perbarui Kolom Sisa di Gudang
+        updateSisaStokCell(row, sisaBebas, sisa, draftQty, draftDocs, isFullyBooked, satuanNm);
 
         const gradeBadge = (grade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A (Super)</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A</span>`
             : ((grade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B (Standar)</span>`
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
                 : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
-        const isFirstBatch = (batchSelect.selectedIndex === 0);
-        const oldestOpt = (batchSelect.options.length > 0 && batchSelect.options[0].value) ? batchSelect.options[0] : null;
-        const oldestSisa = oldestOpt ? parseFloat(oldestOpt.getAttribute('data-sisa') || 0) : 0;
-        const oldestBatchNo = oldestOpt ? oldestOpt.value : '-';
-        const oldestMasuk = oldestOpt ? (oldestOpt.getAttribute('data-masuk') || '-') : '-';
-        const isSameBatch = selectedOpt && oldestOpt && (selectedOpt.value === oldestOpt.value);
+        const oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
+        const isSameBatch = selectedOpt && oldestInfo && (selectedOpt.value === oldestInfo.batch_no);
+        const oldestSisaBebas = oldestInfo ? oldestInfo.sisa_bebas : 0;
+        const oldestBatchNo = oldestInfo ? oldestInfo.batch_no : '-';
+        const oldestMasuk = oldestInfo ? oldestInfo.tgl_masuk : '-';
 
-        let oldestAlreadyUsedInOtherRows = false;
-        if (oldestOpt) {
-            document.querySelectorAll('#itemsBody tr').forEach(r => {
-                if (r !== row) {
-                    const otherBatch = r.querySelector('.batch-select')?.value;
-                    if (otherBatch && otherBatch === oldestOpt.value) {
-                        oldestAlreadyUsedInOtherRows = true;
-                    }
-                }
-            });
-        }
+        // Melompati batch tertua HANYA jika ada batch terlama dengan sisa bebas > 0 yang posisinya mendahului batch terpilih
+        const isSkippingOldest = oldestInfo && selectedOpt && (selectedOpt.index > oldestInfo.index);
 
-        let draftWarningNotice = '';
-        if (draftQty > 0) {
-            draftWarningNotice = `
-                <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.35rem 0.6rem; margin-top: 0.3rem; color: #92400e;">
-                    <div style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.74rem;">
-                        <span>⚠️ Terikat Dokumen DRAFT: [${draftDocs}]</span>
-                    </div>
-                    <div style="font-size: 0.72rem; color: #78350f; margin-top: 2px;">
-                        Kuantitas dibooking draft lain: <strong>${draftQty.toLocaleString('id-ID')} unit</strong>. Sisa bebas unallocated: <strong style="color: #065f46;">${sisaBebas.toLocaleString('id-ID')} unit</strong> (dari fisik ${sisa.toLocaleString('id-ID')} unit).
-                    </div>
-                </div>
-            `;
-        }
-
-        if (isFirstBatch || isSameBatch || oldestAlreadyUsedInOtherRows) {
+        if (isSameBatch || !isSkippingOldest || !oldestInfo) {
             batchSelect.style.borderColor = '#cbd5e1';
             batchSelect.style.backgroundColor = '#ffffff';
             batchInfo.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.35rem; margin-top: 0.3rem;">
                     ${gradeBadge}
-                    <span style="color: #065f46; font-weight: 600; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.75rem;">
-                        ⭐ FIFO Terverifikasi: Masuk ${tglMasuk} • Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} unit (Fisik: ${sisa.toLocaleString('id-ID')})
+                    <span style="color: #065f46; font-weight: 700; background: #ecfdf5; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.735rem;">
+                        ⭐ Urutan FIFO Tepat (Masuk: ${tglMasuk})
                     </span>
                 </div>
-                ${draftWarningNotice}
             `;
-        } else if (oldestOpt && oldestSisa > 0) {
+        } else if (isSkippingOldest && oldestSisaBebas > 0) {
             batchSelect.style.borderColor = '#f59e0b';
             batchSelect.style.backgroundColor = '#fffdf5';
             batchInfo.innerHTML = `
-                <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.45rem 0.65rem; margin-top: 0.25rem; color: #92400e;">
-                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.45rem 0.65rem; margin-top: 0.3rem; color: #92400e;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; flex-wrap: wrap;">
                         <div>
-                            <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
+                            <div style="display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.15rem;">
                                 ${gradeBadge}
-                                <strong style="color: #b45309; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    ⚠️ Melompati Batch Tertua!
+                                <strong style="color: #b45309; font-size: 0.775rem;">
+                                    ⚠️ Ada Batch Lebih Lama: [${oldestBatchNo}]
                                 </strong>
                             </div>
-                            <div style="font-size: 0.735rem; color: #78350f; line-height: 1.35;">
-                                Batch <strong>${selectedOpt.value}</strong> lebih baru. Masih ada Batch Terlama <strong>[${oldestBatchNo}]</strong> (Sisa: <strong>${oldestSisa.toLocaleString('id-ID')} unit</strong> • Masuk: <strong>${oldestMasuk}</strong>) yang harus dihabiskan dahulu!
+                            <div style="font-size: 0.72rem; color: #78350f;">
+                                Masuk: <strong>${oldestMasuk}</strong> • Sisa Bebas: <strong>${oldestSisaBebas.toLocaleString('id-ID')} unit</strong>
                             </div>
                         </div>
-                        <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Otomatis pilih batch tertua">
+                        <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.735rem; padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(5,150,105,0.25);" title="Otomatis pilih batch tertua yang tersedia">
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span>Pakai Terlama</span>
+                            <span>👉 Pakai Terlama Ini</span>
                         </button>
                     </div>
                 </div>
-                ${draftWarningNotice}
             `;
         } else {
             batchSelect.style.borderColor = '#cbd5e1';
             batchSelect.style.backgroundColor = '#ffffff';
             batchInfo.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.35rem; margin-top: 0.3rem;">
                     ${gradeBadge}
-                    <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.75rem;">
-                        Pilihan Manual • Masuk ${tglMasuk} • Sisa Bebas: ${sisaBebas.toLocaleString('id-ID')} unit (Fisik: ${sisa.toLocaleString('id-ID')})
+                    <span style="color: #0369a1; font-weight: 600; background: #f0f9ff; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; font-size: 0.735rem;">
+                        Pilihan Manual • Masuk: ${tglMasuk}
                     </span>
                 </div>
-                ${draftWarningNotice}
             `;
         }
     }
@@ -1170,8 +1514,28 @@
     // Handler saat batch dipilih
     function onBatchSelect(selectEl) {
         const row = selectEl.closest('tr');
-        const selectedOpt = selectEl.selectedOptions[0];
-        if (!selectedOpt || !selectedOpt.value) return;
+        let selectedOpt = selectEl.selectedOptions[0];
+        if (!selectedOpt || !selectedOpt.value) {
+            updateSisaStokCell(row, null);
+            return;
+        }
+
+        // Mencegah pemilihan opsi disabled jika diklik paksa atau via panah keyboard
+        if (selectedOpt.disabled) {
+            let foundAvailable = false;
+            for (let i = 0; i < selectEl.options.length; i++) {
+                if (!selectEl.options[i].disabled && selectEl.options[i].value) {
+                    selectEl.selectedIndex = i;
+                    selectedOpt = selectEl.options[i];
+                    foundAvailable = true;
+                    break;
+                }
+            }
+            if (!foundAvailable) {
+                updateSisaStokCell(row, 0, 0, 0, '', true, '');
+                return;
+            }
+        }
 
         const harga = parseFloat(selectedOpt.getAttribute('data-harga') || 0);
         const grade = (selectedOpt.getAttribute('data-grade') || 'A').toUpperCase();
@@ -1196,10 +1560,58 @@
     function selectOldestBatchInRow(btn) {
         const row = btn.closest('tr');
         const batchSelect = row.querySelector('.batch-select');
-        if (batchSelect && batchSelect.options.length > 0) {
+        const gradeInput = row.querySelector('.grade-input');
+        if (!batchSelect) return;
+
+        const grade = (gradeInput?.value || 'A').toUpperCase();
+        let oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
+        if (oldestInfo && oldestInfo.opt) {
+            batchSelect.selectedIndex = oldestInfo.index;
+            onBatchSelect(batchSelect);
+            return;
+        }
+
+        // Fallback jika tidak terdeteksi via helper
+        for (let i = 0; i < batchSelect.options.length; i++) {
+            const opt = batchSelect.options[i];
+            const sisaBebas = parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0));
+            const isFullyBooked = (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled;
+            if (opt.value && !isFullyBooked && sisaBebas > 0.0001) {
+                batchSelect.selectedIndex = i;
+                onBatchSelect(batchSelect);
+                return;
+            }
+        }
+
+        if (batchSelect.options.length > 0) {
             batchSelect.selectedIndex = 0;
             onBatchSelect(batchSelect);
         }
+    }
+
+    // Auto-split batch dengan prioritas ketat mulai dari batch tertua (FIFO)
+    function autoSplitFifoStrict(row, splitMode = 'SAME_GRADE') {
+        if (!row) return;
+        const barangSelect = row.querySelector('.barang-select');
+        const batchSelect = row.querySelector('.batch-select');
+        const qtyInput = row.querySelector('.qty-input');
+        const gradeInput = row.querySelector('.grade-input');
+
+        if (!barangSelect || !barangSelect.value || !batchSelect) return;
+
+        const totalRequested = parseFloat(qtyInput?.value || 0);
+        if (totalRequested <= 0) return;
+
+        const grade = (gradeInput?.value || 'A').toUpperCase();
+        const oldestInfo = findOldestAvailableBatch(row, (splitMode === 'SAME_GRADE' ? grade : null)) || findOldestAvailableBatch(row, null);
+
+        if (oldestInfo && oldestInfo.opt) {
+            batchSelect.selectedIndex = oldestInfo.index;
+            onBatchSelect(batchSelect);
+            qtyInput.value = totalRequested;
+        }
+
+        autoSplitBatchForRow(row, splitMode);
     }
 
     // Kalkulasi kuantitas baris & validasi komitmen draft / limit stok
@@ -1224,56 +1636,146 @@
                 ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
                 : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
 
+        const qtyWarning = row.querySelector('.qty-warning');
+        const sisaBox = row.querySelector('.col-sisa-stok .sisa-box-wrapper');
+        const satuanNm = row.querySelector('.row-satuan')?.textContent.trim() || '';
+
         if (selectedBatchOpt && selectedBatchOpt.value && qty > sisaBebas) {
             qtyInput.style.borderColor = '#dc2626';
             qtyInput.style.backgroundColor = '#fef2f2';
 
-            const isDraftConflict = (qty <= sisaFisik && draftQty > 0);
-            const titleMsg = isDraftConflict
-                ? `⚠️ Melebihi Sisa Bebas! Terikat di DRAFT Lain`
-                : (sisaBebas <= 0.0001 && draftQty > 0 ? `⛔ Batch Habis Ter-booking di DRAFT Lain!` : `⚠️ Kuantitas Melebihi Sisa Fisik Batch!`);
+            if (sisaBox) {
+                sisaBox.style.borderColor = '#f87171';
+                sisaBox.style.backgroundColor = '#fef2f2';
+            }
 
-            const descMsg = isDraftConflict
-                ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, namun <strong>${draftQty.toLocaleString('id-ID')} unit</strong> telah dibooking di draft <strong>[${draftDocs}]</strong>. Sisa bebas hanya <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaBebas).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`
-                : (sisaBebas <= 0.0001 && draftQty > 0
-                    ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, tapi seluruhnya telah di-booking di dokumen DRAFT <strong>[${draftDocs}]</strong> yang belum di-acc/potong stok. Sisa bebas: <strong>0 unit</strong>.`
-                    : `Batch <strong>${selectedBatchOpt.value}</strong> hanya bersisa <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaFisik).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`);
+            const selisih = qty - sisaBebas;
+            const oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
+            const isSkippingOldest = oldestInfo && selectedBatchOpt && (selectedBatchOpt.index > oldestInfo.index) && (oldestInfo.sisa_bebas > 0);
 
-            batchInfo.innerHTML = `
-                <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.35rem; color: #991b1b;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
-                                ${gradeBadge}
-                                <strong style="color: #dc2626; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    ${titleMsg}
-                                </strong>
+            if (qtyWarning) {
+                if (isSkippingOldest) {
+                    qtyWarning.innerHTML = `
+                        <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.35rem 0.5rem; color: #92400e; text-align: left;">
+                            <div style="font-weight: 800; font-size: 0.74rem; color: #b45309; display: flex; align-items: center; gap: 0.25rem;">
+                                ⚠️ Bukan Batch Tertua!
                             </div>
-                            <div style="font-size: 0.735rem; color: #7f1d1d; line-height: 1.35;">
-                                ${descMsg}
+                            <div style="font-size: 0.7rem; color: #78350f; margin-top: 2px; line-height: 1.3;">
+                                Ada <strong>${oldestInfo.batch_no}</strong> (Sisa: ${oldestInfo.sisa_bebas.toLocaleString('id-ID')}).
+                            </div>
+                            <div style="margin-top: 0.35rem; display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.715rem; padding: 3px 6px; border: none; border-radius: 4px; cursor: pointer;" title="Alihkan ke batch tertua">
+                                    👉 Pakai ${oldestInfo.batch_no}
+                                </button>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
-                            <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: ${grade === 'A' ? '#059669' : '#d97706'}; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" title="Pecah dan ambil lanjutan HANYA dari sesama Grade ${grade}">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                <span>⚡ Pecah (Grade ${grade} Saja)</span>
-                            </button>
-                            <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'CAMPUR')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(220,38,38,0.25);" title="Pecah dan ambil lanjutan dari batch tertua apa saja (Campur / Bebas Grade)">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                <span>🔄 Pecah Campur (Semua Grade)</span>
-                            </button>
+                    `;
+                } else {
+                    qtyWarning.innerHTML = `
+                        <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.35rem 0.5rem; color: #991b1b; text-align: left;">
+                            <div style="font-weight: 800; font-size: 0.74rem; color: #dc2626; display: flex; align-items: center; gap: 0.25rem;">
+                                ⛔ Melebihi Sisa!
+                            </div>
+                            <div style="font-size: 0.7rem; color: #7f1d1d; margin-top: 2px; line-height: 1.3;">
+                                Kurang <strong>${selisih.toLocaleString('id-ID')} ${satuanNm}</strong>.
+                            </div>
+                            <div style="margin-top: 0.35rem;">
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.715rem; padding: 3px 8px; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 2px rgba(220,38,38,0.25);" title="Pecah otomatis">
+                                    ⚡ Pecah Otomatis
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            const isDraftConflict = (qty <= sisaFisik && draftQty > 0);
+
+            if (isSkippingOldest) {
+                batchInfo.innerHTML = `
+                    <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 0.55rem 0.75rem; margin-top: 0.35rem; color: #92400e; box-shadow: 0 1px 3px rgba(245,158,11,0.15);">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 280px;">
+                                <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem;">
+                                    ${gradeBadge}
+                                    <strong style="color: #b45309; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                        ⚠️ Prioritas FIFO: Masih Ada Batch Lebih Lama [${oldestInfo.batch_no}]!
+                                    </strong>
+                                </div>
+                                <div style="font-size: 0.74rem; color: #78350f; line-height: 1.4;">
+                                    Batch yang dipilih (<strong>${selectedBatchOpt.value}</strong>) bukan batch tertua dan stoknya tidak mencukupi (sisa <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong> dari kebutuhan <strong>${qty.toLocaleString('id-ID')} unit</strong>).<br>
+                                    Sesuai aturan FIFO, batch tertua <strong>[${oldestInfo.batch_no}]</strong> (Masuk: <strong>${oldestInfo.tgl_masuk}</strong>, Sisa Bebas: <strong>${oldestInfo.sisa_bebas.toLocaleString('id-ID')} unit</strong>) wajib dihabiskan terlebih dahulu!
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                                <button type="button" onclick="window.pemakaianApp.selectOldestBatchInRow(this)" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.735rem; padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(5,150,105,0.3);" title="Ganti pilihan baris ini ke batch tertua">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span>👉 Alihkan ke Batch Tertua (${oldestInfo.batch_no})</span>
+                                </button>
+                                <button type="button" onclick="window.pemakaianApp.autoSplitFifoStrict(this.closest('tr'), 'SAME_GRADE')" style="background: #0284c7; color: #ffffff; font-weight: 700; font-size: 0.735rem; padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(2,132,199,0.3);" title="Alokasikan mulai dari batch tertua secara otomatis sesuai urutan FIFO">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>⚡ Pecah Mulai dari Tertua (FIFO)</span>
+                                </button>
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: #ffffff; color: #dc2626; border: 1.5px solid #f87171; font-weight: 700; font-size: 0.715rem; padding: 5px 9px; border-radius: 5px; cursor: pointer; white-space: nowrap;" title="Abaikan rekomendasi FIFO dan tetap pecah mulai dari batch ini">
+                                    <span>Bypass FIFO (Pecah dari ${selectedBatchOpt.value})</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                const titleMsg = isDraftConflict
+                    ? `⚠️ Melebihi Sisa Bebas! Terikat di DRAFT Lain`
+                    : (sisaBebas <= 0.0001 && draftQty > 0 ? `⛔ Batch Habis Ter-booking di DRAFT Lain!` : `⚠️ Kuantitas Melebihi Sisa Fisik Batch!`);
+
+                const descMsg = isDraftConflict
+                    ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, namun <strong>${draftQty.toLocaleString('id-ID')} unit</strong> telah dibooking di draft <strong>[${draftDocs}]</strong>. Sisa bebas hanya <strong>${sisaBebas.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaBebas).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`
+                    : (sisaBebas <= 0.0001 && draftQty > 0
+                        ? `Batch <strong>${selectedBatchOpt.value}</strong> memiliki fisik <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>, tapi seluruhnya telah di-booking di dokumen DRAFT <strong>[${draftDocs}]</strong> yang belum di-acc/potong stok. Sisa bebas: <strong>0 unit</strong>.`
+                        : `Batch <strong>${selectedBatchOpt.value}</strong> hanya bersisa <strong>${sisaFisik.toLocaleString('id-ID')} unit</strong>. Sisa <strong>${(qty - sisaFisik).toLocaleString('id-ID')} unit</strong> harus diambil dari batch lain!`);
+
+                batchInfo.innerHTML = `
+                    <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.35rem; color: #991b1b;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.2rem;">
+                                    ${gradeBadge}
+                                    <strong style="color: #dc2626; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        ${titleMsg}
+                                    </strong>
+                                </div>
+                                <div style="font-size: 0.735rem; color: #7f1d1d; line-height: 1.35;">
+                                    ${descMsg}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'SAME_GRADE')" style="background: ${grade === 'A' ? '#059669' : '#d97706'}; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" title="Pecah dan ambil lanjutan HANYA dari sesama Grade ${grade}">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>⚡ Pecah (Grade ${grade} Saja)</span>
+                                </button>
+                                <button type="button" onclick="window.pemakaianApp.autoSplitBatchForRow(this.closest('tr'), 'CAMPUR')" style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 0.725rem; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 3px rgba(220,38,38,0.25);" title="Pecah dan ambil lanjutan dari batch tertua apa saja (Campur / Bebas Grade)">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span>🔄 Pecah Campur (Semua Grade)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
         } else if (selectedBatchOpt && selectedBatchOpt.value) {
             qtyInput.style.borderColor = '#cbd5e1';
             qtyInput.style.backgroundColor = '#ffffff';
+            if (qtyWarning) qtyWarning.innerHTML = '';
             renderNormalBatchInfo(row);
         }
 
         calculateGrandTotal();
         triggerAutoSave();
+
+        // Sinkronisasi opsi batch dan sisa stok secara real-time ke baris lain yang memakai barang yang sama
+        if (!isSyncingOtherRows) {
+            syncBatchOptionsAcrossRows(row);
+        }
     }
 
     // Kalkulasi total kuantitas seluruh baris
@@ -1480,6 +1982,7 @@
         }
 
         calculateGrandTotal();
+        syncBatchOptionsAcrossRows();
 
         if (remainingQty > 0) {
             alert(`Perhatian: Berhasil memecah ke ${addedRows} baris batch lanjutan.\nNamun sisa bebas barang ini di seluruh batch gudang sudah habis!\nMasih kurang ${remainingQty.toLocaleString('id-ID')} unit yang tidak dapat dialokasikan.`);
@@ -1727,6 +2230,8 @@
                     batch_no: opt.value,
                     grade_cd: opt.getAttribute('data-grade') || 'A',
                     sisa_qty: parseFloat(opt.getAttribute('data-sisa') || 0),
+                    sisa_bebas: parseFloat(opt.getAttribute('data-sisa-bebas') !== null ? opt.getAttribute('data-sisa-bebas') : (opt.getAttribute('data-sisa') || 0)),
+                    is_fully_booked: (opt.getAttribute('data-is-fully-booked') === '1') || opt.disabled,
                     tgl_terima: opt.getAttribute('data-masuk') || '-'
                 })).filter(b => b.batch_no);
             }
@@ -1766,7 +2271,10 @@
                         usedInForm = totalUsedPerBatchNo[olderKeyBatch] || 0;
                     }
 
-                    const stockInWarehouse = parseFloat(older.sisa_qty || 0);
+                    const stockInWarehouse = parseFloat((older.sisa_bebas !== undefined ? older.sisa_bebas : older.sisa_qty) || 0);
+                    const isFullyBooked = older.is_fully_booked || (stockInWarehouse <= 0.0001);
+                    if (isFullyBooked) continue; // Abaikan batch lama yang sudah 0 / 100% dibooking dokumen draft lain
+
                     const realAvailableOlder = stockInWarehouse - usedInForm;
 
                     if (realAvailableOlder > 0.01) {
@@ -1847,6 +2355,8 @@
     }
 
     function proceedOverrideFifoSubmit() {
+        if (isSubmitting) return;
+
         const reasonInput = document.getElementById('override_reason_input');
         const reason = reasonInput ? reasonInput.value.trim() : '';
 
@@ -1864,6 +2374,22 @@
 
         allowFifoOverride = true;
         closeWarningFifoModal();
+
+        // Jika memerlukan konfirmasi periode bulan sebelumnya, serahkan ke validasi form submit
+        if (!previousMonthConfirmed) {
+            const form = document.getElementById('pemakaianForm');
+            if (form) {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            }
+            return;
+        }
+
+        setSubmittingState(true, 'Menyimpan BPPB...');
+        clearFormDraft();
         document.getElementById('pemakaianForm').submit();
     }
 
@@ -1998,7 +2524,466 @@
             }
         }
 
+        // 3. Proteksi Periode Bulan Berbeda & Perubahan Nomor Urut Depan BPPB Manual
+        if (!previousMonthConfirmed) {
+            const pakaiTglInput = document.getElementById('pakai_tgl');
+            const pakaiNoInput = document.getElementById('pakai_no');
+            const pakaiTglVal = pakaiTglInput ? pakaiTglInput.value : '';
+            const pakaiNoVal = pakaiNoInput ? pakaiNoInput.value.trim() : '';
+            const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
+
+            const docYM = pakaiTglVal ? pakaiTglVal.slice(0, 7) : '';
+            const isMonthChanged = Boolean(docYM && docYM !== currentServerYM);
+
+            const currentParts = parsePakaiNoParts(pakaiNoVal);
+            const suggestedParts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
+            const isManualSequence = Boolean(
+                !currentParts || !suggestedParts || 
+                (currentParts.seq !== suggestedParts.seq) || 
+                (pakaiNoVal !== lastSystemSuggestedPakaiNo)
+            );
+
+            if (isMonthChanged || isManualSequence) {
+                let title = '';
+                let subtitle = '';
+                let alerts = [];
+
+                if (isMonthChanged && isManualSequence) {
+                    title = 'Peringatan: Perubahan Bulan & Nomor Urut BPPB';
+                    subtitle = 'Dua penyesuaian khusus (nomor urut depan & periode bulan) terdeteksi pada dokumen pengeluaran ini';
+                } else if (isMonthChanged) {
+                    title = 'Peringatan: Periode Tanggal / Bulan Diubah';
+                    subtitle = 'Dokumen pengeluaran ditujukan untuk periode bulan yang berbeda dari bulan aktif saat ini';
+                } else {
+                    title = 'Peringatan: Nomor Urut Depan BPPB Diubah Manual';
+                    subtitle = 'Nomor urut depan berbeda dari nomor urut standar rekomendasi sistem';
+                }
+
+                let alertIdx = 1;
+                if (isMonthChanged) {
+                    const isPrevious = docYM < currentServerYM;
+                    const statusBulanText = isPrevious ? 'Bulan Sebelumnya' : 'Bulan Mendatang';
+                    alerts.push(`
+                        <div style="margin-bottom: ${isManualSequence ? '0.65rem; padding-bottom: 0.65rem; border-bottom: 1px dashed #fde68a;' : '0.35rem;'}">
+                            <strong>${alertIdx++}. Periode Bulan Diubah (${statusBulanText}):</strong> Dokumen pengeluaran ini dicatat pada tanggal <strong>${formatTanggalIndo(pakaiTglVal)}</strong> (Bulan ${formatTanggalIndo(docYM)}), sedangkan periode aktif saat ini adalah <strong>${formatTanggalIndo(currentServerYM)}</strong>. Pastikan mutasi fisik bahan baku memang sesuai untuk periode bulan tersebut.
+                        </div>
+                    `);
+                }
+
+                if (isManualSequence) {
+                    const userSeq = currentParts ? currentParts.seq : pakaiNoVal;
+                    const sysSeq = suggestedParts ? suggestedParts.seq : lastSystemSuggestedPakaiNo;
+                    alerts.push(`
+                        <div style="margin-bottom: 0.35rem;">
+                            <strong>${alertIdx++}. Nomor Urut Depan Diubah Manual:</strong> Anda memasukkan nomor depan <strong>${userSeq}</strong> (dokumen: <code>${pakaiNoVal}</code>), sedangkan nomor urut otomatis yang disarankan sistem untuk periode ini adalah <strong>${sysSeq}</strong> (dokumen: <code>${lastSystemSuggestedPakaiNo}</code>). Perubahan manual berisiko menyebabkan nomor loncat atau potensi duplikasi arsip di masa mendatang.
+                        </div>
+                    `);
+                }
+
+                openPreviousMonthModal({
+                    pakaiNo: pakaiNoVal,
+                    pakaiTgl: pakaiTglVal,
+                    title: title,
+                    subtitle: subtitle,
+                    contentHtml: alerts.join(''),
+                    question: 'Apakah Anda yakin data ini sudah benar dan tetap ingin menyimpan dokumen BPPB ini?'
+                });
+
+                return false;
+            }
+        }
+
         return true;
+    }
+
+    /**
+     * =========================================================================
+     * PROTEKSI PERIODE BULAN SEBELUMNYA & LIVE SYNC NOMOR BPPB DENGAN BULAN
+     * =========================================================================
+     */
+    function formatTanggalIndo(dateStr) {
+        if (!dateStr) return '-';
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const year = parts[0];
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            return `${day} ${months[monthIdx] || ''} ${year}`;
+        }
+        if (parts.length === 2) {
+            const year = parts[0];
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            return `${months[monthIdx] || ''} ${year}`;
+        }
+        return dateStr;
+    }
+
+    function openPreviousMonthModal(options) {
+        const modal = document.getElementById('modalConfirmPreviousMonth');
+        if (!modal) return;
+        const elPakaiNo = document.getElementById('mcpmPakaiNo');
+        const elPakaiTgl = document.getElementById('mcpmPakaiTgl');
+        const elTitle = document.getElementById('mcpmTitle');
+        const elSubtitle = document.getElementById('mcpmSubtitle');
+        const elContent = document.getElementById('mcpmAlertContent');
+        const elQuestion = document.getElementById('mcpmQuestion');
+
+        if (elPakaiNo) elPakaiNo.textContent = options.pakaiNo || '-';
+        if (elPakaiTgl) elPakaiTgl.textContent = formatTanggalIndo(options.pakaiTgl);
+        if (elTitle) elTitle.textContent = options.title || 'Peringatan Dokumen Pengeluaran (BPPB)';
+        if (elSubtitle) elSubtitle.textContent = options.subtitle || 'Perhatian khusus penomoran dokumen & periode pembukuan pemakaian';
+        if (elContent) elContent.innerHTML = options.contentHtml || '';
+        if (elQuestion) elQuestion.textContent = options.question || 'Apakah Anda yakin ingin melanjutkan penyimpanan?';
+
+        modal.style.display = 'flex';
+    }
+
+    function closePreviousMonthModal() {
+        const modal = document.getElementById('modalConfirmPreviousMonth');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function parsePakaiNoParts(val) {
+        if (!val) return null;
+        const match = val.trim().match(/^(\d+)\/BPPB\/MFI\/(\d{1,2})\/(\d{2,4})$/i);
+        if (match) {
+            const rawYear = match[3];
+            const year2 = rawYear.length === 4 ? rawYear.slice(-2) : rawYear.padStart(2, '0');
+            return {
+                seq: match[1],
+                month: match[2].padStart(2, '0'),
+                year: year2,
+            };
+        }
+        return null;
+    }
+
+    let lastSystemSuggestedPakaiNo = '';
+    let previousMonthConfirmed = false;
+
+    function initCreatePakaiDateNumberSync() {
+        const pakaiTglInput = document.getElementById('pakai_tgl');
+        const pakaiNoInput = document.getElementById('pakai_no');
+        const pakaiNoHelp = document.getElementById('pakai_no_help');
+
+        if (!pakaiTglInput || !pakaiNoInput) return;
+
+        lastSystemSuggestedPakaiNo = pakaiNoInput.value.trim();
+        let initialParts = parsePakaiNoParts(pakaiNoInput.value);
+        let activeMonthYear = initialParts 
+            ? `${initialParts.year}-${initialParts.month}` 
+            : (pakaiTglInput.value ? pakaiTglInput.value.slice(2, 4) + '-' + pakaiTglInput.value.slice(5, 7) : '');
+
+        window.resetPakaiNoToSuggested = function () {
+            if (lastSystemSuggestedPakaiNo && pakaiNoInput) {
+                pakaiNoInput.value = lastSystemSuggestedPakaiNo;
+                checkAndRenderPakaiNoWarning();
+            }
+        };
+
+        window.resetPakaiTglToToday = function () {
+            if (pakaiTglInput) {
+                const todayStr = window.originalPakaiTgl || (new Date().toISOString().slice(0, 10));
+                pakaiTglInput.value = todayStr;
+                pakaiTglInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+
+        function checkAndRenderPakaiNoWarning() {
+            if (!pakaiNoHelp || !pakaiNoInput) return;
+
+            const currentVal = pakaiNoInput.value.trim();
+            const currentParts = parsePakaiNoParts(currentVal);
+            const suggestedParts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
+            const currentServerYM = window.currentServerYearMonth || (new Date().toISOString().slice(0, 7));
+
+            // Jika kosong
+            if (!currentVal) {
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `<span style="color:#dc2626; font-size:0.725rem; font-weight:600;">Nomor BPPB wajib diisi!</span>`;
+                pakaiNoInput.style.borderColor = '#ef4444';
+                pakaiNoInput.style.backgroundColor = '#fef2f2';
+                return;
+            }
+
+            // 1. Cek apakah nomor urut depan diubah manual ATAU bulan berbeda
+            if (currentParts && suggestedParts) {
+                const isSeqChanged = (currentParts.seq !== suggestedParts.seq);
+                const isDifferentMonth = (currentParts.year !== currentServerYM.slice(2, 4) || currentParts.month !== currentServerYM.slice(5, 7));
+                const monthName = formatTanggalIndo(`20${currentParts.year}-${currentParts.month}`);
+                const activeMonthName = formatTanggalIndo(currentServerYM);
+
+                if (isSeqChanged && isDifferentMonth) {
+                    pakaiNoHelp.style.display = 'block';
+                    pakaiNoHelp.innerHTML = `
+                        <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #b45309; line-height: 1.2;">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 800; border: 1px solid #fcd34d;">!</span>
+                            <span style="font-weight: 600;">Manual: <span style="font-family: monospace; color: #92400e;">${currentParts.seq}</span> | Periode: <strong>${monthName}</strong></span>
+                            <button type="button" onclick="window.resetPakaiNoToSuggested()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 2px;" title="Kembalikan nomor urut ke rekomendasi sistem"><span>↺</span> No</button>
+                            <button type="button" onclick="window.resetPakaiTglToToday()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 2px;" title="Kembalikan tanggal ke hari ini (${activeMonthName})"><span>↺</span> Periode</button>
+                        </div>
+                    `;
+                    pakaiNoInput.style.borderColor = '#f59e0b';
+                    pakaiNoInput.style.backgroundColor = '#fffbeb';
+                    return;
+                }
+
+                if (isSeqChanged) {
+                    pakaiNoHelp.style.display = 'block';
+                    pakaiNoHelp.innerHTML = `
+                        <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #b45309; line-height: 1.2;" title="Nomor urut depan diubah manual menjadi ${currentParts.seq} (Rekomendasi sistem: ${suggestedParts.seq}). Konfirmasi akan diminta saat menyimpan.">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 800; border: 1px solid #fcd34d;">!</span>
+                            <span style="font-weight: 600;">Manual: <span style="font-family: monospace; color: #92400e;">${currentParts.seq}</span> <span style="color: #64748b; font-weight: normal;">(Saran: <span style="font-family: monospace; color: #047857; font-weight: 700;">${suggestedParts.seq}</span>)</span></span>
+                            <button type="button" onclick="window.resetPakaiNoToSuggested()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Kembalikan nomor urut ke rekomendasi sistem">
+                                <span>↺</span> Reset
+                            </button>
+                        </div>
+                    `;
+                    pakaiNoInput.style.borderColor = '#f59e0b';
+                    pakaiNoInput.style.backgroundColor = '#fffbeb';
+                    return;
+                }
+
+                if (isDifferentMonth) {
+                    pakaiNoHelp.style.display = 'block';
+                    pakaiNoHelp.innerHTML = `
+                        <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #b45309; line-height: 1.2;" title="Dokumen dialokasikan untuk periode ${monthName} (Bulan aktif saat ini: ${activeMonthName})">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 800; border: 1px solid #fcd34d;">!</span>
+                            <span style="font-weight: 600;">Periode: <strong>${monthName}</strong></span>
+                            <button type="button" onclick="window.resetPakaiTglToToday()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Kembalikan tanggal ke hari ini (${activeMonthName})">
+                                <span>↺</span> Reset Periode
+                            </button>
+                        </div>
+                    `;
+                    pakaiNoInput.style.borderColor = '#f59e0b';
+                    pakaiNoInput.style.backgroundColor = '#fffbeb';
+                    return;
+                }
+            } else if (currentVal !== lastSystemSuggestedPakaiNo) {
+                // Format manual non-standar
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `
+                    <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.725rem; color: #dc2626; line-height: 1.2;" title="Format BPPB manual di luar standar sistem (Saran sistem: ${lastSystemSuggestedPakaiNo})">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #fee2e2; color: #dc2626; font-size: 0.65rem; font-weight: 800; border: 1px solid #fca5a5;">!</span>
+                        <span style="font-weight: 600;">Format Manual (Saran: <span style="font-family: monospace;">${lastSystemSuggestedPakaiNo}</span>)</span>
+                        <button type="button" onclick="window.resetPakaiNoToSuggested()" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 7px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                            <span>↺</span> Reset
+                        </button>
+                    </div>
+                `;
+                pakaiNoInput.style.borderColor = '#ef4444';
+                pakaiNoInput.style.backgroundColor = '#fef2f2';
+                return;
+            }
+
+            // Normal / Sesuai saran sistem
+            pakaiNoInput.style.borderColor = '';
+            pakaiNoInput.style.backgroundColor = '#ffffff';
+            if (lastSystemSuggestedPakaiNo) {
+                const parts = parsePakaiNoParts(lastSystemSuggestedPakaiNo);
+                const reason = parts ? `bulan ${parts.month} tahun 20${parts.year}` : 'otomatis';
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `
+                    <div style="margin-top: 3px; display: inline-flex; align-items: center; gap: 4px; font-size: 0.725rem; color: #15803d; line-height: 1.2;" title="Nomor BPPB disesuaikan otomatis (${reason}): ${lastSystemSuggestedPakaiNo}">
+                        <span style="font-weight: 800;">✓</span>
+                        <span style="font-weight: 600;">Otomatis sistem</span>
+                    </div>
+                `;
+            }
+        }
+
+        function fetchAndApplyPakaiCode(targetDateStr, reasonText) {
+            pakaiNoInput.style.opacity = '0.5';
+            pakaiNoInput.style.pointerEvents = 'none';
+            if (pakaiNoHelp) {
+                pakaiNoHelp.style.display = 'block';
+                pakaiNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor BPPB untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
+            }
+
+            const elPabrik = document.getElementById('lokasi_pabrik');
+            const pabrikVal = elPabrik && elPabrik.value ? elPabrik.value : 'MFI';
+
+            fetch(`/ajax/generate-code?type=bppb&date=${encodeURIComponent(targetDateStr)}&pabrik=${encodeURIComponent(pabrikVal)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.code) {
+                        pakaiNoInput.value = data.code;
+                        lastSystemSuggestedPakaiNo = data.code;
+                        const newParts = parsePakaiNoParts(data.code);
+                        if (newParts) {
+                            activeMonthYear = `${newParts.year}-${newParts.month}`;
+                        }
+
+                        // Visual highlight lembut
+                        pakaiNoInput.style.background = '#f0fdf4';
+                        setTimeout(() => {
+                            checkAndRenderPakaiNoWarning();
+                        }, 500);
+
+                        checkAndRenderPakaiNoWarning();
+                    }
+                })
+                .catch(err => {
+                    console.error('Gagal generate nomor BPPB:', err);
+                    if (pakaiNoHelp) {
+                        pakaiNoHelp.style.display = 'block';
+                        pakaiNoHelp.innerHTML = `<span style="color:#dc2626;">Gagal menyinkronkan nomor urut otomatis. Anda dapat mengetiknya secara manual.</span>`;
+                    }
+                })
+                .finally(() => {
+                    pakaiNoInput.style.opacity = '1';
+                    pakaiNoInput.style.pointerEvents = 'auto';
+                });
+        }
+
+        // 1. KETIKA TANGGAL PEMAKAIAN DIUBAH PENGGUNA (LANGSUNG LIVE)
+        ['change', 'input'].forEach(evtName => {
+            pakaiTglInput.addEventListener(evtName, function () {
+                previousMonthConfirmed = false;
+                const newDate = this.value;
+                if (!newDate) return;
+
+                const newYM = newDate.slice(2, 4) + '-' + newDate.slice(5, 7);
+                if (newYM !== activeMonthYear) {
+                    fetchAndApplyPakaiCode(newDate, `urutan bulan ${formatTanggalIndo(newDate)}`);
+                } else {
+                    checkAndRenderPakaiNoWarning();
+                }
+            });
+        });
+
+        // 2. KETIKA BULAN/TAHUN ATAU NOMOR DEPAN PADA INPUT NOMOR BPPB DIUBAH LANGSUNG
+        let pakaiNoDebounceTimer = null;
+
+        function handlePakaiNoInputSync() {
+            const parts = parsePakaiNoParts(pakaiNoInput.value);
+            if (parts) {
+                const mNum = parseInt(parts.month, 10);
+                if (!isNaN(mNum) && mNum >= 1 && mNum <= 12) {
+                    const typedYM = `${parts.year}-${parts.month}`;
+                    if (typedYM !== activeMonthYear) {
+                        const targetDate = `20${parts.year}-${parts.month}-01`;
+                        
+                        if (pakaiTglInput.value) {
+                            const currentDay = pakaiTglInput.value.slice(8, 10);
+                            const safeDate = `20${parts.year}-${parts.month}-${currentDay}`;
+                            const testD = new Date(safeDate);
+                            pakaiTglInput.value = (!isNaN(testD.getTime())) ? safeDate : targetDate;
+                        } else {
+                            pakaiTglInput.value = targetDate;
+                        }
+
+                        fetchAndApplyPakaiCode(targetDate, `bulan ${parts.month} tahun 20${parts.year}`);
+                        return;
+                    }
+                }
+            }
+
+            checkAndRenderPakaiNoWarning();
+        }
+
+        pakaiNoInput.addEventListener('input', function () {
+            previousMonthConfirmed = false;
+            checkAndRenderPakaiNoWarning(); // Live render instan saat ngetik digit depan
+            clearTimeout(pakaiNoDebounceTimer);
+            pakaiNoDebounceTimer = setTimeout(handlePakaiNoInputSync, 300);
+        });
+
+        ['change', 'blur'].forEach(evtName => {
+            pakaiNoInput.addEventListener(evtName, function () {
+                previousMonthConfirmed = false;
+                clearTimeout(pakaiNoDebounceTimer);
+                handlePakaiNoInputSync();
+            });
+        });
+
+        // 3. KETIKA TUJUAN PABRIK PRODUKSI DIPILIH (MFI vs BMB)
+        window.onLokasiPabrikChanged = function (pabrikVal) {
+            if (!pabrikVal) return;
+            const tglVal = pakaiTglInput ? pakaiTglInput.value : '';
+            fetchAndApplyPakaiCode(tglVal || new Date().toISOString().slice(0, 10), `tujuan ${pabrikVal}`);
+        };
+
+        // Inisialisasi status warning nomor BPPB saat form pertama kali dimuat
+        checkAndRenderPakaiNoWarning();
+    }
+
+    /**
+     * =========================================================================
+     * ANTI DOUBLE SUBMISSION & SCREEN LOCK LOADING STATE
+     * =========================================================================
+     */
+    let isSubmitting = false;
+    let submitSafetyTimeout = null;
+
+    function setSubmittingState(isSubmittingNow, customText = 'Menyimpan BPPB...') {
+        isSubmitting = isSubmittingNow;
+
+        const btnSubmit = document.getElementById('btnSubmitPemakaian');
+        const btnConfirmPrev = document.getElementById('btnConfirmSubmitPreviousMonth');
+        const allSubmitButtons = [btnSubmit, btnConfirmPrev].filter(Boolean);
+
+        allSubmitButtons.forEach(btn => {
+            btn.disabled = isSubmittingNow;
+            if (isSubmittingNow) {
+                if (!btn.dataset.originalHtml) {
+                    btn.dataset.originalHtml = btn.innerHTML;
+                }
+                btn.classList.add('btn-is-submitting');
+                btn.innerHTML = `
+                    <svg class="submit-spinner-icon" width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>${customText}</span>
+                `;
+            } else {
+                if (btn.dataset.originalHtml) {
+                    btn.innerHTML = btn.dataset.originalHtml;
+                }
+                btn.classList.remove('btn-is-submitting');
+            }
+        });
+
+        // Overlay pelindung seluruh layar agar tidak bisa diklik dobel
+        let overlay = document.getElementById('screenSubmissionLockOverlay');
+        if (isSubmittingNow) {
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'screenSubmissionLockOverlay';
+                overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 100000; cursor: wait; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);';
+                overlay.innerHTML = `
+                    <div style="background: #ffffff; padding: 1.35rem 2rem; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; align-items: center; gap: 1rem; border: 1.5px solid #059669; animation: slideDownFloatingWidget 0.2s ease-out;">
+                        <div style="width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #059669; border-radius: 50%; animation: mirasaSpin 0.8s linear infinite; flex-shrink: 0;"></div>
+                        <div>
+                            <strong style="color: #0f172a; font-size: 0.95rem; display: block;">Sedang Menyimpan Data BPPB...</strong>
+                            <span style="color: #64748b; font-size: 0.8rem;">Mohon tunggu, sistem sedang memproses dokumen &amp; alokasi stok. Jangan menutup jendela.</span>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            } else {
+                overlay.style.display = 'flex';
+            }
+
+            // Safety timeout 20 detik jika terjadi kendala jaringan agar UI tidak terkunci permanen
+            clearTimeout(submitSafetyTimeout);
+            submitSafetyTimeout = setTimeout(() => {
+                if (isSubmitting) {
+                    setSubmittingState(false);
+                    console.warn('Submission state reset due to timeout fallback.');
+                }
+            }, 20000);
+        } else {
+            clearTimeout(submitSafetyTimeout);
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
     }
 
     // Inisialisasi awal saat dokumen siap (dengan pemulihan draft otomatis jika ada)
@@ -2007,14 +2992,36 @@
         if (!restored) {
             addRow();
         }
+        startDraftHeartbeat();
+        touchDraftTimestamp();
         updateSidebarInfo();
         initFloatingWidget();
+        initCreatePakaiDateNumberSync();
+
+        const btnConfirmPrev = document.getElementById('btnConfirmSubmitPreviousMonth');
+        if (btnConfirmPrev) {
+            btnConfirmPrev.addEventListener('click', function () {
+                if (isSubmitting) return;
+                previousMonthConfirmed = true;
+                closePreviousMonthModal();
+                clearFormDraft();
+                setSubmittingState(true, 'Menyimpan BPPB...');
+                const form = document.getElementById('pemakaianForm');
+                if (form) {
+                    form.submit();
+                }
+            });
+        }
 
         document.getElementById('tujuan_pemakaian')?.addEventListener('change', () => {
             updateSidebarInfo();
             triggerAutoSave();
         });
         document.getElementById('tujuan_pemakaian')?.addEventListener('input', () => {
+            updateSidebarInfo();
+            triggerAutoSave();
+        });
+        document.getElementById('gudang_tujuan_id')?.addEventListener('change', () => {
             updateSidebarInfo();
             triggerAutoSave();
         });
@@ -2033,18 +3040,28 @@
 
         // Simpan langsung saat window sebelum unload (refresh / F5 / pindah tab)
         window.addEventListener('beforeunload', () => {
-            saveFormDraft();
+            if (!isDraftPurged) {
+                saveFormDraft();
+            }
         });
 
         const form = document.getElementById('pemakaianForm');
         if (form) {
             form.addEventListener('submit', function(e) {
-                if (!validateFormBeforeSubmit()) {
+                if (isSubmitting) {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                 }
 
+                if (!validateFormBeforeSubmit()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSubmittingState(false);
+                    return false;
+                }
+
+                setSubmittingState(true, 'Menyimpan BPPB...');
                 // Bersihkan draft tersimpan saat berhasil submit
                 clearFormDraft();
             });
@@ -2054,6 +3071,11 @@
         const btnSubmit = document.getElementById('btnSubmitPemakaian');
         if (btnSubmit) {
             btnSubmit.addEventListener('click', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
                 if (!form) return;
                 if (!form.checkValidity()) {
                     form.reportValidity();
@@ -2062,6 +3084,7 @@
                 if (!validateFormBeforeSubmit()) {
                     e.preventDefault();
                     e.stopPropagation();
+                    setSubmittingState(false);
                     return false;
                 }
             });
@@ -2101,9 +3124,15 @@
         saveFormDraft,
         restoreFormDraft,
         clearFormDraft,
+        closePreviousMonthModal,
+        fillMaxQtyForRow,
+        updateSisaStokCell,
+        autoSplitFifoStrict,
     };
 
     // Alias global untuk fungsi-fungsi lama agar kompatibel
+    window.fillMaxQtyForRow = fillMaxQtyForRow;
+    window.updateSisaStokCell = updateSisaStokCell;
     window.setRowCategory = setRowCategory;
     window.setRowGradeFilter = setRowGradeFilter;
     window.addRow = addRow;
@@ -2114,6 +3143,7 @@
     window.onBarangSelect = onBarangSelect;
     window.onBatchSelect = onBatchSelect;
     window.selectOldestBatchInRow = selectOldestBatchInRow;
+    window.autoSplitFifoStrict = autoSplitFifoStrict;
     window.calcRow = calcRow;
     window.autoSplitBatchForRow = autoSplitBatchForRow;
     window.splitSpecificRowFromModal = splitSpecificRowFromModal;
@@ -2125,5 +3155,6 @@
     window.closeWarningGradeShortageModal = closeWarningGradeShortageModal;
     window.switchBomGradeToCampurAndReload = switchBomGradeToCampurAndReload;
     window.clearAndResetDraft = clearAndResetDraft;
+    window.closePreviousMonthModal = closePreviousMonthModal;
 
 })();

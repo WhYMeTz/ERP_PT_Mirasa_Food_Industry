@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password_plain',
         'karyawan_id',
         'role_cd',
+        'signature_path',
         'gudang_id',
         'active_st',
         'deleted_st',
@@ -58,6 +59,30 @@ class User extends Authenticatable
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('deleted_st', false)->where('active_st', true);
+    }
+
+    /**
+     * URL / path tanda tangan dan stempel digital pengguna
+     */
+    public function getSignatureUrlAttribute(): ?string
+    {
+        if (empty($this->signature_path)) {
+            return null;
+        }
+
+        if (file_exists(public_path('images/signatures/' . $this->signature_path))) {
+            return asset('images/signatures/' . $this->signature_path);
+        }
+
+        if (file_exists(public_path('storage/' . $this->signature_path))) {
+            return asset('storage/' . $this->signature_path);
+        }
+
+        if (file_exists(public_path($this->signature_path))) {
+            return asset($this->signature_path);
+        }
+
+        return null;
     }
 
     /**
@@ -279,6 +304,29 @@ class User extends Authenticatable
     }
 
     /**
+     * Hak akses menyetujui (Approval) dokumen Purchase Order
+     */
+    public function canApprovePo(): bool
+    {
+        return $this->isSuperAdmin()
+            || in_array(strtoupper((string) $this->role_cd), ['DIREKSI', 'MANAJER', 'MANAJER_GUDANG', 'KEPALA_CABANG'])
+            || $this->canDo('po_approve');
+    }
+
+    /**
+     * Dapatkan daftar pengguna yang berhak menjadi Approver PO dan memiliki email aktif
+     */
+    public static function getPoApprovers(): \Illuminate\Database\Eloquent\Collection
+    {
+        return static::active()
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get()
+            ->filter(fn($user) => $user->canApprovePo())
+            ->values();
+    }
+
+    /**
      * Hak akses Sales Order (SO) / Penjualan
      */
     public function canAccessSo(): bool
@@ -467,7 +515,13 @@ class User extends Authenticatable
             || $this->canAccessKasMasuk()
             || $this->canAccessKasBank()
             || $this->canAccessCoa()
-            || $this->canAccessJurnal();
+            || $this->canAccessJurnal()
+            || $this->canAccessLaporanKeuangan();
+    }
+
+    public function canAccessLaporanKeuangan(): bool
+    {
+        return $this->isSuperAdmin() || $this->canAccessJurnal() || $this->canAccessCoa();
     }
 
     public function canAccessJurnal(): bool
@@ -591,22 +645,27 @@ class User extends Authenticatable
 
     public function canAccessSatuan(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_satuan_view') || $this->canDo('master_satuan_create') || $this->canDo('master_gudang_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_satuan_view') 
+            || $this->canDo('master_satuan_create');
     }
 
     public function canCreateMasterSatuan(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_satuan_create') || $this->canDo('master_gudang_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_satuan_create');
     }
 
     public function canEditMasterSatuan(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_satuan_edit') || $this->canDo('master_gudang_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_satuan_edit');
     }
 
     public function canDeleteMasterSatuan(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_satuan_delete') || $this->canDo('master_gudang_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_satuan_delete');
     }
 
     public function canAccessPajak(): bool
@@ -736,6 +795,7 @@ class User extends Authenticatable
             || $this->canDo('master_customer_edit');
     }
 
+
     public function canCreateMasterCustomer(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('master_customer_create') || $this->canDo('master_customer_manage');
@@ -753,39 +813,36 @@ class User extends Authenticatable
 
     public function canManageGudang(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('master_gudang_manage') || $this->canDo('master_perusahaan_manage');
+        return $this->isSuperAdmin() 
+            || $this->canDo('master_perusahaan_manage');
     }
 
     public function canAccessPerusahaan(): bool
     {
         return $this->isSuperAdmin() 
             || $this->canDo('master_perusahaan_view') 
-            || $this->canDo('master_perusahaan_manage')
-            || $this->canDo('master_gudang_manage');
+            || $this->canDo('master_perusahaan_manage');
     }
 
     public function canCreateMasterPerusahaan(): bool
     {
         return $this->isSuperAdmin() 
             || $this->canDo('master_perusahaan_create') 
-            || $this->canDo('master_perusahaan_manage')
-            || $this->canDo('master_gudang_manage');
+            || $this->canDo('master_perusahaan_manage');
     }
 
     public function canEditMasterPerusahaan(): bool
     {
         return $this->isSuperAdmin() 
             || $this->canDo('master_perusahaan_edit') 
-            || $this->canDo('master_perusahaan_manage')
-            || $this->canDo('master_gudang_manage');
+            || $this->canDo('master_perusahaan_manage');
     }
 
     public function canDeleteMasterPerusahaan(): bool
     {
         return $this->isSuperAdmin() 
             || $this->canDo('master_perusahaan_delete') 
-            || $this->canDo('master_perusahaan_manage')
-            || $this->canDo('master_gudang_manage');
+            || $this->canDo('master_perusahaan_manage');
     }
 
     /**
@@ -1070,6 +1127,10 @@ class User extends Authenticatable
      */
     public function getDashboardRoute(): string
     {
+        if (in_array(strtoupper((string) $this->role_cd), ['DIREKSI', 'MANAJER'])) {
+            return 'gudang.po.approval_center';
+        }
+
         if ($this->isOperatorPackaging()) {
             return 'produksi.packaging.mobile';
         }

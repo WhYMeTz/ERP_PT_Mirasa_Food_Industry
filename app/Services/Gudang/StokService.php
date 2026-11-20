@@ -30,13 +30,21 @@ class StokService
         string $dokumenNo,
         ?string $keterangan = null,
         float $hargaSatuan = 0,
-        ?string $gradeCd = 'A'
+        ?string $gradeCd = null
     ): DatStokBatch {
         if ($qty <= 0) {
             throw new Exception("Kuantitas penambahan stok harus lebih besar dari 0.");
         }
 
-        $gradeCd = !empty($gradeCd) ? strtoupper(trim($gradeCd)) : 'A';
+        if (empty($gradeCd)) {
+            $barangObj = MstBarang::find($barangId);
+            $gradeCd = $barangObj?->hasGrade() ? 'A' : 'NON-GRADE';
+        } else {
+            $gradeCd = strtoupper(trim($gradeCd));
+            if (in_array($gradeCd, ['NON_GRADE', 'NON GRADE'])) {
+                $gradeCd = 'NON-GRADE';
+            }
+        }
 
         // Lock baris stok batch untuk mencegah race condition (per gudang + barang + nomor batch + grade)
         $stok = DatStokBatch::where('gudang_id', $gudangId)
@@ -849,7 +857,7 @@ class StokService
                 'stok_id'      => $sb->stok_id,
                 'gudang_id'    => $sb->gudang_id,
                 'gudang_nm'    => $sb->gudang?->gudang_nm ?? '-',
-                'grade_cd'     => $sb->grade_cd ?? 'A',
+                'grade_cd'     => $sb->grade_cd ?: ($barang?->hasGrade() ? 'A' : 'NON-GRADE'),
                 'qty_awal'     => (float) $sb->qty_awal,
                 'sisa_qty'     => (float) $sb->sisa_qty,
                 'qty_keluar'   => max(0, (float) $sb->qty_awal - (float) $sb->sisa_qty),

@@ -14,6 +14,19 @@
             Konfigurasi standar pengali Overhead Pabrik (FOH), acuan tarif flow gas alam (CNG), dan upah harian tenaga kerja tanpa perlu modifikasi kode program.
         </p>
     </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <a href="https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.85rem; font-size: 0.825rem; font-weight: 600; color: #0284c7; border: 1.5px solid #cbd5e1; background: #ffffff;" title="Buka website resmi Bank Indonesia untuk mencocokkan data kurs JISDOR">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            <span>Website JISDOR BI</span>
+        </a>
+        <form action="{{ route('master.tarif_produksi.sync-jisdor') }}" method="POST" style="margin: 0;">
+            @csrf
+            <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 700; background: #0284c7; border: 1.5px solid #0369a1;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>Sinkronkan Kurs JISDOR BI</span>
+            </button>
+        </form>
+    </div>
 </div>
 
 @if(session('toast_success'))
@@ -131,7 +144,7 @@
                         </td>
                         <td style="text-align: right;">
                             <div class="rate-value-box">
-                                @if(in_array($item->satuan_basis, ['PER_SHIFT', 'PER_ORANG', 'PER_MMBTU']))
+                                @if(in_array($item->satuan_basis, ['PER_SHIFT', 'PER_ORANG', 'PER_MMBTU', 'PER_USD']))
                                     Rp {{ number_format($item->nilai_tarif, 2, ',', '.') }}
                                 @else
                                     x {{ number_format($item->nilai_tarif, 2, ',', '.') }}

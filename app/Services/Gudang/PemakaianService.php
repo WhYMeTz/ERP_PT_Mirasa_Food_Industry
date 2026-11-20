@@ -32,7 +32,7 @@ class PemakaianService
         ?string $startDate = null,
         ?string $endDate = null
     ): LengthAwarePaginator {
-        $query = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
+        $query = DatPakaiHdr::with(['gudang', 'gudangTujuan', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
@@ -57,7 +57,14 @@ class PemakaianService
             $query->where(function ($q) use ($search) {
                 $q->where('pakai_no', 'ILIKE', "%{$search}%")
                   ->orWhere('tujuan_pemakaian', 'ILIKE', "%{$search}%")
-                  ->orWhere('catatan_txt', 'ILIKE', "%{$search}%");
+                  ->orWhere('catatan_txt', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('details', function ($dq) use ($search) {
+                      $dq->where('batch_no', 'ILIKE', "%{$search}%")
+                        ->orWhereHas('barang', function ($bq) use ($search) {
+                            $bq->where('barang_nm', 'ILIKE', "%{$search}%")
+                               ->orWhere('barang_cd', 'ILIKE', "%{$search}%");
+                        });
+                  });
             });
         }
 
@@ -79,7 +86,7 @@ class PemakaianService
         ?string $endDate = null,
         ?string $kategori = null
     ): LengthAwarePaginator {
-        $query = DatPakaiDtl::with(['header.gudang', 'barang.jenisBarang', 'barang.satuanDasar'])
+        $query = DatPakaiDtl::with(['header.gudang', 'header.gudangTujuan', 'barang.jenisBarang', 'barang.satuanDasar'])
             ->whereHas('header', function ($q) use ($gudangId, $tujuan, $startDate, $endDate) {
                 $q->where('deleted_st', false);
                 if (is_array($gudangId)) {
@@ -208,7 +215,7 @@ class PemakaianService
      */
     public function getById(int $id): DatPakaiHdr
     {
-        $hdr = DatPakaiHdr::with(['gudang', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
+        $hdr = DatPakaiHdr::with(['gudang', 'gudangTujuan', 'details.barang.satuanDasar', 'details.barang.jenisBarang'])
             ->where('pakai_id', $id)
             ->firstOrFail();
 
@@ -332,15 +339,34 @@ class PemakaianService
                 throw new Exception("Minimal harus ada 1 item barang yang dikeluarkan.");
             }
 
-            $pakaiNo = !empty($data['pakai_no']) ? trim($data['pakai_no']) : $this->codeGenerator->generatePakaiNo();
+            $pakaiTgl = $data['pakai_tgl'] ?? date('Y-m-d');
+            $pakaiNo = !empty($data['pakai_no']) ? trim($data['pakai_no']) : $this->codeGenerator->generatePakaiNo($pakaiTgl);
+
+            // Lapisan Keamanan Ekstra Backend: Cek duplikasi nomor dokumen BPPB
+            if (DatPakaiHdr::where('pakai_no', $pakaiNo)->exists()) {
+                $newPakaiNo = $this->codeGenerator->generatePakaiNo($pakaiTgl);
+                if ($newPakaiNo !== $pakaiNo && !DatPakaiHdr::where('pakai_no', $newPakaiNo)->exists()) {
+                    $pakaiNo = $newPakaiNo;
+                } else {
+                    throw new Exception("Nomor dokumen BPPB '{$pakaiNo}' sudah pernah tersimpan sebelumnya. Permintaan dibatalkan untuk mencegah duplikasi data ganda.");
+                }
+            }
+
             $gudangId = (int) $data['gudang_id'];
+            $gudangTujuanId = !empty($data['gudang_tujuan_id']) ? (int) $data['gudang_tujuan_id'] : null;
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : 'PRODUKSI';
+            $lokasiPabrik = !empty($data['lokasi_pabrik']) ? strtoupper(trim($data['lokasi_pabrik'])) : null;
+            if ($lokasiPabrik && !in_array($lokasiPabrik, ['MFI', 'BMB'])) {
+                $lokasiPabrik = in_array($lokasiPabrik, ['TIMUR', 'CV-BMB', 'BAHTERA']) ? 'BMB' : 'MFI';
+            }
 
             // 1. Simpan Header Pengeluaran sebagai DRAFT
             $header = DatPakaiHdr::create([
                 'pakai_no'         => $pakaiNo,
                 'pakai_tgl'        => $data['pakai_tgl'] ?? date('Y-m-d'),
                 'gudang_id'        => $gudangId,
+                'gudang_tujuan_id' => $gudangTujuanId,
+                'lokasi_pabrik'    => $lokasiPabrik,
                 'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
                 'tujuan_pemakaian' => $tujuanPemakaian,
                 'catatan_txt'      => $data['catatan_txt'] ?? null,
@@ -383,33 +409,10 @@ class PemakaianService
                 }
 
                 // Cek apakah batch ini sedang terikat di dokumen DRAFT lain yang belum diposting/acc
-                $otherDraftQuery = DatPakaiDtl::where('barang_id', $barangId)
-                    ->where('batch_no', $batchNo)
-                    ->whereHas('header', function ($q) use ($gudangId) {
-                        $q->where('gudang_id', $gudangId)
-                          ->where('status_st', 'DRAFT')
-                          ->where('deleted_st', false);
-                    });
-
-                $draftQtyOther = (float) $otherDraftQuery->sum('qty_keluar');
                 $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
-                $sisaBebas = max(0.0, round($sisaStokFisik - $draftQtyOther, 4));
-
-                if ($qtyKeluar > $sisaBebas) {
+                if ($qtyKeluar > $sisaStokFisik) {
                     $barang = MstBarang::find($barangId);
                     $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
-
-                    if ($qtyKeluar <= $sisaStokFisik && $draftQtyOther > 0) {
-                        $otherDocNos = $otherDraftQuery->with('header:pakai_id,pakai_no')
-                            ->get()
-                            ->pluck('header.pakai_no')
-                            ->unique()
-                            ->filter()
-                            ->implode(', ');
-
-                        throw new Exception("Batch '{$batchNo}' untuk '{$barangNm}' sudah teralokasi di dokumen DRAFT lain: [{$otherDocNos}] sebesar " . number_format($draftQtyOther, 2, ',', '.') . ". Sisa bebas yang dapat diambil hanya " . number_format($sisaBebas, 2, ',', '.') . " (dari total fisik " . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan pilih batch lain atau sesuaikan kuantitas.");
-                    }
-
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 
@@ -427,7 +430,7 @@ class PemakaianService
                 $totalHarga = $qtyKeluar * $hargaSatuan;
                 $keteranganDetail = !empty($item['keterangan_txt']) ? trim($item['keterangan_txt']) : $tujuanPemakaian;
 
-                // Simpan baris detail pemakaian
+                // 1. Simpan baris detail pemakaian
                 DatPakaiDtl::create([
                     'pakai_id'       => $header->pakai_id,
                     'barang_id'      => $barangId,
@@ -438,6 +441,17 @@ class PemakaianService
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
+
+                // 2. LANGSUNG POTONG STOK FISIK REAL-TIME DI GUDANG
+                $this->stokService->deductStock(
+                    $gudangId,
+                    $barangId,
+                    $batchNo,
+                    $qtyKeluar,
+                    $header->pakai_no,
+                    "Pengeluaran ({$tujuanPemakaian}) - " . ($keteranganDetail ?: $tujuanPemakaian),
+                    $gradeCd
+                );
             }
 
             return $header->fresh(['details.barang']);
@@ -450,7 +464,7 @@ class PemakaianService
     public function update(int $pakaiId, array $data, ?User $user = null): DatPakaiHdr
     {
         return DB::transaction(function () use ($pakaiId, $data, $user) {
-            $header = DatPakaiHdr::where('pakai_id', $pakaiId)->firstOrFail();
+            $header = DatPakaiHdr::with('details.barang.satuanDasar')->where('pakai_id', $pakaiId)->firstOrFail();
 
             if ($header->status_st === 'POSTED') {
                 throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan stok telah dipotong. Dokumen tidak dapat diubah.");
@@ -464,21 +478,64 @@ class PemakaianService
             $gudangId = (int) ($data['gudang_id'] ?? $header->gudang_id);
             $tujuanPemakaian = !empty($data['tujuan_pemakaian']) ? trim($data['tujuan_pemakaian']) : $header->tujuan_pemakaian;
             $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';
+            $catatanVerifikasi = !empty($data['catatan_verifikasi']) ? trim($data['catatan_verifikasi']) : null;
+
+            // 0. Rekam snapshot data asli sebelum diubah untuk jejak audit kesalahan input
+            $oldDetailsSnapshot = $header->details->map(function ($d) {
+                return [
+                    'barang_id'     => (int) $d->barang_id,
+                    'barang_nm'     => $d->barang?->barang_nm ?? "Item #{$d->barang_id}",
+                    'barang_cd'     => $d->barang?->barang_cd ?? '',
+                    'satuan_nm'     => $d->barang?->satuanDasar?->satuan_nm ?? 'Kg',
+                    'batch_no'      => (string) $d->batch_no,
+                    'grade_cd'      => (string) ($d->grade_cd ?? 'A'),
+                    'qty_keluar'    => (float) $d->qty_keluar,
+                    'harga_satuan'  => (float) $d->harga_satuan,
+                    'total_harga'   => (float) $d->total_harga,
+                ];
+            })->values()->all();
 
             // 1. Update Header
-            $header->update([
-                'pakai_tgl'        => $data['pakai_tgl'] ?? $header->pakai_tgl,
-                'gudang_id'        => $gudangId,
-                'produksi_id'      => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
-                'tujuan_pemakaian' => $tujuanPemakaian,
-                'catatan_txt'      => $data['catatan_txt'] ?? $header->catatan_txt,
-                'updated_by'       => $actor,
-            ]);
+            $gudangTujuanId = array_key_exists('gudang_tujuan_id', $data)
+                ? (!empty($data['gudang_tujuan_id']) ? (int) $data['gudang_tujuan_id'] : null)
+                : $header->gudang_tujuan_id;
 
-            // 2. Hapus detail lama (karena DRAFT belum memotong stok)
+            $headerUpdateData = [
+                'pakai_tgl'          => $data['pakai_tgl'] ?? $header->pakai_tgl,
+                'gudang_id'          => $gudangId,
+                'gudang_tujuan_id'   => $gudangTujuanId,
+                'produksi_id'        => !empty($data['produksi_id']) ? (int) $data['produksi_id'] : null,
+                'tujuan_pemakaian'   => $tujuanPemakaian,
+                'catatan_txt'        => $data['catatan_txt'] ?? $header->catatan_txt,
+                'catatan_verifikasi' => $catatanVerifikasi ?? $header->catatan_verifikasi,
+                'updated_by'         => $actor,
+            ];
+            if (!empty($data['pakai_no'])) {
+                $headerUpdateData['pakai_no'] = trim($data['pakai_no']);
+            }
+            $header->update($headerUpdateData);
+
+            // 2. Kembalikan stok lama (Reversal) sebelum detail lama diganti
+            foreach ($header->details as $oldDtl) {
+                if ((float) $oldDtl->qty_keluar > 0) {
+                    $this->stokService->addStock(
+                        $header->gudang_id,
+                        $oldDtl->barang_id,
+                        $oldDtl->batch_no,
+                        (float) $oldDtl->qty_keluar,
+                        null,
+                        $header->pakai_no,
+                        "Koreksi Dokumen Pemakaian (Reversal) - {$header->pakai_no}",
+                        (float) $oldDtl->harga_satuan,
+                        $oldDtl->grade_cd
+                    );
+                }
+            }
+
             DatPakaiDtl::where('pakai_id', $header->pakai_id)->delete();
 
-            // 3. Simpan detail item yang baru
+            // 3. Simpan detail item yang baru & kumpulkan snapshot baru
+            $newDetailsSnapshot = [];
             foreach ($items as $item) {
                 $barangId = (int) $item['barang_id'];
                 $batchNo = trim($item['batch_no'] ?? '');
@@ -501,46 +558,19 @@ class PemakaianService
                     throw new Exception("Batch '{$batchNo}' tidak ditemukan di gudang yang dipilih.");
                 }
 
-                // Cek apakah batch ini sedang terikat di dokumen DRAFT lain yang belum diposting/acc (kecuali dokumen yang sedang diedit ini)
-                $otherDraftQuery = DatPakaiDtl::where('barang_id', $barangId)
-                    ->where('batch_no', $batchNo)
-                    ->whereHas('header', function ($q) use ($gudangId, $pakaiId) {
-                        $q->where('gudang_id', $gudangId)
-                          ->where('pakai_id', '!=', $pakaiId)
-                          ->where('status_st', 'DRAFT')
-                          ->where('deleted_st', false);
-                    });
-
-                $draftQtyOther = (float) $otherDraftQuery->sum('qty_keluar');
                 $sisaStokFisik = (float) ($stokBatch->sisa_qty ?? 0);
-                $sisaBebas = max(0.0, round($sisaStokFisik - $draftQtyOther, 4));
-
-                if ($qtyKeluar > $sisaBebas) {
+                if ($qtyKeluar > $sisaStokFisik) {
                     $barang = MstBarang::find($barangId);
                     $barangNm = $barang ? $barang->barang_nm : "Barang #{$barangId}";
-
-                    if ($qtyKeluar <= $sisaStokFisik && $draftQtyOther > 0) {
-                        $otherDocNos = $otherDraftQuery->with('header:pakai_id,pakai_no')
-                            ->get()
-                            ->pluck('header.pakai_no')
-                            ->unique()
-                            ->filter()
-                            ->implode(', ');
-
-                        throw new Exception("Batch '{$batchNo}' untuk '{$barangNm}' sudah teralokasi di dokumen DRAFT lain: [{$otherDocNos}] sebesar " . number_format($draftQtyOther, 2, ',', '.') . ". Sisa bebas yang dapat diambil hanya " . number_format($sisaBebas, 2, ',', '.') . " (dari total fisik " . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan pilih batch lain atau sesuaikan kuantitas.");
-                    }
-
                     throw new Exception("Kuantitas pengeluaran '{$barangNm}' pada batch '{$batchNo}' (" . number_format($qtyKeluar, 2, ',', '.') . ") melebihi sisa fisik di gudang (" . number_format($sisaStokFisik, 2, ',', '.') . "). Silakan sesuaikan kuantitas atau pecah pemakaian ke batch berikutnya.");
                 }
 
-                $hargaSatuan = !empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
-                    ? (float) $item['harga_satuan']
-                    : (float) ($stokBatch?->harga_satuan ?? 0);
-
-                if ($hargaSatuan <= 0) {
-                    $barang = MstBarang::find($barangId);
-                    $hargaSatuan = (float) ($barang?->harga_beli_standar ?? 0);
-                }
+                $barang = MstBarang::with('satuanDasar')->find($barangId);
+                $hargaSatuan = ($stokBatch && (float) $stokBatch->harga_satuan > 0)
+                    ? (float) $stokBatch->harga_satuan
+                    : (!empty($item['harga_satuan']) && (float) $item['harga_satuan'] > 0
+                        ? (float) $item['harga_satuan']
+                        : (float) ($barang?->harga_beli_standar ?? 0));
 
                 $totalHarga = $qtyKeluar * $hargaSatuan;
                 $keteranganDetail = !empty($item['keterangan_txt']) ? trim($item['keterangan_txt']) : $tujuanPemakaian;
@@ -555,9 +585,122 @@ class PemakaianService
                     'total_harga'    => $totalHarga,
                     'keterangan_txt' => $keteranganDetail,
                 ]);
+
+                // Potong stok batch fisik yang baru secara real-time
+                $this->stokService->deductStock(
+                    $gudangId,
+                    $barangId,
+                    $batchNo,
+                    $qtyKeluar,
+                    $header->pakai_no,
+                    "Pengeluaran ({$tujuanPemakaian}) - " . ($keteranganDetail ?: $tujuanPemakaian),
+                    $gradeCd
+                );
+
+                $newDetailsSnapshot[] = [
+                    'barang_id'     => $barangId,
+                    'barang_nm'     => $barang?->barang_nm ?? "Item #{$barangId}",
+                    'barang_cd'     => $barang?->barang_cd ?? '',
+                    'satuan_nm'     => $barang?->satuanDasar?->satuan_nm ?? 'Kg',
+                    'batch_no'      => $batchNo,
+                    'grade_cd'      => $gradeCd,
+                    'qty_keluar'    => $qtyKeluar,
+                    'harga_satuan'  => $hargaSatuan,
+                    'total_harga'   => $totalHarga,
+                ];
             }
 
-            return $header->fresh(['details.barang']);
+            // 4. Deteksi Selisih & Buat Jejak Audit Kesalahan Input jika Ada Perbedaan
+            $differences = [];
+            $kategoriList = [];
+
+            // Bandingkan item lama vs baru
+            foreach ($oldDetailsSnapshot as $old) {
+                // Cari item baru yang cocok
+                $match = collect($newDetailsSnapshot)->firstWhere('barang_id', $old['barang_id']);
+                if (!$match) {
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'HAPUS_ITEM',
+                        'keterangan' => "Barang '{$old['barang_nm']}' (Batch {$old['batch_no']}, {$old['qty_keluar']} {$old['satuan_nm']}) dihapus dari daftar.",
+                    ];
+                    $kategoriList[] = 'HAPUS_ITEM';
+                    continue;
+                }
+
+                // Cek perubahan nomor batch
+                if ($match['batch_no'] !== $old['batch_no']) {
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'KOREKSI_BATCH',
+                        'keterangan' => "Nomor batch diubah dari '{$old['batch_no']}' menjadi '{$match['batch_no']}'.",
+                    ];
+                    $kategoriList[] = 'SALAH_BATCH';
+                }
+
+                // Cek perubahan kuantitas
+                if (abs($match['qty_keluar'] - $old['qty_keluar']) > 0.0001) {
+                    $selisih = $match['qty_keluar'] - $old['qty_keluar'];
+                    $tanda = $selisih > 0 ? '+' : '';
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'KOREKSI_QTY',
+                        'keterangan' => "Kuantitas keluar dikoreksi dari " . number_format($old['qty_keluar'], 2, ',', '.') . " {$old['satuan_nm']} menjadi " . number_format($match['qty_keluar'], 2, ',', '.') . " {$old['satuan_nm']} (Selisih: {$tanda}" . number_format($selisih, 2, ',', '.') . " {$old['satuan_nm']}).",
+                    ];
+                    $kategoriList[] = 'SALAH_QTY';
+                }
+
+                // Cek perubahan grade
+                if ($match['grade_cd'] !== $old['grade_cd']) {
+                    $differences[] = [
+                        'barang_nm'  => $old['barang_nm'],
+                        'tipe'       => 'KOREKSI_GRADE',
+                        'keterangan' => "Grade kualitas diubah dari 'Grade {$old['grade_cd']}' menjadi 'Grade {$match['grade_cd']}'.",
+                    ];
+                    $kategoriList[] = 'SALAH_GRADE';
+                }
+            }
+
+            // Cek barang yang baru ditambahkan
+            foreach ($newDetailsSnapshot as $new) {
+                $wasThere = collect($oldDetailsSnapshot)->contains('barang_id', $new['barang_id']);
+                if (!$wasThere) {
+                    $differences[] = [
+                        'barang_nm'  => $new['barang_nm'],
+                        'tipe'       => 'TAMBAH_ITEM',
+                        'keterangan' => "Barang tambahan baru '{$new['barang_nm']}' (Batch {$new['batch_no']}, " . number_format($new['qty_keluar'], 2, ',', '.') . " {$new['satuan_nm']}) ditambahkan.",
+                    ];
+                    $kategoriList[] = 'TAMBAH_ITEM';
+                }
+            }
+
+            // Jika ada selisih koreksi atau ada catatan verifikasi tertulis
+            if (!empty($differences) || !empty($catatanVerifikasi)) {
+                $kategoriUnik = array_unique($kategoriList);
+                $kategoriFinal = !empty($kategoriUnik) ? implode(' & ', $kategoriUnik) : 'KOREKSI_ADMINISTRASI';
+
+                $revisiCount = \App\Models\Gudang\DatPakaiRevisiLog::where('pakai_id', $header->pakai_id)->count() + 1;
+
+                \App\Models\Gudang\DatPakaiRevisiLog::create([
+                    'pakai_id'           => $header->pakai_id,
+                    'revisi_no'          => "REV-{$header->pakai_no}-{$revisiCount}",
+                    'revisi_tgl'         => now(),
+                    'pembuat_nama'       => $header->creator_name,
+                    'verifikator_nama'   => $actor,
+                    'kategori_kesalahan' => $kategoriFinal,
+                    'catatan_koreksi'    => $catatanVerifikasi ?: "Koreksi data fisik pemakaian bahan oleh bagian verifikasi.",
+                    'data_sebelum_json'  => $oldDetailsSnapshot,
+                    'data_sesudah_json'  => $newDetailsSnapshot,
+                    'perubahan_json'     => $differences,
+                    'created_by'         => $actor,
+                ]);
+
+                $header->update([
+                    'is_ada_koreksi' => true,
+                ]);
+            }
+
+            return $header->fresh(['details.barang', 'revisiLogs']);
         });
     }
 
@@ -586,25 +729,14 @@ class PemakaianService
 
             $totalNominal = 0;
 
-            // 1. Potong Stok Fisik untuk Setiap Baris Detail
+            // 1. Akumulasi Total Nominal untuk Penerbitan Jurnal
+            // (Catatan: Stok fisik gudang sudah langsung dipotong secara real-time saat pembuatan dokumen DRAFT)
             foreach ($header->details as $dtl) {
                 $qtyKeluar = (float) $dtl->qty_keluar;
                 if ($qtyKeluar <= 0) {
                     continue;
                 }
-
                 $totalNominal += (float) $dtl->total_harga;
-
-                // Potong stok batch & catat kartu stok OUT
-                $this->stokService->deductStock(
-                    $header->gudang_id,
-                    $dtl->barang_id,
-                    $dtl->batch_no,
-                    $qtyKeluar,
-                    $header->pakai_no,
-                    "Pengeluaran ({$header->tujuan_pemakaian}) - " . ($dtl->keterangan_txt ?? $header->tujuan_pemakaian),
-                    $dtl->grade_cd ?? 'A'
-                );
             }
 
             // 2. Terbitkan Jurnal Umum Otomatis
@@ -662,10 +794,27 @@ class PemakaianService
     public function delete(int $pakaiId, ?User $user = null): bool
     {
         return DB::transaction(function () use ($pakaiId, $user) {
-            $header = DatPakaiHdr::where('pakai_id', $pakaiId)->firstOrFail();
+            $header = DatPakaiHdr::with('details')->where('pakai_id', $pakaiId)->firstOrFail();
 
             if ($header->status_st === 'POSTED') {
-                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan stok telah dipotong. Dokumen tidak dapat dihapus langsung.");
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan jurnal telah dibukukan. Dokumen tidak dapat dihapus langsung.");
+            }
+
+            // Kembalikan stok fisik untuk seluruh item yang dibatalkan (Stock Reversal)
+            foreach ($header->details as $dtl) {
+                if ((float) $dtl->qty_keluar > 0) {
+                    $this->stokService->addStock(
+                        $header->gudang_id,
+                        $dtl->barang_id,
+                        $dtl->batch_no,
+                        (float) $dtl->qty_keluar,
+                        null,
+                        $header->pakai_no,
+                        "Pembatalan Dokumen Pemakaian (Reversal) - {$header->pakai_no}",
+                        (float) $dtl->harga_satuan,
+                        $dtl->grade_cd
+                    );
+                }
             }
 
             $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';

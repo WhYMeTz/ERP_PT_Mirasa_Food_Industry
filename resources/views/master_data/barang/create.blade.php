@@ -40,7 +40,7 @@
 
             <div class="form-group">
                 <label for="jenis_barang_id" class="form-label">Jenis Barang <span style="color:#ef4444;">*</span></label>
-                <select id="jenis_barang_id" name="jenis_barang_id" class="form-control @error('jenis_barang_id') border-red-500 @enderror" onchange="const opt = this.options[this.selectedIndex]; fetchNextCode('barang', 'barang_cd', {jenis: opt.dataset.cd || '', name: document.getElementById('barang_nm')?.value || ''})" required>
+                <select id="jenis_barang_id" name="jenis_barang_id" class="form-control @error('jenis_barang_id') border-red-500 @enderror" onchange="toggleKategoriOutputVisibility(this); const opt = this.options[this.selectedIndex]; fetchNextCode('barang', 'barang_cd', {jenis: opt.dataset.cd || '', name: document.getElementById('barang_nm')?.value || ''})" required>
                     <option value="">-- Pilih Jenis Barang --</option>
                     @foreach($jenisBarangList as $jenis)
                         <option value="{{ $jenis->jenis_barang_id }}" data-cd="{{ $jenis->jenis_barang_cd }}" {{ old('jenis_barang_id') == $jenis->jenis_barang_id ? 'selected' : '' }}>
@@ -49,6 +49,27 @@
                     @endforeach
                 </select>
                 @error('jenis_barang_id')
+                    <div class="form-error">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="form-group" id="grp_kategori_output" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.85rem;">
+                <label for="kategori_output_cd" class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <span style="font-weight: 700; color: #0f172a;">Kategori Output Produksi (Grup Hasil Olahan)</span>
+                    <span style="font-size: 0.725rem; color: #64748b; font-weight: normal;">Khusus Olahan WIP / FG</span>
+                </label>
+                <select id="kategori_output_cd" name="kategori_output_cd" class="form-control @error('kategori_output_cd') border-red-500 @enderror">
+                    <option value="">-- Bukan Output Produksi / Barang Umum --</option>
+                    @foreach($kategoriOutputList as $kCd => $kNm)
+                        <option value="{{ $kCd }}" {{ old('kategori_output_cd') == $kCd ? 'selected' : '' }}>
+                            {{ $kNm }}
+                        </option>
+                    @endforeach
+                </select>
+                <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                    Menentukan grup dropdown saat input hasil penggorengan curah di modul Produksi Pabrik.
+                </small>
+                @error('kategori_output_cd')
                     <div class="form-error">{{ $message }}</div>
                 @enderror
             </div>
@@ -103,4 +124,27 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function toggleKategoriOutputVisibility(selectElem, targetBoxId = 'grp_kategori_output', inputSelectId = 'kategori_output_cd') {
+        if (!selectElem) return;
+        const opt = selectElem.options[selectElem.selectedIndex];
+        const cd = (opt?.dataset?.cd || opt?.textContent || '').toUpperCase();
+        const isWipOrFg = cd.includes('WIP') || cd.includes('FG');
+        const box = document.getElementById(targetBoxId);
+        if (box) {
+            box.style.display = isWipOrFg ? 'block' : 'none';
+            if (!isWipOrFg) {
+                const inputSelect = document.getElementById(inputSelectId);
+                if (inputSelect) inputSelect.value = '';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleKategoriOutputVisibility(document.getElementById('jenis_barang_id'));
+    });
+</script>
+@endpush
 @endsection

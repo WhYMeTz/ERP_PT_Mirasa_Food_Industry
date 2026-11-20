@@ -241,13 +241,15 @@
 /* Modern Checkbox Cards untuk Cacat Kemasan: KOTOR, APEK, BASAH, SOBEK */
 .modern-checklist-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 480px) {
     .modern-checklist-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -648,6 +650,46 @@
     border-color: #0d9488;
     color: #ffffff;
     box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
+}
+
+.po-item-card.is-completed {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.po-item-card.is-completed:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+}
+
+.po-item-card.is-completed.is-active {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    box-shadow: 0 3px 10px rgba(22, 163, 74, 0.18);
+}
+
+.po-item-card.is-completed .po-item-nama {
+    color: #166534;
+}
+
+.po-item-card.is-partial {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.po-item-card.is-partial:hover {
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+.po-item-card.is-partial.is-active {
+    border-color: #d97706;
+    background: #fffbeb;
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.18);
+}
+
+.po-item-card.is-partial .po-item-nama {
+    color: #92400e;
 }
 
 

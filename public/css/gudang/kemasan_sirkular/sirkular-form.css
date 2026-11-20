@@ -1,0 +1,196 @@
+/* ==============================================================
+ * Stylesheet Formulir Penerimaan Kemasan Sirkular - ERP PT Mirasa
+ * Professional Corporate Enterprise Theme
+ * ============================================================== */
+
+.sirkular-form-container {
+    padding: 0.25rem 0.25rem 2rem 0.25rem;
+}
+
+.sirkular-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    margin-bottom: 1.25rem;
+}
+
+.sirkular-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sirkular-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sirkular-card-body {
+    padding: 1.25rem;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+/* ==============================================================
+ * Corporate Summary KPI Bar (Clean & Professional, No Math Symbols)
+ * ============================================================== */
+.sirkular-summary-bar {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sirkular-summary-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sirkular-summary-col:not(:last-child) {
+    border-right: 1px solid #e2e8f0;
+    padding-right: 1.25rem;
+}
+
+.summary-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+
+.summary-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: monospace;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+/* ==============================================================
+ * Corporate Table Grid (Seragam Standar Excel Grid ERP Mirasa)
+ * ============================================================== */
+.excel-grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+    background: #ffffff;
+}
+
+.excel-grid-table th {
+    background: #0f172a;
+    color: #f8fafc;
+    font-weight: 600;
+    font-size: 0.775rem;
+    padding: 0.65rem 0.6rem;
+    border: 1px solid #334155;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+
+.excel-grid-table td {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    vertical-align: middle;
+}
+
+.excel-grid-table tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+.excel-grid-table tr:hover td {
+    background: #f0fdf4;
+}
+
+.excel-grid-table .excel-row-num {
+    text-align: center;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9 !important;
+}
+
+.excel-grid-table .form-control {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600;
+    font-family: monospace;
+    height: 34px;
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #ffffff;
+}
+
+.excel-grid-table .form-control:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25) !important;
+    background: #ffffff !important;
+    outline: none;
+}
+
+.excel-grid-table .input-readonly-cell {
+    background: #f8fafc !important;
+    color: #0284c7 !important;
+    font-weight: 800 !important;
+    cursor: default;
+    border-color: #e2e8f0 !important;
+}
+
+.excel-grid-table .text-input-cell {
+    font-family: inherit !important;
+    font-weight: normal !important;
+}
+
+@media (max-width: 1024px) {
+    .sirkular-summary-bar {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .sirkular-summary-col:nth-child(3) {
+        border-right: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+    .form-grid-2 {
+        grid-template-columns: 1fr;
+    }
+    .sirkular-summary-bar {
+        grid-template-columns: 1fr 1fr;
+    }
+    .sirkular-summary-col {
+        border-right: none !important;
+        padding-right: 0 !important;
+    }
+}

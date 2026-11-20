@@ -7,6 +7,7 @@ use App\Services\Auth\RoleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use InvalidArgumentException;
 
 class RoleController extends Controller
@@ -16,16 +17,22 @@ class RoleController extends Controller
     ) {}
 
     /**
-     * Ambil daftar peran aktif (JSON)
+     * Ambil daftar peran aktif (Blade View atau JSON jika diminta via AJAX)
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): View|JsonResponse
     {
         $roles = $this->roleService->getAllRoles();
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Daftar peran berhasil diambil.',
-            'data'    => $roles,
-        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Daftar peran berhasil diambil.',
+                'data'    => $roles,
+            ]);
+        }
+
+        $allRoles = $roles;
+        return view('master_data.user.roles', compact('roles', 'allRoles'));
     }
 
     /**

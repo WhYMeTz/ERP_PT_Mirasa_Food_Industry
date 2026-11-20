@@ -8,6 +8,7 @@ use App\Models\Keuangan\DatHutangDtl;
 use App\Models\Keuangan\DatJurnalHdr;
 use App\Models\MasterData\MstSupplier;
 use App\Models\MasterData\MstBarang;
+use App\Models\MasterData\MstPajak;
 use App\Models\Produksi\DatProduksiHdr;
 use App\Models\MasterData\MstTarifProduksi;
 use App\Models\User;
@@ -18,10 +19,14 @@ use Exception;
 class HutangService
 {
     protected JurnalService $jurnalService;
+    protected PengaturanJurnalService $pengaturanJurnalService;
 
-    public function __construct(JurnalService $jurnalService)
-    {
+    public function __construct(
+        JurnalService $jurnalService,
+        PengaturanJurnalService $pengaturanJurnalService
+    ) {
         $this->jurnalService = $jurnalService;
+        $this->pengaturanJurnalService = $pengaturanJurnalService;
     }
 
     /**
@@ -165,8 +170,10 @@ class HutangService
 
         $query = DatTerimaHdr::with([
             'supplier',
+            'po.details.pajak',
             'details.barang.satuanDasar',
-            'details.poDetail'
+            'details.poDetail.po',
+            'details.poDetail.pajak'
         ])
             ->where('deleted_st', false)
             ->where('status_cd', 'COMPLETED')
@@ -193,26 +200,118 @@ class HutangService
             }
             $grnArr['potongan_global'] = max(0, (float)($grn->potongan_nominal ?? 0) - $totalItemPotongan);
 
+            $totalNettoKg = 0;
+
             if (!empty($grnArr['details'])) {
-                foreach ($grnArr['details'] as $idx => $dtl) {
+                // Konsolidasi baris GRN yang berasal dari item PO yang sama (misal 2x timbangan/palet)
+                // agar di faktur tagihan menjadi 1 baris komoditas utuh dan tidak terkena selisih pembulatan desimal
+                $groupedDetails = [];
+                foreach ($grnArr['details'] as $dtl) {
+                    $key = !empty($dtl['podtl_id']) 
+                        ? ('po_' . $dtl['podtl_id']) 
+                        : ('brg_' . $dtl['barang_id'] . '_' . ($dtl['harga_nominal'] ?? 0));
+                    
+                    if (!isset($groupedDetails[$key])) {
+                        $groupedDetails[$key] = $dtl;
+                        $groupedDetails[$key]['terimadtl_ids'] = [$dtl['terimadtl_id']];
+                    } else {
+                        $groupedDetails[$key]['terima_qty'] = (float)($groupedDetails[$key]['terima_qty'] ?? 0) + (float)($dtl['terima_qty'] ?? 0);
+                        $groupedDetails[$key]['reject_qty'] = (float)($groupedDetails[$key]['reject_qty'] ?? 0) + (float)($dtl['reject_qty'] ?? 0);
+                        $groupedDetails[$key]['terimadtl_ids'][] = $dtl['terimadtl_id'];
+                    }
+                }
+                $consolidatedDetails = array_values($groupedDetails);
+                $finalDetails = [];
+
+                foreach ($consolidatedDetails as $idx => $dtl) {
                     $terimaQty = (float)($dtl['terima_qty'] ?? 0);
                     $rejectQty = (float)($dtl['reject_qty'] ?? 0);
                     $nettoQty = max(0, $terimaQty - $rejectQty);
 
-                    $harga = (float)($dtl['harga_nominal'] ?? 0);
-                    if ($harga <= 0 && !empty($dtl['po_detail']['harga_nominal'])) {
-                        $harga = (float)$dtl['po_detail']['harga_nominal'];
+                    // PO Details inheritance (harga, diskon, ppn_tipe dari PO wajib mewarisi jika barang dari PO)
+                    $poDtl = $dtl['po_detail'] ?? null;
+                    if (!$poDtl && $grn->po && $grn->po->details) {
+                        $poDtl = $grn->po->details->firstWhere('barang_id', $dtl['barang_id']);
                     }
-                    if ($harga <= 0 && !empty($dtl['barang']['harga_beli_standar'])) {
+
+                    // 1. Harga Satuan (Utamakan kesepakatan komersial PO jika ada)
+                    $harga = 0;
+                    if (!empty($poDtl['harga_nominal']) && (float)$poDtl['harga_nominal'] > 0) {
+                        $harga = (float)$poDtl['harga_nominal'];
+                    } elseif (!empty($dtl['harga_nominal']) && (float)$dtl['harga_nominal'] > 0) {
+                        $harga = (float)$dtl['harga_nominal'];
+                    } elseif (!empty($dtl['barang']['harga_beli_standar'])) {
                         $harga = (float)$dtl['barang']['harga_beli_standar'];
                     }
 
-                    $subtotal = round($nettoQty * $harga, 2);
+                    // 2. Diskon Komersial (Utamakan dari PO jika ada, atau dari GRN)
+                    $diskonPersen = 0;
+                    $diskonNominalUnit = 0;
+                    if (isset($poDtl['diskon_persen']) && (float)$poDtl['diskon_persen'] > 0) {
+                        $diskonPersen = (float)$poDtl['diskon_persen'];
+                    } elseif (isset($dtl['diskon_persen']) && (float)$dtl['diskon_persen'] > 0) {
+                        $diskonPersen = (float)$dtl['diskon_persen'];
+                    } elseif ($grn->po && (float)$grn->po->subtotal_bruto > 0 && (float)$grn->po->diskon_total > 0) {
+                        $diskonPersen = round(((float)$grn->po->diskon_total / (float)$grn->po->subtotal_bruto) * 100, 2);
+                    }
 
-                    // Hitung diskon murni per-baris dari GRN (persen / nominal)
-                    $diskonPersen = (float)($dtl['diskon_persen'] ?? 0);
-                    $diskonNominalUnit = (float)($dtl['diskon_nominal'] ?? 0);
+                    if (isset($poDtl['diskon_nominal']) && (float)$poDtl['diskon_nominal'] > 0) {
+                        $diskonNominalUnit = (float)$poDtl['diskon_nominal'];
+                    } elseif (isset($dtl['diskon_nominal']) && (float)$dtl['diskon_nominal'] > 0) {
+                        $diskonNominalUnit = (float)$dtl['diskon_nominal'];
+                    }
+
+                    // 3. Potongan Mutu / Rafaksi Fisik
                     $potonganItem = (float)($dtl['potongan_nominal'] ?? 0);
+                    if ($potonganItem <= 0 && !empty($poDtl['potongan_nominal'])) {
+                        $poPesanQty = (float)($poDtl['pesan_qty'] ?? 0);
+                        if ($poPesanQty > 0) {
+                            $ratio = min(1, $nettoQty / $poPesanQty);
+                            $potonganItem = round((float)$poDtl['potongan_nominal'] * $ratio, 2);
+                        } else {
+                            $potonganItem = (float)$poDtl['potongan_nominal'];
+                        }
+                    } elseif ($potonganItem <= 0 && $grn->po && (float)$grn->po->potongan_nominal > 0) {
+                        $poTotalBruto = (float)($grn->po->subtotal_bruto ?? 0);
+                        if ($poTotalBruto > 0) {
+                            $itemBruto = $nettoQty * $harga;
+                            $potonganItem = round(($itemBruto / $poTotalBruto) * (float)$grn->po->potongan_nominal, 2);
+                        }
+                    }
+
+                    // 4. Perlakuan Pajak PPN (Utamakan dari PO: normalisasi PPN-11 / PPN_11 / PPN INCLUDE / Master Pajak)
+                    $pajakId = $poDtl['pajak_id'] ?? null;
+                    if (!$pajakId && $grn->po && $grn->po->details) {
+                        $pajakId = $grn->po->details->pluck('pajak_id')->filter()->first();
+                    }
+                    $pajakObj = $poDtl['pajak'] ?? ($pajakId ? \App\Models\Master\MstPajak::find($pajakId) : null);
+                    $taxTarif = (float)($poDtl['ppn_persen'] ?? ($pajakObj['tarif_persen'] ?? 0));
+                    $taxSifat = $pajakObj['sifat_pajak'] ?? 'TAMBAH';
+                    $taxCode = $pajakObj['pajak_cd'] ?? ($poDtl['ppn_tipe'] ?? null);
+
+                    $rawPpn = !empty($poDtl['ppn_tipe']) ? $poDtl['ppn_tipe'] : ($dtl['ppn_tipe'] ?? 'NON_PPN');
+                    $isInclude = false;
+                    if (isset($poDtl['is_harga_termasuk_pajak'])) {
+                        $isInclude = (bool)$poDtl['is_harga_termasuk_pajak'];
+                    } elseif (isset($grn->po?->is_harga_termasuk_pajak)) {
+                        $isInclude = (bool)$grn->po->is_harga_termasuk_pajak;
+                    }
+                    $poPpnNominal = (float)($poDtl['ppn_nominal'] ?? ($grn->po?->ppn_nominal ?? 0));
+
+                    $cleanPpn = strtoupper(trim(str_replace(['-', ' '], '_', (string)$rawPpn)));
+                    if ($pajakId) {
+                        $ppnTipe = (string)$pajakId;
+                    } elseif ($isInclude || $cleanPpn === 'PPN_INCLUDE' || $cleanPpn === 'INCLUDE') {
+                        $ppnTipe = 'PPN_INCLUDE';
+                    } elseif ($cleanPpn === 'PPN_11' || $cleanPpn === 'PPN11' || str_contains($cleanPpn, '11')) {
+                        $ppnTipe = 'PPN_11';
+                    } elseif ($taxTarif <= 0) {
+                        $ppnTipe = 'NON_PPN';
+                    } else {
+                        $ppnTipe = $rawPpn ?: 'NON_PPN';
+                    }
+
+                    $subtotal = round($nettoQty * $harga, 2);
 
                     $diskonTotal = 0;
                     if ($diskonPersen > 0) {
@@ -224,27 +323,127 @@ class HutangService
                         }
                     }
 
-                    // Hitung PPN per-baris dari GRN (setelah dikurangi diskon & potongan mutu fisik)
-                    $ppnNominal = (float)($dtl['ppn_nominal'] ?? 0);
-                    $ppnTipe = $dtl['ppn_tipe'] ?? ($ppnNominal > 0 ? 'PPN_11' : 'NON_PPN');
-                    if ($ppnNominal <= 0 && $ppnTipe === 'PPN_11') {
-                        $dpp = max(0, $subtotal - $diskonTotal - $potonganItem);
-                        $ppnNominal = round($dpp * 0.11, 2);
+                    // Hitung DPP & PPN Nominal akurat
+                    $dpp = max(0, $subtotal - $diskonTotal - $potonganItem);
+                    $ppnNominal = 0;
+                    if ($isInclude && $taxSifat !== 'POTONG' && $taxTarif > 0) {
+                        $effectiveRate = 1 + ($taxTarif / 100);
+                        $dpp = round(($subtotal - $diskonTotal - $potonganItem) / $effectiveRate, 2);
+                        $ppnNominal = round(($subtotal - $diskonTotal - $potonganItem) - $dpp, 2);
+                    } elseif ($taxTarif > 0) {
+                        $ppnNominal = round($dpp * ($taxTarif / 100), 2);
                     }
 
-                    $grnArr['details'][$idx]['netto_qty'] = $nettoQty;
-                    $grnArr['details'][$idx]['harga_nominal'] = $harga;
-                    $grnArr['details'][$idx]['harga_satuan'] = $harga;
-                    $grnArr['details'][$idx]['diskon_persen'] = $diskonPersen;
-                    $grnArr['details'][$idx]['diskon_nominal'] = $diskonTotal;
-                    $grnArr['details'][$idx]['diskon_total'] = $diskonTotal;
-                    $grnArr['details'][$idx]['potongan_nominal'] = $potonganItem;
-                    $grnArr['details'][$idx]['ppn_tipe'] = $ppnTipe;
-                    $grnArr['details'][$idx]['ppn_total'] = $ppnNominal;
+                    // Catat tonase jika satuan KG
+                    $satuanCd = strtolower($dtl['barang']['satuan_dasar']['satuan_cd'] ?? 'kg');
+                    if ($satuanCd === 'kg' || $satuanCd === 'kilogram') {
+                        $totalNettoKg += $nettoQty;
+                    }
+
+                    $poNo = $poDtl['po']['po_no'] ?? ($grn->po?->po_no ?? null);
+
+                    $dtlItem = $dtl;
+                    $dtlItem['netto_qty'] = $nettoQty;
+                    $dtlItem['harga_nominal'] = $harga;
+                    $dtlItem['harga_satuan'] = $harga;
+                    $dtlItem['diskon_persen'] = $diskonPersen;
+                    $dtlItem['diskon_nominal'] = $diskonTotal;
+                    $dtlItem['diskon_total'] = $diskonTotal;
+                    $dtlItem['potongan_nominal'] = $potonganItem;
+                    $dtlItem['ppn_tipe'] = $ppnTipe;
+                    $dtlItem['pajak_id'] = $pajakId;
+                    $dtlItem['pajak_cd'] = $taxCode;
+                    $dtlItem['ppn_persen'] = $taxTarif;
+                    $dtlItem['sifat_pajak'] = $taxSifat;
+                    $dtlItem['is_harga_termasuk_pajak'] = $isInclude;
+                    $dtlItem['ppn_total'] = $ppnNominal;
+                    $dtlItem['po_no'] = $poNo;
+
+                    $finalDetails[] = $dtlItem;
+                }
+                $grnArr['details'] = $finalDetails;
+            }
+            $firstPajakId = null;
+            $hasAnyPajak = false;
+            if (!empty($finalDetails)) {
+                foreach ($finalDetails as $fd) {
+                    if (!empty($fd['pajak_id'])) {
+                        $firstPajakId = $fd['pajak_id'];
+                        $hasAnyPajak = true;
+                        break;
+                    }
                 }
             }
+            if (!$firstPajakId && $grn->po?->details) {
+                $firstPajakId = $grn->po->details->pluck('pajak_id')->filter()->first();
+                if ($firstPajakId) {
+                    $hasAnyPajak = true;
+                }
+            }
+
+            $poDiskonPersen = 0;
+            if ($grn->po && (float)$grn->po->subtotal_bruto > 0 && (float)$grn->po->diskon_total > 0) {
+                $poDiskonPersen = round(((float)$grn->po->diskon_total / (float)$grn->po->subtotal_bruto) * 100, 2);
+            } elseif (!empty($finalDetails)) {
+                foreach ($finalDetails as $fd) {
+                    if (!empty($fd['diskon_persen']) && (float)$fd['diskon_persen'] > 0) {
+                        $poDiskonPersen = (float)$fd['diskon_persen'];
+                        break;
+                    }
+                }
+            }
+
+            $grnArr['has_po'] = !empty($grn->po_id);
+            $grnArr['po_pajak_id'] = $firstPajakId ? (int)$firstPajakId : null;
+            $grnArr['po_has_tax'] = $hasAnyPajak;
+            $grnArr['po_is_harga_termasuk_pajak'] = (bool)($grn->po?->is_harga_termasuk_pajak ?? false);
+            $grnArr['po_diskon_persen'] = $poDiskonPersen;
+            $grnArr['po_potongan_nominal'] = (float)($grn->po?->potongan_nominal ?? 0);
+            $grnArr['po_top_hari'] = $grn->po?->term_of_payment ?? null;
+            $grnArr['total_netto_kg'] = $totalNettoKg;
+            $grnArr['is_harga_termasuk_pajak'] = (bool)($grn->po?->is_harga_termasuk_pajak ?? false);
             return $grnArr;
         })->toArray();
+    }
+
+    /**
+     * Dapatkan daftar Dokumen Retur Pembelian (Credit Note) supplier yang belum dipotongkan ke tagihan
+     */
+    public function getUncreditedReturList(?int $supplierId = null): array
+    {
+        if (!$supplierId) {
+            return [];
+        }
+
+        return \App\Models\Gudang\DatReturHdr::with(['details.barang.satuanDasar'])
+            ->where('supplier_id', $supplierId)
+            ->where('tindakan_cd', 'CREDIT_NOTE')
+            ->where('status_cd', 'COMPLETED')
+            ->whereNull('hutang_id')
+            ->where('deleted_st', false)
+            ->orderBy('retur_tgl', 'desc')
+            ->orderBy('retur_id', 'desc')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'retur_id'      => $r->retur_id,
+                    'retur_no'      => $r->retur_no,
+                    'retur_tgl'     => $r->retur_tgl ? $r->retur_tgl->format('d/m/Y') : null,
+                    'total_nominal' => (float)$r->total_nominal,
+                    'alasan_txt'    => $r->alasan_txt,
+                    'details'       => $r->details->map(function ($d) {
+                        return [
+                            'barang_nm'        => $d->barang?->barang_nm ?? 'Bahan Baku',
+                            'batch_no'         => $d->batch_no,
+                            'retur_qty'        => (float)$d->retur_qty,
+                            'satuan'           => $d->barang?->satuanDasar?->satuan_nm ?? $d->satuan ?? 'KG',
+                            'harga_satuan'     => (float)$d->harga_satuan,
+                            'subtotal_nominal' => (float)$d->subtotal_nominal,
+                            'alasan_reject'    => $d->alasan_reject,
+                        ];
+                    })->toArray(),
+                ];
+            })->toArray();
     }
 
     /**
@@ -272,38 +471,68 @@ class HutangService
             $totalPpn = 0;
             $totalNetto = 0;
 
+            $globalDiskonPersen = (float)($payload['diskon_persen'] ?? 0);
+            $globalPotonganNominal = (float)($payload['total_potongan_item'] ?? ($payload['potongan_nominal'] ?? 0));
+
             // Normalisasi & kalkulasi seluruh baris item tagihan
             $processedItems = [];
             foreach ($items as $item) {
                 $qty = (float)($item['qty'] ?? 0);
                 $harga = (float)($item['harga_satuan'] ?? 0);
                 $subtotal = $qty * $harga;
-                $diskonPersen = (float)($item['diskon_persen'] ?? 0);
-                $diskon = (float)($item['diskon_nominal'] ?? 0);
+                $diskonPersen = (float)($item['diskon_persen'] ?? $globalDiskonPersen);
+                $diskon = isset($item['diskon_nominal']) && (float)$item['diskon_nominal'] > 0
+                    ? (float)$item['diskon_nominal']
+                    : ($subtotal * ($diskonPersen / 100));
                 $potongan = (float)($item['potongan_nominal'] ?? 0);
                 $ppnTipe = $item['ppn_tipe'] ?? 'NON_PPN';
                 
                 $nilaiBersih = max(0, $subtotal - $diskon - $potongan);
                 
-                if ($ppnTipe === 'PPN_INCLUDE') {
-                    // Harga satuan sudah include PPN 11% (harga kotor)
-                    $netto = $nilaiBersih;
-                    if (isset($item['ppn_nominal']) && is_numeric($item['ppn_nominal']) && (float)$item['ppn_nominal'] > 0) {
-                        $ppn = (float)$item['ppn_nominal'];
-                        $dpp = max(0, $nilaiBersih - $ppn);
+                $isHeaderInc = !empty($payload['is_harga_termasuk_pajak']);
+                $isRowInc = isset($item['is_harga_termasuk_pajak'])
+                    ? filter_var($item['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN)
+                    : $isHeaderInc;
+
+                $headerPajakId = !empty($payload['pajak_id']) ? $payload['pajak_id'] : null;
+                if ($headerPajakId === 'NON_PPN') {
+                    $ppnTipe = 'NON_PPN';
+                } elseif ($headerPajakId && (empty($ppnTipe) || $ppnTipe === 'NON_PPN')) {
+                    $ppnTipe = $headerPajakId;
+                }
+
+                $cleanPpn = strtoupper(trim(str_replace(['-', ' '], '_', (string)$ppnTipe)));
+                $isInc = ($isRowInc || $cleanPpn === 'PPN_INCLUDE' || $cleanPpn === 'INCLUDE');
+
+                $pajakObj = null;
+                if (is_numeric($ppnTipe)) {
+                    $pajakObj = MstPajak::find((int)$ppnTipe);
+                } elseif (!empty($ppnTipe) && $ppnTipe !== 'NON_PPN' && $ppnTipe !== 'PPN_11') {
+                    $pajakObj = MstPajak::where('pajak_cd', $ppnTipe)->first();
+                }
+                $sifatPajak = $pajakObj ? $pajakObj->sifat_pajak : (str_contains(strtoupper((string)$ppnTipe), 'PPH') ? 'POTONG' : 'TAMBAH');
+                $taxTarif = $pajakObj ? (float)$pajakObj->tarif_persen : (str_contains($cleanPpn, '11') ? 11.0 : 0.0);
+                $rate = $taxTarif > 0 ? ($taxTarif / 100) : 0.11;
+
+                if (isset($item['ppn_nominal']) && is_numeric($item['ppn_nominal'])) {
+                    $ppn = max(0, (float)$item['ppn_nominal']);
+                    $dpp = (isset($item['dpp_nominal']) && is_numeric($item['dpp_nominal']))
+                        ? max(0, (float)$item['dpp_nominal'])
+                        : ($isInc ? max(0, $nilaiBersih - $ppn) : $nilaiBersih);
+                    if ($sifatPajak === 'POTONG') {
+                        $netto = max(0, $dpp - $ppn);
                     } else {
-                        $dpp = round($nilaiBersih / 1.11, 2);
-                        $ppn = round($nilaiBersih - $dpp, 2);
+                        $netto = $isInc ? $nilaiBersih : ($dpp + $ppn);
                     }
-                } elseif ($ppnTipe === 'PPN_11') {
-                    // PPN 11% Exclude (ditambahkan di atas DPP)
+                } elseif ($isInc && $cleanPpn !== 'NON_PPN' && $sifatPajak !== 'POTONG') {
+                    $dpp = round($nilaiBersih / (1 + $rate), 2);
+                    $ppn = round($nilaiBersih - $dpp, 2);
+                    $netto = $nilaiBersih;
+                } elseif ($cleanPpn === 'PPN_11' || $cleanPpn === 'PPN11' || $sifatPajak === 'POTONG' || $taxTarif > 0) {
                     $dpp = $nilaiBersih;
-                    $ppn = isset($item['ppn_nominal']) && is_numeric($item['ppn_nominal'])
-                        ? (float)$item['ppn_nominal']
-                        : round($dpp * 0.11, 2);
-                    $netto = $dpp + $ppn;
+                    $ppn = round($dpp * $rate, 2);
+                    $netto = ($sifatPajak === 'POTONG') ? max(0, $dpp - $ppn) : ($dpp + $ppn);
                 } else {
-                    // NON_PPN
                     $ppnTipe = 'NON_PPN';
                     $dpp = $nilaiBersih;
                     $ppn = 0;
@@ -314,6 +543,7 @@ class HutangService
                     'terima_id'        => $item['terima_id'] ?? null,
                     'terima_dtl_id'    => $item['terima_dtl_id'] ?? null,
                     'barang_id'        => $item['barang_id'] ?? null,
+                    'pajak_id'         => $pajakObj?->pajak_id ?? (is_numeric($ppnTipe) ? (int)$ppnTipe : null),
                     'deskripsi'        => $item['deskripsi'] ?? 'Penerimaan Bahan Baku',
                     'qty'              => $qty,
                     'satuan'           => $item['satuan'] ?? 'KG',
@@ -323,6 +553,7 @@ class HutangService
                     'diskon_nominal'   => $diskon,
                     'potongan_nominal' => $potongan,
                     'ppn_tipe'         => $ppnTipe,
+                    'sifat_pajak'      => $sifatPajak,
                     'dpp_nominal'      => $dpp,
                     'ppn_nominal'      => $ppn,
                     'total_netto'      => $netto,
@@ -332,15 +563,40 @@ class HutangService
                 $totalBruto += $subtotal;
                 $totalDiskon += $diskon;
                 $totalPotonganItem += $potongan;
-                $totalPpn += $ppn;
+                $totalPpn += ($sifatPajak === 'POTONG' ? -$ppn : $ppn);
                 $totalNetto += $netto;
             }
 
-            $potonganRetur = (float)($payload['total_potongan_retur'] ?? 0);
+            $potonganRetur = 0;
+            $appliedReturIds = [];
+            if (!empty($payload['retur_ids']) && is_array($payload['retur_ids'])) {
+                $returRecords = \App\Models\Gudang\DatReturHdr::whereIn('retur_id', $payload['retur_ids'])
+                    ->where('supplier_id', $supplierId)
+                    ->where('tindakan_cd', 'CREDIT_NOTE')
+                    ->whereNull('hutang_id')
+                    ->where('deleted_st', false)
+                    ->get();
+                foreach ($returRecords as $ret) {
+                    $potonganRetur += (float)$ret->total_nominal;
+                    $appliedReturIds[] = $ret->retur_id;
+                }
+            } else {
+                $potonganRetur = (float)($payload['total_potongan_retur'] ?? 0);
+            }
             $biayaOngkir = (float)($payload['biaya_ongkir'] ?? 0);
+            $tonaseKg = (float)($payload['tonase_kg'] ?? 0);
+            $ongkirTarifPerKg = (float)($payload['ongkir_tarif_per_kg'] ?? 0);
+            $uangMukaNominal = (float)($payload['uang_muka_nominal'] ?? 0);
             
             // Formula Grand Total Tagihan: Akumulasi Seluruh Netto Item - Potongan Retur Global + Biaya Ongkir
             $totalNettoAkhir = max(0, ($totalNetto - $potonganRetur) + $biayaOngkir);
+
+            // Perhitungan pelunasan dengan Uang Muka / Down Payment (DP)
+            $totalDibayar = min($totalNettoAkhir, $uangMukaNominal);
+            $sisaHutang = max(0, $totalNettoAkhir - $totalDibayar);
+            $statusBayar = ($sisaHutang <= 0 && $totalNettoAkhir > 0) 
+                ? 'LUNAS' 
+                : (($totalDibayar > 0) ? 'SEBAGIAN' : 'BELUM_LUNAS');
 
             $hdr = DatHutangHdr::create([
                 'hutang_no'            => $hutangNo,
@@ -356,14 +612,27 @@ class HutangService
                 'total_potongan_retur' => $potonganRetur,
                 'total_ppn'            => $totalPpn,
                 'biaya_ongkir'         => $biayaOngkir,
+                'tonase_kg'            => $tonaseKg,
+                'ongkir_tarif_per_kg'  => $ongkirTarifPerKg,
+                'uang_muka_nominal'    => $uangMukaNominal,
                 'total_tagihan'        => $totalNettoAkhir,
-                'total_dibayar'        => 0,
-                'sisa_hutang'          => $totalNettoAkhir,
-                'status_pembayaran'    => 'BELUM_LUNAS',
+                'total_dibayar'        => $totalDibayar,
+                'sisa_hutang'          => $sisaHutang,
+                'status_pembayaran'    => $statusBayar,
                 'catatan'              => $catatan,
                 'created_by'           => $user->name ?? 'SYSTEM',
                 'updated_by'           => $user->name ?? 'SYSTEM',
             ]);
+
+            // Tautkan dokumen retur pembelian (Credit Note) yang dikompensasikan ke tagihan ini
+            if (!empty($appliedReturIds)) {
+                \App\Models\Gudang\DatReturHdr::whereIn('retur_id', $appliedReturIds)
+                    ->update([
+                        'hutang_id'  => $hdr->hutang_id,
+                        'updated_by' => $user->name ?? 'SYSTEM',
+                        'updated_at' => now(),
+                    ]);
+            }
 
             foreach ($processedItems as $pItem) {
                 DatHutangDtl::create([
@@ -431,6 +700,8 @@ class HutangService
                 $hargaStr = $formatNum($harga, 2);
 
                 $namaBarang = trim($item['deskripsi'] ?? '');
+                // Bersihkan teks (GRN: ...) agar keterangan jurnal ringkas dan standar
+                $namaBarang = trim(preg_replace('/\s*\(GRN:?[^)]*\)/i', '', $namaBarang));
                 if (empty($namaBarang) && !empty($item['barang_id'])) {
                     $namaBarang = MstBarang::find($item['barang_id'])?->barang_nm ?? 'Bahan Baku';
                 }
@@ -439,32 +710,94 @@ class HutangService
                 }
 
                 $ppnSuffix = ($ppnTipe === 'PPN_INCLUDE') ? ' (Inc PPN)' : '';
-                $keteranganItem = "{$suppName} - {$qtyStr} {$satuanStr} {$namaBarang} @{$hargaStr}{$ppnSuffix}";
+                $keteranganItem = $this->pengaturanJurnalService->renderTemplate(
+                    'PEMBELIAN_TEMPLATE_KET',
+                    '{supplier} - {qty} {satuan} {nama_barang} @{harga}',
+                    [
+                        'supplier'    => $suppName,
+                        'qty'         => $qtyStr,
+                        'satuan'      => $satuanStr,
+                        'nama_barang' => $namaBarang,
+                        'harga'       => $hargaStr,
+                        'no_faktur'   => $hdr->no_faktur_supplier ?? '-',
+                    ]
+                ) . $ppnSuffix;
 
-                // 1. (Debet) Persediaan Bahan Baku & Penolong (Akun 1150)
+                $akunPersediaanBaku = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
+                $akunPersediaanPenolong = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PENOLONG', '1153');
+                $akunHutang = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
+                $akunPpnMasukan = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
+                $akunPph22 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_22', '2107');
+                $akunPph23 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_23', '2105');
+                $akunOngkir = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_ONGKIR', '6112');
+                $akunUangMuka = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_UANG_MUKA', '1122');
+
+                // Deteksi apakah item ini Bahan Penolong & Kemasan (1153) atau Bahan Baku Singkong (1150)
+                $barangId = $item['barang_id'] ?? null;
+                $barangObj = $barangId ? MstBarang::with('jenisBarang')->find($barangId) : null;
+                $isPenolong = false;
+                if ($barangObj && $barangObj->jenisBarang) {
+                    $jenisCd = strtoupper($barangObj->jenisBarang->jenis_barang_cd ?? '');
+                    $isPenolong = in_array($jenisCd, ['BP', 'PACK', 'SUPP']);
+                } else {
+                    $descLower = strtolower($namaBarang);
+                    $isPenolong = str_contains($descLower, 'karton') || str_contains($descLower, 'plastik') || str_contains($descLower, 'bumbu') || str_contains($descLower, 'minyak') || str_contains($descLower, 'dus') || str_contains($descLower, 'lakban');
+                }
+
+                $akunPersediaanItem = $isPenolong ? $akunPersediaanPenolong : $akunPersediaanBaku;
+
+                // 1. (Debet) Persediaan Bahan Baku (1150) atau Persediaan Bahan Penolong & Kemasan (1153)
                 if ($dppItem > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '1150',
+                        'kode_akun'  => $akunPersediaanItem,
                         'debet'      => $dppItem,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
                     ];
                 }
 
-                // 2. (Debet) PPN Masukan (Akun 1130) jika ada PPN
+                // 2. Pajak: (Debet) PPN Masukan jika TAMBAH, atau (Kredit) Hutang Pajak PPh jika POTONG
                 if ($ppn > 0) {
-                    $jurnalEntries[] = [
-                        'kode_akun'  => '1130',
-                        'debet'      => $ppn,
-                        'kredit'     => 0,
-                        'keterangan' => $keteranganItem,
-                    ];
+                    $itemSifat = $item['sifat_pajak'] ?? (str_contains(strtoupper((string)$ppnTipe), 'PPH') ? 'POTONG' : 'TAMBAH');
+                    $pajakObj = !empty($item['pajak_id']) 
+                        ? MstPajak::with('coaPembelian')->find($item['pajak_id']) 
+                        : (is_numeric($ppnTipe) ? MstPajak::with('coaPembelian')->find((int)$ppnTipe) : null);
+
+                    if ($itemSifat === 'POTONG') {
+                        // Tentukan akun COA pajak secara presisi dari relasi master pajak atau konfigurasi
+                        $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun;
+                        if (!$pajakCoaKode) {
+                            $cdUpper = strtoupper((string)($pajakObj?->pajak_cd ?? $ppnTipe));
+                            if (str_contains($cdUpper, '22')) {
+                                $pajakCoaKode = $akunPph22;
+                            } elseif (str_contains($cdUpper, '23')) {
+                                $pajakCoaKode = $akunPph23;
+                            } else {
+                                $pajakCoaKode = $akunPph22;
+                            }
+                        }
+
+                        $jurnalEntries[] = [
+                            'kode_akun'  => $pajakCoaKode,
+                            'debet'      => 0,
+                            'kredit'     => $ppn,
+                            'keterangan' => $keteranganItem,
+                        ];
+                    } else {
+                        $pajakCoaKode = $pajakObj?->coaPembelian?->kode_akun ?? $pajakObj?->coa?->kode_akun ?? $akunPpnMasukan;
+                        $jurnalEntries[] = [
+                            'kode_akun'  => $pajakCoaKode, // PPN Masukan
+                            'debet'      => $ppn,
+                            'kredit'     => 0,
+                            'keterangan' => $keteranganItem,
+                        ];
+                    }
                 }
 
-                // 3. (Kredit) Hutang Usaha (Akun 2100) per item
+                // 3. (Kredit) Hutang Usaha (Konfigurasi: PEMBELIAN_AKUN_HUTANG) per item
                 if ($totalHutangItem > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '2100',
+                        'kode_akun'  => $akunHutang,
                         'debet'      => 0,
                         'kredit'     => $totalHutangItem,
                         'keterangan' => $keteranganItem,
@@ -475,13 +808,13 @@ class HutangService
             // 4. Penyesuaian Potongan Retur Global (jika ada)
             if ($potonganRetur > 0) {
                 $jurnalEntries[] = [
-                    'kode_akun'  => '2100',
+                    'kode_akun'  => $akunHutang,
                     'debet'      => $potonganRetur,
                     'kredit'     => 0,
                     'keterangan' => "Potongan Retur Pembelian - {$suppName} - {$hdr->hutang_no}",
                 ];
                 $jurnalEntries[] = [
-                    'kode_akun'  => '1150',
+                    'kode_akun'  => $akunPersediaan,
                     'debet'      => 0,
                     'kredit'     => $potonganRetur,
                     'keterangan' => "Potongan Retur Pembelian - {$suppName} - {$hdr->hutang_no}",
@@ -491,16 +824,34 @@ class HutangService
             // 5. Penyesuaian Ongkos Angkut / Ekspedisi Pembelian (jika ada)
             if ($biayaOngkir > 0) {
                 $jurnalEntries[] = [
-                    'kode_akun'  => '6112',
+                    'kode_akun'  => $akunOngkir,
                     'debet'      => $biayaOngkir,
                     'kredit'     => 0,
                     'keterangan' => "Ongkos Angkut Pembelian - {$suppName} - {$hdr->hutang_no}",
                 ];
                 $jurnalEntries[] = [
-                    'kode_akun'  => '2100',
+                    'kode_akun'  => $akunHutang,
                     'debet'      => 0,
                     'kredit'     => $biayaOngkir,
                     'keterangan' => "Ongkos Angkut Pembelian - {$suppName} - {$hdr->hutang_no}",
+                ];
+            }
+
+            // 6. Penyesuaian Uang Muka / Down Payment (DP) yang telah dibayarkan
+            // Memindahkan saldo kewajiban dari Hutang Usaha (2100) ke akun Uang Muka Pembelian (1122)
+            if ($uangMukaNominal > 0 && $totalDibayar > 0) {
+                $ketDp = "Penyelesaian Uang Muka (Downpayment) - {$suppName} - {$hdr->hutang_no}";
+                $jurnalEntries[] = [
+                    'kode_akun'  => $akunHutang, // Hutang Usaha didebet (berkurang)
+                    'debet'      => $totalDibayar,
+                    'kredit'     => 0,
+                    'keterangan' => $ketDp,
+                ];
+                $jurnalEntries[] = [
+                    'kode_akun'  => $akunUangMuka, // Uang Muka Pembelian (1122) dikredit (realisasi pengurang DP)
+                    'debet'      => 0,
+                    'kredit'     => $totalDibayar,
+                    'keterangan' => $ketDp,
                 ];
             }
 
@@ -644,12 +995,13 @@ class HutangService
 
             // Otomasi Jurnal Pengakuan Beban Utilitas Gas Pabrik
             $jurnalEntries = [];
+            $ketGas = "Tagihan Gas Pabrik Periode {$periodeBulan} - {$suppName} ({$hdr->hutang_no})";
             if ($totalBruto > 0) {
                 $jurnalEntries[] = [
                     'kode_akun'  => '6102', // Beban air & Listrik (dan Gas)
                     'debet'      => $totalBruto,
                     'kredit'     => 0,
-                    'keterangan' => "Beban Gas Pabrik Periode {$periodeBulan} ({$hdr->hutang_no})",
+                    'keterangan' => $ketGas,
                 ];
             }
             if ($totalPpn > 0) {
@@ -657,7 +1009,7 @@ class HutangService
                     'kode_akun'  => '1130', // PPN Masukan
                     'debet'      => $totalPpn,
                     'kredit'     => 0,
-                    'keterangan' => "PPN Masukan Gas Periode {$periodeBulan} ({$hdr->hutang_no})",
+                    'keterangan' => $ketGas,
                 ];
             }
             if ($totalNetto > 0) {
@@ -665,7 +1017,7 @@ class HutangService
                     'kode_akun'  => '2100', // Hutang usaha
                     'debet'      => 0,
                     'kredit'     => $totalNetto,
-                    'keterangan' => "Hutang Tagihan Gas Periode {$periodeBulan} ({$hdr->hutang_no})",
+                    'keterangan' => $ketGas,
                 ];
             }
 
@@ -817,7 +1169,7 @@ class HutangService
                 'updated_by'           => $userNm,
             ]);
 
-            // 6. Buat Detail Hutang AP
+                    // 6. Buat Detail Hutang AP
             foreach ($itemsToInvoice as $row) {
                 $dtl = $row['dtl'];
                 DatHutangDtl::create([
@@ -825,7 +1177,7 @@ class HutangService
                     'terima_id'      => $header->terima_id,
                     'terima_dtl_id'  => $dtl->terimadtl_id,
                     'barang_id'      => $dtl->barang_id,
-                    'deskripsi'      => ($dtl->barang?->barang_nm ?? 'Barang') . " (GRN {$header->terima_no})",
+                    'deskripsi'      => ($dtl->barang?->barang_nm ?? 'Barang'),
                     'qty'            => $row['netto_qty'],
                     'satuan'         => $row['satuan'],
                     'harga_satuan'   => $row['harga_satuan'],
@@ -874,11 +1226,26 @@ class HutangService
                 $hargaStr = $formatNum($harga, 2);
                 $namaBarang = trim($row['dtl']->barang?->barang_nm ?? 'Bahan Baku');
 
-                $keteranganItem = "{$supplierName} - {$qtyStr} {$satuanStr} {$namaBarang} @{$hargaStr}";
+                $keteranganItem = $this->pengaturanJurnalService->renderTemplate(
+                    'PEMBELIAN_TEMPLATE_KET',
+                    '{supplier} - {qty} {satuan} {nama_barang} @{harga}',
+                    [
+                        'supplier'    => $supplierName,
+                        'qty'         => $qtyStr,
+                        'satuan'      => $satuanStr,
+                        'nama_barang' => $namaBarang,
+                        'harga'       => $hargaStr,
+                        'no_faktur'   => $hdr->no_faktur_supplier ?? '-',
+                    ]
+                );
+
+                $akunPersediaanAuto = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
+                $akunPpnMasukanAuto = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
+                $akunHutangAuto = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
 
                 if ($dpp > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '1150',
+                        'kode_akun'  => $akunPersediaanAuto,
                         'debet'      => $dpp,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
@@ -886,7 +1253,7 @@ class HutangService
                 }
                 if ($ppn > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '1130',
+                        'kode_akun'  => $akunPpnMasukanAuto,
                         'debet'      => $ppn,
                         'kredit'     => 0,
                         'keterangan' => $keteranganItem,
@@ -894,7 +1261,7 @@ class HutangService
                 }
                 if ($totalHutang > 0) {
                     $jurnalEntries[] = [
-                        'kode_akun'  => '2100',
+                        'kode_akun'  => $akunHutangAuto,
                         'debet'      => 0,
                         'kredit'     => $totalHutang,
                         'keterangan' => $keteranganItem,

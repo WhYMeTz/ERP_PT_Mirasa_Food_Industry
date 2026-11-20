@@ -12,10 +12,10 @@
     <div>
         <h1 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
             <span>Stok Hasil Produksi (WIP &amp; Barang Jadi)</span>
-            <span class="badge" style="background: #ea580c18; color: #ea580c; border: 1px solid #ea580c33; font-size: 0.75rem; font-weight: 700;">Lantai Produksi &amp; Gudang Jadi</span>
+            <span class="badge" style="background: #ea580c18; color: #ea580c; border: 1px solid #ea580c33; font-size: 0.75rem; font-weight: 700;">Area Produksi &amp; Gudang Jadi</span>
         </h1>
         <p style="color: #64748b; font-size: 0.825rem; margin: 0.2rem 0 0 0;">
-            Pantau saldo fisik on-hand olahan setengah jadi (WIP) di lantai produksi dan barang jadi kemasan (FG) siap jual.
+            Pantau saldo fisik on-hand olahan setengah jadi (WIP) di area produksi dan barang jadi kemasan (FG) siap jual.
         </p>
     </div>
     

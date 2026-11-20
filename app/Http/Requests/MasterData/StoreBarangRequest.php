@@ -38,6 +38,18 @@ class StoreBarangRequest extends FormRequest
                 'integer',
                 'exists:mst_jenis_barang,jenis_barang_id',
             ],
+            'grade_cd' => [
+                'nullable',
+                'string',
+                'max:10',
+                'in:KW1,KW2',
+            ],
+            'kategori_output_cd' => [
+                'nullable',
+                'string',
+                'max:30',
+                'in:FCC_NON_BUMBU,EKSPOR,WIP_BERBUMBU,WIP_TAWAR,WIP_HOLD,WIP_AFKIR',
+            ],
             'satuan_dasar_id' => [
                 'required',
                 'integer',
@@ -59,6 +71,31 @@ class StoreBarangRequest extends FormRequest
                 'min:0',
             ],
             'harga_beli_standar' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_idm_alfa' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_alfamidi' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_ifm_smg' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_jual_ifm_ckl' => [
                 'nullable',
                 'numeric',
                 'min:0',

@@ -3,9 +3,9 @@
 @section('title', 'Sampling Mutu Minyak Goreng - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-create.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/minyak/minyak.css') }}?v={{ filemtime(public_path('css/gudang/qc/minyak/minyak.css')) }}">
 @endpush
 
 @section('content')
@@ -28,16 +28,20 @@
         return array_values(array_unique($cats));
     };
 
-    // Filter PO KHUSUS Minyak Saja (Hanya PO yang memuat komoditas MINYAK)
-    $minyakPos = $pos->filter(function($p) use ($getPoCommodities, $selectedPo) {
+    // Filter PO KHUSUS Minyak Saja (Hanya PO yang memuat komoditas MINYAK dan masih ada sisa belum diuji QC)
+    $minyakPos = $pos->filter(function($p) use ($getPoCommodities, $classifyBarang, $selectedPo) {
         if ($selectedPo && $selectedPo->po_id == $p->po_id) return true;
         $cats = $getPoCommodities($p);
-        return in_array('MINYAK', $cats);
+        if (!in_array('MINYAK', $cats)) return false;
+        $minyakItems = $p->details->filter(fn($d) => $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'MINYAK');
+        return $minyakItems->some(fn($d) => $d->sisa_belum_qc_qty > 0);
     });
 
-    // Filter Supplier khusus Minyak (Vendor Non-Petani / Bahan Penolong)
-    $minyakSuppliers = $suppliers->filter(function($s) use ($selectedPo) {
+    // Filter Supplier khusus Minyak (Vendor Non-Petani / Bahan Penolong + pastikan supplier dari PO Minyak ikut disertakan)
+    $minyakPoSupplierIds = $minyakPos->pluck('supplier_id')->filter()->unique()->toArray();
+    $minyakSuppliers = $suppliers->filter(function($s) use ($selectedPo, $minyakPoSupplierIds) {
         if ($selectedPo && $selectedPo->supplier_id == $s->supplier_id) return true;
+        if (in_array($s->supplier_id, $minyakPoSupplierIds)) return true;
         $cd = strtoupper($s->supplier_cd ?? '');
         $isPetani = str_starts_with($cd, 'SKG-') || ($s->jenisSupplier?->jenis_supplier_cd === 'RAW');
         return !$isPetani;
@@ -182,8 +186,9 @@
                                 @foreach ($minyakPos as $p)
                                     @php
                                         $poCats = $getPoCommodities($p);
-                                        $itemNames = $p->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
-                                        $totalSisa = $p->details->sum(fn($d) => max(0, (float)$d->pesan_qty - (float)$d->terima_qty));
+                                        $minyakItems = $p->details->filter(fn($d) => $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'MINYAK');
+                                        $itemNames = $minyakItems->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                                        $totalSisa = $minyakItems->sum(fn($d) => $d->sisa_belum_qc_qty);
                                     @endphp
                                     <option value="{{ $p->po_id }}"
                                             data-komoditas="{{ implode(',', $poCats) }}"
@@ -197,8 +202,9 @@
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label">Gudang Bongkar <span style="color:#ef4444;">*</span></label>
+                                <span id="badgeLockGudang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="gudang_id" id="gudangSelect" class="form-control" required style="font-size: 0.85rem; font-weight: 700;">
                                 @foreach ($gudangs as $g)
@@ -231,8 +237,9 @@
 
                     {{-- 2. NAMA BAHAN BAKU (MASTER BARANG DENGAN SATUAN KG / LITER) --}}
                     <div class="form-group" style="margin-bottom: 0;">
-                        <div class="qc-field-header">
+                        <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                             <label class="qc-field-label">Nama Bahan Baku <span style="color:#ef4444;">*</span></label>
+                            <span id="badgeLockBarang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                         </div>
                         <select name="minyak_barang_id" id="minyakBarangSelect" class="form-control" style="font-weight: 700;" onchange="syncNamaRmFromSelect(this); onMinyakBarangChanged(this);">
                             @foreach ($barangs as $b)
@@ -254,16 +261,17 @@
                         <input type="hidden" name="minyak_satuan" id="inputMinyakSatuan" value="{{ old('minyak_satuan', 'KG') }}">
                     </div>
 
-                    {{-- 3. MITRA VENDOR & NAMA PRODUSEN (DIDIKATKAN MENJADI SATU KELOMPOK & BISA DIEDIT LANGSUNG) --}}
+                    {{-- 3. MITRA VENDOR / SUPPLIER MINYAK --}}
                     <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
-                                    Mitra Vendor / Supplier Minyak <span style="color:#ef4444;">*</span>
+                                    Mitra Supplier / Produsen Minyak <span style="color:#ef4444;">*</span>
                                 </label>
+                                <span id="badgeLockSupplier" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700; font-size: 0.85rem;">
-                                <option value="">-- Pilih Mitra Vendor / Supplier Minyak --</option>
+                                <option value="">-- Pilih Mitra Supplier / Produsen Minyak --</option>
                                 @foreach ($minyakSuppliers as $s)
                                     @php
                                         $jenisCd = $s->jenisSupplier?->jenis_supplier_cd ?: (str_starts_with($s->supplier_cd, 'SKG-') ? 'RAW' : 'BP');
@@ -281,20 +289,13 @@
                             </select>
                         </div>
 
-                        <div class="qc-grid-2col">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
-                                    <label class="qc-field-label">Nama Produsen <span style="font-size: 0.72rem; color: #0284c7; font-weight: normal;">(Bisa diedit/ketik)</span></label>
-                                </div>
-                                <input type="text" name="nama_produsen" id="namaProdusenInput" class="form-control" placeholder="PT Sari Agro Mandiri" value="{{ old('nama_produsen', 'PT Sari Agro Mandiri') }}" style="font-weight: 700;">
+                        <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 0;">
+                            <div class="qc-field-header">
+                                <label class="qc-field-label">Negara Produsen</label>
                             </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
-                                    <label class="qc-field-label">Negara Produsen <span style="font-size: 0.72rem; color: #0284c7; font-weight: normal;">(Bisa diedit)</span></label>
-                                </div>
-                                <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}" style="font-weight: 700;">
-                            </div>
+                            <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}" style="font-weight: 700;">
                         </div>
+                        <input type="hidden" name="nama_produsen" id="namaProdusenInput" value="{{ old('nama_produsen') }}">
                     </div>
 
                     {{-- 4. NOMOR DO (SURAT JALAN) & TANGGAL DATANG (SEJAJAR & EDITABLE) --}}
@@ -547,16 +548,27 @@
                 'items'       => $p->details->filter(function ($d) use ($classifyBarang) {
                     return $classifyBarang($d->barang?->barang_nm, $d->barang?->barang_cd) === 'MINYAK';
                 })->map(function ($d) {
-                    return [
-                        'podtl_id'  => $d->podtl_id,
-                        'barang_id' => $d->barang_id,
-                        'barang_nm' => $d->barang?->barang_nm,
-                        'satuan'    => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'KG'),
-                        'satuan_cd' => strtoupper($d->barang?->satuanDasar?->satuan_cd ?? 'KG'),
-                        'pesan_qty' => (float) $d->pesan_qty,
-                        'terima_qty'=> (float) $d->terima_qty,
-                        'sisa_qty'  => max(0, (float) $d->pesan_qty - (float) $d->terima_qty),
-                    ];
+                $pesanQty = (float) $d->pesan_qty;
+                $terimaQty = (float) $d->terima_qty;
+                $qcTestedQty = (float) $d->qc_tested_qty;
+                $sisaBelumQc = max(0, $pesanQty - max($terimaQty, $qcTestedQty));
+                $isSelesaiQc = $sisaBelumQc <= 0 || ($terimaQty >= $pesanQty);
+                $qcStatus = $isSelesaiQc ? 'SELESAI' : ($qcTestedQty > 0 ? 'SEBAGIAN' : 'BELUM');
+
+                return [
+                    'podtl_id'       => $d->podtl_id,
+                    'barang_id'      => $d->barang_id,
+                    'barang_nm'      => $d->barang?->barang_nm,
+                    'satuan'         => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'KG'),
+                    'satuan_cd'      => strtoupper($d->barang?->satuanDasar?->satuan_cd ?? 'KG'),
+                    'pesan_qty'      => $pesanQty,
+                    'terima_qty'     => $terimaQty,
+                    'sisa_qty'       => max(0, $pesanQty - $terimaQty),
+                    'qc_tested_qty'  => $qcTestedQty,
+                    'sisa_belum_qc'  => $sisaBelumQc,
+                    'qc_status'      => $qcStatus,
+                    'is_selesai_qc'  => $isSelesaiQc,
+                ];
                 })->values(),
             ]
         ];
@@ -573,7 +585,7 @@
             poListData: {!! json_encode($poListData) !!}
         };
     </script>
-    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/minyak/minyak-create.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/minyak/minyak.js') }}?v={{ filemtime(public_path('js/gudang/qc/minyak/minyak.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/minyak/minyak-create.js') }}?v={{ filemtime(public_path('js/gudang/qc/minyak/minyak-create.js')) }}"></script>
 @endpush
 @endsection

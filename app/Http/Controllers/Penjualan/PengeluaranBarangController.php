@@ -29,26 +29,31 @@ class PengeluaranBarangController extends Controller
         $perPage  = (int) $request->input('per_page', 15);
         $search   = $request->input('search');
         $status   = $request->input('status');
-        $dateFrom = $request->input('date_from');
-        $dateTo   = $request->input('date_to');
+        $date     = $request->input('date');
 
         $suratJalanList = $this->pengeluaranService->getAllPaginated(
             perPage: $perPage,
             search: $search,
             status: $status,
-            dateFrom: $dateFrom,
-            dateTo: $dateTo
+            date: $date
         );
 
         $metrics = $this->pengeluaranService->getMetrics();
+        $readyOrders = $this->pengeluaranService->getReadyToShipOrders();
+        
+        $tab = $request->input('tab');
+        if (!$tab) {
+            $tab = ($search || $status || $date) ? 'sj' : 'antrean';
+        }
 
         return view('penjualan.pengeluaran.index', compact(
             'suratJalanList',
             'metrics',
+            'readyOrders',
             'search',
             'status',
-            'dateFrom',
-            'dateTo'
+            'date',
+            'tab'
         ));
     }
 
@@ -69,7 +74,9 @@ class PengeluaranBarangController extends Controller
             }
         }
 
-        $defaultSjNo = $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
+        $defaultSjNo = !empty($prefilledData['order']->surat_jalan_no)
+            ? $prefilledData['order']->surat_jalan_no
+            : $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
 
         return view('penjualan.pengeluaran.create', compact(
             'readyOrders',
@@ -146,18 +153,45 @@ class PengeluaranBarangController extends Controller
         $custCdUpper = strtoupper($pengeluaran->customer?->customer_cd ?? '');
         $klasifikasi = $pengeluaran->customer?->klasifikasi;
 
-        $isIfm = $tipeParam === 'ifm' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && (
+        // 1. Deteksi Khusus IFM (Indofood)
+        $isIfm = $tipeParam === 'ifm' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && $tipeParam !== 'alfa' && $tipeParam !== 'midi' && $tipeParam !== 'idm' && (
             $klasifikasi === 'IFM' ||
             str_contains($custNmUpper, 'INDOFOOD') ||
             str_contains($custNmUpper, 'IFM') ||
             str_contains($custNmUpper, 'FORTUNA') ||
-            str_contains($custCdUpper, 'IFM') ||
-            str_contains($custCdUpper, 'INDOFOOD')
+            str_contains($custCdUpper, 'IFM')
+        ));
+
+        // 2. Deteksi Khusus ALFA & MIDI (Alfamart & Alfamidi - Layout Sama Sesuai Standar Mirasa)
+        $isAlfaMidi = $tipeParam === 'alfa' || $tipeParam === 'midi' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && $tipeParam !== 'ifm' && $tipeParam !== 'idm' && (
+            $klasifikasi === 'MIDI_ALFA' ||
+            str_contains($custCdUpper, 'ALFA') ||
+            str_contains($custCdUpper, 'MIDI') ||
+            str_contains($custNmUpper, 'ALFA') ||
+            str_contains($custNmUpper, 'SUMBER ALFARIA') ||
+            str_contains($custNmUpper, 'MIDI') ||
+            str_contains($custNmUpper, 'MIDI UTAMA')
+        ));
+
+        // 3. Deteksi Khusus IDM (Indomaret)
+        $isIdm = $tipeParam === 'idm' || ($tipeParam !== 'ppn' && $tipeParam !== 'non_ppn' && $tipeParam !== 'ifm' && $tipeParam !== 'alfa' && $tipeParam !== 'midi' && (
+            $klasifikasi === 'IDM' ||
+            str_contains($custCdUpper, 'IDM') ||
+            str_contains($custCdUpper, 'DC-YOGYA') ||
+            str_contains($custNmUpper, 'INDOMARET')
         ));
 
         if ($isIfm) {
             $viewName = 'penjualan.so.pdf_surat_jalan_ifm';
             $prefix = 'SURAT_JALAN_IFM-';
+            $isPpn = false;
+        } elseif ($isAlfaMidi) {
+            $viewName = 'penjualan.so.pdf_surat_jalan_alfa';
+            $prefix = (str_contains($custCdUpper, 'MIDI') || str_contains($custNmUpper, 'MIDI')) ? 'SURAT_JALAN_MIDI-' : 'SURAT_JALAN_ALFA-';
+            $isPpn = false;
+        } elseif ($isIdm) {
+            $viewName = 'penjualan.so.pdf_surat_jalan_idm';
+            $prefix = 'SURAT_JALAN_IDM-';
             $isPpn = false;
         } else {
             $fakturUpper = strtoupper($order?->faktur_no ?? '');

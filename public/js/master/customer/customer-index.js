@@ -152,7 +152,7 @@ function handleKlasifikasiChange(prefix) {
             refElem.placeholder = 'Contoh: IFM01.012007';
         }
         if (ppnGroup) ppnGroup.style.display = 'none';
-    } else if (val === 'IDM_ALFA') {
+    } else if (val === 'MIDI_ALFA' || val === 'IDM' || val === 'IDM_ALFA') {
         if (topElem) {
             topElem.value = '';
             topElem.placeholder = 'Tidak ada TOP (Kosong / -)';

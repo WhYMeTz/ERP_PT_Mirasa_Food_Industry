@@ -435,5 +435,217 @@ function updateLivePreview() {
     });
 }
 
+/**
+ * Modal Beri Nomor Batch (Buffer Stock IFM) pada Indeks Hasil Produksi
+ */
+function openAssignBatchModal(id, no, qtyKarton) {
+    closeAllActionDropdowns();
+    const modal = document.getElementById('modalAssignBatch');
+    if (!modal) return;
+
+    const docNoEl = document.getElementById('assignBatchDocNo');
+    const form = document.getElementById('formAssignBatch');
+    const qtyDisplay = document.getElementById('assign_qty_karton_display');
+    const qtyInput = document.getElementById('assign_qty_karton');
+
+    if (docNoEl) docNoEl.textContent = no || '-';
+    if (form) form.action = '/produksi/' + id + '/assign-batch';
+    if (qtyDisplay) qtyDisplay.value = (qtyKarton || 0) + ' Box';
+    if (qtyInput) qtyInput.value = qtyKarton || 0;
+
+    calculateAssignBatchPreview();
+
+    modal.style.display = 'flex';
+}
+window.openAssignBatchModal = openAssignBatchModal;
+
+function closeModalAssignBatch() {
+    const modal = document.getElementById('modalAssignBatch');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+window.closeModalAssignBatch = closeModalAssignBatch;
+
+function calculateAssignBatchPreview() {
+    const tglInput = document.getElementById('assign_tgl_keberangkatan');
+    const shiftSelect = document.getElementById('assign_shift_cd');
+    const awalInput = document.getElementById('assign_no_karton_awal');
+    const qtyInput = document.getElementById('assign_qty_karton');
+
+    const liveBatchText = document.getElementById('assignLiveBatchText');
+    const liveExpDate = document.getElementById('assignLiveExpDate');
+    const badgeRentang = document.getElementById('assignBadgeRentang');
+
+    const tgl = tglInput?.value || '';
+    const shift = shiftSelect?.value || 'A';
+    const noAwal = parseInt(awalInput?.value) || 1;
+    const qty = parseInt(qtyInput?.value) || 0;
+    const noAkhir = qty > 0 ? (noAwal + qty - 1) : noAwal;
+
+    const padAwal = String(noAwal).padStart(4, '0');
+    const padAkhir = String(noAkhir).padStart(4, '0');
+
+    const batchCode = `${shift}${padAwal} - ${shift}${padAkhir}`;
+
+    if (liveBatchText) liveBatchText.textContent = batchCode;
+    if (badgeRentang) badgeRentang.textContent = `${qty} Karton (No. ${padAwal} s/d ${padAkhir})`;
+
+    if (tgl && liveExpDate) {
+        const d = new Date(tgl);
+        if (!isNaN(d.getTime())) {
+            d.setMonth(d.getMonth() + 6);
+            const expDay = String(d.getDate()).padStart(2, '0');
+            const expMonth = String(d.getMonth() + 1).padStart(2, '0');
+            const expYear = d.getFullYear();
+            liveExpDate.textContent = `${expDay}/${expMonth}/${expYear}`;
+        }
+    }
+}
+window.calculateAssignBatchPreview = calculateAssignBatchPreview;
+
+/**
+ * ═════════════════════════════════════════════════════════════════
+ * MASTER TAB SWITCHING TRANSITION & ENTERPRISE AUDIT LOADING
+ * Memberikan feedback instan, elegan, dan informatif saat berpindah
+ * antara 1. HPP Olahan Dapur & 2. HPP Pengemasan
+ * ═════════════════════════════════════════════════════════════════
+ */
+
+let hppProgressBarEl = null;
+let hppOverlayEl = null;
+let isHppTransitionActive = false;
+
+function initHppTabTransitions() {
+    // 1. Buat slim top progress bar jika belum ada
+    if (!document.getElementById('hppTopProgressBar')) {
+        hppProgressBarEl = document.createElement('div');
+        hppProgressBarEl.id = 'hppTopProgressBar';
+        hppProgressBarEl.className = 'hpp-top-progress-bar';
+        document.body.appendChild(hppProgressBarEl);
+    } else {
+        hppProgressBarEl = document.getElementById('hppTopProgressBar');
+    }
+
+    // 2. Buat overlay loading modern universal (Frosted Glass Pill + Gyroscope Dual Orbit)
+    if (!document.getElementById('hppTabTransitionOverlay')) {
+        hppOverlayEl = document.createElement('div');
+        hppOverlayEl.id = 'hppTabTransitionOverlay';
+        hppOverlayEl.className = 'hpp-transition-overlay';
+        hppOverlayEl.innerHTML = `
+            <div class="hpp-modern-pill-loader">
+                <div class="hpp-gyro-container">
+                    <svg class="hpp-gyro-svg" viewBox="0 0 40 40">
+                        <defs>
+                            <linearGradient id="hppGyroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#059669" stop-opacity="1" />
+                                <stop offset="60%" stop-color="#10b981" stop-opacity="0.8" />
+                                <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+                            </linearGradient>
+                            <linearGradient id="hppInnerGrad" x1="100%" y1="100%" x2="0%" y2="0%">
+                                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+                                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="20" cy="20" r="16" fill="none" stroke="#f1f5f9" stroke-width="2.5" />
+                        <circle class="hpp-gyro-outer" cx="20" cy="20" r="16" fill="none" stroke="url(#hppGyroGrad)" stroke-width="2.75" stroke-linecap="round" />
+                        <circle class="hpp-gyro-inner" cx="20" cy="20" r="10.5" fill="none" stroke="url(#hppInnerGrad)" stroke-width="2.25" stroke-linecap="round" />
+                        <circle class="hpp-gyro-core" cx="20" cy="20" r="3" fill="#059669" />
+                    </svg>
+                </div>
+                <span class="hpp-modern-label">
+                    Memuat<span class="hpp-modern-dots"><span class="hpp-dot hpp-dot-1">.</span><span class="hpp-dot hpp-dot-2">.</span><span class="hpp-dot-3">.</span></span>
+                </span>
+            </div>
+        `;
+        document.body.appendChild(hppOverlayEl);
+    } else {
+        hppOverlayEl = document.getElementById('hppTabTransitionOverlay');
+    }
+
+    // 3. Pasang Event Listener pada tab master yang tidak aktif
+    document.querySelectorAll('.hpp-master-tab:not(.active)').forEach(tab => {
+        tab.addEventListener('click', function (e) {
+            if (isHppTransitionActive) {
+                e.preventDefault();
+                return;
+            }
+
+            const targetHref = this.getAttribute('href');
+            if (!targetHref || targetHref === '#' || targetHref.startsWith('javascript:')) return;
+
+            triggerModernHppTransition(this);
+        });
+    });
+
+    // 4. Pasang Event Listener pada toggle Harian vs Bulanan
+    document.querySelectorAll('.hpp-view-btn:not(.active)').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            if (isHppTransitionActive) {
+                e.preventDefault();
+                return;
+            }
+            const targetHref = this.getAttribute('href');
+            if (!targetHref || targetHref === '#') return;
+
+            triggerModernHppTransition(this);
+        });
+    });
+
+    // 5. Pasang Event Delegation untuk Tombol & Link "Tarik & Finalisasi HPP", "+ Kalkulasi Lembar HPP", dll.
+    document.addEventListener('click', function (e) {
+        const target = e.target.closest('a, button');
+        if (!target) return;
+
+        const href = target.getAttribute('href') || '';
+        const text = (target.textContent || '').trim();
+
+        const isTarikHpp = 
+            (href && (href.includes('/produksi/hpp/create') || href.includes('/packaging/hpp/create'))) ||
+            text.includes('Tarik & Finalisasi HPP') ||
+            text.includes('Kalkulasi Lembar HPP') ||
+            target.classList.contains('btn-tarik-finalisasi-hpp') ||
+            target.classList.contains('btn-loading-trigger') ||
+            target.dataset.loading === 'true';
+
+        if (isTarikHpp) {
+            triggerModernHppTransition(target);
+        }
+    }, true);
+}
+
+function triggerModernHppTransition(clickedEl) {
+    isHppTransitionActive = true;
+    if (clickedEl && clickedEl.classList) clickedEl.classList.add('is-switching');
+
+    if (hppProgressBarEl) {
+        hppProgressBarEl.style.width = '35%';
+        setTimeout(() => { if (isHppTransitionActive) hppProgressBarEl.style.width = '75%'; }, 120);
+        setTimeout(() => { if (isHppTransitionActive) hppProgressBarEl.style.width = '95%'; }, 350);
+    }
+
+    if (hppOverlayEl) {
+        hppOverlayEl.classList.add('is-visible');
+    }
+}
+
+// Ekspos global agar bisa dipanggil langsung dari inline onclick atau skrip lain
+window.triggerModernHppTransition = triggerModernHppTransition;
+window.triggerPageLoading = triggerModernHppTransition;
+
+// Bersihkan overlay jika halaman dipulihkan dari cache peramban (misal tombol Back ditekan)
+window.addEventListener('pageshow', function () {
+    isHppTransitionActive = false;
+    if (hppOverlayEl) hppOverlayEl.classList.remove('is-visible');
+    if (hppProgressBarEl) hppProgressBarEl.style.width = '0%';
+    document.querySelectorAll('.is-switching').forEach(el => el.classList.remove('is-switching'));
+});
+
+// Jalankan inisialisasi saat DOM siap
+document.addEventListener('DOMContentLoaded', function () {
+    initHppTabTransitions();
+});
+
+
 
 

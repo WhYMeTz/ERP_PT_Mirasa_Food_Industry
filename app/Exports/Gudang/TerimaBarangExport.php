@@ -240,7 +240,9 @@ class TerimaBarangExport
             $sheet->setCellValue('M' . $row, $dtl->header?->supplier?->supplier_nm ?? '-');
             $sheet->setCellValue('N' . $row, $dtl->header?->po?->po_no ?? 'Non-PO');
             $sheet->setCellValue('O' . $row, $tglExp);
-            $sheet->setCellValue('P' . $row, $dtl->grade_cd ?? 'A');
+            $exportGrade = strtoupper(trim((string)$dtl->grade_cd));
+            $isExpNonGrade = in_array($exportGrade, ['NON-GRADE', 'NON_GRADE', 'NON GRADE']) || ($dtl->barang && !$dtl->barang->hasGrade());
+            $sheet->setCellValue('P' . $row, $isExpNonGrade ? 'Non Grade' : ($exportGrade ?: 'A'));
             $sheet->setCellValue('Q' . $row, $diskonPct > 0 ? $diskonPct / 100 : null);
             $sheet->setCellValue('R' . $row, $potonganItem > 0 ? $potonganItem : null);
             $sheet->setCellValue('S' . $row, $isItemPpn ? 'PPN 11%' : 'Non-Pajak');

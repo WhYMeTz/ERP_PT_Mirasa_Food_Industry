@@ -20,6 +20,9 @@ class DatSoReturDtl extends Model
         'barang_id',
         'batch_no',
         'qty_retur',
+        'qty_masuk_persediaan',
+        'qty_dimusnahkan',
+        'perlakuan_cd',
         'harga_satuan',
         'subtotal_nilai',
         'kondisi_cd',
@@ -27,9 +30,11 @@ class DatSoReturDtl extends Model
     ];
 
     protected $casts = [
-        'qty_retur'      => 'decimal:4',
-        'harga_satuan'   => 'decimal:4',
-        'subtotal_nilai' => 'decimal:4',
+        'qty_retur'            => 'decimal:4',
+        'qty_masuk_persediaan' => 'decimal:4',
+        'qty_dimusnahkan'      => 'decimal:4',
+        'harga_satuan'         => 'decimal:4',
+        'subtotal_nilai'       => 'decimal:4',
     ];
 
     public function header(): BelongsTo
@@ -55,6 +60,15 @@ class DatSoReturDtl extends Model
             'EXPIRED'        => 'Mendekati Kadaluarsa',
             'CACAT_PRODUKSI' => 'Cacat Mutu / Gosong',
             default          => 'Lainnya / Sortir',
+        };
+    }
+
+    public function getPerlakuanLabelAttribute(): string
+    {
+        return match ($this->perlakuan_cd) {
+            'DIMUSNAHKAN'      => 'Dimusnahkan (Scrap)',
+            'CAMPUR'           => 'Pecah (Sebagian Masuk & Sebagian Musnah)',
+            default            => 'Masuk Persediaan (Sortir KW 2)',
         };
     }
 }

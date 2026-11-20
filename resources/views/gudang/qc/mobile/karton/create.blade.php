@@ -3,9 +3,9 @@
 @section('title', 'Sampling Mutu Karton Box - PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-form.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/mobile/qc-create.css') }}?v={{ filemtime(public_path('css/gudang/qc/mobile/qc-create.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/qc/karton/karton.css') }}?v={{ filemtime(public_path('css/gudang/qc/karton/karton.css')) }}">
 @endpush
 
 @section('content')
@@ -53,10 +53,13 @@
         return array_values(array_unique($cats));
     };
 
-    // Filter PO KHUSUS Karton Box Saja (Hanya PO yang memuat komoditas KARTON)
-    $kartonPos = $pos->filter(function($p) use ($getPoCommodities) {
+    // Filter PO KHUSUS Karton Box Saja (Hanya PO yang memuat komoditas KARTON dan masih ada sisa belum diuji QC)
+    $kartonPos = $pos->filter(function($p) use ($getPoCommodities, $classifyBarang, $selectedPo) {
+        if ($selectedPo && $selectedPo->po_id == $p->po_id) return true;
         $cats = $getPoCommodities($p);
-        return in_array('KARTON', $cats);
+        if (!in_array('KARTON', $cats)) return false;
+        $kartonItems = $p->details->filter(fn($d) => $classifyBarang($d) === 'KARTON');
+        return $kartonItems->some(fn($d) => $d->sisa_belum_qc_qty > 0);
     });
 
     // Mapping Data PO Lengkap ke Format JSON untuk Auto-Fill Instan Tanpa Delay
@@ -72,24 +75,37 @@
                 'items'       => $p->details->filter(function ($d) use ($classifyBarang) {
                     return $classifyBarang($d) === 'KARTON';
                 })->map(function ($d) {
-                    return [
-                        'podtl_id'  => $d->podtl_id,
-                        'barang_id' => $d->barang_id,
-                        'barang_nm' => $d->barang?->barang_nm,
-                        'satuan'    => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'PCS'),
-                        'satuan_cd' => strtoupper($d->barang?->satuanDasar?->satuan_cd ?? 'PCS'),
-                        'pesan_qty' => (float) $d->pesan_qty,
-                        'terima_qty'=> (float) $d->terima_qty,
-                        'sisa_qty'  => max(0, (float) $d->pesan_qty - (float) $d->terima_qty),
-                    ];
+                $pesanQty = (float) $d->pesan_qty;
+                $terimaQty = (float) $d->terima_qty;
+                $qcTestedQty = (float) $d->qc_tested_qty;
+                $sisaBelumQc = max(0, $pesanQty - max($terimaQty, $qcTestedQty));
+                $isSelesaiQc = $sisaBelumQc <= 0 || ($terimaQty >= $pesanQty);
+                $qcStatus = $isSelesaiQc ? 'SELESAI' : ($qcTestedQty > 0 ? 'SEBAGIAN' : 'BELUM');
+
+                return [
+                    'podtl_id'       => $d->podtl_id,
+                    'barang_id'      => $d->barang_id,
+                    'barang_nm'      => $d->barang?->barang_nm,
+                    'satuan'         => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'PCS'),
+                    'satuan_cd'      => strtoupper($d->barang?->satuanDasar?->satuan_cd ?? 'PCS'),
+                    'pesan_qty'      => $pesanQty,
+                    'terima_qty'     => $terimaQty,
+                    'sisa_qty'       => max(0, $pesanQty - $terimaQty),
+                    'qc_tested_qty'  => $qcTestedQty,
+                    'sisa_belum_qc'  => $sisaBelumQc,
+                    'qc_status'      => $qcStatus,
+                    'is_selesai_qc'  => $isSelesaiQc,
+                ];
                 })->values(),
             ]
         ];
     });
 
-    // Filter Supplier khusus Karton (Vendor Box / Non-Petani)
-    $kartonSuppliers = $suppliers->filter(function($s) use ($selectedPo, $kartonPos) {
+    // Filter Supplier khusus Karton (Vendor Box / Non-Petani + pastikan seluruh supplier dari PO Karton ikut disertakan)
+    $kartonPoSupplierIds = $kartonPos->pluck('supplier_id')->filter()->unique()->toArray();
+    $kartonSuppliers = $suppliers->filter(function($s) use ($selectedPo, $kartonPoSupplierIds) {
         if ($selectedPo && $selectedPo->supplier_id == $s->supplier_id) return true;
+        if (in_array($s->supplier_id, $kartonPoSupplierIds)) return true;
         $cd = strtoupper($s->supplier_cd ?? '');
         $isPetani = str_starts_with($cd, 'SKG-') || ($s->jenisSupplier?->jenis_supplier_cd === 'RAW');
         return !$isPetani;
@@ -234,12 +250,14 @@
                                     @foreach ($kartonPos as $p)
                                         @php
                                             $poCats = $getPoCommodities($p);
-                                            $itemNames = $p->details->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
-                                            $totalSisa = $p->details->sum(fn($d) => max(0, (float)$d->pesan_qty - (float)$d->terima_qty));
+                                            $kartonItems = $p->details->filter(fn($d) => $classifyBarang($d) === 'KARTON');
+                                            $itemNames = $kartonItems->map(fn($d) => $d->barang?->barang_nm)->filter()->unique()->implode(', ');
+                                            $totalSisa = $kartonItems->sum(fn($d) => $d->sisa_belum_qc_qty);
                                         @endphp
                                         <option value="{{ $p->po_id }}"
                                                 data-komoditas="{{ implode(',', $poCats) }}"
                                                 data-supplier-id="{{ $p->supplier_id }}"
+                                                data-supplier-nm="{{ $p->supplier?->supplier_nm }}"
                                                 data-gudang-id="{{ $p->gudang_id }}"
                                                 data-search="{{ strtolower($p->po_no . ' ' . ($p->supplier?->supplier_nm ?? '') . ' ' . $itemNames) }}"
                                                 {{ old('po_id', $selectedPo?->po_id) == $p->po_id ? 'selected' : '' }}>
@@ -250,8 +268,9 @@
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label">Gudang Bongkar <span style="color:#ef4444;">*</span></label>
+                                <span id="badgeLockGudang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="gudang_id" id="gudangSelect" class="form-control" required style="font-size: 0.85rem; font-weight: 700;">
                                 @foreach ($gudangs as $g)
@@ -280,16 +299,17 @@
                         </div>
                     </div>
 
-                    {{-- 3. MITRA VENDOR & NAMA PRODUSEN (SUBCARD KELOMPOK) --}}
+                    {{-- 3. MITRA VENDOR / SUPPLIER KARTON --}}
                     <div class="karton-subcard">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <div class="qc-field-header">
+                            <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
-                                    Mitra Vendor / Supplier Karton Box <span style="color:#ef4444;">*</span>
+                                    Mitra Supplier / Produsen Box <span style="color:#ef4444;">*</span>
                                 </label>
+                                <span id="badgeLockSupplier" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                             </div>
                             <select name="supplier_id" id="supplierSelect" class="form-control" required onchange="onSupplierSelected(this)" style="font-weight: 700; font-size: 0.85rem;">
-                                <option value="">-- Pilih Mitra Vendor Karton --</option>
+                                <option value="">-- Pilih Mitra Supplier / Produsen Box --</option>
                                 @foreach ($kartonSuppliers as $s)
                                     <option value="{{ $s->supplier_id }}"
                                             data-supplier-cd="{{ $s->supplier_cd }}"
@@ -324,10 +344,11 @@
                         <div class="qc-grid-2col">
                             {{-- NAMA BAHAN BAKU (MASTER BARANG KARTON BOX) --}}
                             <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
+                                <div class="qc-field-header" style="display: flex; justify-content: space-between; align-items: center;">
                                     <label class="qc-field-label" style="font-weight: 800; color: #0f172a;">
                                         Nama Bahan Baku Box <span style="color:#ef4444;">*</span>
                                     </label>
+                                    <span id="badgeLockBarang" class="badge-po-locked" style="display: none; font-size: 0.7rem; font-weight: 800; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">🔒 Terkunci dari PO</span>
                                 </div>
                                 <select name="karton_barang_id" id="kartonBarangSelect" class="form-control" style="font-weight: 700;" onchange="onKartonBarangChanged(this)" required>
                                     @foreach ($barangs as $b)
@@ -366,17 +387,18 @@
                         <div class="qc-grid-2col">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <div class="qc-field-header">
-                                    <label class="qc-field-label">Nama Produsen <span style="font-size: 0.72rem; color: #d97706; font-weight: normal;">(Bisa diketik)</span></label>
-                                </div>
-                                <input type="text" name="nama_produsen" id="namaProdusenInput" class="form-control" placeholder="Contoh: PT Fajar Surya Box" value="{{ old('nama_produsen') }}" style="font-weight: 700;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div class="qc-field-header">
                                     <label class="qc-field-label">Nomor Delivery Order (DO)</label>
                                 </div>
                                 <input type="text" name="nomor_do" class="form-control" placeholder="Contoh: DO-BOX-2026/04" value="{{ old('nomor_do') }}" style="font-weight: 700;">
                             </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="qc-field-header">
+                                    <label class="qc-field-label">Negara Produsen</label>
+                                </div>
+                                <input type="text" name="negara_produsen" class="form-control" value="{{ old('negara_produsen', 'Indonesia') }}" style="font-weight: 700;">
+                            </div>
                         </div>
+                        <input type="hidden" name="nama_produsen" id="namaProdusenInput" value="{{ old('nama_produsen') }}">
                     </div>
 
                     {{-- 4. PLAT TRUK / KENDARAAN & NAMA SOPIR (2 KOLOM SEJAJAR) --}}
@@ -420,7 +442,7 @@
                                     <label class="qc-field-label">Jumlah Surat Jalan (<span class="label-satuan-karton">PCS</span>) <span style="color:#ef4444;">*</span></label>
                                 </div>
                                 <div class="input-suffix-wrap">
-                                    <input type="number" step="1" min="0.01" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="10000" value="{{ old('jumlah_surat_jalan') }}" style="font-weight: 800;" required>
+                                    <input type="number" step="1" min="0.01" name="jumlah_surat_jalan" id="inputJumlahSJ" class="form-control" placeholder="10000" value="{{ old('jumlah_surat_jalan') }}" style="font-weight: 800;" oninput="onKartonQtySplitChanged('sj')" required>
                                     <span class="input-suffix-text suffix-satuan-karton">PCS</span>
                                 </div>
                             </div>
@@ -800,31 +822,54 @@
                     </div>
                 </div>
 
-                {{-- SUBCARD 4: HASIL PEMERIKSAAN KUANTITAS --}}
+                {{-- SUBCARD 4: HASIL PEMERIKSAAN KUANTITAS & SPLIT GRADE MUTU --}}
                 <div class="karton-subcard amber-accent">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem;">
                         <span class="karton-subcard-title">
-                            <span>⚖️</span> <span>HASIL PEMERIKSAAN KUANTITAS</span>
+                            <span>⚖️</span> <span>HASIL KUANTITAS PER GRADE KARTON</span>
                         </span>
-                        <span id="labelKartonNetto" style="font-size: 0.95rem; font-weight: 900; color: #b45309; background: #ffffff; padding: 4px 12px; border-radius: 8px; border: 1.5px solid #fde68a;">
-                            0 Pcs
-                        </span>
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Total Lolos:</span>
+                            <span id="labelKartonNetto" style="font-size: 0.95rem; font-weight: 900; color: #b45309; background: #ffffff; padding: 4px 12px; border-radius: 8px; border: 1.5px solid #fde68a;">
+                                0 Pcs
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="qc-grid-2col">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" style="font-weight: 800; color: #0f172a;">Jumlah Lolos (<span class="label-satuan-karton">PCS</span>) <span style="color:#ef4444;">*</span></label>
+                    {{-- 2 INPUT GRADE A & GRADE B --}}
+                    <div class="qc-grid-2col" style="margin-bottom: 0.75rem;">
+                        <div class="form-group" style="margin-bottom: 0; background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 0.65rem 0.75rem;">
+                            <label class="form-label" style="font-weight: 800; color: #166534; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                                <span>🟢 Qty Grade A (Dus Baru)</span>
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 1px 6px; border-radius: 4px;">Baru</span>
+                            </label>
                             <div class="input-suffix-wrap">
-                                <input type="number" step="1" min="0" name="karton_qty_gross" id="kartonQtyGross" class="form-control" placeholder="0" value="{{ old('karton_qty_gross') }}" style="font-weight: 800;" required>
-                                <span class="input-suffix-text suffix-satuan-karton">PCS</span>
+                                <input type="number" step="1" min="0" name="karton_qty_grade_a" id="kartonQtyGradeA" class="form-control" placeholder="0" value="{{ old('karton_qty_grade_a') }}" style="font-weight: 800; font-size: 1rem; color: #166534;" oninput="onKartonQtySplitChanged('grade_a')">
+                                <span class="input-suffix-text suffix-satuan-karton" style="font-weight: 800; color: #166534;">PCS</span>
                             </div>
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" style="color: #dc2626; font-weight: 800;">Qty Reject / Rusak (<span class="label-satuan-karton">PCS</span>)</label>
+
+                        <div class="form-group" style="margin-bottom: 0; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 0.65rem 0.75rem;">
+                            <label class="form-label" style="font-weight: 800; color: #92400e; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                                <span>🟡 Qty Grade B (Puteran)</span>
+                                <span style="font-size: 0.7rem; font-weight: 700; color: #b45309; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">Reuse</span>
+                            </label>
                             <div class="input-suffix-wrap">
-                                <input type="number" step="1" min="0" name="karton_qty_reject" id="kartonQtyReject" class="form-control" placeholder="0" value="{{ old('karton_qty_reject', 0) }}" style="font-weight: 800;">
-                                <span class="input-suffix-text suffix-satuan-karton">PCS</span>
+                                <input type="number" step="1" min="0" name="karton_qty_grade_b" id="kartonQtyGradeB" class="form-control" placeholder="0" value="{{ old('karton_qty_grade_b', 0) }}" style="font-weight: 800; font-size: 1rem; color: #92400e;" oninput="onKartonQtySplitChanged('grade_b')">
+                                <span class="input-suffix-text suffix-satuan-karton" style="font-weight: 800; color: #92400e;">PCS</span>
                             </div>
+                        </div>
+                    </div>
+
+                    {{-- QTY REJECT / RUSAK --}}
+                    <div class="form-group" style="margin-bottom: 0; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 10px; padding: 0.65rem 0.75rem;">
+                        <label class="form-label" style="color: #991b1b; font-weight: 800; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                            <span>❌ Qty Reject / Rusak (Afkir)</span>
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #dc2626; background: #fee2e2; padding: 1px 6px; border-radius: 4px;">Tolak</span>
+                        </label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" step="1" min="0" name="karton_qty_reject" id="kartonQtyReject" class="form-control" placeholder="0" value="{{ old('karton_qty_reject', 0) }}" style="font-weight: 800; color: #991b1b;" oninput="onKartonQtySplitChanged('reject')">
+                            <span class="input-suffix-text suffix-satuan-karton" style="font-weight: 800; color: #991b1b;">PCS</span>
                         </div>
                     </div>
                 </div>
@@ -961,6 +1006,6 @@
             poListData: @json($poListData)
         };
     </script>
-    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}"></script>
-    <script src="{{ asset('js/gudang/qc/karton/karton-create.js') }}"></script>
+    <script src="{{ asset('js/gudang/qc/karton/karton.js') }}?v={{ filemtime(public_path('js/gudang/qc/karton/karton.js')) }}"></script>
+    <script src="{{ asset('js/gudang/qc/karton/karton-create.js') }}?v={{ filemtime(public_path('js/gudang/qc/karton/karton-create.js')) }}"></script>
 @endpush

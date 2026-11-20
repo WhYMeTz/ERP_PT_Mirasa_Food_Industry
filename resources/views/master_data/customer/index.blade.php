@@ -42,7 +42,7 @@
                     <th>Kode Customer</th>
                     <th>Nama Customer</th>
                     <th>Kategori</th>
-                    <th>Wilayah</th>
+                    <th style="min-width: 170px;">Alamat</th>
                     <th>TOP</th>
                     <th>Format Faktur / PPN</th>
                     <th>Kontak PIC</th>
@@ -63,13 +63,23 @@
                         <td>
                             @if($item->klasifikasi === 'IFM')
                                 <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">IFM (Indofood)</span>
-                            @elseif($item->klasifikasi === 'IDM_ALFA')
-                                <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">IDM / ALFA</span>
+                            @elseif($item->klasifikasi === 'MIDI_ALFA' || $item->klasifikasi === 'IDM_ALFA')
+                                <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">Midi / Alfa</span>
+                            @elseif($item->klasifikasi === 'IDM')
+                                <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">IDM</span>
                             @else
                                 <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">MANUAL</span>
                             @endif
                         </td>
-                        <td style="font-weight: 500;">{{ $item->wilayah ?: '-' }}</td>
+                        <td style="font-size: 0.8125rem; color: #334155; line-height: 1.4; max-width: 250px;">
+                            @if(!empty($item->alamat_txt))
+                                <div style="font-weight: 500;">{{ $item->alamat_txt }}</div>
+                            @elseif(!empty($item->wilayah))
+                                <div style="color: #64748b; font-style: italic;">{{ $item->wilayah }}</div>
+                            @else
+                                <span style="color: #94a3b8;">-</span>
+                            @endif
+                        </td>
                         <td>
                             @if(!empty($item->top_txt))
                                 <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: #fef3c7; color: #92400e; font-weight: 600;">{{ $item->top_txt }}</span>
@@ -80,7 +90,7 @@
                         <td>
                             @if($item->klasifikasi === 'IFM')
                                 <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: #e0f2fe; color: #0369a1; font-weight: 600;">Format MFI (Pabrik)</span>
-                            @elseif($item->klasifikasi === 'IDM_ALFA')
+                            @elseif(in_array($item->klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']))
                                 <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: #f3e8ff; color: #7e22ce; font-weight: 600;">Format Modern Trade (MFI)</span>
                             @elseif($item->default_ppn === 'PPN_11')
                                 <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: #dcfce7; color: #15803d; font-weight: 600;">PPN (PM.A)</span>
@@ -108,7 +118,7 @@
                                     @if (Auth::user()?->canEditMasterCustomer())
                                         <button type="button" 
                                             class="action-dropdown-item" 
-                                            onclick="closeAllActionDropdowns(); editCustomer({{ $item->customer_id }}, '{{ addslashes($item->customer_cd) }}', '{{ addslashes($item->customer_nm) }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes($item->alamat_txt ?? '') }}', '{{ addslashes($item->klasifikasi ?? 'MANUAL') }}', '{{ addslashes($item->wilayah ?? '') }}', '{{ addslashes($item->kode_pelanggan ?? '') }}', '{{ addslashes($item->top_txt ?? '') }}', '{{ addslashes($item->default_ppn ?? 'NON_PPN') }}')">
+                                            onclick="closeAllActionDropdowns(); editCustomer({{ $item->customer_id }}, '{{ addslashes($item->customer_cd) }}', '{{ addslashes($item->customer_nm) }}', '{{ addslashes($item->kontak_no ?? '') }}', '{{ addslashes(str_replace(["\r\n", "\r", "\n"], "\\n", $item->alamat_txt ?? '')) }}', '{{ addslashes($item->klasifikasi ?? 'MANUAL') }}', '{{ addslashes($item->wilayah ?? '') }}', '{{ addslashes($item->kode_pelanggan ?? '') }}', '{{ addslashes($item->top_txt ?? '') }}', '{{ addslashes($item->default_ppn ?? 'NON_PPN') }}')">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             <span>Edit Data Customer</span>
                                         </button>

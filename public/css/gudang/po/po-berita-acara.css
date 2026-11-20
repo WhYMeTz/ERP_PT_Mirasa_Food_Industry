@@ -1,0 +1,270 @@
+/* ==========================================================================
+   BERITA ACARA PEMBATALAN SISA PESANAN (PURCHASE ORDER)
+   PT MIRASA FOOD INDUSTRY - STANDAR DOKUMEN RESMI A4
+   ========================================================================== */
+
+.ba-container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+}
+
+/* Toolbar Atas */
+.ba-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.ba-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.ba-toolbar-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.ba-toolbar-right {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Lembar Berita Acara Resmi */
+.ba-sheet {
+    background: #ffffff;
+    border: 1.5px solid #000000;
+    padding: 2.2rem 2.8rem;
+    font-family: 'Times New Roman', Times, serif;
+    color: #000000;
+    line-height: 1.45;
+    font-size: 11pt;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Kop Tabel HACCP */
+.kop-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000000;
+    margin-bottom: 1.5rem;
+}
+
+.kop-table td {
+    border: 1.5px solid #000000;
+    vertical-align: middle;
+}
+
+.kop-logo-cell {
+    width: 120px;
+    text-align: center;
+    padding: 0.5rem 0.4rem;
+}
+
+.kop-logo-img {
+    width: 65px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.kop-slogan {
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    font-weight: 800;
+    color: #dc2626;
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+}
+
+.kop-title-cell {
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+}
+
+.kop-company-name {
+    font-family: Arial, sans-serif;
+    font-size: 13pt;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #000000;
+}
+
+.kop-form-name {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: 800;
+    margin-top: 0.35rem;
+    color: #000000;
+    line-height: 1.25;
+}
+
+.kop-meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+}
+
+.kop-meta-table td {
+    border: none !important;
+    padding: 3px 6px;
+    border-bottom: 1px solid #000000 !important;
+}
+
+.kop-meta-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* Judul Surat */
+.ba-header-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.ba-main-title {
+    font-size: 13pt;
+    font-weight: 900;
+    text-decoration: underline;
+    letter-spacing: 0.5px;
+}
+
+.ba-doc-no {
+    font-size: 10.5pt;
+    margin-top: 0.25rem;
+    font-weight: 700;
+}
+
+/* Paragraf & Tabel */
+.ba-paragraph {
+    margin-bottom: 1rem;
+    text-align: justify;
+    text-indent: 2.5rem;
+    line-height: 1.5;
+}
+
+.ba-info-table {
+    margin-left: 2.5rem;
+    margin-bottom: 1.25rem;
+    border-collapse: collapse;
+    width: calc(100% - 2.5rem);
+    font-size: 10.5pt;
+}
+
+.ba-info-table td {
+    padding: 2.5px 0;
+    vertical-align: top;
+    border: none;
+}
+
+/* Tabel Data Perbandingan */
+.ba-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000000;
+    margin-bottom: 1.25rem;
+    font-size: 10pt;
+}
+
+.ba-items-table th {
+    border: 1px solid #000000;
+    border-bottom: 2px solid #000000;
+    background-color: #f1f5f9;
+    padding: 6px 6px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.ba-items-table td {
+    border: 1px solid #000000;
+    padding: 5px 6px;
+    vertical-align: middle;
+}
+
+/* Box Alasan */
+.ba-reason-box {
+    border: 1px dashed #64748b;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 10.5pt;
+    line-height: 1.5;
+}
+
+/* Tanda Tangan */
+.ba-signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    text-align: center;
+    font-size: 10.5pt;
+    margin-top: 2rem;
+    page-break-inside: avoid;
+}
+
+.ba-sign-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+}
+
+.ba-sign-role {
+    font-weight: 700;
+}
+
+.ba-sign-name {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* Mode Print Khusus Presisi 1 Halaman A4 */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm 12mm 15mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 10.5pt !important;
+        color: #000000 !important;
+    }
+
+    .no-print, header, footer, nav, .sidebar, .pill-nav {
+        display: none !important;
+    }
+
+    .ba-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .ba-sheet {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    .ba-items-table th {
+        background-color: #f1f5f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+

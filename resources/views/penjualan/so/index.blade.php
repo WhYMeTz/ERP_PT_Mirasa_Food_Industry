@@ -392,14 +392,10 @@
                                     </a>
 
                                     @if ($activeFaktur)
-                                        {{-- Jika Faktur Sudah Terbit: Cetak & Lihat Dokumen Faktur --}}
+                                        {{-- Jika Faktur Sudah Terbit: Cetak Dokumen Faktur (Lihat Detail sudah terpadu di halaman PO) --}}
                                         <a href="{{ route('penjualan.faktur.export-pdf', $activeFaktur->faktur_id) }}" target="_blank" class="action-dropdown-item" style="color: #059669; font-weight: 600;">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                             <span>Cetak Faktur (PDF)</span>
-                                        </a>
-                                        <a href="{{ route('penjualan.faktur.show', $activeFaktur->faktur_id) }}" class="action-dropdown-item">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
-                                            <span>Lihat Faktur Penjualan</span>
                                         </a>
                                     @else
                                         {{-- Wewenang Office: Terbitkan Faktur Penjualan secara Mandiri --}}

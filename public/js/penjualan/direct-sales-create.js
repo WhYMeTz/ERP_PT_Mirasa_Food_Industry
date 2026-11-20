@@ -23,64 +23,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const metodeBayarHidden = document.getElementById('metodeBayar');
     const tabTunai = document.getElementById('tabTunai');
     const tabTransfer = document.getElementById('tabTransfer');
+    const tabQris = document.getElementById('tabQris');
     const submitBtn = document.getElementById('btnSubmitDirectSale');
     const directSalesForm = document.getElementById('directSalesForm');
 
     let rowCounter = 0;
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 1. KATEGORI TRANSAKSI PENJUALAN (UMUM vs SALES KELILING)
-    // ══════════════════════════════════════════════════════════════════════
-    const radioUmum = document.querySelector('input[name="kategori_penjualan"][value="UMUM"]');
-    const radioSales = document.querySelector('input[name="kategori_penjualan"][value="SALES"]');
-    const labelUmum = document.getElementById('labelKategoriUmum');
-    const labelSales = document.getElementById('labelKategoriSales');
-    const sectionUmum = document.getElementById('sectionKategoriUmum');
-    const sectionSales = document.getElementById('sectionKategoriSales');
-    const activeBadge = document.getElementById('activeCategoryBadge');
-    const titleInfo = document.getElementById('titleInfoDokumen');
-
-    function switchCategory(cat) {
-        if (cat === 'SALES') {
-            if (radioSales) radioSales.checked = true;
-            if (labelSales) labelSales.classList.add('active');
-            if (labelUmum) labelUmum.classList.remove('active');
-            if (sectionSales) sectionSales.style.display = 'block';
-            if (sectionUmum) sectionUmum.style.display = 'none';
-            if (activeBadge) activeBadge.textContent = 'Kategori: PENJUALAN SALES';
-            if (titleInfo) titleInfo.textContent = 'Informasi Penjualan Sales';
-
-            const salesInput = document.getElementById('sales_nm');
-            if (salesInput) salesInput.focus();
-        } else {
-            if (radioUmum) radioUmum.checked = true;
-            if (labelUmum) labelUmum.classList.add('active');
-            if (labelSales) labelSales.classList.remove('active');
-            if (sectionUmum) sectionUmum.style.display = 'block';
-            if (sectionSales) sectionSales.style.display = 'none';
-            if (activeBadge) activeBadge.textContent = 'Kategori: UMUM PABRIK';
-            if (titleInfo) titleInfo.textContent = 'Informasi Pembeli Umum Pabrik';
-
-            const pembeliInput = document.getElementById('nama_pembeli');
-            if (pembeliInput) pembeliInput.focus();
-        }
-    }
-
-    if (labelUmum && labelSales) {
-        labelUmum.addEventListener('click', (e) => {
-            e.stopPropagation();
-            switchCategory('UMUM');
-        });
-        labelSales.addEventListener('click', (e) => {
-            e.stopPropagation();
-            switchCategory('SALES');
-        });
-    }
-
-    if (radioUmum && radioSales) {
-        radioUmum.addEventListener('change', () => switchCategory('UMUM'));
-        radioSales.addEventListener('change', () => switchCategory('SALES'));
-    }
 
     // Dynamic Generator Nomor Dokumen Resmi saat Tanggal Berubah
     const tglTransaksiInput = document.getElementById('tgl_transaksi');
@@ -98,6 +45,76 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(err => console.error('Error generating direct sale code:', err));
         });
+    }
+
+    // Dynamic Sinkronisasi Ketersediaan Stok saat Gudang Pengeluaran Berubah
+    const gudangSelect = document.getElementById('gudang_id');
+    if (gudangSelect) {
+        gudangSelect.addEventListener('change', function () {
+            updateAllProductStocks(this.value);
+        });
+    }
+
+    function updateAllProductStocks(selectedGudangId) {
+        const selects = document.querySelectorAll('.product-select');
+        selects.forEach(sel => {
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return;
+                let stocksMap = {};
+                try {
+                    stocksMap = JSON.parse(opt.dataset.stocks || '{}');
+                } catch (e) {
+                    stocksMap = {};
+                }
+                const stock = parseFloat(stocksMap[selectedGudangId] || 0);
+                opt.dataset.stock = stock;
+                const unit = opt.dataset.unit || '-';
+                const name = opt.dataset.name || '';
+                const code = opt.dataset.code || '';
+                if (name && code) {
+                    opt.textContent = `${name} [${code}] - Stok: ${stock.toLocaleString('id-ID')} ${unit}`;
+                }
+            });
+
+            // Update badge stok pada baris aktif
+            const row = sel.closest('.item-row');
+            if (row) {
+                const opt = sel.options[sel.selectedIndex];
+                if (opt && opt.value) {
+                    const stock = parseFloat(opt.dataset.stock) || 0;
+                    const unit = opt.dataset.unit || '-';
+                    const stockInfo = row.querySelector('.stock-info');
+                    updateStockBadge(stockInfo, stock, unit);
+                }
+            }
+        });
+
+        // Update juga pada template baris untuk baris yang baru ditambah
+        if (itemTemplate) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = itemTemplate.innerHTML;
+            const tplSelect = tempDiv.querySelector('.product-select');
+            if (tplSelect) {
+                Array.from(tplSelect.options).forEach(opt => {
+                    if (!opt.value) return;
+                    let stocksMap = {};
+                    try {
+                        stocksMap = JSON.parse(opt.dataset.stocks || '{}');
+                    } catch (e) {
+                        stocksMap = {};
+                    }
+                    const stock = parseFloat(stocksMap[selectedGudangId] || 0);
+                    opt.dataset.stock = stock;
+                    const unit = opt.dataset.unit || '-';
+                    const name = opt.dataset.name || '';
+                    const code = opt.dataset.code || '';
+                    if (name && code) {
+                        opt.textContent = `${name} [${code}] - Stok: ${stock.toLocaleString('id-ID')} ${unit}`;
+                    }
+                });
+                itemTemplate.innerHTML = tempDiv.innerHTML;
+            }
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -133,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateStockBadge(stockInfoEl, stock, unit) {
         if (!stockInfoEl) return;
         if (stock <= 0) {
-            stockInfoEl.innerHTML = `<span class="stock-tag out-stock">Antre Produksi (0 ${unit})</span>`;
+            stockInfoEl.innerHTML = `<span class="stock-tag out-stock">Kosong di Gudang Ini (0 ${unit})</span>`;
         } else {
             stockInfoEl.innerHTML = `<span class="stock-tag in-stock">Ready ${stock.toLocaleString('id-ID')} ${unit}</span>`;
         }
@@ -154,14 +171,14 @@ document.addEventListener('DOMContentLoaded', function () {
             if (opt && opt.value) {
                 const price = parseFloat(opt.dataset.price) || 0;
                 const stock = parseFloat(opt.dataset.stock) || 0;
-                const unit = opt.dataset.unit || 'Karton';
+                const unit = opt.dataset.unit || '-';
 
                 priceInput.value = price;
                 if (unitDisplay) unitDisplay.textContent = unit;
                 updateStockBadge(stockInfo, stock, unit);
             } else {
                 if (stockInfo) stockInfo.innerHTML = '-';
-                if (unitDisplay) unitDisplay.textContent = 'Karton';
+                if (unitDisplay) unitDisplay.textContent = '-';
             }
             calculateRowSubtotal(row);
         });
@@ -259,21 +276,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // 3. METODE PEMBAYARAN (TUNAI vs TRANSFER BANK)
+    // 3. METODE PEMBAYARAN (TUNAI vs TRANSFER BANK vs QRIS)
     // ══════════════════════════════════════════════════════════════════════
-    if (tabTunai && tabTransfer) {
-        tabTunai.addEventListener('click', function () {
-            tabTunai.classList.add('active');
-            tabTransfer.classList.remove('active');
-            if (metodeBayarHidden) metodeBayarHidden.value = 'TUNAI';
-        });
-
-        tabTransfer.addEventListener('click', function () {
-            tabTransfer.classList.add('active');
-            tabTunai.classList.remove('active');
-            if (metodeBayarHidden) metodeBayarHidden.value = 'TRANSFER';
-        });
+    function selectPaymentTab(tab, method) {
+        [tabTunai, tabTransfer, tabQris].forEach(t => { if (t) t.classList.remove('active'); });
+        if (tab) tab.classList.add('active');
+        if (metodeBayarHidden) metodeBayarHidden.value = method;
     }
+
+    if (tabTunai) tabTunai.addEventListener('click', () => selectPaymentTab(tabTunai, 'TUNAI'));
+    if (tabTransfer) tabTransfer.addEventListener('click', () => selectPaymentTab(tabTransfer, 'TRANSFER'));
+    if (tabQris) tabQris.addEventListener('click', () => selectPaymentTab(tabQris, 'QRIS'));
 
     // Inisialisasi baris awal
     tableBody.querySelectorAll('.item-row').forEach(row => {
@@ -285,17 +298,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // ══════════════════════════════════════════════════════════════════════
     if (directSalesForm) {
         directSalesForm.addEventListener('submit', function (e) {
-            const activeCat = document.querySelector('input[name="kategori_penjualan"]:checked')?.value || 'UMUM';
-            if (activeCat === 'SALES') {
-                const salesNm = document.getElementById('sales_nm')?.value?.trim();
-                if (!salesNm) {
-                    e.preventDefault();
-                    alert('Silakan masukkan atau pilih Nama Tenaga Sales / Kanvaser terlebih dahulu.');
-                    document.getElementById('sales_nm')?.focus();
-                    return;
-                }
-            }
-
             const rows = tableBody.querySelectorAll('.item-row');
             let hasValidItem = false;
 

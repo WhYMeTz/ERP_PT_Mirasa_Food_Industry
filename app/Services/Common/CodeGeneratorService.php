@@ -950,13 +950,49 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Dokumen Penjualan Langsung / Tunai Resmi PT Mirasa (format: {seq:3}/SO/MFI/{mm}/{yy})
-     * Contoh: 001/SO/MFI/11/26
-     * Mengikuti format resmi korporat Mirasa (Opsi 2) dengan reset bulanan otomatis.
+     * Generate Nomor Dokumen Penjualan Langsung / Tunai Resmi PT Mirasa (format: {seq:3}/PJL/MFI/{mm}/{yy})
+     * Contoh: 001/PJL/MFI/11/26
+     * Memiliki seri terpisah dari PO Distributor ({seq:3}/SO/MFI/{mm}/{yy}) dengan reset bulanan otomatis.
      */
     public function generateDirectSaleNo(?string $date = null, ?int $excludeSoId = null): string
     {
-        return $this->generateSoNo($date, $excludeSoId);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/PJL/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_so_hdr')
+            ->where('so_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeSoId) {
+            $query->where('so_id', '!=', $excludeSoId);
+        }
+
+        $existing = $query->pluck('so_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/PJL\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $soNo) {
+            if (preg_match($regex, trim((string) $soNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_so_hdr')->where('so_no', $generated);
+            if ($excludeSoId) {
+                $checkQuery->where('so_id', '!=', $excludeSoId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**

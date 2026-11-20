@@ -152,7 +152,6 @@
                         $menuId = 'actionMenuDirect_' . $sale->so_id;
                         $firstPengeluaran = $sale->pengeluaran ? $sale->pengeluaran->first() : null;
                         $firstFaktur = $sale->faktur;
-                        $isSales = str_contains(strtoupper($sale->customer_po_no ?? ''), 'SALES') || str_contains(strtoupper($sale->catatan_txt ?? ''), 'SALES KELILING');
                     @endphp
                     <tr>
                         <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
@@ -168,13 +167,23 @@
                         <td>
                             <div style="font-size: 0.775rem; line-height: 1.5; color: #334155;">
                                 @if ($firstFaktur)
-                                    <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $firstFaktur->faktur_no }}</strong></div>
+                                    <div>
+                                        <span style="color: #64748b; font-size: 0.7rem;">Faktur:</span>
+                                        <a href="{{ route('penjualan.faktur.export-pdf', $firstFaktur->faktur_id) }}" target="_blank" style="color: #0284c7; font-weight: 700; text-decoration: none;" title="Cetak Faktur Penjualan (PDF)">
+                                            {{ $firstFaktur->faktur_no }}
+                                        </a>
+                                    </div>
                                 @elseif ($sale->faktur_no)
                                     <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $sale->faktur_no }}</strong></div>
                                 @endif
 
                                 @if ($firstPengeluaran)
-                                    <div><span style="color: #64748b; font-size: 0.7rem;">SJ:</span> {{ $firstPengeluaran->pengeluaran_no }}</div>
+                                    <div>
+                                        <span style="color: #64748b; font-size: 0.7rem;">SJ:</span>
+                                        <a href="{{ route('penjualan.pengeluaran.export-pdf', $firstPengeluaran->pengeluaran_id) }}" target="_blank" style="color: #0284c7; text-decoration: none;" title="Cetak Surat Jalan (PDF)">
+                                            {{ $firstPengeluaran->pengeluaran_no }}
+                                        </a>
+                                    </div>
                                 @elseif ($sale->surat_jalan_no)
                                     <div><span style="color: #64748b; font-size: 0.7rem;">SJ:</span> {{ $sale->surat_jalan_no }}</div>
                                 @endif
@@ -189,20 +198,13 @@
                             </div>
                         </td>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 2px; flex-wrap: wrap;">
-                                @if ($isSales)
-                                    <span style="font-size: 0.65rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 1px 6px; border-radius: 4px;">SALES</span>
-                                @else
-                                    <span style="font-size: 0.65rem; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 4px;">UMUM</span>
-                                @endif
-                                <span style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
-                                    {{ $sale->customer->customer_nm ?? 'Pelanggan Umum' }}
-                                </span>
+                            <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem; margin-bottom: 2px;">
+                                {{ $sale->customer->customer_nm ?? 'Pelanggan Umum' }}
                             </div>
                             @if (!empty($sale->supir_nm) && $sale->supir_nm !== '-')
                                 <div style="font-size: 0.75rem; color: #475569;">
-                                    {{ $isSales ? 'Sales / Toko' : 'Pembeli' }}: <strong>{{ $sale->supir_nm }}</strong>
-                                    @if(!empty($sale->nopol_kendaraan)) ({{ $sale->nopol_kendaraan }}) @endif
+                                    Pembeli: <strong>{{ $sale->supir_nm }}</strong>
+                                    @if(!empty($sale->nopol_kendaraan) && $sale->nopol_kendaraan !== 'AMBIL SENDIRI') ({{ $sale->nopol_kendaraan }}) @endif
                                 </div>
                             @endif
                         </td>
@@ -235,6 +237,10 @@
                                 <span style="background: #eff6ff; color: #1d4ed8; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #bfdbfe;">
                                     Transfer
                                 </span>
+                            @elseif (strtoupper($sale->top_txt) === 'QRIS')
+                                <span style="background: #f5f3ff; color: #7c3aed; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #ddd6fe;">
+                                    QRIS
+                                </span>
                             @else
                                 <span style="background: #ecfdf5; color: #047857; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0;">
                                     Tunai
@@ -255,11 +261,19 @@
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                     <span>Cetak Nota Penjualan</span>
                                 </a>
-                                @if ($firstPengeluaran)
+                                @if ($firstPengeluaran || $firstFaktur)
                                     <div class="action-dropdown-divider"></div>
+                                @endif
+                                @if ($firstPengeluaran)
                                     <a href="{{ route('penjualan.pengeluaran.export-pdf', $firstPengeluaran->pengeluaran_id) }}" target="_blank" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                                        <span>Surat Jalan Gudang</span>
+                                        <span>Cetak Surat Jalan</span>
+                                    </a>
+                                @endif
+                                @if ($firstFaktur)
+                                    <a href="{{ route('penjualan.faktur.export-pdf', $firstFaktur->faktur_id) }}" target="_blank" class="action-dropdown-item">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Cetak Faktur Penjualan</span>
                                     </a>
                                 @endif
                             </div>

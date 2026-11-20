@@ -22,6 +22,8 @@
                 <span class="ds-badge selesai">Lunas</span>
                 @if (strtoupper($order->top_txt) === 'TRANSFER')
                     <span class="ds-badge transfer">Transfer</span>
+                @elseif (strtoupper($order->top_txt) === 'QRIS')
+                    <span class="ds-badge qris" style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; font-weight: 700;">QRIS</span>
                 @else
                     <span class="ds-badge tunai">Tunai</span>
                 @endif
@@ -38,8 +40,8 @@
             </a>
 
             @php
-                $firstPengeluaran = $order->pengeluaran->first();
-                $firstFaktur = $order->faktur->first();
+                $firstPengeluaran = $order->pengeluaran ? $order->pengeluaran->first() : null;
+                $firstFaktur = $order->faktur;
             @endphp
 
             @if ($firstPengeluaran)
@@ -127,6 +129,10 @@
             <div class="ds-info-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Integrasi Otomatis ERP
+            </div>
+            <div class="ds-info-row">
+                <span class="ds-info-label">Gudang Asal:</span>
+                <span class="ds-info-value" style="color: #0284c7; font-weight: 700;">{{ $firstPengeluaran?->gudang?->gudang_nm ?? '-' }}</span>
             </div>
             <div class="ds-info-row">
                 <span class="ds-info-label">Surat Jalan (DO):</span>

@@ -17,9 +17,6 @@
             </a>
             <div style="display: flex; align-items: center; gap: 0.65rem;">
                 <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Penjualan Langsung Pabrik</h1>
-                <span class="stock-tag in-stock" style="font-size: 0.75rem; padding: 3px 8px;">
-                    ⚡ Potong Stok FG Otomatis + Faktur Lunas
-                </span>
             </div>
             <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0;">
                 Penjualan langsung/tunai tanpa dokumen PO customer (sales kanvaser, mitra ambil di pabrik, atau order spot). Sistem otomatis memotong stok Gudang FG, mencatat pengeluaran barang, dan menerbitkan faktur lunas.
@@ -49,51 +46,19 @@
         @csrf
         <input type="hidden" name="metode_bayar" id="metodeBayar" value="TUNAI">
 
-        {{-- 1. PILIHAN KATEGORI TRANSAKSI PENJUALAN (UMUM vs SALES KELILING) --}}
-        <div class="ds-category-selector-card">
-            <div class="ds-category-header">
-                <div class="ds-category-title">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    Pilih Kategori Transaksi Penjualan
-                </div>
-                <span class="ds-category-badge" id="activeCategoryBadge">Kategori: UMUM PABRIK</span>
-            </div>
+        <input type="hidden" name="kategori_penjualan" value="UMUM">
 
-            <div class="ds-category-options">
-                {{-- KARTU 1: PENJUALAN UMUM PABRIK --}}
-                <label class="ds-category-option {{ old('kategori_penjualan', 'UMUM') === 'UMUM' ? 'active' : '' }}" id="labelKategoriUmum">
-                    <input type="radio" name="kategori_penjualan" value="UMUM" {{ old('kategori_penjualan', 'UMUM') === 'UMUM' ? 'checked' : '' }} class="ds-category-radio">
-                    <div class="ds-category-content">
-                        <div>
-                            <div class="ds-category-name">Penjualan Umum (Pabrik)</div>
-                            <div class="ds-category-desc">Pembeli / pedagang datang langsung ke gudang pabrik membawa kendaraan sendiri</div>
-                        </div>
-                    </div>
-                </label>
-
-                {{-- KARTU 2: PENJUALAN SALES --}}
-                <label class="ds-category-option {{ old('kategori_penjualan') === 'SALES' ? 'active' : '' }}" id="labelKategoriSales">
-                    <input type="radio" name="kategori_penjualan" value="SALES" {{ old('kategori_penjualan') === 'SALES' ? 'checked' : '' }} class="ds-category-radio">
-                    <div class="ds-category-content">
-                        <div>
-                            <div class="ds-category-name">Penjualan Sales</div>
-                            <div class="ds-category-desc">Setoran rekap penjualan armada kanvaser / sales motoris rute toko</div>
-                        </div>
-                    </div>
-                </label>
-            </div>
-        </div>
-
-        {{-- 2. INFORMASI DOKUMEN & IDENTITAS TRANSAKSI --}}
+        {{-- 1. INFORMASI DOKUMEN & IDENTITAS TRANSAKSI --}}
         <div class="ds-card">
             <div class="ds-card-header">
                 <h2 class="ds-card-title">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span id="titleInfoDokumen">Informasi Pembeli Umum Pabrik</span>
+                    <span>Informasi Pembeli &amp; Transaksi Langsung</span>
                 </h2>
             </div>
             <div class="ds-card-body">
-                {{-- IDENTITAS DOKUMEN BERSAMA --}}
+                <input type="hidden" name="customer_id" value="{{ $defaultCashCustomer?->customer_id }}">
+                {{-- IDENTITAS DOKUMEN & PEMBELI (1 BARIS RINGKAS) --}}
                 <div class="ds-form-row">
                     <div class="ds-form-group">
                         <label class="ds-label" for="no_transaksi">No. Transaksi (Otomatis)</label>
@@ -103,101 +68,34 @@
                         <label class="ds-label" for="tgl_transaksi">Tanggal Transaksi <span class="req">*</span></label>
                         <input type="date" name="tgl_transaksi" id="tgl_transaksi" class="ds-ctrl" value="{{ old('tgl_transaksi', date('Y-m-d')) }}" required>
                     </div>
-                </div>
-
-                {{-- SECTION KATEGORI 1: UMUM PABRIK --}}
-                <div id="sectionKategoriUmum" style="{{ old('kategori_penjualan', 'UMUM') === 'SALES' ? 'display: none;' : '' }}">
-                    <div class="ds-form-row" style="margin-top: 0.85rem;">
-                        <div class="ds-form-group" style="flex: 1.2;">
-                            <label class="ds-label" for="customer_id">Akun Pelanggan</label>
-                            <select name="customer_id" id="customer_id" class="ds-ctrl">
-                                @if ($defaultCashCustomer)
-                                    <option value="{{ $defaultCashCustomer->customer_id }}" selected>
-                                        {{ $defaultCashCustomer->customer_nm }} (Default Tunai)
-                                    </option>
-                                @endif
-                                @foreach ($customers as $c)
-                                    @if ($defaultCashCustomer && $c->customer_id == $defaultCashCustomer->customer_id)
-                                        @continue
-                                    @endif
-                                    <option value="{{ $c->customer_id }}" {{ old('customer_id') == $c->customer_id ? 'selected' : '' }}>
-                                        {{ $c->customer_nm }} [{{ $c->customer_cd }}]
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="ds-form-group" style="flex: 1.5;">
-                            <label class="ds-label" for="nama_pembeli">Nama Pembeli / Pemesan (Opsional)</label>
-                            <input type="text" name="nama_pembeli" id="nama_pembeli" class="ds-ctrl" placeholder="Dapat dikosongkan untuk pembeli umum atau isi nama pembeli..." value="{{ old('nama_pembeli') }}">
-                        </div>
+                    <div class="ds-form-group">
+                        <label class="ds-label" for="gudang_id">Perusahaan / Gudang <span class="req">*</span></label>
+                        <select name="gudang_id" id="gudang_id" class="ds-ctrl" required style="font-weight: 600;">
+                            @foreach ($gudangList as $gdg)
+                                <option value="{{ $gdg->gudang_id }}" {{ (old('gudang_id', $defaultGudangId) == $gdg->gudang_id) ? 'selected' : '' }}>
+                                    {{ $gdg->gudang_nm }} ({{ $gdg->gudang_cd }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                </div>
-
-                {{-- SECTION KATEGORI 2: SALES KELILING --}}
-                <div id="sectionKategoriSales" style="{{ old('kategori_penjualan') === 'SALES' ? '' : 'display: none;' }}">
-                    <div class="ds-form-row" style="margin-top: 0.85rem;">
-                        <div class="ds-form-group" style="flex: 1.3;">
-                            <label class="ds-label" for="sales_nm">Nama Sales / Kanvaser <span class="req">*</span></label>
-                            <input type="text" name="sales_nm" id="sales_nm" list="karyawanList" class="ds-ctrl" placeholder="Ketik nama sales atau pilih karyawan..." value="{{ old('sales_nm') }}" autocomplete="off">
-                            <datalist id="karyawanList">
-                                @foreach ($karyawans as $k)
-                                    <option value="{{ $k->karyawan_nm }}">{{ $k->karyawan_nm }} (NIK: {{ $k->nik }} - {{ $k->jabatan_nm ?? 'Karyawan' }})</option>
-                                @endforeach
-                            </datalist>
-                            <small style="color: #64748b; font-size: 0.72rem; margin-top: 3px; display: block;">Bisa ketik nama baru atau pilih dari daftar karyawan pabrik.</small>
-                        </div>
-                        <div class="ds-form-group">
-                            <label class="ds-label" for="rute_wilayah">Rute / Wilayah Kunjungan</label>
-                            <input type="text" name="rute_wilayah" id="rute_wilayah" class="ds-ctrl" placeholder="Contoh: Solo Kota / Boyolali / Klaten" value="{{ old('rute_wilayah') }}">
-                        </div>
-                        <div class="ds-form-group">
-                            <label class="ds-label" for="armada_sales">Armada Mobil / Motor Sales</label>
-                            <input type="text" name="armada_sales" id="armada_sales" class="ds-ctrl" placeholder="Contoh: AD 9876 KL (Grand Max Box)" value="{{ old('armada_sales') }}">
-                        </div>
-                    </div>
-
-                    <div class="ds-form-row" style="margin-top: 0.85rem;">
-                        <div class="ds-form-group" style="flex: 1.3;">
-                            <label class="ds-label" for="customer_id_sales">Akun Pelanggan Mitra (Opsional)</label>
-                            <select name="customer_id_sales" id="customer_id_sales" class="ds-ctrl">
-                                @if ($defaultCashCustomer)
-                                    <option value="{{ $defaultCashCustomer->customer_id }}" selected>
-                                        {{ $defaultCashCustomer->customer_nm }} (Default Kanvaser)
-                                    </option>
-                                @endif
-                                @foreach ($customers as $c)
-                                    @if ($defaultCashCustomer && $c->customer_id == $defaultCashCustomer->customer_id)
-                                        @continue
-                                    @endif
-                                    <option value="{{ $c->customer_id }}" {{ old('customer_id_sales') == $c->customer_id ? 'selected' : '' }}>
-                                        {{ $c->customer_nm }} [{{ $c->customer_cd }}]
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="ds-form-group">
-                            <label class="ds-label" for="toko_kanvas_nm">Nama Toko / Keterangan Penjualan</label>
-                            <input type="text" name="toko_kanvas_nm" id="toko_kanvas_nm" class="ds-ctrl" placeholder="Contoh: Toko Barokah / Rekap 5 Toko Rute Solo" value="{{ old('toko_kanvas_nm') }}">
-                        </div>
-                        <div class="ds-form-group">
-                            <label class="ds-label" for="nota_manual_no">No. Nota Manual / Buku Sales</label>
-                            <input type="text" name="nota_manual_no" id="nota_manual_no" class="ds-ctrl" placeholder="Contoh: BUKU-04 / NOTA-112" value="{{ old('nota_manual_no') }}">
-                        </div>
+                    <div class="ds-form-group">
+                        <label class="ds-label" for="nama_pembeli">Nama Pembeli (Opsional)</label>
+                        <input type="text" name="nama_pembeli" id="nama_pembeli" class="ds-ctrl" placeholder="Contoh: Pak Slamet / Bu Rita (kosongkan jika umum)..." value="{{ old('nama_pembeli') }}">
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- 3. ITEM PRODUK JADI SIAP JUAL (GUDANG FG) --}}
+        {{-- 3. ITEM PRODUK JADI SIAP JUAL --}}
         <div class="ds-card">
             <div class="ds-card-header">
                 <h2 class="ds-card-title">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                    Item Produk Siap Jual (Gudang FG)
+                    <span>Item Produk Siap Jual</span>
                 </h2>
                 <button type="button" class="btn" id="btnAddItem" style="background: #0f172a; color: #fff; font-size: 0.775rem; font-weight: 700; padding: 0.4rem 0.85rem; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    + Tambah Baris Produk
+                    Tambah Baris Produk
                 </button>
             </div>
             <div class="ds-card-body" style="padding: 0;">
@@ -227,8 +125,11 @@
                                             <option value="{{ $prod->barang_id }}"
                                                 data-price="{{ $prod->harga_jual ?? 0 }}"
                                                 data-stock="{{ $prod->ready_stock }}"
-                                                data-unit="{{ $prod->satuanDasar?->satuan_nm ?? 'Karton' }}">
-                                                {{ $prod->barang_nm }} [{{ $prod->barang_cd }}] - Stok: {{ number_format($prod->ready_stock, 0) }} {{ $prod->satuanDasar?->satuan_nm ?? 'Karton' }}
+                                                data-stocks='@json($prod->stocks_by_gudang)'
+                                                data-name="{{ $prod->barang_nm }}"
+                                                data-code="{{ $prod->barang_cd }}"
+                                                data-unit="{{ $prod->satuanDasar?->satuan_nm ?? '-' }}">
+                                                {{ $prod->barang_nm }} [{{ $prod->barang_cd }}] - Stok: {{ number_format($prod->ready_stock, 0) }} {{ $prod->satuanDasar?->satuan_nm ?? '-' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -240,7 +141,7 @@
                                     <input type="number" name="items[0][qty]" class="ds-ctrl qty-input" value="1" min="0.0001" step="any" style="text-align: center; font-weight: 700;" required>
                                 </td>
                                 <td style="text-align: center;">
-                                    <span class="unit-display" style="font-size: 0.775rem; color: #64748b; font-weight: 600;">Karton</span>
+                                    <span class="unit-display" style="font-size: 0.775rem; color: #64748b; font-weight: 600;">-</span>
                                 </td>
                                 <td>
                                     <input type="number" name="items[0][harga_satuan]" class="ds-ctrl price-input" value="0" min="0" step="any" style="text-align: right; font-weight: 600;" required>
@@ -279,6 +180,10 @@
                     <button type="button" class="ds-pay-tab-btn" id="tabTransfer">
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                         <span>TRANSFER BANK</span>
+                    </button>
+                    <button type="button" class="ds-pay-tab-btn" id="tabQris">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        <span>QRIS</span>
                     </button>
                 </div>
 
@@ -363,8 +268,11 @@
                 <option value="{{ $prod->barang_id }}"
                     data-price="{{ $prod->harga_jual ?? 0 }}"
                     data-stock="{{ $prod->ready_stock }}"
-                    data-unit="{{ $prod->satuanDasar?->satuan_nm ?? 'Karton' }}">
-                    {{ $prod->barang_nm }} [{{ $prod->barang_cd }}] - Stok: {{ number_format($prod->ready_stock, 0) }} {{ $prod->satuanDasar?->satuan_nm ?? 'Karton' }}
+                    data-stocks='@json($prod->stocks_by_gudang)'
+                    data-name="{{ $prod->barang_nm }}"
+                    data-code="{{ $prod->barang_cd }}"
+                    data-unit="{{ $prod->satuanDasar?->satuan_nm ?? '-' }}">
+                    {{ $prod->barang_nm }} [{{ $prod->barang_cd }}] - Stok: {{ number_format($prod->ready_stock, 0) }} {{ $prod->satuanDasar?->satuan_nm ?? '-' }}
                 </option>
             @endforeach
         </select>
@@ -376,7 +284,7 @@
         <input type="number" name="items[__INDEX__][qty]" class="ds-ctrl qty-input" value="1" min="0.0001" step="any" style="text-align: center; font-weight: 700;" required>
     </td>
     <td style="text-align: center;">
-        <span class="unit-display" style="font-size: 0.775rem; color: #64748b; font-weight: 600;">Karton</span>
+        <span class="unit-display" style="font-size: 0.775rem; color: #64748b; font-weight: 600;">-</span>
     </td>
     <td>
         <input type="number" name="items[__INDEX__][harga_satuan]" class="ds-ctrl price-input" value="0" min="0" step="any" style="text-align: right; font-weight: 600;" required>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Penjualan;
 
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstCustomer;
+use App\Models\MasterData\MstGudang;
 use App\Models\MasterData\MstKaryawan;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Penjualan\DirectSalesService;
@@ -49,7 +50,13 @@ class DirectSalesController extends Controller
         $directSaleNo = $this->codeGenerator->generateDirectSaleNo();
         $defaultCashCustomer = $this->directSalesService->getOrCreateCashCustomer();
         $customers = MstCustomer::active()->orderBy('customer_nm')->get();
-        $products = $this->directSalesService->getReadyToSellProducts();
+        $gudangList = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_id')
+            ->get();
+        // Default selalu PT Mirasa Food Industry (MFI-PST)
+        $defaultGudangId = $gudangList->firstWhere('gudang_cd', 'MFI-PST')?->gudang_id ?? 1;
+        $products = $this->directSalesService->getReadyToSellProducts($defaultGudangId);
         $karyawans = MstKaryawan::where('deleted_st', false)
             ->where('active_st', true)
             ->orderBy('karyawan_nm')
@@ -60,7 +67,9 @@ class DirectSalesController extends Controller
             'defaultCashCustomer',
             'customers',
             'products',
-            'karyawans'
+            'karyawans',
+            'gudangList',
+            'defaultGudangId'
         ));
     }
 
@@ -71,6 +80,7 @@ class DirectSalesController extends Controller
     {
         $request->validate([
             'kategori_penjualan' => 'required|string|in:UMUM,SALES',
+            'gudang_id'          => 'required|integer|exists:mst_gudang,gudang_id',
             'tgl_transaksi'      => 'required|date',
             'customer_id'        => 'nullable|integer|exists:mst_customer,customer_id',
             'customer_id_sales'  => 'nullable|integer|exists:mst_customer,customer_id',
@@ -82,7 +92,7 @@ class DirectSalesController extends Controller
             'toko_kanvas_nm'     => 'nullable|string|max:150',
             'nota_manual_no'     => 'nullable|string|max:100',
             'nopol_kendaraan'    => 'nullable|string|max:50',
-            'metode_bayar'       => 'required|string|in:TUNAI,TRANSFER',
+            'metode_bayar'       => 'required|string|in:TUNAI,TRANSFER,QRIS',
             'uang_diterima'      => 'nullable|numeric|min:0',
             'potongan_nominal'   => 'nullable|numeric|min:0',
             'is_ppn'             => 'nullable',

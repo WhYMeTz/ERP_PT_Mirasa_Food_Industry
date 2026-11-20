@@ -2824,9 +2824,6 @@
                     if (m) m.style.display = 'none';
                 }
             });
-            
-            const menu = target.querySelector('.dropdown-menu');
-            const triggerBtn = target.querySelector('.pill-dropdown-btn, .user-chip-btn') || target;
 
             if (wasActive) {
                 target.classList.remove('active');
@@ -2845,7 +2842,7 @@
             }
 
             // Popup profil di dasar sidebar: muncul ke atas, rata kiri dengan tombolnya
-            const triggerBtn = target.querySelector('.user-chip-btn') || target;
+            const triggerBtn = target.querySelector('.user-chip-btn, .pill-dropdown-btn') || target;
             const rect = triggerBtn.getBoundingClientRect();
             menu.style.position = 'fixed';
             menu.style.zIndex = '9999';

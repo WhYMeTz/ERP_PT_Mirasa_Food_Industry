@@ -248,10 +248,32 @@
                                         Batal (Void)
                                     </span>
                                 @else
+                                    @php
+                                        $todayCarbon = \Carbon\Carbon::today();
+                                        $tglTempo = $faktur->tgl_jatuh_tempo ? \Carbon\Carbon::parse($faktur->tgl_jatuh_tempo) : null;
+                                        $diffDays = $tglTempo ? $todayCarbon->diffInDays($tglTempo, false) : 0;
+                                    @endphp
                                     <span class="badge-status belum-lunas">
                                         <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                                         Belum Lunas
                                     </span>
+                                    @if ($tglTempo)
+                                        <div style="margin-top: 0.25rem;">
+                                            @if ($diffDays < 0)
+                                                <span class="badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                                    Lewat {{ abs($diffDays) }} Hari
+                                                </span>
+                                            @elseif ($diffDays <= 3)
+                                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                                    Tempo H-{{ $diffDays > 0 ? $diffDays : '0' }}
+                                                </span>
+                                            @else
+                                                <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                                    Tempo {{ $diffDays }} Hari
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 @endif
                             </td>
 

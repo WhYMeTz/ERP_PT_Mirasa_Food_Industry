@@ -229,7 +229,6 @@
                     <th style="min-width: 185px;">Pelanggan / Customer</th>
                     <th style="min-width: 140px;" title="Realisasi pengeluaran fisik barang dari Gudang FG berdasarkan Surat Jalan">Status Pengiriman</th>
                     <th style="min-width: 125px; text-align: right;">Total Tagihan</th>
-                    <th style="min-width: 135px; text-align: center;">Status Pembayaran</th>
                     <th style="min-width: 85px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
@@ -369,41 +368,6 @@
                             </div>
                         </td>
                         <td style="text-align: center; vertical-align: middle;">
-                            @if ($activeFaktur)
-                                @php
-                                    $isLunas = $activeFaktur->status_pembayaran === 'LUNAS' || (float)$activeFaktur->sisa_piutang <= 0;
-                                    $todayCarbon = \Carbon\Carbon::today();
-                                    $tglTempo = $activeFaktur->tgl_jatuh_tempo ? \Carbon\Carbon::parse($activeFaktur->tgl_jatuh_tempo) : null;
-                                    $diffDays = $tglTempo ? $todayCarbon->diffInDays($tglTempo, false) : 0;
-                                @endphp
-                                @if ($isLunas)
-                                    <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
-                                        ✓ Lunas
-                                    </span>
-                                @elseif ($tglTempo && $diffDays < 0)
-                                    <span class="badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
-                                        Lewat {{ abs($diffDays) }} Hari
-                                    </span>
-                                @elseif ($tglTempo && $diffDays <= 3)
-                                    <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
-                                        Tempo H-{{ $diffDays > 0 ? $diffDays : '0' }}
-                                    </span>
-                                @else
-                                    <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
-                                        Tempo {{ $diffDays }} Hari
-                                    </span>
-                                @endif
-                            @elseif ($activeSjItem)
-                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 600; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
-                                    Menunggu Faktur
-                                </span>
-                            @else
-                                <span class="badge" style="background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; font-weight: 500; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; display: inline-block;">
-                                    Belum Ditagih
-                                </span>
-                            @endif
-                        </td>
-                        <td style="text-align: center; vertical-align: middle;">
                             @php
                                 $soMenuId = 'soMenu_' . $so->so_id;
                             @endphp
@@ -480,7 +444,7 @@
 
                     {{-- EXPANDABLE SUB-ROW: RINCIAN ITEM BARANG HASIL PRODUKSI --}}
                     <tr id="row-items-{{ $so->so_id }}" style="display: none; background: #f8fafc;">
-                        <td colspan="9" style="padding: 0.75rem 1.25rem; border-bottom: 2px solid #e2e8f0;">
+                        <td colspan="8" style="padding: 0.75rem 1.25rem; border-bottom: 2px solid #e2e8f0;">
                             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                     <strong style="font-size: 0.825rem; color: #334155;">
@@ -572,7 +536,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                        <td colspan="8" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                             Belum ada dokumen PO Penjualan. Klik tombol <strong>"+ Buat PO Penjualan"</strong> di atas.
                         </td>
                     </tr>

@@ -268,7 +268,8 @@
                             if (isSelected) matched = true;
                             const prefix = (idx === 0) ? '⭐ [FIFO Tertua] ' : '';
                             const gCd = (b.grade_cd || 'A').toUpperCase();
-                            const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                            const isNonG = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(gCd);
+                            const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : (isNonG ? 'Non Grade' : `Grade ${gCd}`));
                             
                             const sisaFisik = parseFloat(b.sisa_qty || 0);
                             const sisaBebas = (b.sisa_bebas !== undefined) ? parseFloat(b.sisa_bebas) : sisaFisik;
@@ -408,11 +409,14 @@
         }
 
         let badgeHtml = '';
+        const isCurNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(curGrade);
         const gradeBadgeItem = (curGrade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">🟢 Grade A (Super)</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">🟢 Grade A (Super)</span>`
             : ((curGrade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">🟡 Grade B (Standar)</span>`
-                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">Grade ${curGrade}</span>`);
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">🟡 Grade B (Standar)</span>`
+                : (isCurNonGrade
+                    ? `<span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">Non Grade</span>`
+                    : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">Grade ${curGrade}</span>`));
 
         if (item.is_allocated) {
             const badgeBg = item.is_split ? '#fef3c7' : '#ecfdf5';
@@ -812,11 +816,14 @@
         const tglMasuk = opt.getAttribute('data-masuk') || '-';
         const grade = (row.querySelector('.grade-input')?.value || opt.getAttribute('data-grade') || 'A').toUpperCase();
 
+        const isNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(grade);
         const gradeBadge = (grade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟢 Grade A</span>`
             : ((grade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
-                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟡 Grade B</span>`
+                : (isNonGrade
+                    ? `<span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Non Grade</span>`
+                    : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Grade ${grade}</span>`));
 
         const oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
         const isSame = oldestInfo && (opt.value === oldestInfo.batch_no);
@@ -976,11 +983,14 @@
         const qtyInput = row.querySelector('.qty-input');
         const grade = (row.querySelector('.grade-input')?.value || selectedBatchOpt?.getAttribute('data-grade') || 'A').toUpperCase();
 
+        const isNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(grade);
         const gradeBadge = (grade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟢 Grade A</span>`
             : ((grade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
-                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟡 Grade B</span>`
+                : (isNonGrade
+                    ? `<span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Non Grade</span>`
+                    : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Grade ${grade}</span>`));
 
         if (selectedBatchOpt && selectedBatchOpt.value && qty > sisaBebas) {
             qtyInput.style.borderColor = '#dc2626';

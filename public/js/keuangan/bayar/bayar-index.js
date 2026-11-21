@@ -4,22 +4,33 @@
  */
 
 let activeDropdownMenu = null;
+let lastVoidBayarTriggerEl = null;
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Menutup dropdown saat klik di luar
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.btn-action-trigger') && !e.target.closest('.action-dropdown-menu')) {
             closeAllActionDropdowns();
         }
+
+        const modal = document.getElementById('modalVoidBayar');
+        if (modal && modal.style.display === 'flex' && e.target === modal) {
+            closeModalVoid();
+        }
     });
 
-    // Menutup dropdown saat scroll tabel atau window
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeAllActionDropdowns();
+            const modal = document.getElementById('modalVoidBayar');
+            if (modal && modal.style.display === 'flex') {
+                closeModalVoid();
+            }
+        }
+    });
+
     window.addEventListener('scroll', closeAllActionDropdowns, true);
 });
 
-/**
- * Toggle Smart Action Dropdown Menu
- */
 window.toggleSmartActionDropdown = function (button, event, menuId) {
     event.stopPropagation();
     event.preventDefault();
@@ -40,18 +51,15 @@ window.toggleSmartActionDropdown = function (button, event, menuId) {
 
     const menuWidth = 180;
     const menuHeight = menu.offsetHeight || 100;
-    const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
     let top = rect.bottom + 4;
     let left = rect.right - menuWidth;
 
-    // Jika melebihi batas bawah layar, munculkan di atas tombol
     if (top + menuHeight > windowHeight - 10) {
         top = rect.top - menuHeight - 4;
     }
 
-    // Jika melebihi batas kiri layar
     if (left < 10) {
         left = 10;
     }
@@ -69,11 +77,9 @@ function closeAllActionDropdowns() {
     activeDropdownMenu = null;
 }
 
-/**
- * Buka Modal Konfirmasi Void Pembayaran
- */
 window.openModalVoid = function (bayarId, bayarNo, totalRupiah) {
     closeAllActionDropdowns();
+    lastVoidBayarTriggerEl = document.activeElement;
 
     const modal = document.getElementById('modalVoidBayar');
     const form = document.getElementById('formVoidBayar');
@@ -95,4 +101,9 @@ window.closeModalVoid = function () {
     if (!modal) return;
     modal.style.display = 'none';
     document.body.style.overflow = '';
+
+    if (lastVoidBayarTriggerEl && typeof lastVoidBayarTriggerEl.focus === 'function') {
+        lastVoidBayarTriggerEl.focus();
+        lastVoidBayarTriggerEl = null;
+    }
 };

@@ -24,11 +24,16 @@
 /storage/*.key
 /storage/pail
 /vendor
+/.claude/
 _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
 CHANGELOG.md
+AGENTS.md
+CLAUDE.md
+ALUR_JURNAL_DAN_TOPBAR_KEUANGAN.md
+/scratch/
 
 
 

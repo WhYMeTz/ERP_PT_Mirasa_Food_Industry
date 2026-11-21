@@ -18,6 +18,7 @@ use App\Http\Controllers\MasterData\GudangController;
 use App\Http\Controllers\MasterData\JenisBarangController;
 use App\Http\Controllers\MasterData\JenisSupplierController;
 use App\Http\Controllers\MasterData\KaryawanController;
+use App\Http\Controllers\MasterData\KategoriPengeluaranController;
 use App\Http\Controllers\MasterData\LiniProduksiController;
 use App\Http\Controllers\MasterData\MesinController;
 use App\Http\Controllers\MasterData\PajakController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Keuangan\HutangController;
 use App\Http\Controllers\Keuangan\KasBankController;
 use App\Http\Controllers\Keuangan\KasMasukController;
 use App\Http\Controllers\Keuangan\JurnalController;
+use App\Http\Controllers\Keuangan\VerifikasiJurnalController;
 use App\Http\Controllers\Keuangan\BukuBesarController;
 use App\Http\Controllers\Keuangan\VerifikasiPemakaianController;
 use App\Http\Controllers\Keuangan\LaporanKeuanganController;
@@ -71,13 +73,20 @@ Route::post('mobile/login', [AuthController::class, 'mobileLogin'])->name('mobil
 Route::post('mobile/logout', [AuthController::class, 'mobileLogout'])->name('mobile.logout');
 Route::get('qc/login', fn () => redirect()->route('mobile.login'))->name('qc.login');
 
-// Root Redirection
+// Root & Home Redirection
 Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route(Auth::user()->getDashboardRoute());
     }
     return redirect()->route('login');
 });
+
+Route::get('/home', function () {
+    if (Auth::check()) {
+        return redirect()->route(Auth::user()->getDashboardRoute());
+    }
+    return redirect()->route('login');
+})->name('home');
 
 // Persetujuan Dokumen PO Langsung dari Tautan Email Atasan (Secure Token)
 Route::get('po/approval-action/{token}', [PoApprovalController::class, 'directAction'])->name('po.approval.direct');
@@ -142,6 +151,12 @@ Route::middleware('auth')->group(function () {
         ->name('master.pajak.toggle_status');
     Route::resource('master-pajak', PajakController::class)
         ->names('master.pajak');
+
+    // Master Kategori Kas Keluar / Pengeluaran
+    Route::patch('master-kategori-pengeluaran/{id}/toggle-status', [KategoriPengeluaranController::class, 'toggleStatus'])
+        ->name('master.kategori_pengeluaran.toggle_status');
+    Route::resource('master-kategori-pengeluaran', KategoriPengeluaranController::class)
+        ->names('master.kategori_pengeluaran');
 
     // Master Standar Tarif Produksi & FOH Pabrik
     Route::get('master-tarif-produksi/api-rates', [TarifProduksiController::class, 'apiRates'])
@@ -618,10 +633,17 @@ Route::middleware('auth')->group(function () {
         Route::resource('bayar', BayarHutangController::class)->only(['index', 'create', 'store', 'show']);
 
         // 2b. Kas Keluar Operasional (BKK Pengeluaran Langsung / Non-Hutang)
+        Route::get('kas-keluar', [KasKeluarController::class, 'index'])->name('kas_keluar.index')->middleware('role:bayar_hutang_view,bayar_hutang_create');
         Route::get('kas-keluar/create', [KasKeluarController::class, 'create'])->name('kas_keluar.create')->middleware('role:bayar_hutang_create');
         Route::post('kas-keluar', [KasKeluarController::class, 'store'])->name('kas_keluar.store')->middleware('role:bayar_hutang_create');
-        Route::get('kas-keluar/{id}', [KasKeluarController::class, 'show'])->name('kas_keluar.show')->middleware('role:bayar_hutang_view');
+        Route::get('kas-keluar/{id}', [KasKeluarController::class, 'show'])->name('kas_keluar.show')->middleware('role:bayar_hutang_view,bayar_hutang_create');
         Route::post('kas-keluar/{id}/void', [KasKeluarController::class, 'void'])->name('kas_keluar.void')->middleware('role:bayar_hutang_void');
+        Route::post('kas-keluar/{id}/verifikasi-jurnal', [VerifikasiJurnalController::class, 'verifikasiBkk'])->name('kas_keluar.verifikasi_jurnal')->middleware('role:jurnal_create,coa_manage');
+
+        // 2c. Verifikasi Jurnal Kas Keluar (BKK Operasional ke Jurnal Umum)
+        Route::get('verifikasi-jurnal', [VerifikasiJurnalController::class, 'index'])->name('verifikasi_jurnal.index')->middleware('role:jurnal_view,jurnal_create');
+        Route::post('verifikasi-jurnal/bkk/{id}', [VerifikasiJurnalController::class, 'verifikasiBkk'])->name('verifikasi_jurnal.bkk')->middleware('role:jurnal_create,coa_manage');
+        Route::post('verifikasi-jurnal/batch-proses', [VerifikasiJurnalController::class, 'batchProses'])->name('verifikasi_jurnal.batch_proses')->middleware('role:jurnal_create,coa_manage');
 
         // 3. Kas & Rekening Bank
         Route::get('kas-bank/rekening-koran', [KasBankController::class, 'rekeningKoran'])->name('kas_bank.rekening_koran')->middleware('role:kas_bank_view');
@@ -638,38 +660,42 @@ Route::middleware('auth')->group(function () {
         Route::resource('kas-masuk', KasMasukController::class)->names('kas_masuk')->only(['index', 'create', 'store', 'show']);
 
         // 5. Bagan Akun (Chart of Accounts / COA)
-        Route::resource('coa', CoaController::class)->except(['create', 'show', 'edit']);
+        Route::resource('coa', CoaController::class)->only(['index'])->middleware('role:coa_view,coa_manage');
+        Route::resource('coa', CoaController::class)->only(['store', 'update', 'destroy'])->middleware('role:coa_manage');
 
         // 6. Jurnal Umum (General Journal Ledger)
-        Route::resource('jurnal', JurnalController::class)->only(['index', 'create', 'store', 'show'])->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+        Route::get('jurnal', [JurnalController::class, 'index'])->name('jurnal.index')->middleware('role:jurnal_view,jurnal_create');
+        Route::get('jurnal/create', [JurnalController::class, 'create'])->name('jurnal.create')->middleware('role:jurnal_create');
+        Route::post('jurnal', [JurnalController::class, 'store'])->name('jurnal.store')->middleware('role:jurnal_create');
+        Route::get('jurnal/{jurnal}', [JurnalController::class, 'show'])->name('jurnal.show')->middleware('role:jurnal_view,jurnal_create');
 
         // 7. Buku Besar Interaktif (Interactive General Ledger)
         Route::get('buku-besar', [BukuBesarController::class, 'index'])
             ->name('buku_besar.index')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_view,jurnal_create,coa_view,coa_manage,laporan_keuangan_view');
 
         // 8. Verifikasi Pemakaian Bahan & Terbitkan Jurnal HPP
         Route::get('verifikasi-pemakaian', [VerifikasiPemakaianController::class, 'index'])
             ->name('verifikasi_pemakaian.index')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_view,jurnal_create');
         Route::get('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'show'])
             ->name('verifikasi_pemakaian.show')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_view,jurnal_create');
         Route::get('verifikasi-pemakaian/{id}/edit', [VerifikasiPemakaianController::class, 'edit'])
             ->name('verifikasi_pemakaian.edit')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_create');
         Route::put('verifikasi-pemakaian/{id}', [VerifikasiPemakaianController::class, 'update'])
             ->name('verifikasi_pemakaian.update')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_create');
         Route::post('verifikasi-pemakaian/{id}/approve', [VerifikasiPemakaianController::class, 'approve'])
             ->name('verifikasi_pemakaian.approve')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_create');
         Route::post('verifikasi-pemakaian/{id}/reject', [VerifikasiPemakaianController::class, 'reject'])
             ->name('verifikasi_pemakaian.reject')
-            ->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view');
+            ->middleware('role:jurnal_create');
 
         // 9. Laporan Keuangan Komprehensif (Financial Statements)
-        Route::prefix('laporan')->name('laporan.')->middleware('role:jurnal_view,coa_view,hutang_view,kas_bank_view')->group(function () {
+        Route::prefix('laporan')->name('laporan.')->middleware('role:laporan_keuangan_view,jurnal_view,jurnal_create,coa_view,coa_manage')->group(function () {
             Route::get('/', [LaporanKeuanganController::class, 'index'])->name('index');
             Route::get('laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laba_rugi');
             Route::get('neraca', [LaporanKeuanganController::class, 'neraca'])->name('neraca');
@@ -680,10 +706,10 @@ Route::middleware('auth')->group(function () {
         // 10. Pengaturan Pemetaan Akun Jurnal Otomatis
         Route::get('pengaturan-jurnal', [PengaturanJurnalController::class, 'index'])
             ->name('pengaturan_jurnal.index')
-            ->middleware('role:coa_view,jurnal_view,hutang_view');
+            ->middleware('role:coa_view,coa_manage,jurnal_view,jurnal_create');
         Route::post('pengaturan-jurnal', [PengaturanJurnalController::class, 'update'])
             ->name('pengaturan_jurnal.update')
-            ->middleware('role:coa_view,jurnal_view,hutang_view');
+            ->middleware('role:coa_manage,jurnal_create');
     });
 });
 

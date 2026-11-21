@@ -64,6 +64,245 @@
     margin-top: 2px;
 }
 
+/* Panel Antrean Verifikasi BKK Operasional (Tahap 2 Akuntansi) */
+.pending-bkk-card {
+    background: #ffffff;
+    border: 1.5px solid #fcd34d;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(180, 83, 9, 0.06);
+}
+
+.pending-bkk-header {
+    background: #fffbeb;
+    border-bottom: 1px solid #fde68a;
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.pending-bkk-title-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.pending-bkk-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pending-bkk-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #78350f;
+}
+
+.pending-bkk-subtitle {
+    margin: 0.15rem 0 0;
+    font-size: 0.78rem;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+.pending-bkk-count-pill {
+    background: #92400e;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.pending-bkk-table-scroll {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.pending-bkk-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.8125rem;
+}
+
+.pending-bkk-table thead th {
+    background: #fefce8;
+    color: #78350f;
+    font-size: 0.725rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1.5px solid #fde68a;
+}
+
+.pending-bkk-table tbody tr {
+    border-bottom: 1px solid #fef3c7;
+}
+
+.pending-bkk-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.pending-bkk-table tbody tr:hover {
+    background: #fffdf5;
+}
+
+.pending-bkk-table tbody td {
+    padding: 0.75rem 0.9rem;
+    vertical-align: top;
+    color: #1e293b;
+}
+
+.pending-bkk-no-link {
+    font-family: monospace;
+    font-weight: 800;
+    color: #0369a1;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.pending-bkk-no-link:hover {
+    text-decoration: underline;
+}
+
+.pending-bkk-no-text {
+    font-family: monospace;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.85rem;
+}
+
+.pending-bkk-meta-sub {
+    font-size: 0.725rem;
+    color: #475569;
+    margin-top: 2px;
+}
+
+.pending-bkk-kat-pill {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.pending-bkk-detail-list {
+    margin: 0;
+    padding-left: 1rem;
+    font-size: 0.775rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+.pending-bkk-nominal {
+    text-align: right;
+    font-family: monospace;
+    font-weight: 800;
+    color: #991b1b;
+    white-space: nowrap;
+    font-size: 0.875rem;
+}
+
+.pending-bkk-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.pending-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pending-field-coa {
+    flex: 1 1 230px;
+    min-width: 210px;
+}
+
+.pending-field-date {
+    flex: 0 0 140px;
+}
+
+.pending-field-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.pending-bkk-select,
+.pending-bkk-date {
+    height: 36px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    width: 100%;
+}
+
+.pending-bkk-select {
+    cursor: pointer;
+}
+
+.pending-bkk-select:focus-visible,
+.pending-bkk-date:focus-visible,
+.pending-bkk-submit-btn:focus-visible,
+.btn-action-trigger:focus-visible,
+.view-pill:focus-visible {
+    outline: 2px solid #0369a1;
+    outline-offset: 2px;
+}
+
+.pending-bkk-submit-btn {
+    height: 36px;
+    padding: 0 0.85rem;
+    border-radius: 6px;
+    border: 1px solid #166534;
+    background: #15803d;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease;
+}
+
+.pending-bkk-submit-btn:hover {
+    background: #166534;
+}
+
+.pending-bkk-readonly-note {
+    font-size: 0.775rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
 /* Filter Toolbar */
 .jurnal-filter-card {
     background: #ffffff;
@@ -158,6 +397,12 @@
     background: #f0fdf4;
     color: #15803d;
     border: 1px solid #bbf7d0;
+}
+
+.badge-transaksi.tipe-bkk {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
 }
 
 .badge-transaksi.tipe-masuk {
@@ -257,14 +502,14 @@
     transform: scale(1.15);
 }
 
-.dot-close { 
-    background: #ff5f56; 
+.dot-close {
+    background: #ff5f56;
 }
-.dot-minimize { 
-    background: #ffbd2e; 
+.dot-minimize {
+    background: #ffbd2e;
 }
-.dot-expand { 
-    background: #27c93f; 
+.dot-expand {
+    background: #27c93f;
 }
 
 .macos-title-center {
@@ -475,7 +720,7 @@
 
 .view-pill.active {
     background: #ffffff;
-    color: #0284c7;
+    color: #0369a1;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -658,6 +903,33 @@
     gap: 0.75rem;
 }
 
+/* Mobile Responsive Refinements */
+@media (max-width: 768px) {
+    .pending-bkk-header {
+        padding: 0.85rem 1rem;
+    }
+
+    .pending-bkk-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pending-field-coa,
+    .pending-field-date {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .pending-bkk-select,
+    .pending-bkk-date,
+    .pending-bkk-submit-btn,
+    .view-pill,
+    .btn {
+        min-height: 44px;
+    }
+}
+
 /* ========================================================
    PRINT STYLESHEET UNTUK SPREADSHEET KONTINU (A4 LANDSCAPE)
    ======================================================== */
@@ -676,6 +948,7 @@
     .no-print,
     .app-header,
     .app-sidebar,
+    .pending-bkk-card,
     .jurnal-filter-card,
     .metric-grid-4,
     .view-mode-pill-group,

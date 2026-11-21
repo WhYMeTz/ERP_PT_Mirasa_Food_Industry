@@ -11,7 +11,7 @@
 <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
     <div style="display: flex; align-items: center; gap: 0.5rem;">
         <a href="{{ route('keuangan.bayar.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
-            &larr; Riwayat Kas Keluar
+            &larr; Bayar Hutang Supplier
         </a>
         <span style="color: #cbd5e1;">/</span>
         <h1 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0; font-family: monospace;">

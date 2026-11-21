@@ -21,6 +21,10 @@ class DatKasKeluarHdr extends Model
         'tgl_keluar',
         'kas_bank_id',
         'coa_id',
+        'pemohon_karyawan_id',
+        'departemen_pemohon',
+        'tipe_penerima',
+        'kategori_id',
         'kategori_pengeluaran',
         'penerima_nama',
         'metode_bayar',
@@ -51,6 +55,16 @@ class DatKasKeluarHdr extends Model
     public function kasBank(): BelongsTo
     {
         return $this->belongsTo(MstKasBank::class, 'kas_bank_id', 'kas_bank_id');
+    }
+
+    public function kategoriPengeluaran(): BelongsTo
+    {
+        return $this->belongsTo(MstKategoriPengeluaran::class, 'kategori_id', 'kategori_id');
+    }
+
+    public function pemohon(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\MstKaryawan::class, 'pemohon_karyawan_id', 'karyawan_id');
     }
 
     public function coa(): BelongsTo

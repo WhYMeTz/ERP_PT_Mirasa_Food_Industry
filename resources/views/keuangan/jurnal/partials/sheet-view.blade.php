@@ -151,6 +151,7 @@
                         $jpCode = match($j->tipe_transaksi) {
                             'HUTANG_PEMBELIAN'   => 'GRN',
                             'BAYAR_HUTANG'       => 'BKK',
+                            'BKK_OPERASIONAL'    => 'BKK',
                             'KAS_MASUK'          => 'BKM',
                             'PEMAKAIAN_PRODUKSI' => 'BPPB',
                             'JURNAL_PENYESUAIAN' => 'ADJ',

@@ -213,6 +213,23 @@ class PermissionService
                         'create' => ['key' => 'kas_bank_manage', 'label' => 'Kelola Akun & Penyesuaian Saldo'],
                     ],
                 ],
+                'JURNAL_AKUNTANSI' => [
+                    'label'   => 'Jurnal Umum & Buku Besar (Akuntansi)',
+                    'desc'    => 'Verifikasi pengeluaran kas ke Jurnal Umum, input jurnal manual/penyesuaian, dan akses Buku Besar.',
+                    'actions' => [
+                        'view'   => ['key' => 'jurnal_view',   'label' => 'Lihat Jurnal Umum & Buku Besar'],
+                        'create' => ['key' => 'jurnal_create', 'label' => 'Verifikasi Jurnal BKK, Input Jurnal Manual & Pemetaan'],
+                    ],
+                ],
+                'COA_LAPORAN' => [
+                    'label'   => 'Daftar Akun (COA) & Laporan Keuangan Resmi',
+                    'desc'    => 'Pengelolaan Bagan Akun (COA), pemetaan jurnal otomatis, serta akses Laba Rugi, Neraca, Arus Kas, dan Trial Balance.',
+                    'actions' => [
+                        'view'    => ['key' => 'coa_view',              'label' => 'Lihat COA'],
+                        'create'  => ['key' => 'coa_manage',            'label' => 'Kelola Akun COA'],
+                        'laporan' => ['key' => 'laporan_keuangan_view', 'label' => 'Buka Laporan Keuangan Resmi'],
+                    ],
+                ],
             ],
         ],
         'MASTER' => [
@@ -363,6 +380,9 @@ class PermissionService
             'bayar_hutang_view',
             'kas_masuk_view',
             'kas_bank_view',
+            'jurnal_view',
+            'coa_view',
+            'laporan_keuangan_view',
             'master_barang_view',
             'master_supplier_view',
             'master_customer_view',
@@ -469,6 +489,11 @@ class PermissionService
             'kas_masuk_void',
             'kas_bank_view',
             'kas_bank_manage',
+            'jurnal_view',
+            'jurnal_create',
+            'coa_view',
+            'coa_manage',
+            'laporan_keuangan_view',
             'master_barang_view',
             'master_customer_view',
             'master_supplier_view',
@@ -533,6 +558,49 @@ class PermissionService
 
         if ($hasNew) {
             Cache::forget('mirasa_role_permissions');
+        }
+    }
+
+    /**
+     * Sinkronisasi key baru tanpa menghapus cache (dipanggil saat cache dibangun ulang)
+     */
+    protected function syncMissingKeysQuietly(): void
+    {
+        if (SysRolePermission::count() === 0) {
+            foreach (self::DEFAULT_PERMISSIONS as $roleCd => $permissions) {
+                foreach (self::getAllPermissionKeys() as $key) {
+                    SysRolePermission::updateOrCreate(
+                        ['role_cd' => $roleCd, 'permission_cd' => $key],
+                        ['allowed_st' => in_array($key, $permissions, true), 'updated_by' => 'SYSTEM_INIT']
+                    );
+                }
+            }
+            return;
+        }
+
+        $allKeys = self::getAllPermissionKeys();
+        $roles = array_keys(app(RoleService::class)->getNonSuperAdminRoles());
+        if (empty($roles)) {
+            $roles = ['ADMIN_GUDANG', 'PURCHASING', 'STAFF_PRODUKSI', 'FINANCE', 'QC'];
+        }
+        $existing = SysRolePermission::select('role_cd', 'permission_cd')->get();
+        $keyed = [];
+        foreach ($existing as $e) {
+            $keyed[$e->role_cd . '_' . $e->permission_cd] = true;
+        }
+
+        foreach ($roles as $roleCd) {
+            $defaultPerms = self::DEFAULT_PERMISSIONS[$roleCd] ?? [];
+            foreach ($allKeys as $key) {
+                if (!isset($keyed[$roleCd . '_' . $key])) {
+                    SysRolePermission::create([
+                        'role_cd'       => $roleCd,
+                        'permission_cd' => $key,
+                        'allowed_st'    => in_array($key, $defaultPerms, true),
+                        'updated_by'    => 'SYSTEM_INIT',
+                    ]);
+                }
+            }
         }
     }
 
@@ -653,6 +721,7 @@ class PermissionService
 
         // Ambil daftar izin dari cache untuk performa tinggi
         $permissions = Cache::remember('mirasa_role_permissions', 3600, function () {
+            $this->syncMissingKeysQuietly();
             return SysRolePermission::where('allowed_st', true)
                 ->get()
                 ->groupBy('role_cd')

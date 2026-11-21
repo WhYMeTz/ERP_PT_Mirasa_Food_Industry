@@ -558,7 +558,7 @@ function addRow(data = {}) {
             <input type="number" step="any" min="0.001" name="items[${idx}][pesan_qty]" value="${data.pesan_qty || 1}" required class="form-control item-qty" style="text-align: right; font-weight: 700;">
         </td>
         <td>
-            <select name="items[${idx}][satuan]" class="form-control item-satuan" style="font-size: 0.775rem; font-weight: 600; text-align: center; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.25rem; width: 100%; color: #1e293b; cursor: pointer;">
+            <select name="items[${idx}][satuan]" class="form-control item-satuan" style="font-size: 0.775rem; font-weight: 600; text-align: center; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.35rem; width: 100%; min-width: 95px; color: #1e293b; cursor: pointer;">
                 <option value="Karton" ${(curSatuan.toLowerCase() === 'karton' || (!curSatuan && !data.barang_id)) ? 'selected' : ''}>Karton</option>
                 <option value="Bungkus" ${(curSatuan.toLowerCase() === 'bungkus') ? 'selected' : ''}>Bungkus</option>
                 <option value="Bal" ${(curSatuan.toLowerCase() === 'bal') ? 'selected' : ''}>Bal</option>

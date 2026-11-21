@@ -41,6 +41,7 @@ use App\Http\Controllers\Penjualan\PengeluaranBarangController;
 use App\Http\Controllers\Penjualan\FakturPenjualanController;
 use App\Http\Controllers\Penjualan\SoReturController;
 use App\Http\Controllers\Penjualan\DirectSalesController;
+use App\Http\Controllers\Penjualan\PenjualanBahanPenolongController;
 use App\Http\Controllers\Penjualan\LaporanPenjualanController;
 use App\Http\Controllers\Produksi\BomController;
 use App\Http\Controllers\Produksi\PackagingController;
@@ -547,6 +548,15 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/cetak-nota', [DirectSalesController::class, 'cetakNota'])->name('cetak-nota')->whereNumber('id');
         });
 
+        // Modul Penjualan Bahan Penolong, Kemasan & Bumbu (Non-Core Sales)
+        Route::prefix('bahan-penolong')->name('bahan-penolong.')->group(function () {
+            Route::get('/', [PenjualanBahanPenolongController::class, 'index'])->name('index');
+            Route::get('/create', [PenjualanBahanPenolongController::class, 'create'])->name('create');
+            Route::post('/', [PenjualanBahanPenolongController::class, 'store'])->name('store');
+            Route::get('/{id}', [PenjualanBahanPenolongController::class, 'show'])->name('show')->whereNumber('id');
+            Route::get('/{id}/cetak-nota', [PenjualanBahanPenolongController::class, 'cetakNota'])->name('cetak-nota')->whereNumber('id');
+        });
+
         Route::get('so/{id}/export-faktur', [SoController::class, 'exportFakturPdf'])->name('so.export-faktur');
         Route::get('so/{id}/export-surat-jalan', [SoController::class, 'exportSuratJalanPdf'])->name('so.export-surat-jalan');
         Route::post('so/{id}/update-armada', [SoController::class, 'updateArmada'])->name('so.update-armada');
@@ -562,6 +572,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('so', SoController::class);
 
         // Modul Pengeluaran Barang / Surat Jalan (Gudang FG - Outbound Delivery)
+        Route::get('pengeluaran/create-sample', [PengeluaranBarangController::class, 'createSample'])->name('pengeluaran.create-sample');
+        Route::post('pengeluaran/store-sample', [PengeluaranBarangController::class, 'storeSample'])->name('pengeluaran.store-sample');
         Route::get('pengeluaran/ajax-so-detail/{id}', [PengeluaranBarangController::class, 'ajaxSoDetail'])->name('pengeluaran.ajax-so-detail');
         Route::get('pengeluaran/{id}/export-pdf', [PengeluaranBarangController::class, 'exportPdf'])->name('pengeluaran.export-pdf');
         Route::post('pengeluaran/{id}/void', [PengeluaranBarangController::class, 'void'])->name('pengeluaran.void');
@@ -575,8 +587,11 @@ Route::middleware('auth')->group(function () {
 
         // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
         Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
+        Route::get('retur/create', [SoReturController::class, 'create'])->name('retur.create');
+        Route::post('retur', [SoReturController::class, 'store'])->name('retur.store');
         Route::get('retur/so-data/{id}', [SoReturController::class, 'getSoData'])->name('retur.so-data');
         Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');
+        Route::get('retur/{id}/berita-acara-pemusnahan', [SoReturController::class, 'beritaAcaraPemusnahanWeb'])->name('retur.berita-acara-pemusnahan');
         Route::get('retur/{id}/export-pdf', [SoReturController::class, 'exportPdf'])->name('retur.export-pdf');
         Route::get('retur/{id}/export-pemusnahan-pdf', [SoReturController::class, 'exportPemusnahanPdf'])->name('retur.export-pemusnahan-pdf');
         Route::post('retur/{id}/void', [SoReturController::class, 'void'])->name('retur.void');

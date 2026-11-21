@@ -308,9 +308,8 @@ class SoService
      */
     public function getStockAvailabilityMap(array $barangIds): array
     {
-        $fgGudangIds = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')
-            ->orWhere('tipe_gudang_cd', 'FG')
-            ->orWhere('gudang_cd', 'MFI-PST')
+        $fgGudangIds = \App\Models\MasterData\MstGudang::whereIn('gudang_cd', ['GDG-FG', 'MFI', 'MFI-PST'])
+            ->orWhereIn('tipe_gudang_cd', ['FG', 'Pusat'])
             ->pluck('gudang_id')
             ->toArray();
         if (empty($fgGudangIds)) {
@@ -331,9 +330,8 @@ class SoService
      */
     public function checkStockItem(int $barangId): array
     {
-        $fgGudangIds = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')
-            ->orWhere('tipe_gudang_cd', 'FG')
-            ->orWhere('gudang_cd', 'MFI-PST')
+        $fgGudangIds = \App\Models\MasterData\MstGudang::whereIn('gudang_cd', ['GDG-FG', 'MFI', 'MFI-PST'])
+            ->orWhereIn('tipe_gudang_cd', ['FG', 'Pusat'])
             ->pluck('gudang_id')
             ->toArray();
         if (empty($fgGudangIds)) {
@@ -378,7 +376,14 @@ class SoService
                 throw new Exception("Dokumen SO {$header->so_no} yang telah dibatalkan tidak dapat dikirim.");
             }
 
-            $gudangFgId = \App\Models\MasterData\MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+            $fgGudangIds = \App\Models\MasterData\MstGudang::whereIn('gudang_cd', ['GDG-FG', 'MFI', 'MFI-PST'])
+                ->orWhereIn('tipe_gudang_cd', ['FG', 'Pusat'])
+                ->pluck('gudang_id')
+                ->toArray();
+            if (empty($fgGudangIds)) {
+                $fgGudangIds = [6, 1];
+            }
+            $gudangFgId = $fgGudangIds[0] ?? 6;
             $tglKirim = $data['tgl_kirim_aktual'] ?? now()->toDateString();
             $suratJalanNo = $header->surat_jalan_no ?: $this->codeGenerator->generateSuratJalanNo($tglKirim);
             $totalPesanQty = 0;
@@ -392,9 +397,18 @@ class SoService
 
                 $ket = "Pengiriman Surat Jalan {$suratJalanNo} (SO: {$header->so_no}) ke " . ($header->customer?->customer_nm ?? 'Customer');
 
+                // Cari gudang yang memiliki batch stok
+                $targetBatch = \App\Models\Gudang\DatStokBatch::whereIn('gudang_id', $fgGudangIds)
+                    ->where('barang_id', $dtl->barang_id)
+                    ->where('sisa_qty', '>', 0)
+                    ->orderByRaw('expired_tgl ASC NULLS LAST')
+                    ->orderBy('stok_id', 'asc')
+                    ->first();
+                $actualGudangId = $targetBatch ? $targetBatch->gudang_id : $gudangFgId;
+
                 try {
                     $this->stokService->deductStockFifo(
-                        gudangId: $gudangFgId,
+                        gudangId: $actualGudangId,
                         barangId: $dtl->barang_id,
                         totalQty: $qtyPesan,
                         dokumenNo: $suratJalanNo,

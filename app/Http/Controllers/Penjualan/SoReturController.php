@@ -55,6 +55,130 @@ class SoReturController extends Controller
     }
 
     /**
+     * Halaman form pencatatan retur penjualan lengkap (Dedicated Page, Non-Popup).
+     */
+    public function create(Request $request): View
+    {
+        $soId = $request->query('so_id');
+        $selectedSo = null;
+
+        if ($soId) {
+            $selectedSo = DatSoHdr::with([
+                'customer',
+                'details.barang.satuanDasar',
+                'details.barang.jenisBarang',
+                'pengeluaran.gudang',
+                'faktur'
+            ])
+            ->where('deleted_st', false)
+            ->whereIn('status_cd', ['COMPLETED', 'PARTIAL'])
+            ->find($soId);
+        }
+
+        // Daftar pesanan (SO) yang telah terkirim (siap dicatat retur)
+        $eligibleSos = DatSoHdr::with('customer')
+            ->whereIn('status_cd', ['COMPLETED', 'PARTIAL'])
+            ->where('deleted_st', false)
+            ->orderByDesc('so_tgl')
+            ->get(['so_id', 'so_no', 'so_tgl', 'customer_id', 'status_cd', 'total_tagihan', 'faktur_no', 'surat_jalan_no']);
+
+        $gudangs = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_id')
+            ->get();
+
+        $defaultGudangId = $gudangs->firstWhere('gudang_cd', 'GDG-FG')?->gudang_id ?? ($gudangs->firstWhere('gudang_cd', 'MFI')?->gudang_id ?? 6);
+
+        // Hitung kuantitas maksimal retur per detail jika ada SO terpilih
+        $itemsData = [];
+        if ($selectedSo) {
+            $itemsData = $selectedSo->details->map(function ($dtl) {
+                $alreadyRetur = (float) DatSoReturDtl::where('sodtl_id', $dtl->sodtl_id)
+                    ->whereHas('header', fn($q) => $q->where('status_cd', 'CONFIRMED')->where('deleted_st', false))
+                    ->sum('qty_retur');
+
+                $maxReturnable = max(0, (float) $dtl->kirim_qty - $alreadyRetur);
+                $effectivePrice = (float) $dtl->pesan_qty > 0 
+                    ? ((float) $dtl->subtotal_tagihan / (float) $dtl->pesan_qty) 
+                    : (float) $dtl->harga_satuan;
+
+                return [
+                    'sodtl_id'          => $dtl->sodtl_id,
+                    'barang_id'         => $dtl->barang_id,
+                    'barang_cd'         => $dtl->barang?->barang_cd ?? '-',
+                    'barang_nm'         => $dtl->barang?->barang_nm ?? '-',
+                    'satuan_nm'         => $dtl->satuan ?: ($dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton'),
+                    'kirim_qty'         => (float) $dtl->kirim_qty,
+                    'already_retur_qty' => $alreadyRetur,
+                    'max_returnable'    => $maxReturnable,
+                    'effective_price'   => $effectivePrice,
+                    'formatted_price'   => 'Rp ' . number_format($effectivePrice, 0, ',', '.'),
+                ];
+            });
+        }
+
+        return view('penjualan.retur.create', compact('selectedSo', 'eligibleSos', 'gudangs', 'defaultGudangId', 'itemsData'));
+    }
+
+    /**
+     * Menyimpan formulir retur penjualan.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $soId = (int) $request->input('so_id');
+        $validated = $request->validate([
+            'so_id'                        => 'required|exists:dat_so_hdr,so_id',
+            'retur_tgl'                    => 'required|date',
+            'gudang_id'                    => 'required|exists:mst_gudang,gudang_id',
+            'tindakan_cd'                  => 'required|in:POTONG_TAGIHAN,TUKAR_GULING',
+            'alasan_txt'                   => 'nullable|string|max:500',
+            'items'                        => 'required|array|min:1',
+            'items.*.sodtl_id'             => 'required|integer',
+            'items.*.qty_retur'            => 'required|numeric|min:0',
+            'items.*.perlakuan_cd'         => 'required|string|in:MASUK_PERSEDIAAN,DIMUSNAHKAN',
+            'items.*.kondisi_cd'           => 'nullable|string|max:50',
+            'items.*.catatan_txt'          => 'nullable|string|max:255',
+        ], [
+            'so_id.required'       => 'Pilih dokumen pesanan (SO) yang akan diretur.',
+            'retur_tgl.required'   => 'Tanggal retur wajib diisi.',
+            'gudang_id.required'   => 'Pilih gudang tujuan barang masuk.',
+            'tindakan_cd.required' => 'Pilih tindakan komersial tagihan.',
+            'items.required'       => 'Minimal harus ada 1 item barang yang diretur.',
+        ]);
+
+        try {
+            $retur = $this->soService->recordSalesReturn($soId, $validated, auth()->user());
+
+            $actionMsg = $retur->tindakan_cd === 'POTONG_TAGIHAN'
+                ? "Sisa tagihan SO otomatis dikurangi Rp " . number_format((float) $retur->total_nilai, 0, ',', '.')
+                : "Barang dicatat untuk ditukar guling secara fisik";
+
+            // Jika ada barang yang dimusnahkan, arahkan langsung ke halaman Berita Acara Pemusnahan!
+            if ($retur->total_qty_dimusnahkan > 0) {
+                return redirect()
+                    ->route('penjualan.retur.berita-acara-pemusnahan', $retur->retur_id)
+                    ->with('toast_success', "Retur Penjualan {$retur->retur_no} berhasil dicatat! {$actionMsg}. Terdapat {$retur->total_qty_dimusnahkan} unit barang dimusnahkan — silakan cetak Berita Acara Pemusnahan berikut.");
+            }
+
+            return redirect()
+                ->route('penjualan.so.show', $soId)
+                ->with('toast_success', "Retur Penjualan {$retur->retur_no} ({$retur->total_qty} unit) berhasil dicatat dan masuk kembali ke persediaan gudang! {$actionMsg}.");
+        } catch (Exception $e) {
+            return back()->withInput()->with('error', 'Gagal memproses retur penjualan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menampilkan Berita Acara Pemusnahan Produk Jadi (Scrap Report) berbasis Web & Siap Cetak (A4).
+     */
+    public function beritaAcaraPemusnahanWeb(int $id): View
+    {
+        $retur = DatSoReturHdr::with(['order.customer', 'customer', 'gudang', 'details.barang.satuanDasar'])->findOrFail($id);
+
+        return view('penjualan.retur.berita_acara_pemusnahan', compact('retur'));
+    }
+
+    /**
      * Mengambil data rincian barang SO terkirim untuk formulir modal retur (AJAX).
      */
     public function getSoData(int $id): JsonResponse

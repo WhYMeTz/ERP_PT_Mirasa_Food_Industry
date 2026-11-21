@@ -347,6 +347,15 @@
     background: #ffffff !important;
 }
 
+.excel-grid-table .item-satuan {
+    min-width: 95px !important;
+    font-size: 0.775rem !important;
+    font-weight: 600;
+    padding: 0.25rem 0.35rem !important;
+    text-align: center;
+    cursor: pointer;
+}
+
 /* Stock Badges */
 .stock-badge {
     display: inline-flex;

@@ -37,6 +37,16 @@
             'MANUAL' => 'Manual (Sales/Toko)',
             default => 'Customer'
         };
+
+        $hasKurangStok = false;
+        foreach ($order->details as $d) {
+            $s = max(0, (float)$d->pesan_qty - (float)$d->kirim_qty);
+            $stk = (float)($stockMap[$d->barang_id] ?? 0);
+            if ($s > $stk) {
+                $hasKurangStok = true;
+                break;
+            }
+        }
     @endphp
 
     {{-- PRINT-ONLY HEADER --}}
@@ -113,15 +123,16 @@
                     </a>
                 @endif
 
+                {{-- Catat Retur Penjualan (Dedicated Page) --}}
+                <a href="{{ route('penjualan.retur.create', ['so_id' => $order->so_id]) }}" class="btn btn-warning" style="background: #fffbeb; border: 1.5px solid #fde68a; color: #b45309; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px; text-decoration: none;" title="Catat pengembalian barang dari pesanan ini">
+                    + Catat Retur
+                </a>
+
                 {{-- Batalkan Pengiriman (Void Delivery) --}}
                 <button type="button" class="btn btn-secondary" onclick="openVoidDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}')" style="border-color: #fca5a5; color: #dc2626; background: #fff5f5; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;" title="Batalkan pengiriman dan kembalikan stok fisik ke Gudang FG">
                     Batalkan Pengiriman
                 </button>
             @elseif(!in_array($order->status_cd, ['COMPLETED', 'CANCELLED']))
-                <button type="button" class="btn btn-primary" onclick="openConfirmDeliveryModal({{ $order->so_id }}, '{{ $order->so_no }}', '{{ addslashes($order->customer?->customer_nm ?? '') }}', '{{ addslashes($order->supir_nm ?? '') }}', '{{ addslashes($order->nopol_kendaraan ?? '') }}')" style="background: #059669; border: 1.5px solid #047857; font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1rem; color: #ffffff; border-radius: 6px;">
-                    + Proses Kirim (FEFO)
-                </button>
-
                 <a href="{{ route('penjualan.so.edit', $order->so_id) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; padding: 0.55rem 0.95rem; border-radius: 6px;">
                     Edit PO
                 </a>
@@ -214,6 +225,10 @@
                     <span class="so-kv-value">
                         @if($order->isCompleted())
                             <span class="badge badge-success" style="font-weight: 700;">Terpotong FEFO</span>
+                        @elseif($hasKurangStok)
+                            <span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-weight: 700;">
+                                Menunggu Produksi (Stok Kurang)
+                            </span>
                         @else
                             <span class="badge badge-warning">Menunggu Kirim</span>
                         @endif
@@ -275,9 +290,10 @@
                 <thead>
                     <tr>
                         <th style="width: 45px; text-align: center;">No</th>
-                        <th style="width: 120px; text-align: center;">Kode Barang</th>
-                        <th style="min-width: 240px; text-align: left;">Nama Produk / Barang Jadi</th>
-                        <th style="width: 90px; text-align: right;">Jumlah</th>
+                        <th style="width: 110px; text-align: center;">Kode Barang</th>
+                        <th style="min-width: 230px; text-align: left;">Nama Produk / Barang Jadi</th>
+                        <th style="width: 140px; text-align: center;">Ketersediaan Stok</th>
+                        <th style="width: 85px; text-align: right;">Jumlah</th>
                         <th style="width: 80px; text-align: left;">Satuan</th>
                         <th style="width: 120px; text-align: right;">Harga Satuan</th>
                         <th style="width: 85px; text-align: right;">Diskon (%)</th>
@@ -293,6 +309,9 @@
                             $potNom = (float) ($item->potongan_nominal ?? 0);
                             $isPpn = ($item->ppn_tipe ?? '') === 'PPN_11';
                             $subtotalRow = (float) ($item->subtotal_tagihan ?: $item->subtotal_nominal);
+                            $stokFg = (float) ($stockMap[$item->barang_id] ?? 0);
+                            $sisaItem = max(0, (float)$item->pesan_qty - (float)$item->kirim_qty);
+                            $isCukup = ($stokFg >= $sisaItem && $stokFg > 0);
                         @endphp
                         <tr>
                             <td style="text-align: center; color: #64748b;">{{ $index + 1 }}</td>
@@ -303,19 +322,47 @@
                             </td>
                             <td>
                                 <strong style="color: #0f172a; font-size: 0.875rem;">{{ $item->barang?->barang_nm }}</strong>
-                                @php
-                                    $stokFg = (float) ($stockMap[$item->barang_id] ?? 0);
-                                @endphp
-                                <div style="font-size: 0.725rem; margin-top: 2px;">
-                                    @if($order->isCompleted())
-                                        <span style="color: #15803d; font-weight: 600;">Terkirim: {{ number_format((float)$item->kirim_qty, 0) }} {{ strtolower($item->satuan ?: 'karton') }} (Stok {{ $namaGdg }} Terpotong)</span>
-                                    @else
-                                        <span style="color: {{ $stokFg >= $item->pesan_qty ? '#166534' : '#b45309' }}; font-weight: 600;">
-                                            Stok {{ $namaGdg }}: {{ number_format($stokFg, 0) }} {{ $stokFg >= $item->pesan_qty ? '(Cukup Siap Kirim)' : '(Kurang ' . number_format($item->pesan_qty - $stokFg, 0) . ')' }}
-                                        </span>
-                                    @endif
-                                </div>
                             </td>
+
+                            {{-- Kolom Ketersediaan Stok: Badge Enterprise Informatif --}}
+                            <td style="vertical-align: middle;">
+                                @if($order->isCompleted())
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: inline-block; width: fit-content; padding: 2px 7px; font-size: 0.725rem; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                            TERKIRIM
+                                        </span>
+                                        <span style="font-size: 0.725rem; color: #64748b;">100% Terpenuhi</span>
+                                    </div>
+                                @elseif($isCukup)
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: inline-block; width: fit-content; padding: 2px 7px; font-size: 0.725rem; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 4px;">
+                                            SIAP KIRIM
+                                        </span>
+                                        <span style="font-size: 0.725rem; color: #166534; font-weight: 600;">
+                                            Stok: {{ number_format($stokFg, 0) }} ctn
+                                        </span>
+                                    </div>
+                                @elseif($stokFg > 0)
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: inline-block; width: fit-content; padding: 2px 7px; font-size: 0.725rem; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; border-radius: 4px;">
+                                            STOK SEBAGIAN
+                                        </span>
+                                        <span style="font-size: 0.725rem; color: #92400e; font-weight: 600;">
+                                            Ada {{ number_format($stokFg, 0) }} &bull; <strong style="color: #dc2626;">Kurang {{ number_format($sisaItem - $stokFg, 0) }}</strong>
+                                        </span>
+                                    </div>
+                                @else
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: inline-block; width: fit-content; padding: 2px 7px; font-size: 0.725rem; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 4px;">
+                                            MENUNGGU PRODUKSI
+                                        </span>
+                                        <span style="font-size: 0.725rem; color: #64748b;">
+                                            Stok: 0 ctn (Kurang {{ number_format($sisaItem, 0) }})
+                                        </span>
+                                    </div>
+                                @endif
+                            </td>
+
                             <td style="text-align: right; font-weight: 600; font-size: 0.875rem; white-space: nowrap;">
                                 {{ number_format((float) $item->pesan_qty, 0) }}
                             </td>
@@ -346,7 +393,7 @@
                 </tbody>
                 <tfoot style="background: #f8fafc; border-top: 2px solid #cbd5e1; font-weight: 700;">
                     <tr>
-                        <td colspan="3" style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
+                        <td colspan="4" style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
                             Total Kuantitas:
                         </td>
                         <td style="text-align: right; padding: 0.75rem 0.75rem; color: #0f172a; font-size: 0.95rem; font-weight: 800; font-family: monospace; white-space: nowrap;">
@@ -487,13 +534,23 @@
                                     {!! $retur->status_badge !!}
                                 </td>
                                 <td style="text-align: center; white-space: nowrap;">
-                                    <a href="{{ route('penjualan.retur.export-pdf', $retur->retur_id) }}" 
-                                       target="_blank" 
-                                       class="btn btn-secondary btn-sm" 
-                                       style="font-size: 0.725rem; padding: 0.25rem 0.5rem;"
-                                       title="Cetak Berita Acara Retur PDF">
-                                        PDF
-                                    </a>
+                                    <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center;">
+                                        <a href="{{ route('penjualan.retur.export-pdf', $retur->retur_id) }}" 
+                                           target="_blank" 
+                                           class="btn btn-secondary btn-sm" 
+                                           style="font-size: 0.725rem; padding: 0.25rem 0.5rem;"
+                                           title="Cetak Berita Acara Retur PDF">
+                                            PDF
+                                        </a>
+                                        @if ((float)$retur->total_qty_dimusnahkan > 0)
+                                            <a href="{{ route('penjualan.retur.berita-acara-pemusnahan', $retur->retur_id) }}" 
+                                               class="btn btn-danger btn-sm" 
+                                               style="font-size: 0.725rem; padding: 0.25rem 0.5rem; background: #fee2e2; border-color: #fca5a5; color: #dc2626; text-decoration: none;"
+                                               title="Lihat & Cetak Berita Acara Pemusnahan (Scrap Report)">
+                                                BAP Musnah
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -520,10 +577,8 @@
 </div>
 
 {{-- MODAL DIALOGS LENGKAP --}}
-@include('penjualan.so.partials.modal-confirm-delivery')
 @include('penjualan.so.partials.modal-void-delivery')
 @include('penjualan.so.partials.modal-cancel-so')
-@include('penjualan.so.partials.modal-retur-penjualan')
 @include('penjualan.so.partials.modal-update-armada')
 
 @endsection

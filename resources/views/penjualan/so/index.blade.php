@@ -406,17 +406,10 @@
                                         </a>
                                     @endif
                                 @elseif (!in_array($so->status_cd, ['COMPLETED', 'CANCELLED']))
-                                    {{-- Kirim Barang Cepat via FEFO --}}
-                                    <button type="button" 
-                                            class="action-dropdown-item" 
-                                            style="color: #059669; font-weight: 700;" 
-                                            onclick="openConfirmDeliveryModal({{ $so->so_id }}, '{{ $so->so_no }}', '{{ addslashes($so->customer?->customer_nm ?? '') }}', '{{ addslashes($so->supir_nm ?? '') }}', '{{ addslashes($so->nopol_kendaraan ?? '') }}')">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        <span>Kirim Barang (FEFO)</span>
-                                    </button>
+                                    {{-- Draf Lembar Surat Jalan Sebelum Muat Fisik --}}
                                     <a href="{{ route('penjualan.so.export-surat-jalan', $so->so_id) }}" target="_blank" class="action-dropdown-item" style="color: #64748b;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Draf SJ</span>
+                                        <span>Draf SJ (PDF)</span>
                                     </a>
                                 @endif
 
@@ -549,7 +542,6 @@
 </div>
 
 {{-- MODAL DIALOGS LENGKAP --}}
-@include('penjualan.so.partials.modal-confirm-delivery')
 @include('penjualan.so.partials.modal-cancel-so')
 
 @endsection

@@ -996,6 +996,53 @@ class CodeGeneratorService
     }
 
     /**
+     * Generate Nomor Transaksi Penjualan Bahan Penolong & Bumbu
+     * Format: {seq:3}/JBP/MFI/{mm}/{yy}
+     * Contoh: 001/JBP/MFI/11/26
+     * Memiliki seri terpisah dari PO Distributor dan Penjualan Langsung dengan reset bulanan otomatis.
+     */
+    public function generatePenjualanBahanPenolongNo(?string $date = null, ?int $excludeSoId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/JBP/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_so_hdr')
+            ->where('so_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeSoId) {
+            $query->where('so_id', '!=', $excludeSoId);
+        }
+
+        $existing = $query->pluck('so_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/JBP\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $soNo) {
+            if (preg_match($regex, trim((string) $soNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_so_hdr')->where('so_no', $generated);
+            if ($excludeSoId) {
+                $checkQuery->where('so_id', '!=', $excludeSoId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
      * Generate Nomor Faktur / Invoice Penjualan (format: INV-YYYYMM-0001)
      */
     public function generateFakturNo(?string $date = null): string

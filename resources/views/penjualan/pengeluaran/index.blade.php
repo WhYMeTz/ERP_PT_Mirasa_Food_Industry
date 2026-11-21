@@ -19,9 +19,9 @@
         </div>
 
         <div class="sj-header-buttons">
-            <a href="{{ route('penjualan.pengeluaran.create') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700;">
+            <a href="{{ route('penjualan.pengeluaran.create-sample') }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8125rem; font-weight: 600; padding: 0.45rem 0.95rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; text-decoration: none;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Catat Pengeluaran Barang</span>
+                <span>Pengeluaran Sampel</span>
             </a>
         </div>
     </div>
@@ -201,7 +201,14 @@
 
                             {{-- Referensi PO Penjualan --}}
                             <td>
-                                @if ($order)
+                                @if ($sj->isSample())
+                                    <span class="badge" style="background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; font-weight: 700; font-size: 0.725rem; padding: 2px 7px; border-radius: 4px;">
+                                        SAMPEL / PROMOSI
+                                    </span>
+                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                        {{ $sj->keperluan_txt ?: 'Pengeluaran Non-PO' }}
+                                    </div>
+                                @elseif ($order)
                                     <a href="{{ route('penjualan.so.show', $order->so_id) }}" style="font-weight: 600; color: #334155; text-decoration: none; font-size: 0.8125rem;">
                                         {{ $order->so_no }}
                                     </a>
@@ -215,23 +222,37 @@
                                 @endif
                             </td>
 
-                            {{-- Mitra Customer --}}
+                            {{-- Mitra Customer / Penerima --}}
                             <td>
-                                <div style="font-weight: 700; color: #1e293b;">
-                                    {{ $customer?->customer_nm ?? 'Customer Non-Aktif' }}
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
-                                    @if ($klasifikasi === 'IFM')
-                                        <span class="badge-klasifikasi ifm">IFM</span>
-                                    @elseif (in_array($klasifikasi, ['MIDI_ALFA', 'IDM', 'IDM_ALFA']))
-                                        <span class="badge-klasifikasi modern">{{ $klasifikasi === 'MIDI_ALFA' ? 'MIDI/ALFA' : ($klasifikasi === 'IDM' ? 'IDM' : 'MODERN') }}</span>
-                                    @else
-                                        <span class="badge-klasifikasi manual">MANUAL</span>
-                                    @endif
-                                    <span style="font-size: 0.725rem; color: #64748b;">
-                                        {{ $customer?->wilayah ?: ($customer?->alamat_txt ? Str::limit($customer->alamat_txt, 25) : '-') }}
-                                    </span>
-                                </div>
+                                @if ($sj->isSample())
+                                    <div style="font-weight: 700; color: #1e293b;">
+                                        {{ $sj->penerima_nm ?: ($customer?->customer_nm ?? 'Penerima Sampel') }}
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
+                                        <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-size: 0.675rem; font-weight: 700; padding: 1px 5px; border-radius: 4px;">NON-KOMERSIAL</span>
+                                        @if($sj->otorisasi_oleh)
+                                            <span style="font-size: 0.725rem; color: #64748b;">
+                                                Izin: {{ $sj->otorisasi_oleh }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div style="font-weight: 700; color: #1e293b;">
+                                        {{ $customer?->customer_nm ?? 'Customer Non-Aktif' }}
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
+                                        @if ($klasifikasi === 'IFM')
+                                            <span class="badge-klasifikasi ifm">IFM</span>
+                                        @elseif (in_array($klasifikasi, ['MIDI_ALFA', 'IDM', 'IDM_ALFA']))
+                                            <span class="badge-klasifikasi modern">{{ $klasifikasi === 'MIDI_ALFA' ? 'MIDI/ALFA' : ($klasifikasi === 'IDM' ? 'IDM' : 'MODERN') }}</span>
+                                        @else
+                                            <span class="badge-klasifikasi manual">MANUAL</span>
+                                        @endif
+                                        <span style="font-size: 0.725rem; color: #64748b;">
+                                            {{ $customer?->wilayah ?: ($customer?->alamat_txt ? Str::limit($customer->alamat_txt, 25) : '-') }}
+                                        </span>
+                                    </div>
+                                @endif
                             </td>
 
                             {{-- Rincian Barang Dikeluarkan --}}
@@ -393,13 +414,14 @@
                 <table class="sj-table">
                     <thead>
                         <tr>
-                            <th style="width: 150px;">No. PO Penjualan</th>
-                            <th style="width: 110px;">Tanggal PO</th>
-                            <th>Mitra Customer &amp; Klasifikasi</th>
-                            <th>Rincian Produk Dipesan</th>
-                            <th style="text-align: right; width: 130px;">Total Pesanan</th>
-                            <th style="width: 120px;">Jadwal Kirim</th>
-                            <th style="width: 160px; text-align: center;">Aksi</th>
+                            <th style="width: 140px;">No. PO Penjualan</th>
+                            <th style="width: 100px;">Tanggal PO</th>
+                            <th style="min-width: 170px;">Mitra Customer &amp; Klasifikasi</th>
+                            <th style="min-width: 220px;">Rincian Produk Dipesan</th>
+                            <th style="min-width: 185px; text-align: left;">Kesiapan Stok</th>
+                            <th style="text-align: right; width: 110px;">Total Pesan</th>
+                            <th style="width: 115px;">Jadwal Kirim</th>
+                            <th style="width: 140px; text-align: center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -417,6 +439,7 @@
                                 $totalKarton = (float) $ro->details->sum('pesan_qty');
                                 $kirimQty = (float) $ro->details->sum('kirim_qty');
                                 $sisaKarton = max(0, $totalKarton - $kirimQty);
+                                $stockSt = $ro->stock_status ?? 'EMPTY';
                             @endphp
                             <tr>
                                 <td>
@@ -436,17 +459,74 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div style="font-size: 0.775rem; color: #475569; line-height: 1.45;">
-                                        @foreach($ro->details->take(2) as $dtl)
-                                            <div>&bull; {{ $dtl->barang?->barang_nm ?? '-' }} <span style="font-weight: 600; color: #0f172a;">({{ number_format($dtl->pesan_qty, 0, ',', '.') }} ctn)</span></div>
-                                        @endforeach
-                                        @if($ro->details->count() > 2)
-                                            <div style="color: #64748b; font-size: 0.725rem; font-style: italic;">
-                                                +{{ $ro->details->count() - 2 }} item lainnya...
-                                            </div>
+                                    <div style="font-size: 0.775rem; color: #475569; line-height: 1.55;">
+                                        @if(!empty($ro->stock_item_summary))
+                                            @foreach(array_slice($ro->stock_item_summary, 0, 3) as $itemSum)
+                                                <div style="margin-bottom: 2px;">
+                                                    <span style="color: #0f172a; font-weight: 600;">{{ $itemSum['barang_nm'] }}</span>: 
+                                                    <span>{{ number_format($itemSum['sisa'], 0) }} ctn</span>
+                                                    @if($itemSum['stok'] >= $itemSum['sisa'] && $itemSum['stok'] > 0)
+                                                        <span style="color: #166534; font-size: 0.725rem; font-weight: 600;">(Stok: {{ number_format($itemSum['stok'], 0) }})</span>
+                                                    @elseif($itemSum['stok'] > 0)
+                                                        <span style="color: #b45309; font-size: 0.725rem; font-weight: 600;">(Stok: {{ number_format($itemSum['stok'], 0) }}, Kurang {{ number_format($itemSum['kurang'], 0) }})</span>
+                                                    @else
+                                                        <span style="color: #dc2626; font-size: 0.725rem; font-weight: 600;">(Stok: 0)</span>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                            @if(count($ro->stock_item_summary) > 3)
+                                                <div style="color: #64748b; font-size: 0.725rem; font-style: italic;">
+                                                    +{{ count($ro->stock_item_summary) - 3 }} item lainnya...
+                                                </div>
+                                            @endif
+                                        @else
+                                            @foreach($ro->details->take(3) as $dtl)
+                                                @php $sisaItem = max(0, (float)$dtl->pesan_qty - (float)$dtl->kirim_qty); @endphp
+                                                <div>&bull; {{ $dtl->barang?->barang_nm ?? '-' }} <span style="font-weight: 600; color: #0f172a;">({{ number_format($sisaItem, 0, ',', '.') }} ctn)</span></div>
+                                            @endforeach
                                         @endif
                                     </div>
                                 </td>
+
+                                {{-- Kesiapan Stok: Badge Enterprise Rapi & Informatif --}}
+                                <td style="white-space: nowrap; vertical-align: middle;">
+                                    @if($stockSt === 'READY')
+                                        <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start; white-space: nowrap;">
+                                            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 0.725rem; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 4px; white-space: nowrap;">
+                                                <svg width="7" height="7" fill="#059669" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                                Siap Kirim
+                                            </span>
+                                            <div style="font-size: 0.75rem; color: #166534; font-weight: 600; white-space: nowrap;">
+                                                Stok Lengkap: {{ number_format($ro->total_ready_stok ?? $totalKarton, 0) }} / {{ number_format($totalKarton, 0) }} ctn
+                                            </div>
+                                        </div>
+                                    @elseif($stockSt === 'PARTIAL')
+                                        <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start; white-space: nowrap;">
+                                            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 0.725rem; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; border-radius: 4px; white-space: nowrap;">
+                                                <svg width="7" height="7" fill="#d97706" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                                Stok Sebagian
+                                            </span>
+                                            <div style="font-size: 0.75rem; color: #334155; white-space: nowrap;">
+                                                <span style="color: #b45309; font-weight: 600;">Ada {{ number_format($ro->total_ready_stok ?? 0, 0) }} ctn</span>
+                                                <span style="color: #94a3b8; margin: 0 3px;">&bull;</span>
+                                                <span style="color: #dc2626; font-weight: 600;">Kurang {{ number_format($ro->total_kurang_stok ?? 0, 0) }} ctn</span>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start; white-space: nowrap;">
+                                            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 0.725rem; font-weight: 700; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 4px; white-space: nowrap;">
+                                                <svg width="7" height="7" fill="#dc2626" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                                Menunggu Produksi
+                                            </span>
+                                            <div style="font-size: 0.75rem; color: #64748b; white-space: nowrap;">
+                                                Stok Gudang: <strong style="color: #dc2626;">0 ctn</strong>
+                                                <span style="color: #94a3b8; margin: 0 3px;">&bull;</span>
+                                                <span>Kurang {{ number_format($totalKarton, 0) }} ctn</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </td>
+
                                 <td style="text-align: right;">
                                     <span style="font-weight: 700; color: #0f172a; font-size: 0.875rem;">
                                         {{ number_format($totalKarton, 0, ',', '.') }}
@@ -484,19 +564,35 @@
                                         <span style="color: #94a3b8; font-size: 0.75rem;">-</span>
                                     @endif
                                 </td>
-                                <td style="text-align: center;">
-                                    <a href="{{ route('penjualan.pengeluaran.create', ['so_id' => $ro->so_id]) }}" 
-                                       class="btn btn-primary" 
-                                       style="padding: 0.4rem 0.85rem; font-size: 0.775rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 6px; background: #0284c7; border: 1px solid #0284c7; text-decoration: none; color: #ffffff;"
-                                       title="Keluarkan fisik barang dan terbitkan Surat Jalan">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-                                        <span>Keluarkan Barang</span>
-                                    </a>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    @if($stockSt === 'READY')
+                                        <a href="{{ route('penjualan.pengeluaran.create', ['so_id' => $ro->so_id]) }}" 
+                                           class="btn btn-primary btn-sm" 
+                                           style="font-size: 0.8125rem; font-weight: 700; padding: 0.4rem 0.9rem; border-radius: 4px; background: #059669; border: 1px solid #047857; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;"
+                                           title="Keluarkan fisik barang dan terbitkan Surat Jalan">
+                                            Keluarkan Barang
+                                        </a>
+                                    @elseif($stockSt === 'PARTIAL')
+                                        <a href="{{ route('penjualan.pengeluaran.create', ['so_id' => $ro->so_id]) }}" 
+                                           class="btn btn-warning btn-sm" 
+                                           style="font-size: 0.8125rem; font-weight: 700; padding: 0.4rem 0.9rem; border-radius: 4px; background: #d97706; border: 1px solid #b45309; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;"
+                                           title="Keluarkan sebagian barang yang sudah tersedia di gudang">
+                                            Kirim Sebagian
+                                        </a>
+                                    @else
+                                        <button type="button" 
+                                                disabled 
+                                                class="btn btn-sm" 
+                                                style="font-size: 0.8125rem; font-weight: 600; padding: 0.4rem 0.85rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #f8fafc; color: #94a3b8; cursor: not-allowed; display: inline-flex; align-items: center; justify-content: center;"
+                                                title="Stok fisik belum tersedia di Gudang FG (Menunggu Produksi)">
+                                            Keluarkan Barang
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
+                                <td colspan="8" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
                                     <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
                                         <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #cbd5e1;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span style="font-weight: 600; color: #475569;">Tidak ada PO dalam antrean siap kirim</span>

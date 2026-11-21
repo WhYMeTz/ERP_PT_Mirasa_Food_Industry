@@ -1932,6 +1932,18 @@
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Penjualan non-PO, sales kanvaser &amp; spot order gudang</span>
                                             </div>
                                         </a>
+                                        <a href="{{ route('penjualan.bahan-penolong.index') }}"
+                                            class="mega-item {{ request()->routeIs('penjualan.bahan-penolong.*') ? 'active' : '' }}">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                style="color: #d97706;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Penjualan Bahan Penolong &amp; Bumbu</span>
+                                                <span style="font-size: 0.6875rem; color: #64748b;">Penjualan karton dus, kemasan &amp; bumbu eceran</span>
+                                            </div>
+                                        </a>
                                         <a href="{{ route('penjualan.retur.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.retur.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"

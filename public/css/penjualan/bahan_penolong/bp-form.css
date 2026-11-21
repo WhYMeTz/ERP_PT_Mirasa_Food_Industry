@@ -1,0 +1,12 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PENJUALAN BAHAN PENOLONG & BUMBU - FORM STYLES
+   Mengikuti standar form Penjualan Langsung Pabrik (ERP PT Mirasa)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@import url('/css/penjualan/direct-sales-create.css');
+
+/* Custom tweak jika diperlukan */
+.ds-items-table th {
+    background: #f8fafc;
+    color: #475569;
+}

@@ -269,15 +269,15 @@
                     <thead>
                         <tr>
                             <th style="width: 35px; text-align: center;">No</th>
-                            <th style="width: 120px; text-align: center;">Kode Barang</th>
-                            <th style="min-width: 260px; text-align: left;">Nama Produk / Barang Jadi <span style="color:#ef4444;">*</span></th>
-                            <th style="width: 140px; text-align: center;">Ketersediaan Stok</th>
-                            <th style="width: 95px; text-align: right;">Jumlah <span style="color:#ef4444;">*</span></th>
-                            <th style="width: 75px; text-align: center;">Satuan</th>
+                            <th style="width: 110px; text-align: center;">Kode Barang</th>
+                            <th style="min-width: 250px; text-align: left;">Nama Produk / Barang Jadi <span style="color:#ef4444;">*</span></th>
+                            <th style="width: 135px; text-align: center;">Ketersediaan Stok</th>
+                            <th style="width: 85px; text-align: right;">Jumlah <span style="color:#ef4444;">*</span></th>
+                            <th style="width: 115px; text-align: center;">Satuan</th>
                             <th style="width: 125px; text-align: right;">Harga Satuan <span style="color:#ef4444;">*</span></th>
                             <th style="width: 80px; text-align: right;">Diskon (%)</th>
                             <th style="width: 105px; text-align: right;">Potongan (Rp)</th>
-                            <th style="width: 100px; text-align: center;">PPN</th>
+                            <th style="width: 95px; text-align: center;">PPN</th>
                             <th style="width: 135px; text-align: right;">Total Harga</th>
                             <th style="width: 40px; text-align: center;">Aksi</th>
                         </tr>

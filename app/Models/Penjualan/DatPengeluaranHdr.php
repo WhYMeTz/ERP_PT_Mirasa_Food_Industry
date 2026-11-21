@@ -21,8 +21,12 @@ class DatPengeluaranHdr extends Model
     protected $fillable = [
         'pengeluaran_no',
         'pengeluaran_tgl',
+        'tipe_pengeluaran_cd',
         'so_id',
         'customer_id',
+        'penerima_nm',
+        'keperluan_txt',
+        'otorisasi_oleh',
         'gudang_id',
         'supir_nm',
         'nopol_kendaraan',
@@ -37,6 +41,11 @@ class DatPengeluaranHdr extends Model
         'active_st',
         'version_no',
     ];
+
+    public function isSample(): bool
+    {
+        return in_array($this->tipe_pengeluaran_cd, ['SAMPLE', 'PROMOSI', 'NON_PO']);
+    }
 
     protected $casts = [
         'pengeluaran_tgl' => 'date',

@@ -114,47 +114,93 @@
                     $order = $pengeluaran->order;
                     $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
                 @endphp
-                <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Mitra Customer:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
-                            {{ $customer?->customer_nm ?? '-' }}
-                            <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
-                                {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Alamat Pengiriman:</td>
-                        <td style="padding: 0.4rem 0; color: #334155;">
-                            {{ $customer?->alamat_txt ?? '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Wilayah / Kota:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 600; color: #0f172a;">
-                            {{ $customer?->wilayah ?? '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Referensi PO Penjualan:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0284c7;">
-                            {{ $order?->so_no ?? '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. PO Eksternal:</td>
-                        <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 600;">
-                            {{ $order?->customer_po_no ?: '(Tidak ada)' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
-                            {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Barang Jadi (GDG-FG)' }}
-                        </td>
-                    </tr>
-                </table>
+                @if ($pengeluaran->isSample())
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 150px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Jenis Pengeluaran:</td>
+                            <td style="padding: 0.4rem 0;">
+                                <span class="badge" style="background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">
+                                    SAMPEL / PROMOSI
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Penerima / Mitra:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a; font-size: 0.9rem;">
+                                {{ $pengeluaran->penerima_nm }}
+                                @if($customer)
+                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: normal;">(Customer: {{ $customer->customer_nm }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Keperluan / Tujuan:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #334155;">
+                                {{ $pengeluaran->keperluan_txt ?: 'Sampel Promosi' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Diberikan / Disetujui Oleh:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #0284c7;">
+                                {{ $pengeluaran->otorisasi_oleh ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Status Komersial:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
+                                Bebas Biaya / FOC (Tanpa Tagihan Faktur)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
+                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Barang Jadi (GDG-FG)' }}
+                            </td>
+                        </tr>
+                    </table>
+                @else
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Mitra Customer:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ $customer?->customer_nm ?? '-' }}
+                                <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
+                                    {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Alamat Pengiriman:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $customer?->alamat_txt ?? '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Wilayah / Kota:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #0f172a;">
+                                {{ $customer?->wilayah ?? '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Referensi PO Penjualan:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0284c7;">
+                                {{ $order?->so_no ?? '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. PO Eksternal:</td>
+                            <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 600;">
+                                {{ $order?->customer_po_no ?: '(Tidak ada)' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
+                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Barang Jadi (GDG-FG)' }}
+                            </td>
+                        </tr>
+                    </table>
+                @endif
             </div>
         </div>
 

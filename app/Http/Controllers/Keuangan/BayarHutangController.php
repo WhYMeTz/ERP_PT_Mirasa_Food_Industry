@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\Keuangan\DatBayarHutangHdr;
 use App\Models\Keuangan\DatHutangHdr;
-use App\Models\Keuangan\DatKasKeluarHdr;
 use App\Models\MasterData\MstSupplier;
 use App\Services\Keuangan\KasBankService;
-use App\Services\Keuangan\KasKeluarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,22 +16,21 @@ use Exception;
 class BayarHutangController extends Controller
 {
     protected KasBankService $kasBankService;
-    protected KasKeluarService $kasKeluarService;
 
-    public function __construct(
-        KasBankService $kasBankService,
-        KasKeluarService $kasKeluarService
-    ) {
+    public function __construct(KasBankService $kasBankService)
+    {
         $this->kasBankService = $kasBankService;
-        $this->kasKeluarService = $kasKeluarService;
     }
 
     /**
-     * Riwayat Pembayaran Hutang & Kas Keluar Operasional (Bukti Kas Keluar - BKK)
+     * Riwayat Pelunasan Hutang Supplier (Bukti Kas Keluar Pembelian - BKK AP)
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $activeTab = $request->input('tab', 'semua');
+        // Backward compatibility: alihkan ?tab=operasional ke halaman Kas Keluar Operasional mandiri
+        if ($request->input('tab') === 'operasional') {
+            return redirect()->route('keuangan.kas_keluar.index', $request->except(['tab', 'page']));
+        }
 
         $filters = [
             'kas_bank_id'  => $request->input('kas_bank_id'),
@@ -44,24 +41,19 @@ class BayarHutangController extends Controller
         ];
 
         $bayarList = $this->kasBankService->getBayarListPaginated($filters, 15);
-        $operasionalList = $this->kasKeluarService->getKasKeluarListPaginated($filters, 15);
         $kasBanks = $this->kasBankService->getAllKasBank();
 
         $countHutang = DatBayarHutangHdr::where('deleted_st', false)->count();
-        $countOperasional = DatKasKeluarHdr::where('deleted_st', false)->count();
-        $totalHutang = (float) DatBayarHutangHdr::where('deleted_st', false)->where('status_cd', 'POSTED')->sum('total_bayar');
-        $totalOperasional = (float) DatKasKeluarHdr::where('deleted_st', false)->where('status_cd', 'POSTED')->sum('total_keluar');
+        $totalHutang = (float) DatBayarHutangHdr::where('deleted_st', false)
+            ->where('status_cd', 'POSTED')
+            ->sum('total_bayar');
 
         return view('keuangan.bayar.index', compact(
             'bayarList',
-            'operasionalList',
             'kasBanks',
             'filters',
-            'activeTab',
             'countHutang',
-            'countOperasional',
-            'totalHutang',
-            'totalOperasional'
+            'totalHutang'
         ));
     }
 

@@ -1,0 +1,680 @@
+/* ==========================================================================
+   CSS Riwayat Kas Keluar (Biaya Harian Pabrik - BKK) - ERP PT Mirasa
+   Desain Enterprise Modern Minimalis Mengacu pada Front Desk / WaveDash Architecture
+   Bebas Gradasi, Tanpa Emoji, Monokromatik Slate Halus, Efisien & Super Cepat
+   ========================================================================== */
+
+/* Page Wrapper */
+.bkk-page-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 1. Header Section */
+.bkk-top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.bkk-header-kicker {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.bkk-header-title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.bkk-header-subtitle {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0.35rem 0 0 0;
+    line-height: 1.45;
+}
+
+.bkk-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+}
+
+/* Action Button Pills */
+.btn-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.15rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.btn-pill-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.btn-pill-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.25rem;
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.btn-pill-dark:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff;
+}
+
+/* 2. KPI Metrics Grid (Modern Clean Cards) */
+.bkk-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .bkk-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .bkk-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.bkk-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.bkk-metric-card:hover {
+    border-color: #cbd5e1;
+}
+
+.bkk-metric-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.65rem;
+}
+
+.bkk-metric-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.bkk-metric-icon {
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bkk-metric-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+}
+
+.bkk-metric-dots {
+    color: #94a3b8;
+    cursor: default;
+    padding: 0 2px;
+}
+
+.bkk-metric-value {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.bkk-metric-footer {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+/* 3. Main Data Card */
+.bkk-main-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+/* Card Control Bar (Tabs & Filters) */
+.bkk-control-bar {
+    padding: 1.15rem 1.35rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bkk-tabs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.bkk-status-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    padding: 0.25rem;
+    border-radius: 9999px;
+    border: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
+.bkk-status-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.95rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.bkk-status-tab:hover {
+    color: #0f172a;
+    background: #ffffff;
+}
+
+.bkk-status-tab.active {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+}
+
+.bkk-status-tab .badge-count {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: #334155;
+    font-weight: 700;
+}
+
+.bkk-status-tab.active .badge-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+/* Search & Filter Inputs */
+.bkk-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.bkk-search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+}
+
+.bkk-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.bkk-search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0.45rem 0.85rem 0.45rem 2.35rem;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bkk-search-input:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 1px #0f172a;
+}
+
+.bkk-search-input::placeholder {
+    color: #94a3b8;
+}
+
+.bkk-select-input {
+    height: 38px;
+    padding: 0.45rem 1.85rem 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") no-repeat right 0.65rem center / 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s ease;
+}
+
+.bkk-select-input:focus {
+    border-color: #0f172a;
+}
+
+.bkk-date-input {
+    height: 38px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+}
+
+.bkk-date-input:focus {
+    border-color: #0f172a;
+}
+
+.btn-filter-apply {
+    height: 38px;
+    padding: 0 1rem;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-filter-apply:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.btn-filter-reset {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #dc2626;
+    text-decoration: none;
+    padding: 0.4rem 0.5rem;
+}
+
+.btn-filter-reset:hover {
+    text-decoration: underline;
+}
+
+/* 4. Table Styling */
+.bkk-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bkk-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.bkk-table thead th {
+    background: #fafafa;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.85rem 1rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.bkk-table tbody td {
+    padding: 1rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.8125rem;
+    color: #334155;
+    vertical-align: middle;
+    transition: background 0.12s ease;
+}
+
+.bkk-table tbody tr:hover td {
+    background: #fafafa;
+}
+
+.bkk-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Column Specific Elements */
+.bkk-code-link {
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #0f172a;
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: -0.01em;
+}
+
+.bkk-code-link:hover {
+    color: #0284c7;
+    text-decoration: underline;
+}
+
+.bkk-cell-date {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.bkk-payee-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.bkk-payee-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+}
+
+.bkk-payee-name {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.8125rem;
+    line-height: 1.25;
+}
+
+.bkk-payee-sub {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 1px;
+}
+
+.bkk-category-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 4px;
+    line-height: 1.35;
+}
+
+.bkk-coa-sub {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 3px;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bkk-bank-name {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.8rem;
+}
+
+.bkk-bank-method {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 1px;
+    text-transform: capitalize;
+}
+
+.bkk-amount-text {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    display: block;
+}
+
+/* Status Badges with Precise Indicator Dot (Like Reference Image) */
+.bkk-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.bkk-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Draft / Pending Verification */
+.bkk-status-draft {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+.bkk-status-draft .bkk-status-dot {
+    background: #64748b;
+}
+
+/* Posted / Selesai Jurnal */
+.bkk-status-posted {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #dcfce7;
+}
+.bkk-status-posted .bkk-status-dot {
+    background: #16a34a;
+}
+
+/* Void / Dibatalkan */
+.bkk-status-void {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fee2e2;
+}
+.bkk-status-void .bkk-status-dot {
+    background: #dc2626;
+}
+
+/* 5. Standard Smart Action Dropdown (AGENTS.md Section 2) */
+.btn-action-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0.4rem 0.75rem;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-action-trigger:hover {
+    border-color: #059669;
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-menu {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    width: 195px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    padding: 4px;
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    border-radius: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.action-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item {
+    color: #dc2626;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* Pagination Footer */
+.bkk-pagination-wrapper {
+    padding: 0.875rem 1.35rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* Empty State */
+.bkk-empty-state {
+    padding: 4rem 1.5rem;
+    text-align: center;
+    color: #64748b;
+}
+
+.bkk-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+}
+
+.bkk-empty-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+}
+
+.bkk-empty-text {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0;
+}

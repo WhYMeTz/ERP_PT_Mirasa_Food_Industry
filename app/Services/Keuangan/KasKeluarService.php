@@ -8,6 +8,8 @@ use App\Models\Keuangan\DatKasKeluarHdr;
 use App\Models\Keuangan\DatKasMutasi;
 use App\Models\Keuangan\MstCoa;
 use App\Models\Keuangan\MstKasBank;
+use App\Models\Keuangan\MstKategoriPengeluaran;
+use App\Models\MasterData\MstKaryawan;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -52,7 +54,7 @@ class KasKeluarService
      */
     public function getKasKeluarListPaginated(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = DatKasKeluarHdr::with(['kasBank', 'coa', 'details.coa', 'jurnal'])
+        $query = DatKasKeluarHdr::with(['kasBank', 'coa', 'kategoriPengeluaran.coaDefault', 'details.coa', 'jurnal', 'pemohon'])
             ->where('deleted_st', false);
 
         if (!empty($filters['search'])) {
@@ -60,13 +62,21 @@ class KasKeluarService
             $query->where(function ($q) use ($search) {
                 $q->where('bkk_no', 'ILIKE', "%{$search}%")
                   ->orWhere('penerima_nama', 'ILIKE', "%{$search}%")
+                  ->orWhere('departemen_pemohon', 'ILIKE', "%{$search}%")
                   ->orWhere('no_referensi_bank', 'ILIKE', "%{$search}%")
-                  ->orWhere('catatan', 'ILIKE', "%{$search}%");
+                  ->orWhere('catatan', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('pemohon', function ($qp) use ($search) {
+                      $qp->where('karyawan_nm', 'ILIKE', "%{$search}%");
+                  });
             });
         }
 
         if (!empty($filters['kas_bank_id'])) {
             $query->where('kas_bank_id', $filters['kas_bank_id']);
+        }
+
+        if (!empty($filters['status_cd'])) {
+            $query->where('status_cd', $filters['status_cd']);
         }
 
         if (!empty($filters['kategori'])) {
@@ -100,17 +110,17 @@ class KasKeluarService
      */
     public function getById(int $id): DatKasKeluarHdr
     {
-        return DatKasKeluarHdr::with(['kasBank.coa', 'coa', 'details.coa', 'jurnal.details.coa'])
+        return DatKasKeluarHdr::with(['kasBank.coa', 'coa', 'kategoriPengeluaran.coaDefault', 'details.coa', 'jurnal.details.coa', 'pemohon'])
             ->where('deleted_st', false)
             ->findOrFail($id);
     }
 
     /**
-     * Simpan Transaksi Bukti Kas Keluar Operasional (BKK)
+     * Simpan Transaksi Bukti Kas Keluar Operasional (BKK) Tahap 1 (Kasir)
      * Otomatis:
-     * 1. Kurangi Saldo Kas & Bank
+     * 1. Kurangi Saldo Kas & Bank fisik
      * 2. Catat Mutasi Kas Keluar
-     * 3. Catat Jurnal Umum Double Entry (Debet: Beban, Kredit: Kas/Bank)
+     * 3. Simpan BKK dengan status DRAFT & jurnal_id = null (menunggu verifikasi COA & posting oleh Akuntansi)
      */
     public function storeKasKeluar(array $payload, User $user): DatKasKeluarHdr
     {
@@ -121,6 +131,49 @@ class KasKeluarService
             $penerima  = trim($payload['penerima_nama'] ?? '');
             $items     = $payload['items'] ?? [];
 
+            // Tangkap identitas pemohon dan tipe penerima
+            $pemohonKaryawanId = !empty($payload['pemohon_karyawan_id']) ? (int) $payload['pemohon_karyawan_id'] : null;
+            $departemenPemohon = !empty($payload['departemen_pemohon']) ? trim($payload['departemen_pemohon']) : null;
+            $tipePenerima      = !empty($payload['tipe_penerima']) ? trim($payload['tipe_penerima']) : 'PIHAK_KETIGA';
+
+            // Resolusi Kategori Pengeluaran dari Master Data
+            $kategoriId = !empty($payload['kategori_id']) ? (int) $payload['kategori_id'] : null;
+            $defaultCoaId = !empty($payload['coa_id']) ? (int) $payload['coa_id'] : null;
+
+            if ($kategoriId) {
+                $katObj = MstKategoriPengeluaran::where('deleted_st', false)->find($kategoriId);
+                if ($katObj) {
+                    $kategori = $katObj->kode_kategori;
+                    if (empty($defaultCoaId) && $katObj->coa_id_default) {
+                        $defaultCoaId = $katObj->coa_id_default;
+                    }
+                }
+            } elseif (!empty($payload['kategori_pengeluaran'])) {
+                $katObj = MstKategoriPengeluaran::where('deleted_st', false)
+                    ->where('kode_kategori', $payload['kategori_pengeluaran'])
+                    ->first();
+                if ($katObj) {
+                    $kategoriId = $katObj->kategori_id;
+                    if (empty($defaultCoaId) && $katObj->coa_id_default) {
+                        $defaultCoaId = $katObj->coa_id_default;
+                    }
+                }
+            }
+
+            if ($pemohonKaryawanId) {
+                $karyawan = MstKaryawan::where('deleted_st', false)->find($pemohonKaryawanId);
+                if ($karyawan) {
+                    if (empty($departemenPemohon)) {
+                        $departemenPemohon = $karyawan->departemen_cd ?? $karyawan->jabatan_nm ?? null;
+                    }
+                    if ($tipePenerima === 'KARYAWAN') {
+                        if (empty($penerima) || !empty($payload['pilih_karyawan_sebagai_penerima'])) {
+                            $penerima = $karyawan->karyawan_nm;
+                        }
+                    }
+                }
+            }
+
             if (empty($penerima)) {
                 throw new Exception("Nama penerima / pihak yang dibayar wajib diisi.");
             }
@@ -129,25 +182,65 @@ class KasKeluarService
                 throw new Exception("Minimal harus ada 1 baris rincian pengeluaran kas.");
             }
 
-            // Hitung total keluar dari rincian
+            // Lock rekening bank sumber dana lebih awal untuk mengetahui context
+            $kasBank = MstKasBank::where('deleted_st', false)
+                ->where('active_st', true)
+                ->lockForUpdate()
+                ->findOrFail($kasBankId);
+
+            $defaultCoaId = !empty($payload['coa_id']) ? (int) $payload['coa_id'] : null;
+
+            // Direct Nominal First processing
+            $processedItems = [];
             $totalKeluar = 0;
             foreach ($items as $item) {
-                $nom = (float) ($item['nominal'] ?? 0);
-                if ($nom <= 0) {
-                    throw new Exception("Nominal pada setiap rincian harus lebih besar dari Rp 0.");
+                $uraian = trim($item['uraian'] ?? '');
+                if (empty($uraian)) {
+                    continue;
                 }
-                $totalKeluar += $nom;
+
+                $qty = (float) ($item['qty'] ?? 1);
+                if ($qty <= 0) {
+                    $qty = 1;
+                }
+                $satuan = !empty($item['satuan']) ? trim($item['satuan']) : 'LS';
+
+                $rawNominal = isset($item['nominal']) ? (float) $item['nominal'] : 0;
+                $rawHarga   = isset($item['harga_satuan']) ? (float) $item['harga_satuan'] : 0;
+
+                if ($rawNominal > 0) {
+                    $nominal = $rawNominal;
+                    $hargaSatuan = ($rawHarga > 0) ? $rawHarga : ($qty > 0 ? ($nominal / $qty) : $nominal);
+                } elseif ($rawHarga > 0) {
+                    $nominal = $qty * $rawHarga;
+                    $hargaSatuan = $rawHarga;
+                } else {
+                    throw new Exception("Nominal pada setiap rincian pengeluaran harus lebih besar dari Rp 0.");
+                }
+
+                if ($nominal <= 0) {
+                    throw new Exception("Nominal pada setiap rincian pengeluaran harus lebih besar dari Rp 0.");
+                }
+
+                $totalKeluar += $nominal;
+                $processedItems[] = [
+                    'coa_id'       => !empty($item['coa_id']) ? (int) $item['coa_id'] : $defaultCoaId,
+                    'uraian'       => $uraian,
+                    'qty'          => $qty,
+                    'satuan'       => $satuan,
+                    'harga_satuan' => $hargaSatuan,
+                    'nominal'      => $nominal,
+                    'catatan'      => !empty($item['catatan']) ? trim($item['catatan']) : null,
+                ];
+            }
+
+            if (empty($processedItems)) {
+                throw new Exception("Minimal harus ada 1 baris rincian pengeluaran kas dengan nominal valid.");
             }
 
             if ($totalKeluar <= 0) {
                 throw new Exception("Total pengeluaran harus lebih besar dari Rp 0.");
             }
-
-            // Lock rekening bank sumber dana
-            $kasBank = MstKasBank::where('deleted_st', false)
-                ->where('active_st', true)
-                ->lockForUpdate()
-                ->findOrFail($kasBankId);
 
             // Validasi saldo cukup jika akun kas
             $saldoSebelum = (float) $kasBank->saldo_berjalan;
@@ -157,60 +250,42 @@ class KasKeluarService
 
             $bkkNo = !empty($payload['bkk_no']) ? trim($payload['bkk_no']) : $this->generateBkkNo($tglKeluar);
 
-            // Tentukan akun COA Header utama (default dari baris pertama jika tidak dispesifikasi)
-            $defaultCoaId = !empty($payload['coa_id']) ? (int) $payload['coa_id'] : (!empty($items[0]['coa_id']) ? (int) $items[0]['coa_id'] : null);
-            if (!$defaultCoaId) {
-                // Fallback ke 6110 Beban Lain-lain jika tidak ada
-                $fallbackCoa = MstCoa::where('kode_akun', '6110')->first();
-                $defaultCoaId = $fallbackCoa?->coa_id;
-            }
-
-            // 1. Buat Header BKK Operasional
+            // 1. Buat Header BKK Operasional dengan status DRAFT (Menunggu Verifikasi Jurnal Akuntansi)
             $bkk = DatKasKeluarHdr::create([
                 'bkk_no'               => $bkkNo,
                 'tgl_keluar'           => $tglKeluar,
                 'kas_bank_id'          => $kasBank->kas_bank_id,
                 'coa_id'               => $defaultCoaId,
+                'pemohon_karyawan_id'  => $pemohonKaryawanId,
+                'departemen_pemohon'   => $departemenPemohon,
+                'tipe_penerima'        => $tipePenerima,
+                'kategori_id'          => $kategoriId,
                 'kategori_pengeluaran' => $kategori,
                 'penerima_nama'        => $penerima,
                 'metode_bayar'         => $payload['metode_bayar'] ?? 'CASH',
                 'no_referensi_bank'    => !empty($payload['no_referensi_bank']) ? trim($payload['no_referensi_bank']) : null,
                 'total_keluar'         => $totalKeluar,
                 'catatan'              => !empty($payload['catatan']) ? trim($payload['catatan']) : null,
-                'status_cd'            => 'POSTED',
+                'status_cd'            => 'DRAFT',
+                'jurnal_id'            => null,
                 'created_by'           => $user->name ?? 'SYSTEM',
                 'updated_by'           => $user->name ?? 'SYSTEM',
             ]);
 
-            // 2. Buat Detail Rincian Item BKK & Kumpulkan entri jurnal beban
-            $journalDebits = [];
-            foreach ($items as $item) {
-                $itemCoaId = !empty($item['coa_id']) ? (int) $item['coa_id'] : $defaultCoaId;
-                $uraian = trim($item['uraian']);
-                $nom = (float) $item['nominal'];
-
+            // 2. Buat Detail Rincian Item BKK
+            foreach ($processedItems as $item) {
                 DatKasKeluarDtl::create([
                     'bkk_id'       => $bkk->bkk_id,
-                    'coa_id'       => $itemCoaId,
-                    'uraian'       => $uraian,
-                    'qty'          => (float) ($item['qty'] ?? 1),
-                    'satuan'       => !empty($item['satuan']) ? trim($item['satuan']) : null,
-                    'harga_satuan' => (float) ($item['harga_satuan'] ?? $nom),
-                    'nominal'      => $nom,
-                    'catatan'      => !empty($item['catatan']) ? trim($item['catatan']) : null,
+                    'coa_id'       => $item['coa_id'],
+                    'uraian'       => $item['uraian'],
+                    'qty'          => $item['qty'],
+                    'satuan'       => $item['satuan'],
+                    'harga_satuan' => $item['harga_satuan'],
+                    'nominal'      => $item['nominal'],
+                    'catatan'      => $item['catatan'],
                     'created_by'   => $user->name ?? 'SYSTEM',
                     'updated_by'   => $user->name ?? 'SYSTEM',
                 ]);
-
-                // Agregasi debet jurnal per COA
-                if (!isset($journalDebits[$itemCoaId])) {
-                    $journalDebits[$itemCoaId] = [
-                        'coa_id'     => $itemCoaId,
-                        'nominal'    => 0,
-                        'keterangan' => $uraian,
-                    ];
-                }
-                $journalDebits[$itemCoaId]['nominal'] += $nom;
             }
 
             // 3. Kurangi Saldo Berjalan Rekening Kas & Bank
@@ -237,46 +312,94 @@ class KasKeluarService
                 'updated_by'      => $user->name ?? 'SYSTEM',
             ]);
 
-            // 5. Catat Jurnal Umum Double Entry Otomatis
-            // Temukan COA Kredit untuk Kas/Bank sumber
-            $kasBankCoaId = $kasBank->coa_id;
-            if (!$kasBankCoaId) {
+            return $bkk;
+        });
+    }
+
+    /**
+     * Verifikasi Pengeluaran Kas (BKK Operasional) oleh Akuntansi & Terbitkan Jurnal Umum (Tahap 2)
+     */
+    public function verifikasiDanTerbitkanJurnal(int $bkkId, int $coaBebanId, ?string $tglJurnal, User $user): DatKasKeluarHdr
+    {
+        return DB::transaction(function () use ($bkkId, $coaBebanId, $tglJurnal, $user) {
+            $bkk = DatKasKeluarHdr::with(['kasBank', 'details'])
+                ->where('deleted_st', false)
+                ->lockForUpdate()
+                ->findOrFail($bkkId);
+
+            if ($bkk->status_cd === 'VOID') {
+                throw new Exception("BKK {$bkk->bkk_no} sudah berstatus VOID dan tidak dapat dijurnal.");
+            }
+
+            if ($bkk->status_cd === 'POSTED' && !empty($bkk->jurnal_id)) {
+                throw new Exception("BKK {$bkk->bkk_no} sudah diverifikasi dan sudah memiliki Jurnal Umum.");
+            }
+
+            $coaBeban = MstCoa::where('deleted_st', false)->findOrFail($coaBebanId);
+            $kasBank = $bkk->kasBank;
+
+            // Cari COA Kredit untuk Kas/Bank sumber
+            $kasBankCoaId = $kasBank?->coa_id;
+            if (!$kasBankCoaId && $kasBank) {
                 $kasCoa = MstCoa::where('kode_akun', $kasBank->kode_akun)->first()
                     ?? MstCoa::where('kode_akun', '1100')->first();
                 $kasBankCoaId = $kasCoa?->coa_id;
             }
 
+            if (!$kasBankCoaId) {
+                throw new Exception("Akun COA untuk sumber kas/bank '{$kasBank?->nama_akun}' belum terpetakan.");
+            }
+
+            // Update coa_id pada detail BKK
+            $bkk->details()->update([
+                'coa_id'     => $coaBeban->coa_id,
+                'updated_by' => $user->name ?? 'SYSTEM',
+            ]);
+
+            // Susun baris Jurnal Umum (Debet: Akun Beban pilihan Akuntansi, Kredit: Kas/Bank)
             $entries = [];
-            // A. Debet Beban
-            foreach ($journalDebits as $jd) {
+            foreach ($bkk->details as $dtl) {
                 $entries[] = [
-                    'coa_id'     => $jd['coa_id'],
-                    'debet'      => $jd['nominal'],
+                    'coa_id'     => $coaBeban->coa_id,
+                    'debet'      => (float) $dtl->nominal,
                     'kredit'     => 0,
-                    'keterangan' => "BKK {$bkk->bkk_no}: {$jd['keterangan']} - {$penerima}",
+                    'keterangan' => "BKK {$bkk->bkk_no}: {$dtl->uraian} - {$bkk->penerima_nama}",
                 ];
             }
-            // B. Kredit Kas/Bank
+
+            if (empty($entries)) {
+                $entries[] = [
+                    'coa_id'     => $coaBeban->coa_id,
+                    'debet'      => (float) $bkk->total_keluar,
+                    'kredit'     => 0,
+                    'keterangan' => "BKK {$bkk->bkk_no} - {$bkk->penerima_nama}",
+                ];
+            }
+
             $entries[] = [
                 'coa_id'     => $kasBankCoaId,
                 'debet'      => 0,
-                'kredit'     => $totalKeluar,
-                'keterangan' => "Pengeluaran Kas/Bank {$bkk->bkk_no} kepada {$penerima}",
+                'kredit'     => (float) $bkk->total_keluar,
+                'keterangan' => "Pengeluaran Kas/Bank {$bkk->bkk_no} kepada {$bkk->penerima_nama}",
             ];
+
+            $tanggalPosting = $tglJurnal ?: $bkk->tgl_keluar->toDateString();
 
             $jurnal = $this->jurnalService->catatJurnal(
                 'BKK_OPERASIONAL',
-                $tglKeluar,
+                $tanggalPosting,
                 $bkk->bkk_no,
                 $bkk->bkk_id,
-                "Bukti Kas Keluar Operasional - {$bkk->bkk_no} ({$penerima})",
+                "Bukti Kas Keluar Operasional - {$bkk->bkk_no} ({$bkk->penerima_nama})",
                 $entries,
                 $user
             );
 
-            // Hubungkan jurnal ke BKK
             $bkk->update([
-                'jurnal_id' => $jurnal->jurnal_id,
+                'coa_id'     => $coaBeban->coa_id,
+                'jurnal_id'  => $jurnal->jurnal_id,
+                'status_cd'  => 'POSTED',
+                'updated_by' => $user->name ?? 'SYSTEM',
             ]);
 
             return $bkk;
@@ -285,7 +408,7 @@ class KasKeluarService
 
     /**
      * Batalkan / Void Transaksi Bukti Kas Keluar (BKK)
-     * Mengembalikan saldo kas/bank dan membalik jurnal.
+     * Mengembalikan saldo kas/bank dan membalik jurnal (jika sudah diterbitkan).
      */
     public function voidKasKeluar(int $bkkId, string $alasan, User $user): DatKasKeluarHdr
     {
@@ -323,14 +446,9 @@ class KasKeluarService
                 'updated_by'      => $user->name ?? 'SYSTEM',
             ]);
 
-            // 3. Batalkan Jurnal terkait
-            if ($bkk->jurnal) {
-                $bkk->jurnal->update([
-                    'deleted_st' => true,
-                    'deleted_by' => $user->name ?? 'SYSTEM',
-                    'deleted_at' => now(),
-                    'keterangan' => "[VOID]: " . $bkk->jurnal->keterangan . " (Alasan: {$alasan})",
-                ]);
+            // 3. Batalkan Jurnal terkait jika sudah diterbitkan oleh Akuntansi
+            if (!empty($bkk->jurnal_id)) {
+                $this->jurnalService->batalkanJurnal($bkk->bkk_no, $user);
             }
 
             // 4. Update Status BKK
@@ -346,4 +464,3 @@ class KasKeluarService
         });
     }
 }
-

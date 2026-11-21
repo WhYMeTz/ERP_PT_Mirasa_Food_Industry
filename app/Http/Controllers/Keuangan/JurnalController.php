@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Keuangan;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Keuangan\StoreJurnalManualRequest;
+use App\Models\Keuangan\DatKasKeluarHdr;
 use App\Models\Keuangan\MstCoa;
 use App\Services\Keuangan\JurnalService;
+use App\Services\Keuangan\KasKeluarService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -46,9 +48,16 @@ class JurnalController extends Controller
             ->orderBy('kode_akun', 'asc')
             ->get();
 
+        // Hitung antrean BKK Operasional yang menunggu verifikasi jurnal
+        $pendingBkkCount = DatKasKeluarHdr::where('deleted_st', false)
+            ->where('status_cd', 'DRAFT')
+            ->whereNull('jurnal_id')
+            ->count();
+
         $tipeTransaksiList = [
             'HUTANG_PEMBELIAN'    => 'Hutang Pembelian (GRN)',
             'BAYAR_HUTANG'        => 'Pelunasan Hutang (BKK)',
+            'BKK_OPERASIONAL'     => 'Kas Keluar (Biaya Harian)',
             'HPP_WIP'             => 'Biaya Produksi & HPP WIP',
             'HPP_FG'              => 'Biaya Pengemasan & HPP FG',
             'KAS_MASUK'           => 'Kas Masuk (BKM)',
@@ -62,10 +71,40 @@ class JurnalController extends Controller
             'jurnals',
             'metrics',
             'coaList',
+            'pendingBkkCount',
             'tipeTransaksiList',
             'filters',
             'viewMode'
         ));
+    }
+
+    /**
+     * Verifikasi BKK Operasional dari Kasir dan Terbitkan Jurnal Umum oleh Bagian Akuntansi
+     */
+    public function verifikasiBkk(Request $request, int $id, KasKeluarService $kasKeluarService): RedirectResponse
+    {
+        $request->validate([
+            'coa_id'     => 'required|exists:mst_coa,coa_id',
+            'tgl_jurnal' => 'nullable|date',
+        ], [
+            'coa_id.required' => 'Pilih Pos Akun Beban (COA) terlebih dahulu untuk menerbitkan Jurnal Umum.',
+            'coa_id.exists'   => 'Akun COA beban yang dipilih tidak valid.',
+        ]);
+
+        try {
+            $bkk = $kasKeluarService->verifikasiDanTerbitkanJurnal(
+                $id,
+                (int) $request->input('coa_id'),
+                $request->input('tgl_jurnal'),
+                Auth::user()
+            );
+
+            return redirect()->route('keuangan.jurnal.index')
+                ->with('success', "Pengeluaran Kas {$bkk->bkk_no} berhasil diverifikasi dan Jurnal Umum telah diterbitkan!");
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal menerbitkan jurnal BKK: ' . $e->getMessage());
+        }
     }
 
     /**

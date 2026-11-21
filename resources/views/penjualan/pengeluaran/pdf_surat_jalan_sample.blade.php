@@ -310,7 +310,7 @@
     </table>
 
     <div style="font-size: 7.5pt; font-style: italic; color: #4b5563; margin-top: 6px;">
-        * Catatan: Dokumen ini adalah bukti serah terima resmi pengeluaran fisik barang sampel/promosi dari Gudang FG PT Mirasa Food Industry. Tidak dapat digunakan sebagai dasar penagihan keuangan komersial.
+        * Catatan: Dokumen ini adalah bukti serah terima resmi pengeluaran fisik barang sampel/promosi dari gudang PT Mirasa Food Industry. Tidak dapat digunakan sebagai dasar penagihan keuangan komersial.
     </div>
 
     {{-- 5. TANDA TANGAN 3 PIHAK --}}
@@ -323,10 +323,10 @@
                 <div style="font-size: 7.5pt; color: #6b7280; margin-top: 2px;">Tanda Tangan &amp; Nama Terang</div>
             </td>
             <td>
-                <div>Diserahkan Oleh (Gudang FG),</div>
+                <div>Diserahkan Oleh (Gudang),</div>
                 <div class="ttd-space"></div>
                 <div>( <strong>{{ $pengeluaran->created_by ?? 'Petugas Gudang' }}</strong> )</div>
-                <div style="font-size: 7.5pt; color: #6b7280; margin-top: 2px;">Bagian Logistik &amp; Gudang FG</div>
+                <div style="font-size: 7.5pt; color: #6b7280; margin-top: 2px;">Bagian Logistik &amp; Gudang</div>
             </td>
             <td>
                 <div>Disetujui Oleh,</div>

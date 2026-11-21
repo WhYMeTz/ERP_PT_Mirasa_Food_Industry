@@ -22,7 +22,7 @@
             </span>
         </div>
         <p class="sj-page-subtitle">
-            Penerbitan Surat Jalan resmi dan pemotongan stok Gudang FG untuk sampel calon buyer, pameran, promosi, atau hadiah relasi tanpa dokumen PO Penjualan.
+            Penerbitan Surat Jalan resmi dan pemotongan stok gudang untuk sampel calon buyer, pameran, promosi, atau hadiah relasi tanpa dokumen PO Penjualan.
         </p>
     </div>
 
@@ -212,7 +212,7 @@
                     <thead>
                         <tr>
                             <th style="width: 45px; text-align: center;">No</th>
-                            <th style="min-width: 250px;">Pilih Produk Jadi (Gudang FG)</th>
+                            <th style="min-width: 250px;">Pilih Produk Jadi</th>
                             <th style="min-width: 240px;">Nomor Batch Fisik (FEFO)</th>
                             <th style="width: 130px; text-align: center;">Stok Tersedia</th>
                             <th style="width: 140px;">Kuantitas Keluar</th>
@@ -239,7 +239,7 @@
             <div class="sj-action-bar">
                 <div style="font-size: 0.8125rem; color: #64748b; display: flex; align-items: center; gap: 0.4rem;">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Stok fisik Gudang FG akan otomatis dipotong via metode FEFO tanpa membuat tagihan piutang komersial.</span>
+                    <span>Stok fisik gudang akan otomatis dipotong via metode FEFO tanpa membuat tagihan piutang komersial.</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
                     <a href="{{ route('penjualan.pengeluaran.index') }}" class="btn btn-secondary">

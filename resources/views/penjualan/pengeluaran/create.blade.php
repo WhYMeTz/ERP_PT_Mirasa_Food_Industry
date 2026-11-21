@@ -18,11 +18,11 @@
         <div class="sj-title-row">
             <h1 class="sj-page-title">Buat Dokumen Pengeluaran Barang</h1>
             <span class="badge" style="background: #ecfdf5; color: #059669; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px;">
-                Gudang FG Outbound
+                Pengeluaran Fisik
             </span>
         </div>
         <p class="sj-page-subtitle">
-            Alokasi fisik barang jadi dari Gudang FG via metode FEFO berdasarkan PO Penjualan yang telah disetujui.
+            Alokasi fisik pengeluaran barang via metode FEFO berdasarkan PO Penjualan yang telah disetujui.
         </p>
     </div>
 
@@ -215,7 +215,7 @@
 
         @if ($allZeroStock)
             <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 0.85rem 1.15rem; border-radius: 4px; margin-bottom: 1.25rem; font-size: 0.825rem; color: #991b1b; line-height: 1.5;">
-                <strong>Perhatian Gudang:</strong> Stok fisik untuk seluruh barang dalam pesanan ini masih <strong>0 (Belum Tersedia)</strong> di Gudang FG.
+                <strong>Perhatian Gudang:</strong> Stok fisik untuk seluruh barang dalam pesanan ini masih <strong>0 (Belum Tersedia)</strong> di gudang.
                 Pengeluaran fisik barang belum dapat diproses sampai barang selesai dikemas di modul <strong>Produksi &rarr; Pengemasan</strong>.
             </div>
         @endif
@@ -229,7 +229,7 @@
                     </span>
                     <div>
                         <h3 class="sj-card-title">Rincian Fisik Barang Jadi yang Dikeluarkan</h3>
-                        <div class="sj-card-subtitle">Kuantitas kirim dialokasikan dari stok fisik Gudang FG via metode FEFO</div>
+                        <div class="sj-card-subtitle">Kuantitas kirim dialokasikan dari stok fisik gudang via metode FEFO</div>
                     </div>
                 </div>
             </div>
@@ -243,7 +243,7 @@
                             <th style="min-width: 260px;">Alokasi Batch Produksi (FEFO) <span class="req">*</span></th>
                             <th style="text-align: right; width: 110px;">Qty Pesan</th>
                             <th style="text-align: right; width: 110px;">Sisa Pesan</th>
-                            <th style="text-align: center; width: 140px;">Stok FG</th>
+                            <th style="text-align: center; width: 140px;">Stok Gudang</th>
                             <th style="text-align: right; width: 140px;">Qty Kirim Hari Ini <span class="req">*</span></th>
                         </tr>
                     </thead>

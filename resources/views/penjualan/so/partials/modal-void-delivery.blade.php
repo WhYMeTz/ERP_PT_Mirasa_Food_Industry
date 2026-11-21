@@ -28,7 +28,7 @@
 
             <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
                 <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 0.75rem 0.95rem; font-size: 0.8rem; color: #991b1b; line-height: 1.4;">
-                    <strong>Perhatian:</strong> Tindakan ini akan mengembalikan seluruh kuantitas karton yang terpotong ke Gudang Barang Jadi (GDG-FG), dan status dokumen SO akan dikembalikan ke <strong>APPROVED (Menunggu Pengiriman)</strong>.
+                    <strong>Perhatian:</strong> Tindakan ini akan mengembalikan seluruh kuantitas karton yang terpotong ke stok gudang, dan status dokumen SO akan dikembalikan ke <strong>APPROVED (Menunggu Pengiriman)</strong>.
                 </div>
 
                 <div>

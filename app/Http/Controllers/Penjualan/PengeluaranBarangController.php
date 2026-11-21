@@ -117,7 +117,7 @@ class PengeluaranBarangController extends Controller
 
             return redirect()
                 ->route('penjualan.pengeluaran.show', $pengeluaran->pengeluaran_id)
-                ->with('toast_success', "Surat Jalan {$pengeluaran->pengeluaran_no} berhasil diterbitkan! Stok Gudang Barang Jadi (FG) telah otomatis dipotong via FEFO.");
+                ->with('toast_success', "Surat Jalan {$pengeluaran->pengeluaran_no} berhasil diterbitkan! Stok fisik gudang telah otomatis dipotong via FEFO.");
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal memproses pengeluaran barang: ' . $e->getMessage());
         }

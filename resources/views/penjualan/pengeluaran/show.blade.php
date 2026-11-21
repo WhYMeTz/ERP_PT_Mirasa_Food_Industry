@@ -86,7 +86,7 @@
                 Dokumen Surat Jalan Ini Telah Dibatalkan (Void)
             </div>
             <div style="font-size: 0.825rem; margin-top: 0.35rem; color: #7f1d1d;">
-                Seluruh kuantitas fisik barang telah dikembalikan ke Gudang FG. Catatan: {{ $pengeluaran->catatan_txt ?? '-' }}
+                Seluruh kuantitas fisik barang telah dikembalikan ke stok gudang. Catatan: {{ $pengeluaran->catatan_txt ?? '-' }}
             </div>
         </div>
     @endif
@@ -154,7 +154,7 @@
                         <tr>
                             <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
                             <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
-                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Barang Jadi (GDG-FG)' }}
+                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Pusat (MFI)' }}
                             </td>
                         </tr>
                     </table>
@@ -196,7 +196,7 @@
                         <tr>
                             <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
                             <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
-                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Barang Jadi (GDG-FG)' }}
+                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Pusat (MFI)' }}
                             </td>
                         </tr>
                     </table>
@@ -334,7 +334,7 @@
         <div class="sj-table-footer-bar">
             <div class="sj-footer-left">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Dokumen ini resmi mengurangi saldo fisik di kartu stok Gudang Barang Jadi (GDG-FG).</span>
+                <span>Dokumen ini resmi mengurangi saldo fisik di kartu stok gudang.</span>
             </div>
 
             <div class="sj-footer-right">

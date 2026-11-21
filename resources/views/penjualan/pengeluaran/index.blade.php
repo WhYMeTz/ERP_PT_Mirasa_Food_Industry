@@ -14,7 +14,7 @@
         <div>
             <h1 class="sj-page-title">Pengeluaran Barang</h1>
             <p class="sj-page-subtitle">
-                Monitoring fisik barang keluar dari Gudang Barang Jadi (GDG-FG), alokasi batch FEFO, dan penerbitan Surat Jalan resmi.
+                Monitoring fisik pengeluaran barang, alokasi batch FEFO, dan penerbitan Surat Jalan resmi.
             </p>
         </div>
 
@@ -40,7 +40,7 @@
                 {{ number_format($metrics['ready_orders_count'] ?? 0, 0, ',', '.') }}
                 <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">PO</span>
             </div>
-            <div class="sj-metric-subtext">Menunggu pengeluaran FG &bull; Klik buka tab</div>
+            <div class="sj-metric-subtext">Menunggu pengeluaran fisik &bull; Klik buka tab</div>
         </div>
 
         {{-- KARTU 2: PENGIRIMAN HARI INI --}}
@@ -70,7 +70,7 @@
                 {{ number_format($metrics['qty_hari_ini'] ?? 0, 0, ',', '.') }}
                 <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Karton</span>
             </div>
-            <div class="sj-metric-subtext">Volume produk keluar Gudang FG hari ini</div>
+            <div class="sj-metric-subtext">Volume produk keluar hari ini</div>
         </div>
 
         {{-- KARTU 4: TOTAL PENGELUARAN BULAN INI --}}
@@ -369,7 +369,7 @@
                                     <svg class="sj-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                     <div style="font-weight: 700; font-size: 1rem; color: #334155;">Belum Ada Dokumen Surat Jalan</div>
                                     <p style="font-size: 0.8125rem; margin: 0.35rem 0 1rem 0;">
-                                        Dokumen pengeluaran fisik barang jadi dari Gudang FG akan tercatat di halaman ini.
+                                        Dokumen pengeluaran fisik barang akan tercatat di halaman ini.
                                     </p>
                                     <a href="{{ route('penjualan.pengeluaran.create') }}" class="btn btn-primary" style="font-size: 0.825rem; font-weight: 700;">
                                         + Buat Surat Jalan Baru
@@ -398,7 +398,7 @@
         <div class="sj-table-card">
             <div class="sj-antrean-header">
                 <div>
-                    <h2 class="sj-antrean-title">Antrean PO Penjualan Menunggu Pengeluaran Fisik (Gudang FG)</h2>
+                    <h2 class="sj-antrean-title">Antrean PO Penjualan Menunggu Pengeluaran Fisik</h2>
                     <p class="sj-antrean-desc">
                         Daftar pesanan penjualan resmi yang siap dialokasikan batch FEFO untuk pengeluaran barang dan pengiriman.
                     </p>
@@ -584,7 +584,7 @@
                                                 disabled 
                                                 class="btn btn-sm" 
                                                 style="font-size: 0.8125rem; font-weight: 600; padding: 0.4rem 0.85rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #f8fafc; color: #94a3b8; cursor: not-allowed; display: inline-flex; align-items: center; justify-content: center;"
-                                                title="Stok fisik belum tersedia di Gudang FG (Menunggu Produksi)">
+                                                title="Stok fisik belum tersedia di gudang (Menunggu Produksi)">
                                             Keluarkan Barang
                                         </button>
                                     @endif

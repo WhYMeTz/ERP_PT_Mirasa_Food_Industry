@@ -264,55 +264,20 @@ function renderSameDayNotice(data) {
     const sameDaySpks = (data && Array.isArray(data.same_day_spks)) ? data.same_day_spks : [];
     const currentId = data?.produksi_id;
     const tglStr = data?.produksi_tgl_fmt || '';
-    const hasBothEntities = Boolean(data?.has_both_entities);
-    const countMfi = data?.count_mfi_docs || 0;
-    const countBmb = data?.count_bmb_docs || 0;
-    const activeEntitasNm = data?.entitas_nm || 'Pabrik';
-    const activeEntitasCd = data?.entitas_cd || 'MFI';
 
-    if (sameDaySpks.length === 0) {
+    // Hanya tampilkan jika terdapat LEBIH DARI 1 dokumen produksi fisik pada tanggal tersebut
+    if (sameDaySpks.length <= 1) {
         box.style.display = 'none';
         return;
     }
 
     box.style.display = 'block';
 
-    let alertSummaryHtml = '';
-    if (hasBothEntities) {
-        // KASUS 1: KEDUA PABRIK BEROPERASI BERBARENGAN PADA TANGGAL YANG SAMA
-        if (titleEl) {
-            titleEl.innerHTML = `⚠️ Operasional Bersama Multi-Pabrik pada Tanggal ${tglStr}: PT Mirasa Food Industry (MFI) &amp; CV Bahtera Mandiri Bersama (BMB)`;
-            titleEl.style.color = '#92400e';
-        }
-        if (badgeEl) {
-            badgeEl.textContent = `Multi-Pabrik (MFI: ${countMfi} SPK, BMB: ${countBmb} SPK)`;
-            badgeEl.style.background = '#fef3c7';
-            badgeEl.style.color = '#92400e';
-            badgeEl.style.borderColor = '#fde68a';
-        }
-        alertSummaryHtml = `
-            <div style="font-size: 0.775rem; color: #78350f; margin-bottom: 0.5rem; line-height: 1.45; background: #fffbeb; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #fef3c7;">
-                💡 <strong>Operasional Bersama:</strong> Hari ini kedua pabrik sama-sama beroperasi. Anda saat ini sedang menghitung HPP untuk <strong>${activeEntitasNm}</strong>. Dokumen pabrik lainnya tercatat terpisah dan dapat dihitung melalui Buku HPP terkait.
-            </div>
-        `;
-    } else {
-        // KASUS 2: HANYA SALAH SATU PABRIK YANG BEROPERASI
-        const otherPabrikNm = (activeEntitasCd === 'BMB') ? 'PT Mirasa Food Industry (MFI)' : 'CV Bahtera Mandiri Bersama (BMB)';
-        if (titleEl) {
-            titleEl.innerHTML = `ℹ️ Status Operasional Pabrik pada Tanggal ${tglStr}: Tunggal ${activeEntitasNm}`;
-            titleEl.style.color = '#1e3a8a';
-        }
-        if (badgeEl) {
-            badgeEl.textContent = `Pabrik Tunggal (${activeEntitasCd})`;
-            badgeEl.style.background = '#eff6ff';
-            badgeEl.style.color = '#1d4ed8';
-            badgeEl.style.borderColor = '#bfdbfe';
-        }
-        alertSummaryHtml = `
-            <div style="font-size: 0.775rem; color: #1e3a8a; margin-bottom: 0.5rem; line-height: 1.45; background: #f0f9ff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e0f2fe;">
-                ✓ <strong>Operasional Tunggal:</strong> Pada tanggal ini hanya tercatat operasional manufaktur dari <strong>${activeEntitasNm}</strong> (${sameDaySpks.length} dokumen SPK). Tidak ada catatan produksi dari ${otherPabrikNm}.
-            </div>
-        `;
+    if (titleEl) {
+        titleEl.textContent = `Dokumen Produksi Lain pada Tanggal ${tglStr}:`;
+    }
+    if (badgeEl) {
+        badgeEl.textContent = `${sameDaySpks.length} Dokumen Tercatat`;
     }
 
     let rowsHtml = '';
@@ -322,27 +287,27 @@ function renderSameDayNotice(data) {
         let actionBtn = '';
 
         if (isCurrent) {
-            statusBadge = `<span style="background: #eff6ff; color: #1d4ed8; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bfdbfe;">👉 Sedang Dipilih</span>`;
+            statusBadge = `<span style="background: #f0fdf4; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bbf7d0;">Sedang Dihitung</span>`;
         } else if (item.is_hpp_final) {
-            statusBadge = `<span style="background: #f0fdf4; color: #166534; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #bbf7d0;">✓ HPP Sudah Final (Rp ${Math.round(item.hpp_per_kg).toLocaleString('id-ID')}/kg)</span>`;
-            actionBtn = `<a href="/produksi/hpp/${item.produksi_id}" target="_blank" style="font-size: 0.72rem; color: #0284c7; text-decoration: underline; margin-left: 0.5rem; font-weight: 600;">Lihat Lembar &rarr;</a>`;
+            statusBadge = `<span style="background: #f8fafc; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid #cbd5e1;">HPP Final (Rp ${Math.round(item.hpp_per_kg).toLocaleString('id-ID')}/kg)</span>`;
+            actionBtn = `<a href="/produksi/hpp/${item.produksi_id}" target="_blank" style="font-size: 0.72rem; color: #0284c7; text-decoration: none; margin-left: 0.5rem; font-weight: 700;">Lihat Lembar &rarr;</a>`;
         } else {
-            statusBadge = `<span style="background: #fef2f2; color: #991b1b; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; border: 1px solid #fecaca;">⏳ Belum Ditarik HPP</span>`;
-            actionBtn = `<button type="button" onclick="switchSelectedSpk(${item.produksi_id})" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;" title="Muat dokumen shift ini ke formulir kalkulasi">Tarik Dokumen Ini &rarr;</button>`;
+            statusBadge = `<span style="background: #fffbeb; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; border: 1px solid #fde68a;">Belum Dihitung</span>`;
+            actionBtn = `<button type="button" onclick="switchSelectedSpk(${item.produksi_id})" style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #ffffff; border: 1.5px solid #0284c7; padding: 3px 10px; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;" title="Beralih ke dokumen ini untuk menghitung HPP">Hitung HPP Dokumen Ini &rarr;</button>`;
         }
 
         const isBmbItem = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
         const pabrikBadge = isBmbItem
-            ? `<span style="font-size: 0.65rem; background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; padding: 1px 5px; border-radius: 3px; font-weight: 800;">BMB</span>`
-            : `<span style="font-size: 0.65rem; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 1px 5px; border-radius: 3px; font-weight: 800;">MFI</span>`;
+            ? `<span style="font-size: 0.65rem; background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; padding: 1px 6px; border-radius: 3px; font-weight: 800;">BMB</span>`
+            : `<span style="font-size: 0.65rem; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 1px 6px; border-radius: 3px; font-weight: 800;">MFI</span>`;
 
         rowsHtml += `
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: ${isCurrent ? '#f0f9ff' : '#ffffff'}; padding: 0.4rem 0.65rem; border-radius: 5px; border: 1px solid ${isCurrent ? '#bae6fd' : '#e2e8f0'}; font-size: 0.775rem;">
-                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: ${isCurrent ? '#f0fdf4' : '#ffffff'}; padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid ${isCurrent ? '#86efac' : '#e2e8f0'}; font-size: 0.775rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                     ${pabrikBadge}
                     <strong style="color: #0f172a;">Shift ${item.shift_cd || 'A'} &bull; ${item.lini_produksi || 'Lini Manual'}</strong>
-                    <span style="color: #64748b;">(SPK #${item.produksi_no || '-'})</span>
-                    <span style="color: #0284c7; font-weight: 600;">${(item.total_wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP</span>
+                    <span style="color: #64748b; font-family: monospace;">(${item.produksi_no || '-'})</span>
+                    <span style="color: #059669; font-weight: 700;">${(item.total_wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP</span>
                 </div>
                 <div style="display: flex; align-items: center; white-space: nowrap;">
                     ${statusBadge}
@@ -352,7 +317,7 @@ function renderSameDayNotice(data) {
         `;
     });
 
-    container.innerHTML = alertSummaryHtml + rowsHtml;
+    container.innerHTML = rowsHtml;
 }
 
 /**
@@ -471,7 +436,8 @@ function renderDokumenSpkTable(dokumenList) {
 
     if (!wrap || !tbody) return;
 
-    if (!Array.isArray(dokumenList) || dokumenList.length === 0) {
+    // HANYA tampilkan tabel konsolidasi jika memang ada 2 atau lebih dokumen fisik yang digabung
+    if (!Array.isArray(dokumenList) || dokumenList.length <= 1) {
         wrap.style.display = 'none';
         return;
     }

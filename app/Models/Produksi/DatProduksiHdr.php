@@ -226,6 +226,19 @@ class DatProduksiHdr extends Model
     /**
      * Relasi ke Dokumen Pemakaian Bahan Gudang
      */
+    /**
+     * Menentukan apakah dokumen produksi ini telah selesai dikalkulasi HPP finalnya oleh Finance
+     */
+    public function getIsHppFinalAttribute(): bool
+    {
+        return !empty($this->hpp_finalized_at)
+            || ((float) ($this->cng_nilai ?? 0) > 0)
+            || ((float) ($this->tk_total_nilai ?? 0) > 0)
+            || str_contains($this->catatan_txt ?? '', '[HPP FINAL')
+            || str_contains($this->catatan_txt ?? '', 'HPP Finance')
+            || !empty($this->jurnal_id);
+    }
+
     public function pemakaianBahan(): BelongsTo
     {
         return $this->belongsTo(DatPakaiHdr::class, 'pakai_id', 'pakai_id');

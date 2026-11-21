@@ -1189,7 +1189,7 @@ class ProduksiService
      */
     public function extractPakaiSummary(int $pakaiId): array
     {
-        $pakai = DatPakaiHdr::with(['details.barang.jenisBarang', 'details.barang.satuanDasar', 'gudang'])->where('pakai_id', $pakaiId)->firstOrFail();
+        $pakai = DatPakaiHdr::with(['details.barang.jenisBarang', 'details.barang.satuanDasar', 'gudang', 'gudangTujuan'])->where('pakai_id', $pakaiId)->firstOrFail();
 
         if (!in_array($pakai->status_st, ['POSTED', 'DRAFT'])) {
             throw new Exception("Dokumen BPPB [{$pakai->pakai_no}] tidak valid untuk diproses (Status: {$pakai->status_st}).");
@@ -1203,6 +1203,9 @@ class ProduksiService
             'gudang_nm'          => $pakai->gudang?->gudang_nm ?? 'Gudang Bahan Baku',
             'tujuan_pemakaian'   => $pakai->tujuan_pemakaian,
             'gudang_id'          => $pakai->gudang_id,
+            'gudang_tujuan_id'   => $pakai->gudang_tujuan_id,
+            'gudang_tujuan_nm'   => $pakai->gudangTujuan?->gudang_nm,
+            'lokasi_pabrik'      => $pakai->lokasi_pabrik,
             'total_item_count'   => 0,
             'total_bahan_qty'    => 0,
             'total_bahan_nilai'  => 0,
@@ -4153,6 +4156,8 @@ class ProduksiService
 
             foreach ($allDocs as $doc) {
                 $doc->hpp_per_kg = $consolidatedHppPerKg;
+                $doc->hpp_finalized_at = now();
+                $doc->hpp_finalized_by = $userId;
                 if (!empty($data['catatan_hpp'])) {
                     $doc->catatan_txt = trim(($doc->catatan_txt ? $doc->catatan_txt . "\n" : '') . $auditFinanceTag . ": " . $data['catatan_hpp']);
                 } else {

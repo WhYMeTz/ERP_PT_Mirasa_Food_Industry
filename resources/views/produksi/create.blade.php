@@ -81,14 +81,38 @@
                                 <option value="">-- Pilih Dokumen Pengeluaran Bahan (BPPB) --</option>
                                 @forelse ($pakaiList as $pk)
                                     @php
-                                        $pkPabrik = !empty($pk->lokasi_pabrik) ? strtoupper($pk->lokasi_pabrik) : (str_contains(strtoupper($pk->pakai_no), 'BMB') ? 'BMB' : 'MFI');
+                                        $tujuanGdgCd = strtoupper($pk->gudangTujuan?->gudang_cd ?? '');
+                                        $tujuanGdgNm = strtoupper($pk->gudangTujuan?->gudang_nm ?? '');
+                                        $asalGdgCd = strtoupper($pk->gudang?->gudang_cd ?? '');
+                                        $asalGdgNm = strtoupper($pk->gudang?->gudang_nm ?? '');
+                                        $lokasiDb = strtoupper($pk->lokasi_pabrik ?? '');
+
+                                        $isTujuanBmb = str_contains($tujuanGdgCd, 'BMB') || str_contains($tujuanGdgNm, 'BAHTERA') || str_contains($tujuanGdgNm, 'BMB');
+                                        $isAsalBmb = str_contains($asalGdgCd, 'BMB') || str_contains($asalGdgNm, 'BAHTERA') || str_contains(strtoupper($pk->pakai_no), 'BMB') || $lokasiDb === 'BMB';
+
+                                        // Bangun data-pabrik untuk smart filter dropdown
+                                        $pabrikMatches = [];
+                                        if ($isTujuanBmb || $isAsalBmb) {
+                                            $pabrikMatches[] = 'BMB';
+                                        }
+                                        if (!$isAsalBmb || str_contains($asalGdgCd, 'MFI') || $lokasiDb === 'MFI') {
+                                            $pabrikMatches[] = 'MFI';
+                                        }
+                                        if (empty($pabrikMatches)) {
+                                            $pabrikMatches[] = 'MFI';
+                                        }
+                                        $pabrikAttr = implode(',', array_unique($pabrikMatches));
+
+                                        // Label entitas dan info tujuan
+                                        $displayTag = $isTujuanBmb ? 'BMB' : ($isAsalBmb ? 'BMB' : ($lokasiDb ?: 'MFI'));
+                                        $tujuanText = $pk->gudangTujuan ? " [Tujuan: {$pk->gudangTujuan->gudang_nm}]" : '';
                                     @endphp
                                     <option value="{{ $pk->pakai_id }}" 
-                                            data-pabrik="{{ $pkPabrik }}" 
+                                            data-pabrik="{{ $pabrikAttr }}" 
                                             data-tujuan="{{ $pk->tujuan_pemakaian }}" 
                                             data-tgl="{{ Carbon\Carbon::parse($pk->pakai_tgl)->format('Y-m-d') }}" 
                                             {{ (string)old('pakai_id', request('pakai_id')) === (string)$pk->pakai_id ? 'selected' : '' }}>
-                                        [{{ $pk->pakai_no }}] [{{ $pkPabrik }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• PROSES PRODUKSI' : '' }}
+                                        [{{ $pk->pakai_no }}] [{{ $displayTag }}] {{ Carbon\Carbon::parse($pk->pakai_tgl)->format('d/m/Y') }} - {{ $pk->tujuan_pemakaian }}{{ $tujuanText }} ({{ $pk->details->count() }} item bahan) {{ $pk->status_st === 'DRAFT' ? '• PROSES PRODUKSI' : '' }}
                                     </option>
                                 @empty
                                     <option value="" disabled>-- Tidak ada dokumen BPPB yang siap diproses --</option>
@@ -172,14 +196,8 @@
                         <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block;">Pilih lini mesin penggorengan.</small>
                     </div>
 
-                    {{-- 5. Jumlah BF Aktif --}}
-                    <div>
-                        <label for="bf_aktif_count" style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; white-space: nowrap;">
-                            Jumlah BF Aktif
-                        </label>
-                        <input type="number" name="bf_aktif_count" id="bf_aktif_count" class="form-control" value="{{ old('bf_aktif_count', '') }}" min="0" max="100" style="font-weight: 700; color: #0f172a; height: 38px; text-align: center;" placeholder="0">
-                        <small style="color: #64748b; font-size: 0.725rem; margin-top: 0.25rem; display: block; white-space: nowrap;">BF beroperasi.</small>
-                    </div>
+                    {{-- 5. Jumlah BF Aktif (Disembunyikan sementara sesuai arahan) --}}
+                    <input type="hidden" name="bf_aktif_count" id="bf_aktif_count" value="{{ old('bf_aktif_count', 0) }}">
 
                     {{-- 6. Gudang Penyimpanan Hasil Produksi --}}
                     <div>

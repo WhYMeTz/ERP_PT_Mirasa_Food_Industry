@@ -21,27 +21,6 @@ document.addEventListener('DOMContentLoaded', function () {
         addSampleRow();
     }
 
-    // Auto-fill penerima saat memilih customer terdaftar
-    const customerSelect = document.getElementById('customerSelect');
-    const penerimaInput = document.getElementById('penerimaInput');
-    const alamatInput = document.getElementById('alamatTujuanInput');
-
-    if (customerSelect && penerimaInput) {
-        customerSelect.addEventListener('change', function () {
-            const selectedOpt = customerSelect.options[customerSelect.selectedIndex];
-            if (selectedOpt && selectedOpt.value) {
-                const custName = selectedOpt.getAttribute('data-name');
-                const custAlamat = selectedOpt.getAttribute('data-alamat');
-                if (custName && (!penerimaInput.value || confirm('Gunakan nama dan alamat mitra terpilih sebagai penerima?'))) {
-                    penerimaInput.value = custName;
-                    if (alamatInput && custAlamat) {
-                        alamatInput.value = custAlamat;
-                    }
-                }
-            }
-        });
-    }
-
     if (form) {
         form.addEventListener('submit', function (e) {
             const rows = document.querySelectorAll('.sample-item-row');
@@ -61,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!valid) {
                 e.preventDefault();
-                alert('Pastikan minimal ada 1 barang dengan kuantitas lebih dari 0.');
+                alert('Pastikan minimal ada 1 barang dengan kuantitas keluar lebih dari 0.');
                 return false;
             }
         });

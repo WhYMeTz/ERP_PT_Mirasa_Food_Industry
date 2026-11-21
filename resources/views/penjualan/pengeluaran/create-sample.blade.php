@@ -43,131 +43,100 @@
     <form id="sampleCreateForm" method="POST" action="{{ route('penjualan.pengeluaran.store-sample') }}">
         @csrf
 
-        {{-- 2 KOLOM KARTU HEADER --}}
-        <div class="sj-grid-2-col">
-            
-            {{-- KARTU 1: IDENTITAS PENERIMA & TUJUAN --}}
-            <div class="sj-card">
-                <div class="sj-card-header">
-                    <div class="sj-card-header-left">
-                        <span class="sj-card-icon" style="background: #faf5ff; color: #7c3aed;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        </span>
-                        <div>
-                            <h3 class="sj-card-title">Penerima &amp; Keperluan Sampel</h3>
-                            <div class="sj-card-subtitle">Tujuan pengeluaran barang non-komersial</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sj-card-body">
-                    {{-- Jenis Pengeluaran --}}
-                    <div class="sj-form-group">
-                        <label for="tipePengeluaran" class="sj-form-label">
-                            Jenis Pengeluaran Sampel <span class="req">*</span>
-                        </label>
-                        <select name="tipe_pengeluaran_cd" id="tipePengeluaran" required class="sj-form-select">
-                            <option value="SAMPLE" selected>Sampel Uji Coba Calon Buyer / Lab</option>
-                            <option value="PROMOSI">Promosi / Pameran / Event</option>
-                            <option value="HADIAH">Hadiah Relasi / CSR / Bingkisan</option>
-                            <option value="INTERNAL">Pemakaian Internal Pabrik Lainnya</option>
-                        </select>
-                    </div>
-
-                    {{-- Customer Terdaftar (Opsional) --}}
-                    <div class="sj-form-group">
-                        <label for="customerSelect" class="sj-form-label">
-                            Pilih Mitra / Customer Terdaftar (Opsional)
-                        </label>
-                        <select name="customer_id" id="customerSelect" class="sj-form-select">
-                            <option value="">-- Bukan Customer Terdaftar (Input Manual) --</option>
-                            @foreach ($customers as $c)
-                                <option value="{{ $c->customer_id }}" 
-                                        data-name="{{ $c->customer_nm }}" 
-                                        data-alamat="{{ $c->alamat_txt ?: $c->wilayah }}"
-                                        {{ old('customer_id') == $c->customer_id ? 'selected' : '' }}>
-                                    {{ $c->customer_nm }} ({{ $c->customer_cd ?: 'Manual' }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Nama Penerima --}}
-                    <div class="sj-form-group">
-                        <label for="penerimaInput" class="sj-form-label">
-                            Nama Penerima / Instansi / Calon Buyer <span class="req">*</span>
-                        </label>
-                        <input type="text" name="penerima_nm" id="penerimaInput" 
-                               value="{{ old('penerima_nm') }}" 
-                               placeholder="Contoh: PT Boga Sejahtera (Up. Ibu Maya) / Lab Sucofindo..." 
-                               required class="sj-form-input">
-                    </div>
-
-                    {{-- Keperluan / Alasan --}}
-                    <div class="sj-form-group">
-                        <label for="keperluanInput" class="sj-form-label">
-                            Keperluan / Keterangan Pengeluaran <span class="req">*</span>
-                        </label>
-                        <input type="text" name="keperluan_txt" id="keperluanInput" 
-                               value="{{ old('keperluan_txt', 'Uji Rasa Calon Distributor') }}" 
-                               placeholder="Contoh: Uji organoleptik calon distributor Jawa Barat..." 
-                               required class="sj-form-input">
-                    </div>
-
-                    {{-- Disetujui / Otorisasi --}}
-                    <div class="sj-form-group">
-                        <label for="otorisasiInput" class="sj-form-label">
-                            Disetujui / Diinstruksikan Oleh
-                        </label>
-                        <input type="text" name="otorisasi_oleh" id="otorisasiInput" 
-                               value="{{ old('otorisasi_oleh', auth()->user()?->nama_lengkap ?? 'Manajer Sales') }}" 
-                               placeholder="Nama manajer atau pejabat yang menyetujui..." 
-                               class="sj-form-input">
+        {{-- 1 KARTU UTAMA: INFORMASI PENGELUARAN SAMPEL --}}
+        <div class="sj-card" style="margin-bottom: 1.5rem;">
+            <div class="sj-card-header">
+                <div class="sj-card-header-left">
+                    <span class="sj-card-icon" style="background: #faf5ff; color: #7c3aed;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </span>
+                    <div>
+                        <h3 class="sj-card-title">Informasi Pengeluaran Sampel &amp; Promosi</h3>
+                        <div class="sj-card-subtitle">Lengkapi identitas dokumen, pihak pemohon/penerima, dan tujuan pengeluaran barang</div>
                     </div>
                 </div>
             </div>
 
-            {{-- KARTU 2: ADMINISTRASI DOKUMEN PENGELUARAN --}}
-            <div class="sj-card">
-                <div class="sj-card-header">
-                    <div class="sj-card-header-left">
-                        <span class="sj-card-icon" style="background: #e0f2fe; color: #0284c7;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        </span>
-                        <div>
-                            <h3 class="sj-card-title">Dokumen Pengeluaran Sampel</h3>
-                            <div class="sj-card-subtitle">Administrasi fisik pengeluaran barang internal</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sj-card-body">
-                    <div class="sj-form-group">
+            <div class="sj-card-body">
+                {{-- BARIS 1: DOKUMEN & KATEGORI (3 KOLOM) --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    {{-- 1. Nomor Bukti --}}
+                    <div class="sj-form-group" style="margin-bottom: 0;">
                         <label for="pengeluaranNo" class="sj-form-label">
-                            Nomor Bukti Pengeluaran Sampel <span class="req">*</span>
+                            Nomor Bukti Pengeluaran <span class="req">*</span>
                         </label>
                         <input type="text" name="pengeluaran_no" id="pengeluaranNo" 
                                value="{{ old('pengeluaran_no', $defaultSampleNo ?? $defaultSjNo) }}" 
-                               required class="sj-form-input" style="font-weight: 700; color: #0f172a; font-family: monospace;">
+                               required class="sj-form-input" style="font-weight: 700; color: #0f172a; font-family: monospace; background: #f8fafc;" readonly>
                     </div>
 
-                    <div class="sj-form-group">
+                    {{-- 2. Tanggal Pengeluaran --}}
+                    <div class="sj-form-group" style="margin-bottom: 0;">
                         <label for="pengeluaranTgl" class="sj-form-label">
-                            Tanggal Pengeluaran Fisik <span class="req">*</span>
+                            Tanggal Pengeluaran <span class="req">*</span>
                         </label>
                         <input type="date" name="pengeluaran_tgl" id="pengeluaranTgl" 
                                value="{{ old('pengeluaran_tgl', now()->toDateString()) }}" 
                                required class="sj-form-input">
                     </div>
 
-                    <div class="sj-form-group">
-                        <label for="catatanTxt" class="sj-form-label">Catatan / Keterangan Tambahan</label>
-                        <textarea name="catatan_txt" id="catatanTxt" rows="3" 
-                                  placeholder="Catatan tambahan keperluan pengeluaran sampel..." class="sj-form-input" style="resize: vertical;">{{ old('catatan_txt') }}</textarea>
+                    {{-- 3. Jenis Pengeluaran --}}
+                    <div class="sj-form-group" style="margin-bottom: 0;">
+                        <label for="tipePengeluaran" class="sj-form-label">
+                            Jenis Pengeluaran <span class="req">*</span>
+                        </label>
+                        <select name="tipe_pengeluaran_cd" id="tipePengeluaran" required class="sj-form-select">
+                            <option value="SAMPLE" selected>Sampel Calon Buyer / Lab</option>
+                            <option value="PROMOSI">Promosi / Pameran / Event</option>
+                            <option value="HADIAH">Hadiah Relasi / CSR / Bingkisan</option>
+                            <option value="INTERNAL">Pemakaian Internal Pabrik</option>
+                        </select>
                     </div>
                 </div>
-            </div>
 
+                {{-- BARIS 2: PIHAK TERKAIT & OTORISASI (2 KOLOM) --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    {{-- 4. Penerima / Pemohon --}}
+                    <div class="sj-form-group" style="margin-bottom: 0;">
+                        <label for="penerimaInput" class="sj-form-label">
+                            Penerima / Pemohon Sampel <span class="req">*</span>
+                        </label>
+                        <input type="text" name="penerima_nm" id="penerimaInput" list="customerList"
+                               value="{{ old('penerima_nm') }}" 
+                               placeholder="Contoh: Mas Budi (Sales) / Toko Berkah / PT Boga Sejahtera..." 
+                               required class="sj-form-input">
+                        <datalist id="customerList">
+                            @foreach ($customers as $c)
+                                <option value="{{ $c->customer_nm }}">{{ $c->customer_cd ? '('.$c->customer_cd.')' : '' }}</option>
+                            @endforeach
+                        </datalist>
+                        <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">Ketik bebas nama orang/toko atau pilih dari saran mitra terdaftar.</div>
+                    </div>
+
+                    {{-- 5. Disetujui Oleh --}}
+                    <div class="sj-form-group" style="margin-bottom: 0;">
+                        <label for="otorisasiInput" class="sj-form-label">
+                            Disetujui / Diinstruksikan Oleh
+                        </label>
+                        <input type="text" name="otorisasi_oleh" id="otorisasiInput" 
+                               value="{{ old('otorisasi_oleh', auth()->user()?->nama_lengkap ?? 'Manajer Operasional') }}" 
+                               placeholder="Contoh: Manajer Sales / Kepala Gudang..." 
+                               class="sj-form-input">
+                        <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">Pejabat atau manajer yang memberikan wewenang pengeluaran sampel.</div>
+                    </div>
+                </div>
+
+                {{-- BARIS 3: KEPERLUAN PENGELUARAN (1 KOLOM) --}}
+                <div class="sj-form-group" style="margin-bottom: 0;">
+                    <label for="keperluanInput" class="sj-form-label">
+                        Keperluan / Keterangan Pengeluaran <span class="req">*</span>
+                    </label>
+                    <input type="text" name="keperluan_txt" id="keperluanInput" 
+                           value="{{ old('keperluan_txt', 'Uji Rasa Calon Distributor') }}" 
+                           placeholder="Contoh: Uji organoleptik calon buyer Jawa Barat / Display pameran kuliner..." 
+                           required class="sj-form-input">
+                </div>
+            </div>
         </div>
 
         {{-- KARTU 3: RINCIAN PRODUK JADI & ALOKASI BATCH FEFO --}}

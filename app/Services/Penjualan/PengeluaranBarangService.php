@@ -558,14 +558,14 @@ class PengeluaranBarangService
 
             $suratJalanNo = !empty($data['pengeluaran_no'])
                 ? $data['pengeluaran_no']
-                : $this->codeGenerator->generateSuratJalanNo($tglKirim);
+                : $this->codeGenerator->generateBuktiPengeluaranSampelNo($tglKirim);
 
             $penerimaNm = trim($data['penerima_nm'] ?? '');
             if (empty($penerimaNm)) {
                 throw new Exception("Nama penerima sampel / mitra tujuan wajib diisi.");
             }
 
-            // Buat header pengeluaran sampel
+            // Buat header pengeluaran sampel (Non-Komersial / Internal)
             $header = DatPengeluaranHdr::create([
                 'pengeluaran_no'      => $suratJalanNo,
                 'pengeluaran_tgl'     => $tglKirim,
@@ -576,9 +576,9 @@ class PengeluaranBarangService
                 'keperluan_txt'       => $data['keperluan_txt'] ?? 'Sample Promosi',
                 'otorisasi_oleh'      => $data['otorisasi_oleh'] ?? null,
                 'gudang_id'           => $gudangFgId,
-                'supir_nm'            => $data['supir_nm'] ?? null,
-                'nopol_kendaraan'     => $data['nopol_kendaraan'] ?? null,
-                'ekspedisi_nm'        => $data['ekspedisi_nm'] ?? 'Kurir / Mandiri',
+                'supir_nm'            => null,
+                'nopol_kendaraan'     => null,
+                'ekspedisi_nm'        => null,
                 'total_qty'           => 0,
                 'status_cd'           => 'TERKIRIM',
                 'catatan_txt'         => $data['catatan_txt'] ?? null,

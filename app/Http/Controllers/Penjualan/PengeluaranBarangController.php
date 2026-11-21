@@ -138,19 +138,20 @@ class PengeluaranBarangController extends Controller
      */
     public function createSample(): View
     {
-        $defaultSjNo = $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
+        $defaultSampleNo = $this->codeGenerator->generateBuktiPengeluaranSampelNo(now()->toDateString());
         $availableProducts = $this->pengeluaranService->getAvailableFgProducts();
         $customers = \App\Models\MasterData\MstCustomer::where('active_st', true)->orderBy('customer_nm')->get();
 
-        return view('penjualan.pengeluaran.create-sample', compact(
-            'defaultSjNo',
-            'availableProducts',
-            'customers'
-        ));
+        return view('penjualan.pengeluaran.create-sample', [
+            'defaultSampleNo'   => $defaultSampleNo,
+            'defaultSjNo'       => $defaultSampleNo, // fallback
+            'availableProducts' => $availableProducts,
+            'customers'         => $customers,
+        ]);
     }
 
     /**
-     * Simpan Pengeluaran Sampel, potong stok FEFO di Gudang FG, dan terbitkan Surat Jalan Sampel.
+     * Simpan Pengeluaran Sampel, potong stok FEFO di gudang, dan terbitkan Bukti Pengeluaran Sampel.
      */
     public function storeSample(Request $request): RedirectResponse
     {
@@ -162,9 +163,6 @@ class PengeluaranBarangController extends Controller
             'penerima_nm'         => 'required|string|max:150',
             'keperluan_txt'       => 'required|string|max:255',
             'otorisasi_oleh'      => 'nullable|string|max:100',
-            'supir_nm'            => 'nullable|string|max:100',
-            'nopol_kendaraan'     => 'nullable|string|max:30',
-            'ekspedisi_nm'        => 'nullable|string|max:100',
             'catatan_txt'         => 'nullable|string|max:500',
             'items'               => 'required|array|min:1',
             'items.*.barang_id'   => 'required|integer|exists:mst_barang,barang_id',
@@ -172,7 +170,7 @@ class PengeluaranBarangController extends Controller
             'items.*.kirim_qty'   => 'required|numeric|min:0.01',
             'items.*.catatan_txt' => 'nullable|string|max:255',
         ], [
-            'penerima_nm.required'   => 'Nama penerima / mitra sampel wajib diisi.',
+            'penerima_nm.required'   => 'Nama penerima / pemohon sampel wajib diisi.',
             'keperluan_txt.required' => 'Keperluan pengeluaran sampel wajib diisi.',
             'items.required'         => 'Minimal satu produk jadi harus dipilih.',
             'items.*.kirim_qty.min'  => 'Jumlah karton sampel minimal 0.01.',
@@ -184,7 +182,7 @@ class PengeluaranBarangController extends Controller
 
             return redirect()
                 ->route('penjualan.pengeluaran.show', $pengeluaran->pengeluaran_id)
-                ->with('toast_success', "Surat Jalan Sampel {$pengeluaran->pengeluaran_no} berhasil diterbitkan! Stok fisik telah dipotong via FEFO.");
+                ->with('toast_success', "Bukti Pengeluaran Sampel {$pengeluaran->pengeluaran_no} berhasil dicatat! Stok fisik gudang telah dipotong via FEFO.");
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Gagal memproses pengeluaran sampel: ' . $e->getMessage());
         }
@@ -215,7 +213,7 @@ class PengeluaranBarangController extends Controller
             ]);
             $pdf->setPaper('a4', 'portrait');
             $cleanSjNo = preg_replace('/[^A-Za-z0-9\-]/', '', $pengeluaran->pengeluaran_no);
-            return $pdf->stream('SURAT_JALAN_SAMPEL-' . $cleanSjNo . '.pdf');
+            return $pdf->stream('BUKTI_PENGELUARAN_SAMPEL-' . $cleanSjNo . '.pdf');
         }
 
         $tipeParam = $request->query('tipe');

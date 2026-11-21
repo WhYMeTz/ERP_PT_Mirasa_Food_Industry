@@ -1239,6 +1239,47 @@ class CodeGeneratorService
     }
 
     /**
+     * Generate Nomor Dokumen Bukti Pengeluaran Sampel & Promosi Resmi PT Mirasa
+     * Format: {seq}/SMPL/MFI/{mm}/{yy}
+     * Contoh: 001/SMPL/MFI/11/26
+     */
+    public function generateBuktiPengeluaranSampelNo(?string $date = null, ?int $excludeId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/SMPL/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_pengeluaran_hdr')
+            ->where('pengeluaran_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeId) {
+            $query->where('pengeluaran_id', '!=', $excludeId);
+        }
+
+        $allExisting = $query->pluck('pengeluaran_no');
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/SMPL\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($allExisting as $no) {
+            if (preg_match($regex, trim((string) $no), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $exists = DB::table('dat_pengeluaran_hdr')->where('pengeluaran_no', $generated)->exists();
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
      * Generate Nomor Dokumen Retur PO Penjualan (format: RET-SO-YYYYMM-0001)
      */
     public function generateSoReturNo(?string $date = null): string

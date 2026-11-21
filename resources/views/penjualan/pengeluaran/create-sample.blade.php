@@ -22,7 +22,7 @@
             </span>
         </div>
         <p class="sj-page-subtitle">
-            Penerbitan Surat Jalan resmi dan pemotongan stok gudang untuk sampel calon buyer, pameran, promosi, atau hadiah relasi tanpa dokumen PO Penjualan.
+            Pencatatan pengeluaran fisik barang dan pemotongan stok gudang untuk sampel calon buyer, pameran, promosi, atau hadiah relasi tanpa dokumen PO Penjualan.
         </p>
     </div>
 
@@ -127,16 +127,16 @@
                 </div>
             </div>
 
-            {{-- KARTU 2: DOKUMEN SURAT JALAN & LOGISTIK --}}
+            {{-- KARTU 2: ADMINISTRASI DOKUMEN PENGELUARAN --}}
             <div class="sj-card">
                 <div class="sj-card-header">
                     <div class="sj-card-header-left">
-                        <span class="sj-card-icon">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="sj-card-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         </span>
                         <div>
-                            <h3 class="sj-card-title">Surat Jalan &amp; Pengiriman</h3>
-                            <div class="sj-card-subtitle">Administrasi fisik pengeluaran gudang</div>
+                            <h3 class="sj-card-title">Dokumen Pengeluaran Sampel</h3>
+                            <div class="sj-card-subtitle">Administrasi fisik pengeluaran barang internal</div>
                         </div>
                     </div>
                 </div>
@@ -144,10 +144,10 @@
                 <div class="sj-card-body">
                     <div class="sj-form-group">
                         <label for="pengeluaranNo" class="sj-form-label">
-                            Nomor Surat Jalan Resmi <span class="req">*</span>
+                            Nomor Bukti Pengeluaran Sampel <span class="req">*</span>
                         </label>
                         <input type="text" name="pengeluaran_no" id="pengeluaranNo" 
-                               value="{{ old('pengeluaran_no', $defaultSjNo) }}" 
+                               value="{{ old('pengeluaran_no', $defaultSampleNo ?? $defaultSjNo) }}" 
                                required class="sj-form-input" style="font-weight: 700; color: #0f172a; font-family: monospace;">
                     </div>
 
@@ -160,27 +160,10 @@
                                required class="sj-form-input">
                     </div>
 
-                    <div class="sj-grid-2-col" style="margin-bottom: 0;">
-                        <div class="sj-form-group">
-                            <label for="supirNm" class="sj-form-label">Nama Pengemudi / Pembawa</label>
-                            <input type="text" name="supir_nm" id="supirNm" 
-                                   value="{{ old('supir_nm') }}" 
-                                   placeholder="Contoh: Kurir / Mandiri / Supir Pabrik" class="sj-form-input">
-                        </div>
-
-                        <div class="sj-form-group">
-                            <label for="nopolKendaraan" class="sj-form-label">Plat Nomor / Ekspedisi</label>
-                            <input type="text" name="nopol_kendaraan" id="nopolKendaraan" 
-                                   value="{{ old('nopol_kendaraan') }}" 
-                                   placeholder="Contoh: AA 1234 XX / JNE" class="sj-form-input" style="font-family: monospace;">
-                        </div>
-                    </div>
-
                     <div class="sj-form-group">
-                        <label for="alamatTujuanInput" class="sj-form-label">Alamat / Lokasi Tujuan Pengiriman</label>
-                        <input type="text" name="catatan_txt" id="alamatTujuanInput" 
-                               value="{{ old('catatan_txt') }}" 
-                               placeholder="Alamat lengkap atau catatan pengiriman..." class="sj-form-input">
+                        <label for="catatanTxt" class="sj-form-label">Catatan / Keterangan Tambahan</label>
+                        <textarea name="catatan_txt" id="catatanTxt" rows="3" 
+                                  placeholder="Catatan tambahan keperluan pengeluaran sampel..." class="sj-form-input" style="resize: vertical;">{{ old('catatan_txt') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -246,7 +229,7 @@
                         Batal
                     </a>
                     <button type="submit" id="btnSubmitSample" class="btn btn-primary" style="font-weight: 700; background: #059669; border-color: #047857;">
-                        Terbitkan Surat Jalan Sampel &amp; Potong Stok
+                        Catat Pengeluaran Sampel &amp; Potong Stok
                     </button>
                 </div>
             </div>

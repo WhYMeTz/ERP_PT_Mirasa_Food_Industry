@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Surat Jalan Sampel - {{ $pengeluaran->pengeluaran_no }}</title>
+    <title>Bukti Pengeluaran Sampel - {{ $pengeluaran->pengeluaran_no }}</title>
     <style>
         @page {
             size: a4 portrait;
@@ -210,26 +210,26 @@
 
     {{-- 2. JUDUL DOKUMEN --}}
     <div class="doc-header-box">
-        <div class="doc-title">SURAT JALAN PENGELUARAN SAMPEL / PROMOSI</div>
-        <div class="doc-badge-noncom">BARANG TIDAK UNTUK DIJUAL / BEBAS BIAYA (FREE OF CHARGE)</div>
+        <div class="doc-title">BUKTI PENGELUARAN BARANG SAMPEL &amp; PROMOSI</div>
+        <div class="doc-badge-noncom">DOKUMEN PENGELUARAN FISIK INTERNAL (BEBAS BIAYA / NON-KOMERSIAL)</div>
     </div>
 
-    {{-- 3. INFORMASI PENERIMA & PENGIRIMAN --}}
+    {{-- 3. INFORMASI PENERIMA & PENGELUARAN --}}
     <table class="dest-table">
         <tr>
-            <td style="width: 18%; font-weight: bold; background: #faf5ff;">Penerima / Tujuan:</td>
-            <td style="width: 42%; font-weight: bold; font-size: 9.5pt;">
+            <td style="width: 20%; font-weight: bold; background: #faf5ff;">Penerima / Pemohon:</td>
+            <td style="width: 40%; font-weight: bold; font-size: 9.5pt;">
                 {{ $pengeluaran->penerima_nm }}
             </td>
-            <td style="width: 18%; font-weight: bold; background: #faf5ff;">Keperluan:</td>
+            <td style="width: 18%; font-weight: bold; background: #faf5ff;">Jenis Keperluan:</td>
             <td style="width: 22%; font-weight: bold; color: #7c3aed;">
                 {{ $pengeluaran->keperluan_txt ?: 'Sampel Promosi' }}
             </td>
         </tr>
         <tr>
-            <td style="font-weight: bold; background: #faf5ff;">Alamat Kirim:</td>
-            <td>
-                {{ $pengeluaran->catatan_txt ?: ($pengeluaran->customer?->alamat_txt ?: '-') }}
+            <td style="font-weight: bold; background: #faf5ff;">Gudang Asal:</td>
+            <td style="font-weight: bold; color: #059669;">
+                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Pusat (MFI)' }}
             </td>
             <td style="font-weight: bold; background: #faf5ff;">Disetujui Oleh:</td>
             <td style="font-weight: bold;">
@@ -237,13 +237,9 @@
             </td>
         </tr>
         <tr>
-            <td style="font-weight: bold; background: #faf5ff;">Pengemudi / Kurir:</td>
-            <td>
-                {{ $pengeluaran->supir_nm ?: 'Kurir / Mandiri' }}
-            </td>
-            <td style="font-weight: bold; background: #faf5ff;">Nopol Kendaraan:</td>
-            <td style="font-family: monospace; font-weight: bold;">
-                {{ $pengeluaran->nopol_kendaraan ?: '-' }}
+            <td style="font-weight: bold; background: #faf5ff;">Catatan / Keterangan:</td>
+            <td colspan="3">
+                {{ $pengeluaran->catatan_txt ?: '-' }}
             </td>
         </tr>
     </table>
@@ -317,7 +313,7 @@
     <table class="ttd-table">
         <tr>
             <td>
-                <div>Penerima / Ekspedisi,</div>
+                <div>Penerima / Pemohon,</div>
                 <div class="ttd-space"></div>
                 <div>( .................................................. )</div>
                 <div style="font-size: 7.5pt; color: #6b7280; margin-top: 2px;">Tanda Tangan &amp; Nama Terang</div>
@@ -329,9 +325,9 @@
                 <div style="font-size: 7.5pt; color: #6b7280; margin-top: 2px;">Bagian Logistik &amp; Gudang</div>
             </td>
             <td>
-                <div>Disetujui Oleh,</div>
+                <div>Mengetahui / Menyetujui,</div>
                 <div class="ttd-space"></div>
-                <div>( <strong>{{ $pengeluaran->otorisasi_oleh ?: 'Manajer Operasional' }}</strong> )</div>
+                <div>( <strong>{{ $pengeluaran->otorisasi_oleh ?: 'Kepala Gudang / Manajemen' }}</strong> )</div>
                 <div style="font-size: 7.5pt; color: #6b7280; margin-top: 2px;">Sales / Manajemen</div>
             </td>
         </tr>

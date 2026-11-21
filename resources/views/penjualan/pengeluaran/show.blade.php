@@ -32,15 +32,19 @@
                 @endif
             </div>
             <p class="sj-page-subtitle">
-                Diterbitkan pada {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('d F Y') }} oleh {{ $pengeluaran->created_by ?? 'System' }}.
+                @if ($pengeluaran->isSample())
+                    Bukti Pengeluaran Sampel/Promosi internal, dicatat pada {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('d F Y') }} oleh {{ $pengeluaran->created_by ?? 'System' }}.
+                @else
+                    Diterbitkan pada {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('d F Y') }} oleh {{ $pengeluaran->created_by ?? 'System' }}.
+                @endif
             </p>
         </div>
 
         <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
-            {{-- Tombol Cetak PDF Surat Jalan --}}
+            {{-- Tombol Cetak PDF Dokumen --}}
             <a href="{{ route('penjualan.pengeluaran.export-pdf', $pengeluaran->pengeluaran_id) }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Cetak Lembar Surat Jalan (PDF)</span>
+                <span>{{ $pengeluaran->isSample() ? 'Cetak Bukti Pengeluaran Sampel (PDF)' : 'Cetak Lembar Surat Jalan (PDF)' }}</span>
             </a>
 
             {{-- Tombol Cetak Faktur Penjualan (Terbit Otomatis Bersama Surat Jalan) --}}
@@ -72,7 +76,7 @@
                     <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"
                             style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #dc2626; border-color: #b91c1c; color: #ffffff;">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        <span>Batalkan (Void SJ)</span>
+                        <span>{{ $pengeluaran->isSample() ? 'Batalkan (Void Sampel)' : 'Batalkan (Void SJ)' }}</span>
                     </button>
                 @endif
             @endif
@@ -204,60 +208,109 @@
             </div>
         </div>
 
-        {{-- KARTU 2: DATA LOGISTIK & EKSPEDISI --}}
+        {{-- KARTU 2: DATA LOGISTIK ATAU DATA PENGELUARAN INTERNAL --}}
         <div class="sj-card">
-            <div class="sj-card-header">
-                <div class="sj-card-header-left">
-                    <span class="sj-card-icon emerald">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                    </span>
-                    <div>
-                        <h3 class="sj-card-title">Data Logistik &amp; Ekspedisi Armada</h3>
-                        <div class="sj-card-subtitle">Supir, armada truk, dan tanggal keberangkatan</div>
+            @if ($pengeluaran->isSample())
+                <div class="sj-card-header">
+                    <div class="sj-card-header-left">
+                        <span class="sj-card-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </span>
+                        <div>
+                            <h3 class="sj-card-title">Informasi Pengeluaran Internal</h3>
+                            <div class="sj-card-subtitle">Administrasi fisik stok dan otorisasi</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="sj-card-body">
-                <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Tanggal Berangkat:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
-                            {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('l, d F Y') }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Supir / Driver:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
-                            {{ $pengeluaran->supir_nm ?: 'Belum Dicatat' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. Polisi Armada:</td>
-                        <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 700; color: #0284c7;">
-                            {{ $pengeluaran->nopol_kendaraan ?: '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Ekspedisi / Armada:</td>
-                        <td style="padding: 0.4rem 0; color: #334155;">
-                            {{ $pengeluaran->ekspedisi_nm ?: 'Armada Internal PT Mirasa' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Catatan / Instruksi:</td>
-                        <td style="padding: 0.4rem 0; color: #334155;">
-                            {{ $pengeluaran->catatan_txt ?: '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Total Karton Keluar:</td>
-                        <td style="padding: 0.4rem 0; font-size: 1rem; font-weight: 800; color: #059669;">
-                            {{ number_format($pengeluaran->total_qty, 0, ',', '.') }} Karton
-                        </td>
-                    </tr>
-                </table>
-            </div>
+                <div class="sj-card-body">
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Tanggal Pengeluaran:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('l, d F Y') }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Dicatat / Dibuat Oleh:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ $pengeluaran->created_by ?: 'Petugas Gudang' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Disetujui Oleh:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0284c7;">
+                                {{ $pengeluaran->otorisasi_oleh ?: 'Manajemen' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Catatan Tambahan:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $pengeluaran->catatan_txt ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Total Karton Keluar:</td>
+                            <td style="padding: 0.4rem 0; font-size: 1rem; font-weight: 800; color: #059669;">
+                                {{ number_format($pengeluaran->total_qty, 0, ',', '.') }} Karton
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @else
+                <div class="sj-card-header">
+                    <div class="sj-card-header-left">
+                        <span class="sj-card-icon emerald">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        </span>
+                        <div>
+                            <h3 class="sj-card-title">Data Logistik &amp; Ekspedisi Armada</h3>
+                            <div class="sj-card-subtitle">Supir, armada truk, dan tanggal keberangkatan</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sj-card-body">
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Tanggal Berangkat:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('l, d F Y') }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Supir / Driver:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ $pengeluaran->supir_nm ?: 'Belum Dicatat' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. Polisi Armada:</td>
+                            <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 700; color: #0284c7;">
+                                {{ $pengeluaran->nopol_kendaraan ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Ekspedisi / Armada:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $pengeluaran->ekspedisi_nm ?: 'Armada Internal PT Mirasa' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Catatan / Instruksi:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $pengeluaran->catatan_txt ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Total Karton Keluar:</td>
+                            <td style="padding: 0.4rem 0; font-size: 1rem; font-weight: 800; color: #059669;">
+                                {{ number_format($pengeluaran->total_qty, 0, ',', '.') }} Karton
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @endif
         </div>
 
     </div>

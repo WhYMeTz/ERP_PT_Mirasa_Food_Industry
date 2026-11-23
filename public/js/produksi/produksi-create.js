@@ -1173,7 +1173,7 @@
     // 9. Standar Harga Satuan & Hitung Otomatis Bahan Kemasan & Pembantu (Master Data Integration)
     const initialKartonRates = window.appConfig?.kartonRates || {};
     const defaultKartonBaruPrice = parseFloat(initialKartonRates.baru) || 8741;
-    const defaultKartonPuteranPrice = parseFloat(initialKartonRates.puteran) || 1748.20;
+    const defaultKartonPuteranPrice = parseFloat(initialKartonRates.puteran) || 0.00;
 
     window.standarHargaKemasan = {
         bumbu_qty: 35000,
@@ -1197,7 +1197,7 @@
 
     // Mode Kemasan Karton Sirkular (Lini IFM vs Lini Manual)
     window.updateKartonMode = function (isIfm) {
-        const rates = window.appConfig?.kartonRates || { baru: 8741, puteran: 1748.20, reject: 0 };
+        const rates = window.appConfig?.kartonRates || { baru: 8741, puteran: 0, reject: 0 };
         const cardBaru = document.getElementById('card_karton_baru_item');
         const lblBaruTitle = document.getElementById('label_karton_baru_title');
         const badgeBaruDesc = document.getElementById('badge_karton_baru_desc');
@@ -1213,26 +1213,25 @@
 
         if (isIfm) {
             // MODE LINI IFM:
-            // Hanya gunakan Karton Sirkular IFM (Tarif Flat 1/5 Siklus: Rp 1.748/box)
-            // Sembunyikan opsi Karton Baru agar HPP IFM tidak melonjak/kacau
+            // Gunakan Karton Sirkular IFM (Karton Puteran Rp 0 karena beban lunas saat baru)
             if (cardBaru) cardBaru.style.display = 'none';
             if (inputBaruQty) inputBaruQty.value = 0;
             if (inputBaruNilai) inputBaruNilai.value = 0;
 
             if (lblPuteranTitle) lblPuteranTitle.textContent = 'Karton Sirkular IFM';
             if (badgePuteranDesc) {
-                badgePuteranDesc.innerHTML = 'Standar Sirkular 5x Pakai';
+                badgePuteranDesc.innerHTML = 'Karton Puteran (Beban Rp 0)';
                 badgePuteranDesc.style.color = '#059669';
             }
             if (badgePuteranType) {
-                badgePuteranType.textContent = 'Sirkular 5x';
+                badgePuteranType.textContent = 'Puteran (Rp 0)';
                 badgePuteranType.style.background = '#ecfdf5';
                 badgePuteranType.style.color = '#059669';
                 badgePuteranType.style.borderColor = '#a7f3d0';
             }
 
             window.standarHargaKemasan.karton_baru_qty = 0;
-            window.standarHargaKemasan.karton_bekas_qty = parseFloat(rates.puteran) || 1748.20;
+            window.standarHargaKemasan.karton_bekas_qty = parseFloat(rates.puteran) || 0.00;
 
             if (inputBekasNilai) inputBekasNilai.readOnly = false;
         } else {

@@ -483,7 +483,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($produksi->outputs as $idx => $out)
+                    @php
+                        $sortedOutputs = $produksi->outputs ? $produksi->outputs->sortBy(function($out) {
+                            $bNm = strtoupper($out->barang?->barang_nm ?? '');
+                            $bCd = strtoupper($out->barang?->barang_cd ?? '');
+                            $kat = strtoupper($out->kategori_output ?? '');
+                            
+                            $isLengket = str_contains($bNm, 'LENGKET') || str_contains($bCd, 'LGT') || str_contains($kat, 'LGT') || str_contains($kat, 'LENGKET');
+                            $isBerko = !$isLengket && (str_contains($bNm, 'BERKO') || str_contains($bCd, 'BRK') || str_contains($kat, 'BERKO') || str_contains($kat, 'BRK') || str_contains($kat, 'KW2'));
+                            $isAfval = str_contains($bNm, 'AFVAL') || str_contains($bNm, 'REMAHAN') || str_contains($kat, 'AFVAL') || str_contains($bCd, 'AFV') || str_contains($kat, 'RMH');
+                            $isUtama = !$isLengket && !$isBerko && !$isAfval;
+
+                            $tier = 1;
+                            if ($isBerko) $tier = 2;
+                            elseif ($isLengket) $tier = 3;
+                            elseif ($isAfval) $tier = 4;
+
+                            return sprintf('%d_%010.2f', $tier, 1000000 - (float)$out->qty_kg);
+                        })->values() : collect();
+                    @endphp
+                    @forelse ($sortedOutputs as $idx => $out)
                         @php
                             $bNm = strtoupper($out->barang?->barang_nm ?? '');
                             $bCd = strtoupper($out->barang?->barang_cd ?? '');

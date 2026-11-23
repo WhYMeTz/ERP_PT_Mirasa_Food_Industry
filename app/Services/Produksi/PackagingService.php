@@ -237,16 +237,9 @@ class PackagingService
                 }
 
                 // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
-                if ($b->barang_cd === 'KMS-KTN-REJ' || str_contains($nm, 'REJECT') || str_contains($nm, 'MANUAL')) {
-                    // Manual karton tidak masuk hitungan HPP (Rp 0)
+                if ($b->barang_cd === 'KMS-KTN-REJ' || $b->barang_cd === 'KIF00G-PUT' || str_contains($nm, 'REJECT') || str_contains($nm, 'PUTERAN') || str_contains($nm, 'BEKAS') || str_contains($nm, 'MANUAL')) {
+                    // Karton puteran / bekas / reject beban Rp 0 (karena beban lunas saat karton baru)
                     $hargaSatuan = 0.0;
-                } elseif ($b->barang_cd === 'KIF00G-BP1' || (str_contains($nm, 'IFM') && str_contains($nm, 'KARTON'))) {
-                    // Karton khusus IFM langsung dibagi 5 (Amortisasi pemakaian 5x siklus)
-                    if ($hargaSatuan > 2000) {
-                        $hargaSatuan = round($hargaSatuan / 5, 2); // Rp 8.741 / 5 = Rp 1.748,20
-                    }
-                } elseif ($b->barang_cd === 'KIF00G-PUT') {
-                    $hargaSatuan = 1748.20;
                 }
             } elseif ($activeBatch && (float) $activeBatch->harga_satuan > 0) {
                 $hargaSatuan = (float) $activeBatch->harga_satuan;
@@ -414,16 +407,8 @@ class PackagingService
                 $bCd = strtoupper($barangObj?->barang_cd ?? '');
                 $bNm = strtoupper($barangObj?->barang_nm ?? '');
 
-                if ($bCd === 'KMS-KTN-REJ' || str_contains($bNm, 'REJECT') || str_contains($bNm, 'MANUAL')) {
-                    $hargaSatuan = 0.0; // Karton manual tidak masuk hitungan HPP (Rp 0)
-                } elseif ($bCd === 'KIF00G-BP1' || (str_contains($bNm, 'IFM') && str_contains($bNm, 'KARTON'))) {
-                    if ($hargaSatuan > 2000) {
-                        $hargaSatuan = round($hargaSatuan / 5, 2); // Khusus IFM langsung dibagi 5 = Rp 1.748,20
-                    }
-                } elseif ($bCd === 'KIF00G-PUT') {
-                    if ($hargaSatuan <= 0) {
-                        $hargaSatuan = 1748.20;
-                    }
+                if ($bCd === 'KMS-KTN-REJ' || $bCd === 'KIF00G-PUT' || str_contains($bNm, 'REJECT') || str_contains($bNm, 'PUTERAN') || str_contains($bNm, 'BEKAS') || str_contains($bNm, 'MANUAL')) {
+                    $hargaSatuan = 0.0; // Karton bekas/puteran tidak masuk hitungan HPP (Rp 0)
                 }
 
                 $subtotal = round($qtyAktual * $hargaSatuan, 2);

@@ -411,18 +411,6 @@ function renderPreviewFisik(data) {
     setTxt('pvSingkongQty', `${formatNum(data.singkong_qty)} kg`);
     setTxt('pvWipQty', `${formatNum(data.total_wip_qty)} kg`);
     setTxt('pvRendemen', `${formatNum(data.rendemen_persen)} %`);
-
-    // Tampilkan bantuan kalkulator porsi gas jika pada tanggal ini ada produksi kedua entitas
-    const shareAlert = document.getElementById('cngEntityShareAlert');
-    const shareText = document.getElementById('cngEntityShareText');
-    if (shareAlert && shareText) {
-        if (data.has_other_entity && data.total_wip_plant_all > 0) {
-            shareAlert.style.display = 'block';
-            shareText.innerHTML = `💡 <strong>Rekomendasi Porsi Gas:</strong> Hari ini kedua entitas sama-sama beroperasi (Total gabungan pabrik: <strong>${(data.total_wip_plant_all || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP</strong>). Porsi hasil keripik <strong>${data.entitas_nm}</strong> adalah <strong>${data.entity_gas_ratio_pct}%</strong> (${(data.total_wip_qty || 0).toLocaleString('id-ID', { minimumFractionDigits: 1 })} kg WIP). Silakan kalikan persentase ini dengan angka pembacaan meteran induk bersama.`;
-        } else {
-            shareAlert.style.display = 'none';
-        }
-    }
 }
 
 /**
@@ -620,16 +608,27 @@ function validateCngSplitSum() {
  */
 function renderPemakaianBahan(items, bppbHdr) {
     // Info Header BPPB
+    const metaDoc = document.getElementById('bppbMetaDocHpp');
     if (bppbHdr) {
         setTxt('lblBppbNo', bppbHdr.pakai_no || '-');
         setTxt('lblBppbTgl', bppbHdr.pakai_tgl || '-');
         setTxt('lblBppbGudang', bppbHdr.gudang_nm || '-');
         setTxt('lblBppbTotal', `Rp ${formatRp(bppbHdr.total_nilai || 0)}`);
+        const badgeVal = document.getElementById('badgeTotalBahanNilaiHpp');
+        if (badgeVal) badgeVal.textContent = `Total: Rp ${formatRp(bppbHdr.total_nilai || 0)}`;
+        if (metaDoc) {
+            metaDoc.innerHTML = `&bull; <strong>[${bppbHdr.pakai_no || '-'}]</strong> &bull; ${bppbHdr.gudang_nm || 'Gudang Bahan'} &bull; ${bppbHdr.pakai_tgl || '-'}`;
+        }
     } else {
         setTxt('lblBppbNo', '-');
         setTxt('lblBppbTgl', '-');
         setTxt('lblBppbGudang', '-');
         setTxt('lblBppbTotal', 'Rp 0');
+        const badgeVal = document.getElementById('badgeTotalBahanNilaiHpp');
+        if (badgeVal) badgeVal.textContent = 'Total: Rp 0';
+        if (metaDoc) {
+            metaDoc.innerHTML = '';
+        }
     }
 
     bppbOriginalItems = JSON.parse(JSON.stringify(items || []));
@@ -652,40 +651,13 @@ function toggleKoreksiBppb() {
 }
 
 /**
- * Update tampilan tombol Koreksi dan tombol Reset
+ * Update tampilan tombol Koreksi dan tombol Reset (Dinonaktifkan: BPPB bersifat Read-Only)
  */
 function updateKoreksiButtonState() {
     const btn = document.getElementById('btnToggleKoreksiBppb');
-    const txt = document.getElementById('txtBtnKoreksiBppb');
-    const svg = document.getElementById('svgLockBppb');
     const btnReset = document.getElementById('btnResetBppb');
-
-    if (!btn || !txt) return;
-
-    let isModified = false;
-    bppbCurrentItems.forEach((it, idx) => {
-        if (bppbOriginalItems[idx] && Math.abs((it.subtotal_nilai || 0) - (bppbOriginalItems[idx].subtotal_nilai || 0)) > 1) {
-            isModified = true;
-        }
-    });
-
-    if (btnReset) {
-        btnReset.style.display = (isBppbUnlocked || isModified) ? 'inline-flex' : 'none';
-    }
-
-    if (isBppbUnlocked) {
-        btn.classList.add('active');
-        txt.textContent = 'Kunci';
-        if (svg) {
-            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>';
-        }
-    } else {
-        btn.classList.remove('active');
-        txt.textContent = 'Koreksi';
-        if (svg) {
-            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>';
-        }
-    }
+    if (btn) btn.style.display = 'none';
+    if (btnReset) btnReset.style.display = 'none';
 }
 
 /**
@@ -727,82 +699,87 @@ function onBppbSubtotalChange(idx, val) {
 function renderPemakaianTableOnly() {
     const tbody = document.getElementById('pemakaianTableBody');
     const tfoot = document.getElementById('pemakaianTableFoot');
+    const badgeItem = document.getElementById('badgeJumlahItemBppb');
+    const badgeTotalVal = document.getElementById('badgeTotalBahanNilaiHpp');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     if (!bppbCurrentItems || bppbCurrentItems.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="table-empty-row">
-                    <div class="empty-info-msg">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>Tidak ditemukan data rincian pemakaian bahan gudang (BPPB) yang terhubung dengan SPK ini.</span>
-                    </div>
+                <td colspan="8" style="padding: 1.5rem 1rem; text-align: center; vertical-align: middle; color: #94a3b8; font-style: italic; font-size: 0.875rem;">
+                    Tidak ditemukan data rincian pemakaian bahan gudang (BPPB) yang terhubung dengan SPK ini.
                 </td>
             </tr>
         `;
+        if (badgeItem) badgeItem.textContent = '0 Item Bahan';
+        if (badgeTotalVal) badgeTotalVal.textContent = 'Total: Rp 0';
         if (tfoot) tfoot.style.display = 'none';
         return;
     }
 
+    if (badgeItem) badgeItem.textContent = `${bppbCurrentItems.length} Item Bahan`;
+
     let subtotalBahan = 0;
+    let totalQtyBahan = 0;
+
     bppbCurrentItems.forEach((item, idx) => {
         const itemVal = parseFloat(item.subtotal_nilai || 0);
+        const itemQty = parseFloat(item.qty_keluar || 0);
         subtotalBahan += itemVal;
+        totalQtyBahan += itemQty;
 
-        const origVal = bppbOriginalItems[idx]?.subtotal_nilai || 0;
-        const isModified = Math.abs(itemVal - origVal) > 1;
-
+        const isMultiDoc = Boolean(currentProduksiData && Array.isArray(currentProduksiData.dokumen_list) && currentProduksiData.dokumen_list.length > 1);
         const isBmbRow = ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR'].includes(String(item.lokasi_pabrik || '').toUpperCase());
         const pabrikBadge = item.lokasi_pabrik ? (
             isBmbRow
-                ? `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #faf5ff; color: #7e22ce; border: 1px solid #d8b4fe; margin-right: 4px;">BMB</span>`
-                : `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-right: 4px;">MFI</span>`
+                ? `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #faf5ff; color: #7e22ce; border: 1px solid #d8b4fe; margin-right: 6px; flex-shrink: 0;">BMB</span>`
+                : `<span style="display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-right: 6px; flex-shrink: 0;">MFI</span>`
         ) : '';
-        const spkRef = item.produksi_no ? `<span style="font-size: 0.675rem; color: #94a3b8; font-family: monospace;">(${item.produksi_no})</span>` : '';
+        const spkSubtitle = (isMultiDoc && item.produksi_no)
+            ? `<div style="font-size: 0.72rem; color: #64748b; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; margin-top: 3px; font-weight: 500;">Ref SPK: ${item.produksi_no}</div>`
+            : '';
 
-        let colSubtotalHtml = '';
-        if (isBppbUnlocked) {
-            colSubtotalHtml = `
-                <div class="bppb-edit-wrap">
-                    <input type="number" step="any" min="0" class="bppb-input-edit"
-                           id="input_bppb_subtotal_${idx}"
-                           value="${itemVal}"
-                           oninput="onBppbSubtotalChange(${idx}, this.value)">
-                </div>
-            `;
-        } else {
-            colSubtotalHtml = `
-                <div style="font-weight: 700; color: #0f172a; text-align: right;">Rp ${formatRp(itemVal)}</div>
-                ${isModified ? `<div style="font-size: 0.675rem; color: #d97706; font-weight: 600; text-align: right;">(BPPB: Rp ${formatRp(origVal)})</div>` : ''}
-            `;
-        }
-
+        const rowBg = (idx % 2 === 1) ? '#f8fafc' : '#ffffff';
         const tr = document.createElement('tr');
+        tr.style.cssText = `background: ${rowBg}; border-bottom: 1px solid #e2e8f0; transition: background 0.12s;`;
+        tr.onmouseover = () => { tr.style.background = '#f1f5f9'; };
+        tr.onmouseout = () => { tr.style.background = rowBg; };
+
         tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td>
-                <div>${pabrikBadge}<strong>${item.barang_nm}</strong> ${spkRef}</div>
-                <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">${item.barang_cd}</div>
+            <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; color: #64748b; font-weight: 600; font-size: 0.875rem;">${idx + 1}</td>
+            <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle;">
+                <span style="display: inline-block; font-size: 0.775rem; font-weight: 600; color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.2rem 0.55rem; border-radius: 4px;">${item.kategori_bahan || 'Bahan Baku'}</span>
             </td>
-            <td>
-                <span class="badge-jenis-barang">${item.kategori_bahan || '-'}</span>
+            <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.barang_cd || '-'}</td>
+            <td style="padding: 0.75rem 0.85rem; text-align: left; vertical-align: middle;">
+                <div style="display: flex; align-items: center;">
+                    ${pabrikBadge}<span style="font-weight: 700; color: #0f172a; font-size: 0.88rem; line-height: 1.3;">${item.barang_nm}</span>
+                </div>
+                ${spkSubtitle}
             </td>
-            <td>
-                <span style="font-family: monospace; font-size: 0.775rem;">${item.batch_no || '-'}</span>
+            <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.batch_no || '-'}</td>
+            <td style="padding: 0.75rem 0.85rem; text-align: right; vertical-align: middle; font-weight: 700; color: #0284c7; font-size: 0.925rem; font-variant-numeric: tabular-nums;">
+                ${formatNum(itemQty)} <span style="font-weight: 500; font-size: 0.775rem; color: #64748b;">${item.satuan_cd || 'KG'}</span>
             </td>
-            <td style="text-align: right; font-weight: 700;">${formatNum(item.qty_keluar)}</td>
-            <td style="text-align: center;"><span style="font-size: 0.75rem; color: #475569;">${item.satuan_cd}</span></td>
-            <td style="text-align: right;" id="bppb_cell_harga_${idx}">Rp ${formatRp(item.harga_satuan)}</td>
-            <td style="text-align: right;">${colSubtotalHtml}</td>
+            <td style="padding: 0.75rem 0.85rem; text-align: right; vertical-align: middle; font-size: 0.875rem; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums;" id="bppb_cell_harga_${idx}">
+                Rp ${formatRp(item.harga_satuan)}
+            </td>
+            <td style="padding: 0.75rem 0.85rem; text-align: right; vertical-align: middle; font-weight: 800; color: #0f172a; font-size: 0.925rem; font-variant-numeric: tabular-nums;">
+                Rp ${formatRp(itemVal)}
+            </td>
         `;
         tbody.appendChild(tr);
     });
 
+    if (badgeTotalVal) badgeTotalVal.textContent = `Total: Rp ${formatRp(subtotalBahan)}`;
+
     if (tfoot) {
-        tfoot.style.display = '';
+        tfoot.style.display = 'table-footer-group';
         const footVal = document.getElementById('lblSubtotalPemakaian');
         if (footVal) footVal.textContent = `Rp ${formatRp(subtotalBahan)}`;
+        const footQty = document.getElementById('tfootTotalBppbQty');
+        if (footQty) footQty.textContent = `${formatNum(totalQtyBahan)} KG`;
     }
 }
 
@@ -905,9 +882,13 @@ function populateCostingForm(data) {
 
     // Utilitas Gas CNG
     document.getElementById('cng_mmbtu').value = data.cng_mmbtu || 0;
-    document.getElementById('cng_tarif_usd').value = data.cng_tarif_usd || window.appConfig.defaultCngTarifUsd || 14.50;
-    document.getElementById('cng_kurs_jisdor').value = data.cng_kurs_jisdor || window.appConfig.defaultCngKursJisdor || 18138.00;
-    document.getElementById('cng_tarif').value = data.cng_tarif || window.appConfig.defaultCngTarif || 263001.00;
+    const isDocFinalized = (data.hpp_finalized_at !== null && data.hpp_finalized_at !== undefined) && parseFloat(data.cng_nilai || 0) > 0;
+    const activeStandardUsd = window.appConfig?.defaultCngTarifUsd || 15.00;
+    document.getElementById('cng_tarif_usd').value = isDocFinalized && parseFloat(data.cng_tarif_usd || 0) > 0
+        ? data.cng_tarif_usd
+        : (data.cng_tarif_usd || activeStandardUsd);
+    document.getElementById('cng_kurs_jisdor').value = data.cng_kurs_jisdor || window.appConfig?.defaultCngKursJisdor || 18278.00;
+    calcCngFromTarif();
     const cngNilai = data.cng_nilai || 0;
     document.getElementById('cng_nilai').value = cngNilai;
     const elDispCng = document.getElementById('disp_cng_nilai');
@@ -992,6 +973,31 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
         ? Math.round(((parseFloat(currentProduksiData.total_bahan_nilai || currentProduksiData.total_biaya_produksi || 0)) / parseFloat(currentProduksiData.total_wip_qty)) * 100) / 100
         : defaultHppPerKg;
 
+    // Urutkan selalu Produk Utama paling atas (Tier 1), disusul Berko (Tier 2), Lengket (Tier 3), Afval/Remahan (Tier 4)
+    outputs.sort((a, b) => {
+        const aNm = (a.barang_nm || '').toUpperCase();
+        const aCd = (a.barang_cd || '').toUpperCase();
+        const aKat = (a.kategori_output || '').toUpperCase();
+        const bNm = (b.barang_nm || '').toUpperCase();
+        const bCd = (b.barang_cd || '').toUpperCase();
+        const bKat = (b.kategori_output || '').toUpperCase();
+
+        const getTier = (nm, cd, kat) => {
+            const isLengket = nm.includes('LENGKET') || cd.includes('LGT') || kat.includes('LGT') || kat.includes('LENGKET');
+            const isBerko = !isLengket && (nm.includes('BERKO') || cd.includes('BRK') || kat.includes('BERKO') || kat.includes('BRK') || kat.includes('KW2'));
+            const isAfval = nm.includes('AFVAL') || nm.includes('REMAHAN') || kat.includes('AFVAL') || cd.includes('AFV') || kat.includes('RMH');
+            if (isBerko) return 2;
+            if (isLengket) return 3;
+            if (isAfval) return 4;
+            return 1;
+        };
+
+        const tierA = getTier(aNm, aCd, aKat);
+        const tierB = getTier(bNm, bCd, bKat);
+        if (tierA !== tierB) return tierA - tierB;
+        return (parseFloat(b.qty_kg) || 0) - (parseFloat(a.qty_kg) || 0);
+    });
+
     outputs.forEach((item, idx) => {
         const bNmUpper = (item.barang_nm || '').toUpperCase();
         const bCdUpper = (item.barang_cd || '').toUpperCase();
@@ -1060,6 +1066,51 @@ function renderAllocationTable(outputs, defaultHppPerKg) {
         `;
         tbody.appendChild(tr);
     });
+
+    populateTargetMultiplierDropdown(outputs);
+}
+
+/**
+ * Dinamisasikan opsi pilihan baris acuan pengali sesuai produk KW 2 / afkir yang riil ada di tabel
+ */
+function populateTargetMultiplierDropdown(outputs) {
+    const sel = document.getElementById('targetMultiplierRow');
+    if (!sel) return;
+
+    const prevVal = sel.value;
+    sel.innerHTML = '';
+
+    // Opsi 1: Semua KW 2 Sekaligus
+    const optAll = document.createElement('option');
+    optAll.value = 'all_kw2';
+    optAll.textContent = 'Semua KW 2 (Berko & Remahan Sekaligus)';
+    sel.appendChild(optAll);
+
+    // Opsi per baris produk sampingan / KW 2 riil
+    if (Array.isArray(outputs)) {
+        outputs.forEach((item, idx) => {
+            const bNmUpper = (item.barang_nm || '').toUpperCase();
+            const bCdUpper = (item.barang_cd || '').toUpperCase();
+            const gUpper = (item.grade_cd || '').toUpperCase();
+            const kUpper = (item.kategori_output || '').toUpperCase();
+
+            const isKw2 = gUpper.includes('KW2') || gUpper.includes('AFKIR') || gUpper.includes('BS') ||
+                          bNmUpper.includes('BERKO') || bNmUpper.includes('REMAHAN') ||
+                          bNmUpper.includes('LENGKET') || bCdUpper.includes('BRK') || bCdUpper.includes('RMH') ||
+                          kUpper.includes('BERKO') || kUpper.includes('REMAHAN') || kUpper.includes('LENGKET');
+
+            if (isKw2) {
+                const opt = document.createElement('option');
+                opt.value = `out_${item.output_id}`;
+                opt.textContent = `Hanya Baris ${idx + 1}: ${item.barang_nm} (${formatNum(item.qty_kg)} kg)`;
+                sel.appendChild(opt);
+            }
+        });
+    }
+
+    if (prevVal && sel.querySelector(`option[value="${prevVal}"]`)) {
+        sel.value = prevVal;
+    }
 }
 
 /**
@@ -1726,103 +1777,31 @@ function applyRasioProdukUtama() {
 
     const totalUtamaKg = utamaItems.reduce((acc, it) => acc + it.qty, 0);
 
-    if (targetSelect === 'all_kw2') {
-        // Semua produk KW 2 berbobot 1.0, Produk Utama berbobot factor (misal 2.5)
-        const totalKw2Kg = kw2Items.reduce((acc, it) => acc + it.qty, 0);
-        const totalWeighted = (totalUtamaKg * factor) + totalKw2Kg;
-        if (totalWeighted <= 0) return;
+    // KETENTUAN UTAMA:
+    // Nilai Berko dan Remahan (produk sampingan/afkir) sifatnya adalah INPUTAN USER.
+    // Nilai inputan ini TIDAK BOLEH DIRUBAH ketika dikali 2,5 (kecuali jika tombol Bagi Rata yang ditekan).
+    // Pertahankan 100% nilai inputan yang ada pada seluruh baris KW 2 (Berko, Remahan, dll).
+    let totalKw2Nilai = 0;
+    kw2Items.forEach(it => {
+        const curHpp = parseFloat(it.input?.value) || 0;
+        const itemNilai = Math.round(it.qty * curHpp);
+        totalKw2Nilai += itemNilai;
+        const lbl = document.getElementById(`lbl_nilai_${it.outId}`);
+        if (lbl) lbl.textContent = `Rp ${formatRp(itemNilai)}`;
+    });
 
-        const baseUnitCost = totalBiaya / totalWeighted;
-        const kw2Hpp = Math.round(baseUnitCost * 100) / 100;
+    // Seluruh sisa biaya shift dialokasikan ke Produk Utama (KS ASIN SAWIT) agar total 100% seimbang (Balance)
+    const sisaBiayaUtama = Math.max(0, totalBiaya - totalKw2Nilai);
+    const utamaHpp = totalUtamaKg > 0 ? Math.round((sisaBiayaUtama / totalUtamaKg) * 100) / 100 : 0;
 
-        let totalKw2Nilai = 0;
-        kw2Items.forEach(it => {
-            if (it.input) {
-                it.input.value = kw2Hpp;
-                const itemNilai = Math.round(it.qty * kw2Hpp);
-                const lbl = document.getElementById(`lbl_nilai_${it.outId}`);
-                if (lbl) lbl.textContent = `Rp ${formatRp(itemNilai)}`;
-                totalKw2Nilai += itemNilai;
-            }
-        });
-
-        // Bebankan sisa biaya ke Produk Utama agar 100% klop tanpa selisih pembulatan
-        const sisaBiayaUtama = Math.max(0, totalBiaya - totalKw2Nilai);
-        const utamaHpp = totalUtamaKg > 0 ? Math.round((sisaBiayaUtama / totalUtamaKg) * 100) / 100 : 0;
-
-        utamaItems.forEach(it => {
-            if (it.input) {
-                it.input.value = utamaHpp;
-                const itemNilai = Math.round(it.qty * utamaHpp);
-                const lbl = document.getElementById(`lbl_nilai_${it.outId}`);
-                if (lbl) lbl.textContent = `Rp ${formatRp(itemNilai)}`;
-            }
-        });
-    } else {
-        // Target spesifik (berko_only / lengket_only / remahan_only)
-        let targetKw2Items = [];
-        let otherKw2Items = [];
-
-        kw2Items.forEach(it => {
-            let isTarget = false;
-            if (targetSelect === 'berko_only' && it.isBerkoBiasa) isTarget = true;
-            else if (targetSelect === 'lengket_only' && it.isBerkoLengket) isTarget = true;
-            else if (targetSelect === 'remahan_only' && it.isRemahan) isTarget = true;
-
-            if (isTarget) {
-                targetKw2Items.push(it);
-            } else {
-                otherKw2Items.push(it);
-            }
-        });
-
-        if (targetKw2Items.length === 0) {
-            targetKw2Items = kw2Items;
-            otherKw2Items = [];
-        }
-
-        const targetKg = targetKw2Items.reduce((acc, it) => acc + it.qty, 0);
-
-        // Pertahankan nilai nominal pada baris KW 2 lainnya jika sudah ada
-        let otherKw2Nilai = 0;
-        otherKw2Items.forEach(it => {
-            const curHpp = parseFloat(it.input?.value) || 0;
-            const itemNilai = Math.round(it.qty * curHpp);
-            otherKw2Nilai += itemNilai;
+    utamaItems.forEach(it => {
+        if (it.input) {
+            it.input.value = utamaHpp;
+            const itemNilai = Math.round(it.qty * utamaHpp);
             const lbl = document.getElementById(`lbl_nilai_${it.outId}`);
             if (lbl) lbl.textContent = `Rp ${formatRp(itemNilai)}`;
-        });
-
-        const sisaBiayaUntukTargetDanUtama = Math.max(0, totalBiaya - otherKw2Nilai);
-        const weightedKg = (totalUtamaKg * factor) + targetKg;
-        if (weightedKg <= 0) return;
-
-        const baseTargetCost = sisaBiayaUntukTargetDanUtama / weightedKg;
-        const targetHpp = Math.round(baseTargetCost * 100) / 100;
-
-        let totalTargetNilai = 0;
-        targetKw2Items.forEach(it => {
-            if (it.input) {
-                it.input.value = targetHpp;
-                const itemNilai = Math.round(it.qty * targetHpp);
-                const lbl = document.getElementById(`lbl_nilai_${it.outId}`);
-                if (lbl) lbl.textContent = `Rp ${formatRp(itemNilai)}`;
-                totalTargetNilai += itemNilai;
-            }
-        });
-
-        const sisaBiayaUtama = Math.max(0, sisaBiayaUntukTargetDanUtama - totalTargetNilai);
-        const utamaHpp = totalUtamaKg > 0 ? Math.round((sisaBiayaUtama / totalUtamaKg) * 100) / 100 : 0;
-
-        utamaItems.forEach(it => {
-            if (it.input) {
-                it.input.value = utamaHpp;
-                const itemNilai = Math.round(it.qty * utamaHpp);
-                const lbl = document.getElementById(`lbl_nilai_${it.outId}`);
-                if (lbl) lbl.textContent = `Rp ${formatRp(itemNilai)}`;
-            }
-        });
-    }
+        }
+    });
 
     recalcAllocationTotals(totalBiaya);
 }

@@ -84,18 +84,13 @@ class TarifProduksiService
      *
      * @return array{rate: float, date: string, raw_date: string, is_exact: bool, keterangan_acuan: string}
      */
-    public function getJisdorRateDetail(?string $date = null, bool $allowAutoSync = true): array
+    public function getJisdorRateDetail(?string $date = null, bool $allowAutoSync = false): array
     {
         $targetDate = $date ?: date('Y-m-d');
         $targetCarbon = Carbon::parse($targetDate)->timezone(config('app.timezone', 'Asia/Jakarta'));
         $targetDateFmt = $this->formatIndonesianDate($targetCarbon);
 
-        // 1. Coba lakukan sinkronisasi otomatis dari portal BI agar mendapatkan kurs terbaru
-        if ($allowAutoSync) {
-            $this->syncFromBankIndonesia($targetDate);
-        }
-
-        // 2. Cek apakah tanggal target SUDAH RESMI RILIS di BI (tabel dat_kurs_harian dengan sumber BANK_INDONESIA_JISDOR)
+        // 1. Cek terlebih dahulu apakah tanggal target SUDAH ADA di database lokal (sumber BANK_INDONESIA_JISDOR)
         $exactRecord = DatKursHarian::active()
             ->whereDate('tanggal', $targetDate)
             ->where('sumber', 'BANK_INDONESIA_JISDOR')
@@ -109,6 +104,27 @@ class TarifProduksiService
                 'is_exact'         => true,
                 'keterangan_acuan' => 'Sesuai tanggal SPK produksi',
             ];
+        }
+
+        // 2. Jika belum ada di database lokal dan auto-sync diperbolehkan (misal trigger manual tombol Sync), coba sinkronisasi dari portal BI
+        if ($allowAutoSync) {
+            $this->syncFromBankIndonesia($targetDate);
+
+            // Periksa ulang setelah percobaan sinkronisasi
+            $exactRecord = DatKursHarian::active()
+                ->whereDate('tanggal', $targetDate)
+                ->where('sumber', 'BANK_INDONESIA_JISDOR')
+                ->first();
+
+            if ($exactRecord && $exactRecord->kurs_tengah > 0) {
+                return [
+                    'rate'             => (float) $exactRecord->kurs_tengah,
+                    'date'             => $targetDateFmt,
+                    'raw_date'         => $targetDate,
+                    'is_exact'         => true,
+                    'keterangan_acuan' => 'Sesuai tanggal SPK produksi (Sinkronisasi Baru BI)',
+                ];
+            }
         }
 
         // 3. JIKA TANGGAL TARGET BELUM RILIS DI WEB BI:
@@ -197,10 +213,11 @@ class TarifProduksiService
         try {
             $cookieJar = new \GuzzleHttp\Cookie\CookieJar();
             $client = new \GuzzleHttp\Client([
-                'cookies' => $cookieJar,
-                'verify'  => false,
-                'timeout' => 8,
-                'headers' => [
+                'cookies'         => $cookieJar,
+                'verify'          => false,
+                'connect_timeout' => 2.5,
+                'timeout'         => 5,
+                'headers'         => [
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept'     => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 ],

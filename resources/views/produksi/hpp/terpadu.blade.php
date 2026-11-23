@@ -9,11 +9,14 @@
 @section('content')
 @php
     $packagingBranches = $packagingBranches ?? ($packaging_branches ?? []);
-    $tglCarbon = \Carbon\Carbon::parse($produksi->produksi_tgl);
+    $tglCarbon = \Carbon\Carbon::parse($produksi->produksi_tgl)->locale('id');
     $shiftUpper = strtoupper($produksi->shift_cd ?? 'A');
     $isShiftB = str_contains($shiftUpper, 'B') && !str_contains($shiftUpper, 'A');
     $liniUpper = strtoupper($produksi->lini_produksi ?? 'REGULER');
     $isIfm = str_contains($liniUpper, 'IFM') || str_contains($liniUpper, 'INDOFOOD');
+    $pabrikCd = strtoupper(trim((string)$produksi->lokasi_pabrik));
+    $isBmb = in_array($pabrikCd, ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+    $pabrikNm = $isBmb ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry';
 @endphp
 
 <div class="terpadu-container">
@@ -58,8 +61,13 @@
     <div class="terpadu-identity-card">
         <div class="terpadu-identity-main">
             <div>
-                <h1 class="terpadu-spk-title">
+                <h1 class="terpadu-spk-title" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                     <span>SPK #{{ $produksi->produksi_no }}</span>
+                    @if($isBmb)
+                        <span style="display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 4px; background: #faf5ff; color: #7e22ce; border: 1px solid #d8b4fe;">CV Bahtera Mandiri Bersama (BMB)</span>
+                    @else
+                        <span style="display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">PT Mirasa Food Industry (MFI)</span>
+                    @endif
                     <span class="terpadu-badge {{ $isShiftB ? 'badge-shift-b' : 'badge-shift-a' }}">Shift {{ $produksi->shift_cd }}</span>
                     <span class="terpadu-badge {{ $isIfm ? 'badge-lini-ifm' : 'badge-lini-manual' }}">{{ $produksi->lini_produksi }}</span>
                 </h1>
@@ -69,7 +77,7 @@
                     </span>
                     <span class="terpadu-meta-divider">&bull;</span>
                     <span class="terpadu-meta-item">
-                        <strong>Gudang Asal:</strong> {{ $produksi->gudang?->gudang_nm ?? 'Gudang Bahan Baku' }}
+                        <strong>Gudang Asal:</strong> {{ $produksi->gudang?->gudang_nm ?? ($isBmb ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry') }}
                     </span>
                     <span class="terpadu-meta-divider">&bull;</span>
                     <span class="terpadu-meta-item">
@@ -103,25 +111,63 @@
         {{-- LINE SWITCHER: Muncul Otomatis Jika Ada >1 SPK / Lini di Tanggal yang Sama --}}
         @if(count($sibling_spks ?? []) > 1)
             <div class="terpadu-switcher-bar no-print">
-                <span class="switcher-label">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                    <span>Lini Lain Tanggal {{ $tglCarbon->format('d/m/Y') }}:</span>
-                </span>
-                <div class="switcher-pills-group">
+                <div class="terpadu-switcher-header">
+                    <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        <span>Lini &amp; SPK Lain Hari Ini ({{ $tglCarbon->format('d/m/Y') }}):</span>
+                    </div>
+                    <span style="font-size: 0.7rem; color: #64748b; background: #f8fafc; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #e2e8f0;">
+                        Klik kartu untuk beralih lembar HPP terpadu
+                    </span>
+                </div>
+                <div class="terpadu-switcher-grid">
                     @foreach($sibling_spks as $sib)
+                        @php
+                            $isSibBmb = ($sib['lokasi_pabrik'] ?? '') === 'BMB';
+                        @endphp
                         @if($sib['is_current'])
-                            <span class="btn-switcher-pill active" title="Lini ini sedang ditampilkan">
-                                <span class="dot-active">●</span>
-                                <span>{{ $sib['lini_produksi'] }} (Shift {{ $sib['shift_cd'] }})</span>
-                                <small style="font-size: 0.685rem; color: #166534; font-weight: 600;">(Sedang Dilihat)</small>
-                            </span>
+                            <div class="terpadu-switch-card active {{ $isSibBmb ? 'card-bmb' : 'card-mfi' }}">
+                                <div class="switch-card-top">
+                                    <div class="switch-card-title">
+                                        <span class="switch-card-badge {{ $isSibBmb ? 'badge-bmb' : 'badge-mfi' }}">{{ $sib['lokasi_pabrik'] }}</span>
+                                        <strong>{{ $sib['line_title'] ?? ($sib['lini_produksi'] . ' (Shift ' . $sib['shift_cd'] . ')') }}</strong>
+                                    </div>
+                                    <span class="switch-card-active-label">Sedang Dilihat</span>
+                                </div>
+                                <div class="switch-card-meta">
+                                    <span class="switch-card-spk">#{{ $sib['produksi_no'] }}</span>
+                                    <span class="meta-sep">&bull;</span>
+                                    <span>{{ number_format($sib['total_wip_qty'] ?? 0, 0, ',', '.') }} kg WIP</span>
+                                    <span class="meta-sep">&bull;</span>
+                                    <span class="switch-card-hpp">
+                                        Rp {{ number_format($sib['hpp_per_kg'], 0, ',', '.') }}/kg
+                                        @if(!($sib['is_hpp_final'] ?? false))
+                                            <span style="font-size: 0.72rem; color: #b45309; font-weight: 600;">(Estimasi)</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
                         @else
-                            <a href="{{ route('produksi.hpp.terpadu', $sib['produksi_id']) }}" class="btn-switcher-pill" title="Klik untuk beralih ke Lembar HPP {{ $sib['lini_produksi'] }}">
-                                <span style="color: #0284c7; font-weight: 700;">⇄</span>
-                                <span>Beralih ke <strong>{{ $sib['lini_produksi'] }}</strong> (Shift {{ $sib['shift_cd'] }})</span>
-                                @if($sib['hpp_per_kg'] > 0)
-                                    <small style="font-size: 0.685rem; color: #64748b;">&bull; Rp {{ number_format($sib['hpp_per_kg'], 0, ',', '.') }}/kg</small>
-                                @endif
+                            <a href="{{ route('produksi.hpp.terpadu', $sib['produksi_id']) }}" class="terpadu-switch-card {{ $isSibBmb ? 'card-bmb' : 'card-mfi' }}" title="Klik untuk beralih ke {{ $sib['produksi_no'] }}">
+                                <div class="switch-card-top">
+                                    <div class="switch-card-title">
+                                        <span class="switch-card-badge {{ $isSibBmb ? 'badge-bmb' : 'badge-mfi' }}">{{ $sib['lokasi_pabrik'] }}</span>
+                                        <strong>{{ $sib['line_title'] ?? ($sib['lini_produksi'] . ' (Shift ' . $sib['shift_cd'] . ')') }}</strong>
+                                    </div>
+                                    <span class="switch-card-hint">Beralih ke Dokumen Ini &rarr;</span>
+                                </div>
+                                <div class="switch-card-meta">
+                                    <span class="switch-card-spk">#{{ $sib['produksi_no'] }}</span>
+                                    <span class="meta-sep">&bull;</span>
+                                    <span>{{ number_format($sib['total_wip_qty'] ?? 0, 0, ',', '.') }} kg WIP</span>
+                                    <span class="meta-sep">&bull;</span>
+                                    <span class="switch-card-hpp">
+                                        Rp {{ number_format($sib['hpp_per_kg'], 0, ',', '.') }}/kg
+                                        @if(!($sib['is_hpp_final'] ?? false))
+                                            <span style="font-size: 0.72rem; color: #b45309; font-weight: 600;">(Estimasi)</span>
+                                        @endif
+                                    </span>
+                                </div>
                             </a>
                         @endif
                     @endforeach

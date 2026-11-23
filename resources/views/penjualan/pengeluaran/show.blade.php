@@ -32,16 +32,32 @@
                 @endif
             </div>
             <p class="sj-page-subtitle">
-                Diterbitkan pada {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('d F Y') }} oleh {{ $pengeluaran->created_by ?? 'System' }}.
+                @if ($pengeluaran->isSample())
+                    Bukti Pengeluaran Sampel/Promosi internal, dicatat pada {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('d F Y') }} oleh {{ $pengeluaran->created_by ?? 'System' }}.
+                @else
+                    Diterbitkan pada {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('d F Y') }} oleh {{ $pengeluaran->created_by ?? 'System' }}.
+                @endif
             </p>
         </div>
 
         <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
-            {{-- Tombol Cetak PDF --}}
+            {{-- Tombol Cetak PDF Dokumen --}}
             <a href="{{ route('penjualan.pengeluaran.export-pdf', $pengeluaran->pengeluaran_id) }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Cetak Lembar Surat Jalan (PDF)</span>
+                <span>{{ $pengeluaran->isSample() ? 'Cetak Bukti Pengeluaran Sampel (PDF)' : 'Cetak Lembar Surat Jalan (PDF)' }}</span>
             </a>
+
+            {{-- Tombol Cetak Faktur Penjualan (Terbit Otomatis Bersama Surat Jalan) --}}
+            @if ($pengeluaran->faktur && $pengeluaran->status_cd !== 'BATAL')
+                <a href="{{ route('penjualan.faktur.export-pdf', $pengeluaran->faktur->faktur_id) }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Cetak Faktur Penjualan (PDF)</span>
+                </a>
+                <a href="{{ route('penjualan.faktur.show', $pengeluaran->faktur->faktur_id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <span>Rincian Faktur ({{ $pengeluaran->faktur->faktur_no }})</span>
+                </a>
+            @endif
 
             @if ($pengeluaran->order)
                 <a href="{{ route('penjualan.so.show', $pengeluaran->order->so_id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
@@ -50,30 +66,17 @@
                 </a>
             @endif
 
-            {{-- Tahap 3: Terbitkan / Lihat Penjualan --}}
-            @if ($pengeluaran->faktur)
-                <a href="{{ route('penjualan.faktur.show', $pengeluaran->faktur->faktur_id) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
-                    <span>Lihat Penjualan ({{ $pengeluaran->faktur->faktur_no }})</span>
-                </a>
-            @elseif ($pengeluaran->status_cd !== 'BATAL')
-                <a href="{{ route('penjualan.faktur.create', ['pengeluaran_id' => $pengeluaran->pengeluaran_id]) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Catat Penjualan</span>
-                </a>
-            @endif
-
             @if ($pengeluaran->status_cd !== 'BATAL')
-                @if ($pengeluaran->faktur && $pengeluaran->faktur->status_pembayaran !== 'BATAL' && !$pengeluaran->faktur->deleted_st)
-                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;" title="Dokumen ini terkunci karena Faktur Penjualan ({{ $pengeluaran->faktur->faktur_no }}) sudah terbit. Batalkan faktur terlebih dahulu jika ingin void SJ.">
+                @if ($pengeluaran->faktur && (float) $pengeluaran->faktur->total_dibayar > 0)
+                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;" title="Dokumen ini terkunci karena Faktur Penjualan ({{ $pengeluaran->faktur->faktur_no }}) sudah memiliki pembayaran piutang. Batalkan pembayaran terlebih dahulu jika ingin void SJ.">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                        <span>Terkunci (Faktur Terbit)</span>
+                        <span>Terkunci (Ada Pembayaran)</span>
                     </span>
                 @else
                     <button type="button" class="btn btn-danger" onclick="openVoidModal('{{ $pengeluaran->pengeluaran_id }}', '{{ $pengeluaran->pengeluaran_no }}')"
                             style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #dc2626; border-color: #b91c1c; color: #ffffff;">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        <span>Batalkan (Void SJ)</span>
+                        <span>{{ $pengeluaran->isSample() ? 'Batalkan (Void Sampel)' : 'Batalkan (Void SJ)' }}</span>
                     </button>
                 @endif
             @endif
@@ -87,7 +90,7 @@
                 Dokumen Surat Jalan Ini Telah Dibatalkan (Void)
             </div>
             <div style="font-size: 0.825rem; margin-top: 0.35rem; color: #7f1d1d;">
-                Seluruh kuantitas fisik barang telah dikembalikan ke Gudang FG. Catatan: {{ $pengeluaran->catatan_txt ?? '-' }}
+                Seluruh kuantitas fisik barang telah dikembalikan ke stok gudang. Catatan: {{ $pengeluaran->catatan_txt ?? '-' }}
             </div>
         </div>
     @endif
@@ -115,104 +118,199 @@
                     $order = $pengeluaran->order;
                     $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
                 @endphp
-                <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Mitra Customer:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
-                            {{ $customer?->customer_nm ?? '-' }}
-                            <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
-                                {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Alamat Pengiriman:</td>
-                        <td style="padding: 0.4rem 0; color: #334155;">
-                            {{ $customer?->alamat_txt ?? '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Wilayah / Kota:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 600; color: #0f172a;">
-                            {{ $customer?->wilayah ?? '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Referensi PO Penjualan:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0284c7;">
-                            {{ $order?->so_no ?? '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. PO Eksternal:</td>
-                        <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 600;">
-                            {{ $order?->customer_po_no ?: '(Tidak ada)' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
-                            {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Barang Jadi (GDG-FG)' }}
-                        </td>
-                    </tr>
-                </table>
+                @if ($pengeluaran->isSample())
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 150px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Jenis Pengeluaran:</td>
+                            <td style="padding: 0.4rem 0;">
+                                <span class="badge" style="background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">
+                                    SAMPEL / PROMOSI
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Penerima / Mitra:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a; font-size: 0.9rem;">
+                                {{ $pengeluaran->penerima_nm }}
+                                @if($customer)
+                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: normal;">(Customer: {{ $customer->customer_nm }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Keperluan / Tujuan:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #334155;">
+                                {{ $pengeluaran->keperluan_txt ?: 'Sampel Promosi' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Diberikan / Disetujui Oleh:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #0284c7;">
+                                {{ $pengeluaran->otorisasi_oleh ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Status Komersial:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
+                                Bebas Biaya / FOC (Tanpa Tagihan Faktur)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
+                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Pusat (MFI)' }}
+                            </td>
+                        </tr>
+                    </table>
+                @else
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Mitra Customer:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ $customer?->customer_nm ?? '-' }}
+                                <span class="badge-klasifikasi {{ $klasifikasi === 'IFM' ? 'ifm' : (in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : 'manual') }}" style="margin-left: 0.4rem;">
+                                    {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Alamat Pengiriman:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $customer?->alamat_txt ?? '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Wilayah / Kota:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #0f172a;">
+                                {{ $customer?->wilayah ?? '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Referensi PO Penjualan:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0284c7;">
+                                {{ $order?->so_no ?? '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. PO Eksternal:</td>
+                            <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 600;">
+                                {{ $order?->customer_po_no ?: '(Tidak ada)' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Gudang Asal:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 600; color: #059669;">
+                                {{ $pengeluaran->gudang?->gudang_nm ?? 'Gudang Pusat (MFI)' }}
+                            </td>
+                        </tr>
+                    </table>
+                @endif
             </div>
         </div>
 
-        {{-- KARTU 2: DATA LOGISTIK & EKSPEDISI --}}
+        {{-- KARTU 2: DATA LOGISTIK ATAU DATA PENGELUARAN INTERNAL --}}
         <div class="sj-card">
-            <div class="sj-card-header">
-                <div class="sj-card-header-left">
-                    <span class="sj-card-icon emerald">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                    </span>
-                    <div>
-                        <h3 class="sj-card-title">Data Logistik &amp; Ekspedisi Armada</h3>
-                        <div class="sj-card-subtitle">Supir, armada truk, dan tanggal keberangkatan</div>
+            @if ($pengeluaran->isSample())
+                <div class="sj-card-header">
+                    <div class="sj-card-header-left">
+                        <span class="sj-card-icon" style="background: #e0f2fe; color: #0284c7;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </span>
+                        <div>
+                            <h3 class="sj-card-title">Informasi Pengeluaran Internal</h3>
+                            <div class="sj-card-subtitle">Administrasi fisik stok dan otorisasi</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="sj-card-body">
-                <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Tanggal Berangkat:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
-                            {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('l, d F Y') }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Supir / Driver:</td>
-                        <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
-                            {{ $pengeluaran->supir_nm ?: 'Belum Dicatat' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. Polisi Armada:</td>
-                        <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 700; color: #0284c7;">
-                            {{ $pengeluaran->nopol_kendaraan ?: '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Ekspedisi / Armada:</td>
-                        <td style="padding: 0.4rem 0; color: #334155;">
-                            {{ $pengeluaran->ekspedisi_nm ?: 'Armada Internal PT Mirasa' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Catatan / Instruksi:</td>
-                        <td style="padding: 0.4rem 0; color: #334155;">
-                            {{ $pengeluaran->catatan_txt ?: '-' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Total Karton Keluar:</td>
-                        <td style="padding: 0.4rem 0; font-size: 1rem; font-weight: 800; color: #059669;">
-                            {{ number_format($pengeluaran->total_qty, 0, ',', '.') }} Karton
-                        </td>
-                    </tr>
-                </table>
-            </div>
+                <div class="sj-card-body">
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Tanggal Pengeluaran:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('l, d F Y') }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Dicatat / Dibuat Oleh:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ $pengeluaran->created_by ?: 'Petugas Gudang' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Disetujui Oleh:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0284c7;">
+                                {{ $pengeluaran->otorisasi_oleh ?: 'Manajemen' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Catatan Tambahan:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $pengeluaran->catatan_txt ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Total Karton Keluar:</td>
+                            <td style="padding: 0.4rem 0; font-size: 1rem; font-weight: 800; color: #059669;">
+                                {{ number_format($pengeluaran->total_qty, 0, ',', '.') }} Karton
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @else
+                <div class="sj-card-header">
+                    <div class="sj-card-header-left">
+                        <span class="sj-card-icon emerald">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        </span>
+                        <div>
+                            <h3 class="sj-card-title">Data Logistik &amp; Ekspedisi Armada</h3>
+                            <div class="sj-card-subtitle">Supir, armada truk, dan tanggal keberangkatan</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sj-card-body">
+                    <table style="width: 100%; font-size: 0.825rem; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 140px; padding: 0.4rem 0; color: #64748b; font-weight: 600;">Tanggal Berangkat:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ \Carbon\Carbon::parse($pengeluaran->pengeluaran_tgl)->translatedFormat('l, d F Y') }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Nama Supir / Driver:</td>
+                            <td style="padding: 0.4rem 0; font-weight: 700; color: #0f172a;">
+                                {{ $pengeluaran->supir_nm ?: 'Belum Dicatat' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">No. Polisi Armada:</td>
+                            <td style="padding: 0.4rem 0; font-family: monospace; font-weight: 700; color: #0284c7;">
+                                {{ $pengeluaran->nopol_kendaraan ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Ekspedisi / Armada:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $pengeluaran->ekspedisi_nm ?: 'Armada Internal PT Mirasa' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Catatan / Instruksi:</td>
+                            <td style="padding: 0.4rem 0; color: #334155;">
+                                {{ $pengeluaran->catatan_txt ?: '-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0; color: #64748b; font-weight: 600;">Total Karton Keluar:</td>
+                            <td style="padding: 0.4rem 0; font-size: 1rem; font-weight: 800; color: #059669;">
+                                {{ number_format($pengeluaran->total_qty, 0, ',', '.') }} Karton
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @endif
         </div>
 
     </div>
@@ -289,7 +387,7 @@
         <div class="sj-table-footer-bar">
             <div class="sj-footer-left">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Dokumen ini resmi mengurangi saldo fisik di kartu stok Gudang Barang Jadi (GDG-FG).</span>
+                <span>Dokumen ini resmi mengurangi saldo fisik di kartu stok gudang.</span>
             </div>
 
             <div class="sj-footer-right">

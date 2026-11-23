@@ -25,35 +25,35 @@
 
         {{-- TABEL RINCIAN BAHAN DENGAN FIXED LAYOUT & ENTERPRISE GRID --}}
         <div style="overflow-x: auto;">
-            <table class="table-bppb-item" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; table-layout: fixed;" id="tableBppbItems">
+            <table class="table-bppb-item" style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: center; table-layout: fixed;" id="tableBppbItems">
                 <thead>
-                    <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; color: #334155; font-weight: 700; font-size: 0.725rem; text-transform: uppercase; letter-spacing: 0.03em;">
-                        <th style="padding: 0.65rem 0.75rem; width: 4%; text-align: center;">No</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 14%;">Kategori</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 13%;">Kode Barang</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 27%;">Nama Bahan Baku</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 8%; text-align: center;">Grade</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 14%;">Batch Gudang</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 10%; text-align: right;">Jumlah Pakai</th>
-                        <th style="padding: 0.65rem 0.75rem; width: 10%; text-align: right;">Sisa Stok Gudang</th>
+                    <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 700; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                        <th style="padding: 0.75rem 0.5rem; width: 5%; text-align: center; vertical-align: middle;">No</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 13%; text-align: center; vertical-align: middle;">Kategori</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 14%; text-align: center; vertical-align: middle;">Kode Barang</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 22%; text-align: center; vertical-align: middle;">Nama Bahan Baku</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 11%; text-align: center; vertical-align: middle;">Grade</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 13%; text-align: center; vertical-align: middle;">Batch Gudang</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 11%; text-align: center; vertical-align: middle;">Jumlah Pakai</th>
+                        <th style="padding: 0.75rem 0.5rem; width: 11%; text-align: center; vertical-align: middle;">Sisa Stok Gudang</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyTabelPemakaian">
                     <tr>
-                        <td colspan="8" style="padding: 1.25rem 1rem; text-align: center; color: #94a3b8; font-style: italic;">
+                        <td colspan="8" style="padding: 1.5rem 1rem; text-align: center; vertical-align: middle; color: #94a3b8; font-style: italic; font-size: 0.875rem;">
                             Pilih dokumen BPPB di atas untuk melihat rincian pemakaian bahan.
                         </td>
                     </tr>
                 </tbody>
                 <tfoot id="tfootTabelPemakaian" style="display: none;">
                     <tr>
-                        <td colspan="6" style="padding: 0.75rem 0.85rem; text-align: right; color: #1e293b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                        <td colspan="6" style="padding: 0.85rem 1rem; text-align: center; vertical-align: middle; color: #1e293b; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
                             Total Akumulasi Bahan:
                         </td>
-                        <td id="tfootTotalQty" style="padding: 0.75rem 0.85rem; text-align: right; color: #0284c7; font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                        <td id="tfootTotalQty" style="padding: 0.85rem 0.5rem; text-align: center; vertical-align: middle; color: #0284c7; font-size: 0.95rem; font-weight: 800; font-variant-numeric: tabular-nums; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
                             0,00 KG
                         </td>
-                        <td style="padding: 0.75rem 0.85rem; text-align: right; color: #64748b; font-size: 0.75rem; font-weight: 600; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                        <td style="padding: 0.85rem 0.5rem; text-align: center; vertical-align: middle; color: #64748b; font-size: 0.85rem; font-weight: 600; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
                             Stok Fisik
                         </td>
                     </tr>

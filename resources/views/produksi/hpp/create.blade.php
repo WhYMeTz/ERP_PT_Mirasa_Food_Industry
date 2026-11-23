@@ -74,9 +74,9 @@
             </div>
             <div class="hpp-card-body">
                 <div class="form-group-hpp">
-                    <label for="produksi_id" class="hpp-label">Pilih Tanggal Produksi Harian (Konsolidasi Multi-Pabrik) <span class="required">*</span></label>
+                    <label for="produksi_id" class="hpp-label">Pilih Dokumen Hasil Produksi <span class="required">*</span></label>
                     <select name="produksi_id" id="produksi_id" class="hpp-select" required onchange="onProduksiSelectChange(this.value)">
-                        <option value="">-- Pilih Tanggal Produksi Harian --</option>
+                        <option value="">-- Pilih Dokumen Hasil Produksi --</option>
                         @forelse($harianList ?? [] as $h)
                             <option value="{{ $h->primary_id }}" 
                                     data-tgl="{{ $h->tanggal_fmt }}"
@@ -108,10 +108,62 @@
                         @endforelse
                     </select>
 
-                    {{-- TABEL RINCIAN SUMBER DOKUMEN FISIK YANG DIGABUNG PADA TANGGAL INI --}}
-                    <div id="spkDokumenTableWrap" style="display: none; margin-top: 1rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span style="font-size: 0.8rem; font-weight: 700; color: #1e293b;">📋 Dokumen Fisik yang Digabung pada Tanggal Ini:</span>
+                    {{-- RINGKASAN PARAMETER DOKUMEN SPK TERPILIH --}}
+                    <div id="previewFisikSection" class="spk-param-box" style="display: none; margin-top: 0.85rem;">
+                        <div class="spk-param-grid">
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">No. Dokumen SPK</span>
+                                <span class="spk-param-value font-mono" id="pvProduksiNo">-</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Lokasi Pabrik</span>
+                                <span class="spk-param-value" id="pvLokasiPabrik">-</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Tanggal Produksi</span>
+                                <span class="spk-param-value" id="pvTgl">-</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Shift &amp; Lini Produksi</span>
+                                <span class="spk-param-value" id="pvShiftLini">-</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Dokumen BPPB Bahan</span>
+                                <span class="spk-param-value font-mono" id="pvBppb">-</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Singkong Masuk</span>
+                                <span class="spk-param-value" id="pvSingkongQty">0 kg</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Total Hasil Olahan WIP</span>
+                                <span class="spk-param-value" id="pvWipQty" style="color: #059669;">0 kg</span>
+                            </div>
+                            <div class="spk-param-item">
+                                <span class="spk-param-label">Rendemen Penggorengan</span>
+                                <span class="spk-param-value" id="pvRendemen" style="color: #0284c7;">0,00 %</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- SWITCHER DOKUMEN LAIN PADA TANGGAL YANG SAMA (JIKA ADA LEBIH DARI 1 DOKUMEN) --}}
+                    <div id="sameDayNoticeBox" style="display: none; margin-top: 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.65rem 0.85rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem;">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <svg width="14" height="14" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <strong id="sameDayTitle" style="font-size: 0.8rem; color: #334155;">Dokumen Produksi Lain pada Tanggal Ini:</strong>
+                            </div>
+                            <span id="sameDaySummaryBadge" style="font-size: 0.7rem; font-weight: 600; background: #ffffff; color: #475569; padding: 1px 7px; border-radius: 4px; border: 1px solid #cbd5e1;"></span>
+                        </div>
+                        <div id="sameDayListContainer" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                            {{-- Diisi secara dinamis via JS loadProduksiData / renderSameDayNotice --}}
+                        </div>
+                    </div>
+
+                    {{-- TABEL RINCIAN SUMBER DOKUMEN FISIK YANG DIGABUNG (HANYA MUNCUL JIKA ADA 2+ DOKUMEN DIKONSOLIDASIKAN) --}}
+                    <div id="spkDokumenTableWrap" style="display: none; margin-top: 0.85rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #1e293b;">Rincian Dokumen yang Dikonsolidasikan:</span>
                             <span id="badgeDokumenCount" style="font-size: 0.7rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;"></span>
                         </div>
                         <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
@@ -131,22 +183,6 @@
                                 <tfoot id="spkDokumenTableFoot" style="background: #f1f5f9; font-weight: 800;">
                                 </tfoot>
                             </table>
-                        </div>
-                    </div>
-
-                    {{-- KOTAK MONITORING DOKUMEN LAIN PADA TANGGAL YANG SAMA (FALLBACK) --}}
-                    <div id="sameDayNoticeBox" style="display: none; margin-top: 0.85rem; background: #fffdf5; border: 1.5px solid #fde68a; border-radius: 8px; padding: 0.75rem 1rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
-                            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span style="font-size: 0.9rem;">📅</span>
-                                <strong id="sameDayTitle" style="font-size: 0.825rem; color: #92400e;">Daftar Dokumen Produksi pada Tanggal Ini:</strong>
-                            </div>
-                            <span id="sameDaySummaryBadge" style="font-size: 0.7rem; font-weight: 700; background: #fef3c7; color: #92400e; padding: 1px 7px; border-radius: 4px; border: 1px solid #fde68a;">
-                                Multi-Shift
-                            </span>
-                        </div>
-                        <div id="sameDayListContainer" style="display: flex; flex-direction: column; gap: 0.35rem;">
-                            {{-- Diisi secara dinamis via JS loadProduksiData / renderSameDayNotice --}}
                         </div>
                     </div>
 
@@ -176,44 +212,6 @@
                 <div id="spkPlaceholderNotice" class="spk-placeholder-box">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span>Silakan pilih nomor SPK produksi fisik pada pilihan di atas untuk memuat data bahan dan rincian hasil olahan.</span>
-                </div>
-
-                {{-- RINGKASAN PARAMETER DOKUMEN SPK TERPILIH (STANDAR ERP MIRASA) --}}
-                <div id="previewFisikSection" class="spk-param-box" style="display: none;">
-                    <div class="spk-param-grid">
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">No. Dokumen SPK</span>
-                            <span class="spk-param-value font-mono" id="pvProduksiNo">-</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Lokasi Pabrik</span>
-                            <span class="spk-param-value" id="pvLokasiPabrik">-</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Tanggal Produksi</span>
-                            <span class="spk-param-value" id="pvTgl">-</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Shift &amp; Lini Produksi</span>
-                            <span class="spk-param-value" id="pvShiftLini">-</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Dokumen BPPB Bahan</span>
-                            <span class="spk-param-value font-mono" id="pvBppb">-</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Singkong Masuk</span>
-                            <span class="spk-param-value" id="pvSingkongQty">0 kg</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Total Hasil Olahan WIP</span>
-                            <span class="spk-param-value" id="pvWipQty" style="color: #059669;">0 kg</span>
-                        </div>
-                        <div class="spk-param-item">
-                            <span class="spk-param-label">Rendemen Penggorengan</span>
-                            <span class="spk-param-value" id="pvRendemen" style="color: #0284c7;">0,00 %</span>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="card-inner-divider" style="margin: 1.35rem 0; border-top: 1.5px dashed #e2e8f0;"></div>
@@ -360,17 +358,25 @@
 
                         <div class="grid-2-sm">
                             <div class="form-group-hpp">
-                                <label for="cng_tarif_usd" class="hpp-label-sm">Tarif Kontrak (USD / MMBTU)</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; min-height: 24px; margin-bottom: 0.35rem;">
+                                    <label for="cng_tarif_usd" class="hpp-label-sm" style="margin-bottom: 0;">Tarif Kontrak (USD / MMBTU)</label>
+                                    <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                        <button type="button" class="btn-edit-tarif" onclick="openModalEditTarifCng()" title="Ubah Standar Tarif Kontrak Gas (CNG) di Master Data">
+                                            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            <span>Ubah Standar</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="input-usd-wrap">
                                     <span class="prefix-usd">$</span>
                                     <input type="number" step="0.01" min="0" name="cng_tarif_usd" id="cng_tarif_usd" class="hpp-input-sm" value="{{ $defaultCngTarifUsd }}" oninput="calcCngFromTarif()">
                                 </div>
-                                <small class="helper-text">Standar vendor: $14.50</small>
+                                <small class="helper-text" id="helpStandarVendor">Standar vendor: <strong>$<span id="dispStandarVendor">{{ number_format($defaultCngTarifUsd, 2) }}</span></strong></small>
                             </div>
 
                             <div class="form-group-hpp">
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.35rem;">
-                                    <label for="cng_kurs_jisdor" class="hpp-label-sm">Kurs JISDOR BI (Rp)</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; min-height: 24px; margin-bottom: 0.35rem;">
+                                    <label for="cng_kurs_jisdor" class="hpp-label-sm" style="margin-bottom: 0;">Kurs JISDOR BI (Rp)</label>
                                     <div style="display: flex; gap: 0.35rem; align-items: center;">
                                         <button type="button" class="btn-sync-kurs" onclick="fetchLiveJisdor(true)" title="Sinkronkan kurs JISDOR Bank Indonesia terkini">
                                             <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -386,7 +392,7 @@
                                     <span class="prefix-rp">Rp</span>
                                     <input type="number" step="any" min="0" name="cng_kurs_jisdor" id="cng_kurs_jisdor" class="hpp-input-sm" value="{{ $defaultCngKursJisdor }}" oninput="calcCngFromTarif()">
                                 </div>
-                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: #059669; font-weight: 600;">Kurs tanggal produksi</span>)</small>
+                                <small class="helper-text" id="helpKursJisdor">Referensi resmi BI: <strong>Rp {{ number_format($defaultCngKursJisdor, 0, ',', '.') }}</strong> ({{ $latestKursDate ?? date('d/m/Y') }} &bull; <span style="color: {{ !empty($isKursExactDate) ? '#059669' : '#d97706' }}; font-weight: 600;">{{ $kursKeteranganAcuan ?? 'Kurs acuan BI' }}</span>)</small>
                             </div>
                         </div>
 
@@ -681,6 +687,8 @@
         </div>
     </div>
 </div>
+
+@include('produksi.hpp.partials.modal-edit-tarif-cng')
 @endsection
 
 @push('scripts')
@@ -689,6 +697,7 @@
             produksiDataUrl: "{{ url('/produksi/hpp/produksi-data') }}",
             jisdorUrl: "{{ route('produksi.kurs-jisdor') }}",
             syncKaryawanUrl: "{{ route('produksi.sync-karyawan') }}",
+            quickUpdateTarifUrl: "{{ route('master.tarif_produksi.quick-update') }}",
             selectedProduksiId: {{ $selectedProduksiId ? (int)$selectedProduksiId : 'null' }},
             selectedProduksiTgl: "{{ $prodDateStr ?? '' }}",
             defaultCngTarifUsd: {{ $defaultCngTarifUsd }},

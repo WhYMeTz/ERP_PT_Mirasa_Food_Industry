@@ -26,7 +26,7 @@
                     <div style="font-size: 0.8125rem; color: #be123c; line-height: 1.45;">
                         <strong>Peringatan Otomatisasi Sistem:</strong>
                         <ul style="margin: 0.35rem 0 0 0; padding-left: 1.15rem; font-size: 0.775rem;">
-                            <li>Seluruh kuantitas barang pada Surat Jalan <strong id="voidSuratJalanNoSpan">-</strong> akan <strong>dikembalikan ke stok fisik Gudang Barang Jadi (GDG-FG)</strong>.</li>
+                            <li>Seluruh kuantitas barang pada Surat Jalan <strong id="voidSuratJalanNoSpan">-</strong> akan <strong>dikembalikan ke stok fisik gudang</strong>.</li>
                             <li>Status PO Penjualan terkait akan dipulihkan kembali ke status <strong>DISETUJUI / SEBAGIAN</strong>.</li>
                         </ul>
                     </div>

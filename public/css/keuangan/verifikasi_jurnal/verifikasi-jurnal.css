@@ -1,0 +1,1298 @@
+/* ==========================================================================
+   VERIFIKASI JURNAL KAS KELUAR - ERP PT MIRASA FOOD INDUSTRY
+   Standar Desain: Linear / WaveDash Minimalist Enterprise (Clean Monochromatic)
+   Location: public/css/keuangan/verifikasi_jurnal/verifikasi-jurnal.css
+   ========================================================================== */
+
+/* Layout & Container */
+.vj-page-wrapper {
+    padding: 0.5rem 0 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-family: inherit;
+    color: #0f172a;
+}
+
+/* Kicker Uppercase */
+.vj-kicker {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+/* Header Banner */
+.vj-header-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.vj-header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.vj-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.vj-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.vj-pending-pill {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.vj-status-dot-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #dc2626;
+}
+
+.vj-badge-live {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Header Action Buttons */
+.vj-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.vj-btn {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 0.5rem 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    line-height: 1.25;
+    border: 1px solid transparent;
+}
+
+.vj-btn-secondary {
+    background: #ffffff;
+    color: #334155;
+    border: 1.5px solid #cbd5e1;
+}
+
+.vj-btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.vj-btn-primary {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.vj-btn-primary:hover {
+    background: #1e293b;
+    color: #ffffff;
+}
+
+.vj-btn-danger {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.vj-btn-danger:hover {
+    background: #b91c1c;
+}
+
+/* 2. 3 Metrik Bersih (Minimalist Cards) */
+.vj-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 900px) {
+    .vj-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.vj-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.vj-metric-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.vj-metric-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.vj-metric-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    overflow: hidden;
+}
+
+.vj-metric-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.vj-metric-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.vj-val-highlight {
+    color: #0f172a;
+}
+
+.vj-metric-desc {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3. Filter Card */
+.vj-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+}
+
+.vj-filter-form {
+    margin: 0;
+}
+
+.vj-filter-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    align-items: flex-end;
+}
+
+.vj-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1 1 160px;
+}
+
+.vj-filter-search {
+    flex: 2 1 240px;
+}
+
+.vj-field-date {
+    flex: 1 1 135px;
+}
+
+.vj-filter-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.vj-input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.vj-input-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.vj-filter-input {
+    width: 100%;
+    height: 38px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.vj-filter-search .vj-filter-input {
+    padding-left: 2.25rem;
+}
+
+.vj-filter-input:focus,
+.vj-filter-select:focus {
+    outline: none;
+    border-color: #0f172a;
+}
+
+.vj-filter-select {
+    width: 100%;
+    height: 38px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.vj-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 38px;
+}
+
+.vj-btn-filter {
+    height: 38px;
+    padding: 0 1rem;
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+
+.vj-btn-filter:hover {
+    background: #1e293b;
+}
+
+.vj-btn-reset {
+    height: 38px;
+    padding: 0 0.85rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.vj-btn-reset:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* 4. Batch Action Toolbar (Bar Verifikasi Masal) */
+.vj-batch-toolbar {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.vj-batch-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.vj-batch-indicators {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vj-batch-badge {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+}
+
+.vj-batch-badge.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
+.vj-batch-total {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-feature-settings: "tnum";
+}
+
+/* Quick Filter Tabs */
+.vj-batch-center {
+    display: flex;
+    align-items: center;
+}
+
+.vj-quick-filter-group {
+    display: flex;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.vj-quick-tab {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.vj-quick-tab:hover {
+    color: #0f172a;
+}
+
+.vj-quick-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.vj-tab-count {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 9999px;
+}
+
+.vj-tab-count-ready {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.vj-tab-count-unmapped {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+/* Batch Action Button */
+.vj-batch-right {
+    display: flex;
+    align-items: center;
+}
+
+.vj-btn-batch-primary {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.15rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.vj-btn-batch-primary:hover:not(:disabled) {
+    background: #1e293b;
+    transform: translateY(-1px);
+}
+
+.vj-btn-batch-primary:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Custom Checkbox */
+.vj-checkbox-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+
+.vj-checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.vj-checkbox-mark {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 4px;
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease-in-out;
+    flex-shrink: 0;
+}
+
+.vj-checkbox-container:hover input ~ .vj-checkbox-mark {
+    border-color: #0f172a;
+}
+
+.vj-checkbox-container input:checked ~ .vj-checkbox-mark {
+    background: #0f172a;
+    border-color: #0f172a;
+}
+
+.vj-checkbox-container input:checked ~ .vj-checkbox-mark:after {
+    content: "";
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+.vj-checkbox-text {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* 5. Tabel 5 Kolom Lapang */
+.vj-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.vj-table-scroll {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.vj-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.8125rem;
+}
+
+.vj-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1.5px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.vj-table td {
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+    color: #1e293b;
+}
+
+.vj-table-row:hover td {
+    background: #fbfcfe;
+}
+
+.vj-table-row.row-selected td {
+    background: #f8fafc;
+}
+
+/* Kolom 1: BKK & Tanggal */
+.vj-col-bkk {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.vj-bkk-select-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.vj-bkk-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.vj-bkk-no {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+}
+
+a.vj-bkk-no:hover {
+    color: #059669;
+    text-decoration: underline;
+}
+
+.vj-bkk-date {
+    font-size: 0.775rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+.vj-bkk-creator {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    padding-left: 1.75rem;
+}
+
+.vj-bkk-creator strong {
+    color: #64748b;
+}
+
+/* Kolom 2: Penerima & Keperluan */
+.vj-col-recipient {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.vj-recipient-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.vj-recipient-name {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.vj-pill-tag {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.vj-pic-sub {
+    font-size: 0.75rem;
+    color: #475569;
+}
+
+.vj-purpose-preview {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-top: 0.15rem;
+}
+
+.vj-purpose-text {
+    font-size: 0.8125rem;
+    color: #334155;
+    line-height: 1.4;
+}
+
+.vj-btn-open-detail {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #059669;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.12s ease-in-out;
+}
+
+.vj-btn-open-detail:hover {
+    color: #047857;
+    text-decoration: underline;
+}
+
+.vj-row-note {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 0.15rem;
+}
+
+/* Kolom 3: Rekening Kas & Total Keluar */
+.vj-col-account {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.vj-source-name {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.vj-source-method {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.vj-total-nominal {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    margin-top: 0.2rem;
+}
+
+/* Kolom 4: Pos Akun Beban (COA Debit) */
+.vj-col-coa {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.vj-coa-select-row {
+    width: 100%;
+}
+
+.vj-coa-select {
+    width: 100%;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    transition: all 0.15s ease-in-out;
+}
+
+.vj-coa-select:focus {
+    outline: none;
+    border-color: #0f172a;
+    box-shadow: 0 0 0 1px #0f172a;
+}
+
+.vj-coa-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.vj-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 9999px;
+}
+
+.vj-status-ready {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.vj-status-ready .vj-status-dot {
+    background: #10b981;
+}
+
+.vj-status-unmapped {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.vj-status-unmapped .vj-status-dot {
+    background: #f59e0b;
+}
+
+.vj-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.vj-date-compact-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.vj-date-label {
+    font-size: 0.725rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.vj-row-date {
+    font-size: 0.75rem;
+    padding: 2px 5px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    color: #334155;
+    background: #ffffff;
+}
+
+/* Kolom 5: Aksi (Single Verify & Smart Action Dropdown) */
+.vj-col-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.vj-btn-single-verify {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1.5px solid #86efac;
+    border-radius: 6px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    padding: 0.42rem 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
+}
+
+.vj-btn-single-verify:hover {
+    background: #166534;
+    color: #ffffff;
+    border-color: #166534;
+}
+
+.vj-btn-single-verify:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+}
+
+/* SMART ACTION DROPDOWN STANDAR PO & AGENTS.md */
+.btn-action-trigger {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.42rem 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
+}
+
+.btn-action-trigger:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #059669;
+}
+
+.action-dropdown-menu {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    min-width: 175px;
+    padding: 0.35rem;
+}
+
+.action-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s ease-in-out;
+}
+
+.action-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item {
+    color: #dc2626;
+}
+
+.action-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* Pagination */
+.vj-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.vj-pagination-info {
+    font-size: 0.775rem;
+    color: #64748b;
+}
+
+/* Empty State */
+.vj-empty-state {
+    padding: 3.5rem 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.vj-empty-icon-wrap {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.vj-empty-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+}
+
+.vj-empty-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    max-width: 480px;
+    margin: 0 0 1.25rem;
+    line-height: 1.5;
+}
+
+.vj-empty-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   MODAL STYLES (Clean Minimalist Enterprise)
+   ========================================================================== */
+.vj-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.vj-modal-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.vj-modal-lg {
+    max-width: 740px;
+}
+
+.vj-modal-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vj-modal-header-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.vj-modal-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.vj-modal-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease-in-out;
+}
+
+.vj-modal-close:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+.vj-modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.vj-modal-footer {
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+/* Detail Modal Specifics */
+.vj-detail-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .vj-detail-meta-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.vj-detail-meta-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.vj-meta-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.vj-meta-value {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.vj-meta-value.font-mono {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.vj-section-subtitle {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+}
+
+.vj-table-scroll-mini {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.vj-table-mini {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.775rem;
+}
+
+.vj-table-mini th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.vj-table-mini td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.vj-table-mini tfoot td {
+    padding: 0.65rem 0.75rem;
+    border-top: 1.5px solid #e2e8f0;
+    border-bottom: none;
+    background: #f8fafc;
+}
+
+.vj-detail-note {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+}
+
+.vj-note-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.vj-note-text {
+    font-size: 0.8125rem;
+    color: #334155;
+    margin: 0.2rem 0 0;
+    line-height: 1.4;
+}
+
+/* Confirm Batch Modal Specifics */
+.vj-confirm-summary-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem;
+}
+
+.vj-confirm-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.vj-confirm-metric-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.vj-confirm-metric-val {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-feature-settings: "tnum";
+}
+
+.vj-confirm-desc {
+    font-size: 0.8125rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.vj-batch-preview-wrapper {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.vj-batch-preview-header {
+    background: #f8fafc;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.vj-batch-preview-list {
+    max-height: 160px;
+    overflow-y: auto;
+    font-size: 0.775rem;
+}
+
+.vj-preview-row {
+    padding: 0.45rem 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.vj-preview-row:last-child {
+    border-bottom: none;
+}
+
+.vj-confirm-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+}
+
+/* Void Modal Specifics */
+.vj-void-warning-box {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    padding: 0.85rem;
+    display: flex;
+    gap: 0.75rem;
+}

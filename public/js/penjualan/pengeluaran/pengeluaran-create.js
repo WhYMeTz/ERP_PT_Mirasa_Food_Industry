@@ -46,25 +46,35 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        let allZeroStock = true;
+        let totalAvailStock = 0;
+
         items.forEach((item, index) => {
             const sisa = parseFloat(item.sisa_qty) || 0;
             const stokFg = parseFloat(item.stok_fg) || 0;
-            const isStockOk = stokFg >= sisa;
+            const isStockOk = (stokFg >= sisa && stokFg > 0);
+            if (stokFg > 0) allZeroStock = false;
+            totalAvailStock += stokFg;
+
+            const defaultKirim = (stokFg <= 0) ? 0 : Math.min(sisa, stokFg);
 
             let batchOptionsHtml = '';
             if (item.batches && item.batches.length > 0) {
                 item.batches.forEach(b => {
                     const isTop = b.is_fifo_top;
-                    const prefix = isTop ? '⭐ [Rekomendasi FIFO] ' : '';
+                    const prefix = isTop ? '[FEFO Prioritas] ' : '';
                     const optText = `${prefix}Batch ${b.batch_no} (Exp: ${b.expired_fmt} | Sisa: ${new Intl.NumberFormat('id-ID').format(b.sisa_qty)})`;
                     const selected = isTop ? 'selected' : '';
                     batchOptionsHtml += `<option value="${b.batch_no}" data-is-fifo="${isTop ? '1' : '0'}" data-exp="${b.expired_fmt}" data-sisa="${b.sisa_qty}" ${selected}>${optText}</option>`;
                 });
             } else {
-                batchOptionsHtml = `<option value="AUTO_FIFO">⭐ [Auto-FEFO] Rekomendasi Terlama Sistem</option>`;
+                batchOptionsHtml = `<option value="AUTO_FIFO">[Auto-FEFO] Batch Fisik Belum Tersedia</option>`;
             }
 
             const tr = document.createElement('tr');
+            if (stokFg <= 0) {
+                tr.style.background = '#fef2f2';
+            }
             tr.innerHTML = `
                 <td style="text-align: center; color: #94a3b8; font-weight: 600;">
                     ${index + 1}
@@ -80,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${batchOptionsHtml}
                         </select>
                         <div class="batch-warning-msg" style="display: none; font-size: 0.72rem; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; padding: 3px 6px;">
-                            ⚠️ <strong>Perhatian:</strong> Anda memilih batch yang lebih baru. Batch lain memiliki tanggal expired lebih awal (FIFO).
+                            Perhatian: Anda memilih batch yang lebih baru. Batch lain memiliki tanggal expired lebih awal.
                         </div>
                     </div>
                 </td>
@@ -91,23 +101,52 @@ document.addEventListener('DOMContentLoaded', function () {
                     ${new Intl.NumberFormat('id-ID').format(sisa)}
                 </td>
                 <td style="text-align: center;">
-                    <span class="badge-stok ${isStockOk ? 'cukup' : 'kurang'}">
-                        ${isStockOk ? '✓ Tersedia' : '⚠ Stok Kurang'} (${new Intl.NumberFormat('id-ID').format(stokFg)})
-                    </span>
+                    ${stokFg > 0 
+                        ? `<span class="badge-stok ${isStockOk ? 'cukup' : 'kurang'}">
+                            ${isStockOk ? '✓ Tersedia' : '⚠ Stok Kurang'} (${new Intl.NumberFormat('id-ID').format(stokFg)})
+                           </span>`
+                        : `<span style="font-size: 0.75rem; font-weight: 700; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; padding: 2px 7px; border-radius: 4px;">
+                            Kosong (0)
+                           </span>`
+                    }
                 </td>
                 <td style="text-align: right;">
                     <input type="number" step="any" min="0" max="${sisa}"
                            name="items[${index}][kirim_qty]"
-                           value="${sisa}"
+                           value="${defaultKirim}"
                            class="input-qty-kirim"
                            data-sisa="${sisa}"
                            data-stok="${stokFg}"
+                           style="border-color: ${stokFg <= 0 ? '#fca5a5' : '#cbd5e1'};"
                            required>
                 </td>
             `;
 
             tableBody.appendChild(tr);
         });
+
+        // Update button state based on stock availability
+        const submitBtn = document.getElementById('btnSubmitSj');
+        if (submitBtn) {
+            if (allZeroStock || totalAvailStock <= 0) {
+                submitBtn.disabled = true;
+                submitBtn.style.background = '#e2e8f0';
+                submitBtn.style.borderColor = '#cbd5e1';
+                submitBtn.style.color = '#94a3b8';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.innerHTML = '<span>Stok Belum Tersedia di Gudang</span>';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.style.background = '#059669';
+                submitBtn.style.borderColor = '#047857';
+                submitBtn.style.color = '#ffffff';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Proses Pengeluaran &amp; Terbitkan Surat Jalan</span>
+                `;
+            }
+        }
 
         // Attach event listeners to quantity inputs
         document.querySelectorAll('.input-qty-kirim').forEach(input => {
@@ -140,6 +179,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const soId = this.value;
             if (!soId) {
                 if (customerInfoBox) customerInfoBox.style.display = 'none';
+                const supirInput = document.getElementById('supir_nm');
+                const nopolInput = document.getElementById('nopol_kendaraan');
+                const catatanInput = document.getElementById('catatan_txt');
+                if (supirInput) supirInput.value = '';
+                if (nopolInput) nopolInput.value = '';
+                if (catatanInput) catatanInput.value = '';
+
                 const infoSjNo = document.getElementById('infoSjNo');
                 const infoSupir = document.getElementById('infoSupir');
                 const infoNopol = document.getElementById('infoNopol');
@@ -224,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                             const supirVal = order.supir_nm || '';
                             if (supirInput) supirInput.value = supirVal;
-                            if (infoSupir) infoSupir.textContent = supirVal || '-';
+                            if (infoSupir) infoSupir.textContent = supirVal || '(Belum Ditentukan Kantor)';
 
                             const nopolVal = order.nopol_kendaraan || '';
                             if (nopolInput) nopolInput.value = nopolVal;

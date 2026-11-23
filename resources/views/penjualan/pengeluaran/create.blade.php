@@ -18,11 +18,11 @@
         <div class="sj-title-row">
             <h1 class="sj-page-title">Buat Dokumen Pengeluaran Barang</h1>
             <span class="badge" style="background: #ecfdf5; color: #059669; font-weight: 700; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px;">
-                Gudang FG Outbound
+                Pengeluaran Fisik
             </span>
         </div>
         <p class="sj-page-subtitle">
-            Alokasi fisik barang jadi dari Gudang FG via metode FEFO berdasarkan PO Penjualan yang telah disetujui.
+            Alokasi fisik pengeluaran barang via metode FEFO berdasarkan PO Penjualan yang telah disetujui.
         </p>
     </div>
 
@@ -120,7 +120,7 @@
                 </div>
             </div>
 
-            {{-- KARTU 2: PARAMETER DOKUMEN & EKSPEDISI ARMADA (DITERBITKAN RESMI DARI PO) --}}
+            {{-- KARTU 2: PARAMETER DOKUMEN & EKSPEDISI ARMADA (PENGELUARAN GUDANG) --}}
             <div class="sj-card">
                 <div class="sj-card-header">
                     <div class="sj-card-header-left">
@@ -128,86 +128,97 @@
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         </span>
                         <div>
-                            <h3 class="sj-card-title">Parameter Surat Jalan &amp; Ekspedisi</h3>
-                            <div class="sj-card-subtitle">Diterbitkan resmi oleh Bagian Penjualan (PO)</div>
+                            <h3 class="sj-card-title">Dokumen Surat Jalan &amp; Armada Muat</h3>
+                            <div class="sj-card-subtitle">Verifikasi armada truk dan supir pengangkut fisik di dermaga muat</div>
                         </div>
-                    </div>
-                    <div>
-                        <span class="badge" style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.725rem; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.35rem;">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Terbit Resmi dari PO
-                        </span>
                     </div>
                 </div>
 
                 <div class="sj-card-body">
-                    {{-- Hidden Form Inputs required for POST --}}
-                    <input type="hidden" name="pengeluaran_no" id="pengeluaran_no"
-                           value="{{ old('pengeluaran_no', $prefilledData['order']->surat_jalan_no ?? $defaultSjNo) }}">
-                    <input type="hidden" name="pengeluaran_tgl" id="pengeluaran_tgl"
-                           value="{{ old('pengeluaran_tgl', ($hasPrefill && !empty($prefilledData['order']->tgl_kirim_estimasi)) ? \Carbon\Carbon::parse($prefilledData['order']->tgl_kirim_estimasi)->format('Y-m-d') : date('Y-m-d')) }}">
-                    <input type="hidden" name="supir_nm" id="supir_nm"
-                           value="{{ old('supir_nm', $prefilledData['order']->supir_nm ?? '') }}">
-                    <input type="hidden" name="nopol_kendaraan" id="nopol_kendaraan"
-                           value="{{ old('nopol_kendaraan', $prefilledData['order']->nopol_kendaraan ?? '') }}">
-                    <input type="hidden" name="ekspedisi_nm" id="ekspedisi_nm"
-                           value="{{ old('ekspedisi_nm', 'Truk Box MFI') }}">
-                    <input type="hidden" name="catatan_txt" id="catatan_txt"
-                           value="{{ old('catatan_txt', $prefilledData['order']->catatan_txt ?? '') }}">
-
-                    {{-- Informasi Parameter Pengiriman (Read-Only Info Grid) --}}
-                    <div class="sj-info-box" style="margin-top: 0; background: #ffffff; border: 1px solid #e2e8f0;">
-                        <div class="sj-info-item">
-                            <div class="sj-info-label">No. Surat Jalan Resmi:</div>
-                            <div id="infoSjNo" class="sj-info-value" style="font-family: monospace; font-size: 0.95rem; color: #0284c7; font-weight: 800;">
-                                {{ $prefilledData['order']->surat_jalan_no ?? ($defaultSjNo ?: '-') }}
-                            </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div>
+                            <label class="sj-form-label" for="pengeluaran_no">
+                                <span>No. Surat Jalan Resmi <span class="req">*</span></span>
+                            </label>
+                            <input type="text" name="pengeluaran_no" id="pengeluaran_no" required
+                                   value="{{ old('pengeluaran_no', $prefilledData['order']->surat_jalan_no ?? $defaultSjNo) }}"
+                                   class="sj-form-input" style="font-family: monospace; font-weight: 700; background: #f8fafc;">
                         </div>
 
-                        <div class="sj-info-item">
-                            <div class="sj-info-label">Tanggal Pengeluaran / Berangkat:</div>
-                            <div id="infoSjTgl" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a;">
-                                {{ ($hasPrefill && !empty($prefilledData['order']->tgl_kirim_estimasi)) ? \Carbon\Carbon::parse($prefilledData['order']->tgl_kirim_estimasi)->translatedFormat('d F Y') : \Carbon\Carbon::now()->translatedFormat('d F Y') }}
-                            </div>
-                        </div>
-
-                        <div class="sj-info-item">
-                            <div class="sj-info-label">Nama Supir / Pengemudi:</div>
-                            <div id="infoSupir" class="sj-info-value" style="font-size: 0.85rem; color: #0f172a;">
-                                {{ !empty($prefilledData['order']->supir_nm) ? $prefilledData['order']->supir_nm : '-' }}
-                            </div>
-                        </div>
-
-                        <div class="sj-info-item">
-                            <div class="sj-info-label">No. Polisi Armada Truk:</div>
-                            <div id="infoNopol" class="sj-info-value" style="font-family: monospace; font-size: 0.85rem; color: #0f172a; text-transform: uppercase;">
-                                {{ !empty($prefilledData['order']->nopol_kendaraan) ? $prefilledData['order']->nopol_kendaraan : '-' }}
-                            </div>
-                        </div>
-
-                        <div class="sj-info-item">
-                            <div class="sj-info-label">Jenis Ekspedisi:</div>
-                            <div id="infoEkspedisi" class="sj-info-value" style="font-size: 0.825rem; color: #475569;">
-                                Truk Box MFI (Internal)
-                            </div>
-                        </div>
-
-                        <div class="sj-info-item">
-                            <div class="sj-info-label">Catatan Pengiriman (PO):</div>
-                            <div id="infoCatatan" class="sj-info-value" style="font-size: 0.8rem; font-weight: 500; color: #64748b; font-style: italic;">
-                                {{ !empty($prefilledData['order']->catatan_txt) ? $prefilledData['order']->catatan_txt : '(Tidak ada catatan)' }}
-                            </div>
+                        <div>
+                            <label class="sj-form-label" for="pengeluaran_tgl">
+                                <span>Tanggal Keberangkatan <span class="req">*</span></span>
+                            </label>
+                            <input type="date" name="pengeluaran_tgl" id="pengeluaran_tgl" required
+                                   value="{{ old('pengeluaran_tgl', ($hasPrefill && !empty($prefilledData['order']->tgl_kirim_estimasi)) ? \Carbon\Carbon::parse($prefilledData['order']->tgl_kirim_estimasi)->format('Y-m-d') : date('Y-m-d')) }}"
+                                   class="sj-form-input">
                         </div>
                     </div>
 
-                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.65rem; display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1;">
-                        <svg width="15" height="15" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Parameter Surat Jalan &amp; Armada ditetapkan resmi oleh <strong>Bagian Penjualan (PO)</strong>. Petugas Gudang hanya memverifikasi fisik muatan karton.</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div>
+                            <label class="sj-form-label" for="supir_nm">
+                                <span>Nama Supir / Pengemudi</span>
+                            </label>
+                            <input type="text" name="supir_nm" id="supir_nm"
+                                   value="{{ old('supir_nm', $prefilledData['order']->supir_nm ?? '') }}"
+                                   placeholder="Contoh: Yono"
+                                   class="sj-form-input">
+                        </div>
+
+                        <div>
+                            <label class="sj-form-label" for="nopol_kendaraan">
+                                <span>No. Polisi Armada Truk</span>
+                            </label>
+                            <input type="text" name="nopol_kendaraan" id="nopol_kendaraan"
+                                   value="{{ old('nopol_kendaraan', $prefilledData['order']->nopol_kendaraan ?? '') }}"
+                                   placeholder="Contoh: AA 9526 BK"
+                                   class="sj-form-input" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div>
+                            <label class="sj-form-label" for="ekspedisi_nm">
+                                <span>Jenis / Nama Ekspedisi</span>
+                            </label>
+                            <input type="text" name="ekspedisi_nm" id="ekspedisi_nm"
+                                   value="{{ old('ekspedisi_nm', 'Truk Box MFI (Internal)') }}"
+                                   class="sj-form-input">
+                        </div>
+
+                        <div>
+                            <label class="sj-form-label" for="catatan_txt">
+                                <span>Catatan Muat / Pengiriman</span>
+                            </label>
+                            <input type="text" name="catatan_txt" id="catatan_txt"
+                                   value="{{ old('catatan_txt', $prefilledData['order']->catatan_txt ?? '') }}"
+                                   placeholder="Catatan tambahan ekspedisi"
+                                   class="sj-form-input">
+                        </div>
                     </div>
                 </div>
             </div>
 
         </div>
+
+        @php
+            $allZeroStock = false;
+            if ($hasPrefill && !empty($prefilledData['items'])) {
+                $totalAvail = 0;
+                foreach ($prefilledData['items'] as $it) {
+                    $totalAvail += (float)($it['stok_fg'] ?? 0);
+                }
+                $allZeroStock = ($totalAvail <= 0);
+            }
+        @endphp
+
+        @if ($allZeroStock)
+            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 0.85rem 1.15rem; border-radius: 4px; margin-bottom: 1.25rem; font-size: 0.825rem; color: #991b1b; line-height: 1.5;">
+                <strong>Perhatian Gudang:</strong> Stok fisik untuk seluruh barang dalam pesanan ini masih <strong>0 (Belum Tersedia)</strong> di gudang.
+                Pengeluaran fisik barang belum dapat diproses sampai barang selesai dikemas di modul <strong>Produksi &rarr; Pengemasan</strong>.
+            </div>
+        @endif
 
         {{-- KARTU 3: TABEL RINCIAN PRODUK YANG DIKELUARKAN (FEFO) --}}
         <div class="sj-card">
@@ -218,7 +229,7 @@
                     </span>
                     <div>
                         <h3 class="sj-card-title">Rincian Fisik Barang Jadi yang Dikeluarkan</h3>
-                        <div class="sj-card-subtitle">Kuantitas kirim dialokasikan dari stok fisik Gudang FG via metode FEFO</div>
+                        <div class="sj-card-subtitle">Kuantitas kirim dialokasikan dari stok fisik gudang via metode FEFO</div>
                     </div>
                 </div>
             </div>
@@ -232,7 +243,7 @@
                             <th style="min-width: 260px;">Alokasi Batch Produksi (FEFO) <span class="req">*</span></th>
                             <th style="text-align: right; width: 110px;">Qty Pesan</th>
                             <th style="text-align: right; width: 110px;">Sisa Pesan</th>
-                            <th style="text-align: center; width: 140px;">Stok FG</th>
+                            <th style="text-align: center; width: 140px;">Stok Gudang</th>
                             <th style="text-align: right; width: 140px;">Qty Kirim Hari Ini <span class="req">*</span></th>
                         </tr>
                     </thead>
@@ -242,10 +253,11 @@
                                 @php
                                     $sisa = $item['sisa_qty'];
                                     $stokFg = $item['stok_fg'];
-                                    $isStockOk = $stokFg >= $sisa;
+                                    $isStockOk = $stokFg >= $sisa && $stokFg > 0;
                                     $batches = $item['batches'] ?? [];
+                                    $defaultKirim = ($stokFg <= 0) ? 0 : min($sisa, $stokFg);
                                 @endphp
-                                <tr>
+                                <tr style="background: {{ $stokFg <= 0 ? '#fef2f2' : '#ffffff' }};">
                                     <td style="text-align: center; color: #94a3b8; font-weight: 600;">
                                         {{ $index + 1 }}
                                         <input type="hidden" name="items[{{ $index }}][sodtl_id]" value="{{ $item['sodtl_id'] }}">
@@ -261,7 +273,7 @@
                                                     @foreach ($batches as $b)
                                                         @php
                                                             $isTop = $b['is_fifo_top'];
-                                                            $optText = ($isTop ? '⭐ [Rekomendasi FIFO] ' : '') . 'Batch ' . $b['batch_no'] . ' (Exp: ' . $b['expired_fmt'] . ' | Sisa: ' . number_format($b['sisa_qty'], 0) . ')';
+                                                            $optText = ($isTop ? '[FEFO Prioritas] ' : '') . 'Batch ' . $b['batch_no'] . ' (Exp: ' . $b['expired_fmt'] . ' | Sisa: ' . number_format($b['sisa_qty'], 0) . ')';
                                                         @endphp
                                                         <option value="{{ $b['batch_no'] }}"
                                                             data-is-fifo="{{ $isTop ? '1' : '0' }}"
@@ -272,11 +284,11 @@
                                                         </option>
                                                     @endforeach
                                                 @else
-                                                    <option value="AUTO_FIFO">⭐ [Auto-FEFO] Rekomendasi Terlama Sistem</option>
+                                                    <option value="AUTO_FIFO">[Auto-FEFO] Batch Fisik Belum Tersedia</option>
                                                 @endif
                                             </select>
                                             <div class="batch-warning-msg" style="display: none; font-size: 0.72rem; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; padding: 3px 6px;">
-                                                ⚠️ <strong>Perhatian:</strong> Anda memilih batch yang lebih baru. Batch lain memiliki tanggal expired lebih awal (FIFO).
+                                                Perhatian: Anda memilih batch yang lebih baru. Batch lain memiliki tanggal expired lebih awal.
                                             </div>
                                         </div>
                                     </td>
@@ -287,17 +299,24 @@
                                         {{ number_format($sisa, 0, ',', '.') }}
                                     </td>
                                     <td style="text-align: center;">
-                                        <span class="badge-stok {{ $isStockOk ? 'cukup' : 'kurang' }}">
-                                            {{ $isStockOk ? '✓ Tersedia' : '⚠ Stok Kurang' }} ({{ number_format($stokFg, 0, ',', '.') }})
-                                        </span>
+                                        @if($stokFg > 0)
+                                            <span class="badge-stok {{ $isStockOk ? 'cukup' : 'kurang' }}">
+                                                {{ $isStockOk ? '✓ Tersedia' : '⚠ Stok Kurang' }} ({{ number_format($stokFg, 0, ',', '.') }})
+                                            </span>
+                                        @else
+                                            <span style="font-size: 0.75rem; font-weight: 700; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; padding: 2px 7px; border-radius: 4px;">
+                                                Kosong (0)
+                                            </span>
+                                        @endif
                                     </td>
                                     <td style="text-align: right;">
                                         <input type="number" step="any" min="0" max="{{ $sisa }}"
                                                name="items[{{ $index }}][kirim_qty]"
-                                               value="{{ old("items.{$index}.kirim_qty", $sisa) }}"
+                                               value="{{ old("items.{$index}.kirim_qty", $defaultKirim) }}"
                                                class="input-qty-kirim"
                                                data-sisa="{{ $sisa }}"
                                                data-stok="{{ $stokFg }}"
+                                               style="border-color: {{ $stokFg <= 0 ? '#fca5a5' : '#cbd5e1' }};"
                                                required>
                                     </td>
                                 </tr>
@@ -317,7 +336,7 @@
             <div class="sj-table-footer-bar">
                 <div class="sj-footer-left">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Sistem otomatis memilih batch/lot produksi terlama yang belum kadaluarsa (FEFO) saat dokumen disimpan.</span>
+                    <span>Sistem otomatis memotong stok fisik sesuai urutan kadaluarsa tertua (FEFO).</span>
                 </div>
 
                 <div class="sj-footer-right">
@@ -336,10 +355,16 @@
                 <span>Batal</span>
             </a>
 
-            <button type="submit" class="btn-sj-submit">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span>Proses Pengeluaran &amp; Terbitkan Surat Jalan</span>
-            </button>
+            @if ($allZeroStock)
+                <button type="button" class="btn-sj-submit" disabled style="background: #e2e8f0; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed;">
+                    <span>Stok Belum Tersedia di Gudang</span>
+                </button>
+            @else
+                <button type="submit" class="btn-sj-submit" id="btnSubmitSj">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Proses Pengeluaran &amp; Terbitkan Surat Jalan</span>
+                </button>
+            @endif
         </div>
 
     </form>

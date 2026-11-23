@@ -899,21 +899,147 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Dokumen PO Penjualan / Sales Order ke Customer (format: SO-YYYYMM-0001)
+     * Generate Nomor Dokumen PO Penjualan / Sales Order Resmi PT Mirasa (format: {seq:3}/SO/MFI/{mm}/{yy})
+     * Contoh: 001/SO/MFI/11/26
+     * Reset ke urutan 001 pada setiap awal bulan baru secara otomatis.
+     *
+     * @param string|null $date Tanggal SO (opsional, default: hari ini)
+     * @param int|null $excludeSoId ID SO yang dikecualikan (berguna saat edit dokumen)
+     * @return string
      */
-    public function generateSoNo(?string $date = null): string
+    public function generateSoNo(?string $date = null, ?int $excludeSoId = null): string
     {
-        $prefix = 'SO-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
-        return $this->generate('dat_so_hdr', 'so_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/SO/MFI/{$month}/{$year}";
+
+        // Cari nomor SO yang berakhiran format resmi pada bulan & tahun ini
+        $query = DB::table('dat_so_hdr')
+            ->where('so_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeSoId) {
+            $query->where('so_id', '!=', $excludeSoId);
+        }
+
+        $existing = $query->pluck('so_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/SO\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $soNo) {
+            if (preg_match($regex, trim((string) $soNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_so_hdr')->where('so_no', $generated);
+            if ($excludeSoId) {
+                $checkQuery->where('so_id', '!=', $excludeSoId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**
-     * Generate Nomor Dokumen Penjualan Langsung / Tunai (format: DIR-YYYYMM-0001)
+     * Generate Nomor Dokumen Penjualan Langsung / Tunai Resmi PT Mirasa (format: {seq:3}/PJL/MFI/{mm}/{yy})
+     * Contoh: 001/PJL/MFI/11/26
+     * Memiliki seri terpisah dari PO Distributor ({seq:3}/SO/MFI/{mm}/{yy}) dengan reset bulanan otomatis.
      */
-    public function generateDirectSaleNo(?string $date = null): string
+    public function generateDirectSaleNo(?string $date = null, ?int $excludeSoId = null): string
     {
-        $prefix = 'DIR-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
-        return $this->generate('dat_so_hdr', 'so_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/PJL/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_so_hdr')
+            ->where('so_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeSoId) {
+            $query->where('so_id', '!=', $excludeSoId);
+        }
+
+        $existing = $query->pluck('so_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/PJL\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $soNo) {
+            if (preg_match($regex, trim((string) $soNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_so_hdr')->where('so_no', $generated);
+            if ($excludeSoId) {
+                $checkQuery->where('so_id', '!=', $excludeSoId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
+     * Generate Nomor Transaksi Penjualan Bahan Penolong & Bumbu
+     * Format: {seq:3}/JBP/MFI/{mm}/{yy}
+     * Contoh: 001/JBP/MFI/11/26
+     * Memiliki seri terpisah dari PO Distributor dan Penjualan Langsung dengan reset bulanan otomatis.
+     */
+    public function generatePenjualanBahanPenolongNo(?string $date = null, ?int $excludeSoId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/JBP/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_so_hdr')
+            ->where('so_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeSoId) {
+            $query->where('so_id', '!=', $excludeSoId);
+        }
+
+        $existing = $query->pluck('so_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/JBP\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $soNo) {
+            if (preg_match($regex, trim((string) $soNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_so_hdr')->where('so_no', $generated);
+            if ($excludeSoId) {
+                $checkQuery->where('so_id', '!=', $excludeSoId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**
@@ -1058,12 +1184,99 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Surat Jalan Pengiriman (format: SJ-YYYYMM-0001)
+     * Generate Nomor Surat Jalan Pengiriman Resmi PT Mirasa (format: {seq:3}/SJ/MFI/{mm}/{yy})
+     * Contoh: 001/SJ/MFI/11/26
+     * Reset ke urutan 001 pada setiap awal bulan baru secara otomatis.
+     *
+     * @param string|null $date Tanggal Surat Jalan / Pengiriman (opsional, default: hari ini)
+     * @param int|null $excludeSjId ID Pengeluaran yang dikecualikan (berguna saat edit)
+     * @return string
      */
-    public function generateSuratJalanNo(?string $date = null): string
+    public function generateSuratJalanNo(?string $date = null, ?int $excludeSjId = null): string
     {
-        $prefix = 'SJ-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
-        return $this->generate('dat_so_hdr', 'surat_jalan_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/SJ/MFI/{$month}/{$year}";
+
+        // Cek nomor SJ pada tabel dat_pengeluaran_hdr maupun dat_so_hdr (kolom surat_jalan_no)
+        $queryPengeluaran = DB::table('dat_pengeluaran_hdr')
+            ->where('pengeluaran_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeSjId) {
+            $queryPengeluaran->where('pengeluaran_id', '!=', $excludeSjId);
+        }
+
+        $existingPengeluaran = $queryPengeluaran->pluck('pengeluaran_no');
+
+        $existingSo = DB::table('dat_so_hdr')
+            ->where('surat_jalan_no', 'LIKE', '%' . $suffix)
+            ->pluck('surat_jalan_no');
+
+        $allExisting = $existingPengeluaran->concat($existingSo);
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/SJ\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($allExisting as $sjNo) {
+            if (preg_match($regex, trim((string) $sjNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $exists1 = DB::table('dat_pengeluaran_hdr')->where('pengeluaran_no', $generated)->exists();
+            $exists2 = DB::table('dat_so_hdr')->where('surat_jalan_no', $generated)->exists();
+            $exists = $exists1 || $exists2;
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
+     * Generate Nomor Dokumen Bukti Pengeluaran Sampel & Promosi Resmi PT Mirasa
+     * Format: {seq}/SMPL/MFI/{mm}/{yy}
+     * Contoh: 001/SMPL/MFI/11/26
+     */
+    public function generateBuktiPengeluaranSampelNo(?string $date = null, ?int $excludeId = null): string
+    {
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/SMPL/MFI/{$month}/{$year}";
+
+        $query = DB::table('dat_pengeluaran_hdr')
+            ->where('pengeluaran_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeId) {
+            $query->where('pengeluaran_id', '!=', $excludeId);
+        }
+
+        $allExisting = $query->pluck('pengeluaran_no');
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/SMPL\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($allExisting as $no) {
+            if (preg_match($regex, trim((string) $no), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $exists = DB::table('dat_pengeluaran_hdr')->where('pengeluaran_no', $generated)->exists();
+        } while ($exists);
+
+        return $generated;
     }
 
     /**

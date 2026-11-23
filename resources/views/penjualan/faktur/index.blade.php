@@ -13,20 +13,16 @@
     {{-- HEADER & TOMBOL AKSI UTAMA --}}
     <div class="fk-header-row">
         <div>
-            <h1 class="fk-page-title">Penjualan</h1>
+            <h1 class="fk-page-title">Faktur Penjualan & Piutang Usaha</h1>
             <p class="fk-page-subtitle">
-                Penerbitan tagihan komersial resmi dari Surat Jalan, pengakuan piutang usaha (AR), dan monitoring pelunasan customer.
+                Monitoring status tagihan piutang customer (AR), pencatatan pembayaran pelunasan, dan rekonsiliasi faktur yang terbit otomatis dari Surat Jalan.
             </p>
         </div>
 
         <div class="fk-header-buttons">
-            <a href="{{ route('penjualan.faktur.create') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Catat Penjualan</span>
-            </a>
-            <a href="{{ route('penjualan.pengeluaran.index') }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
+            <a href="{{ route('penjualan.pengeluaran.index') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                <span>Daftar Surat Jalan</span>
+                <span>Kelola Surat Jalan</span>
             </a>
             <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -252,10 +248,32 @@
                                         Batal (Void)
                                     </span>
                                 @else
+                                    @php
+                                        $todayCarbon = \Carbon\Carbon::today();
+                                        $tglTempo = $faktur->tgl_jatuh_tempo ? \Carbon\Carbon::parse($faktur->tgl_jatuh_tempo) : null;
+                                        $diffDays = $tglTempo ? $todayCarbon->diffInDays($tglTempo, false) : 0;
+                                    @endphp
                                     <span class="badge-status belum-lunas">
                                         <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                                         Belum Lunas
                                     </span>
+                                    @if ($tglTempo)
+                                        <div style="margin-top: 0.25rem;">
+                                            @if ($diffDays < 0)
+                                                <span class="badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                                    Lewat {{ abs($diffDays) }} Hari
+                                                </span>
+                                            @elseif ($diffDays <= 3)
+                                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                                    Tempo H-{{ $diffDays > 0 ? $diffDays : '0' }}
+                                                </span>
+                                            @else
+                                                <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
+                                                    Tempo {{ $diffDays }} Hari
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 @endif
                             </td>
 

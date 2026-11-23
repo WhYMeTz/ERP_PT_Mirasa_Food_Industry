@@ -44,7 +44,7 @@ class DirectSalesService
         $query = DatSoHdr::with(['customer', 'details.barang.satuanDasar', 'pengeluaran', 'faktur'])
             ->where('deleted_st', false)
             ->where(function ($q) {
-                $q->where('customer_po_no', 'PENJUALAN LANGSUNG')
+                $q->where('customer_po_no', 'like', 'PENJUALAN LANGSUNG%')
                   ->orWhere('so_no', 'like', 'DIR-%');
             });
 
@@ -84,7 +84,7 @@ class DirectSalesService
 
         $base = DatSoHdr::where('deleted_st', false)
             ->where(function ($q) {
-                $q->where('customer_po_no', 'PENJUALAN LANGSUNG')
+                $q->where('customer_po_no', 'like', 'PENJUALAN LANGSUNG%')
                   ->orWhere('so_no', 'like', 'DIR-%');
             });
 
@@ -111,22 +111,22 @@ class DirectSalesService
     }
 
     /**
-     * Dapatkan Customer Khusus Penjualan Umum / Tunai (Otomatis dibuat jika belum ada)
+     * Dapatkan Customer Khusus Penjualan Umum (Otomatis dibuat jika belum ada)
      */
     public function getOrCreateCashCustomer(): MstCustomer
     {
-        $cust = MstCustomer::where('customer_nm', 'ilike', '%PELANGGAN UMUM%')
-            ->orWhere('customer_nm', 'ilike', '%PENJUALAN LANGSUNG%')
+        $cust = MstCustomer::where('customer_cd', 'CUST-UMUM')
+            ->orWhere('customer_nm', 'ilike', '%PELANGGAN UMUM%')
             ->first();
 
         if (!$cust) {
             $cust = MstCustomer::create([
                 'customer_cd' => 'CUST-UMUM',
-                'customer_nm' => 'PELANGGAN UMUM / TUNAI',
+                'customer_nm' => 'PELANGGAN UMUM',
                 'kontak_no'   => '-',
                 'alamat_txt'  => 'Transaksi Penjualan Langsung Pabrik',
                 'klasifikasi' => 'MANUAL',
-                'top_txt'     => 'TUNAI',
+                'top_txt'     => 'LANGSUNG',
                 'default_ppn' => 'NON_PPN',
                 'active_st'   => true,
                 'deleted_st'  => false,
@@ -138,35 +138,36 @@ class DirectSalesService
     }
 
     /**
-     * Dapatkan daftar barang produk jadi siap jual beserta sisa stok aktif di Gudang FG
+     * Dapatkan daftar barang produk jadi siap jual beserta matriks stok aktif per gudang
      */
-    public function getReadyToSellProducts(): Collection
+    public function getReadyToSellProducts(?int $defaultGudangId = null): Collection
     {
-        $fgGudangIds = MstGudang::where('gudang_cd', 'GDG-FG')
-            ->orWhere('tipe_gudang_cd', 'FG')
-            ->orWhere('gudang_cd', 'MFI-PST')
-            ->pluck('gudang_id')
-            ->toArray();
-        if (empty($fgGudangIds)) {
-            $fgGudangIds = [6, 1];
-        }
-
         $barangs = MstBarang::with(['satuanDasar', 'jenisBarang'])
-            ->produkJadi()
+            ->finishedGoods()
             ->active()
             ->orderBy('barang_nm')
             ->get();
 
-        $stockMap = DatStokBatch::whereIn('gudang_id', $fgGudangIds)
-            ->where('deleted_st', false)
+        // Ambil pemetaan sisa stok batch aktif per gudang dan per barang
+        $stocks = DatStokBatch::where('deleted_st', false)
             ->where('sisa_qty', '>', 0)
-            ->select('barang_id', DB::raw('SUM(sisa_qty) as total_sisa'))
-            ->groupBy('barang_id')
-            ->pluck('total_sisa', 'barang_id')
-            ->toArray();
+            ->select('gudang_id', 'barang_id', DB::raw('SUM(sisa_qty) as total_sisa'))
+            ->groupBy('gudang_id', 'barang_id')
+            ->get();
+
+        $stockMatrix = [];
+        foreach ($stocks as $s) {
+            $stockMatrix[$s->barang_id][$s->gudang_id] = (float) $s->total_sisa;
+        }
 
         foreach ($barangs as $b) {
-            $b->ready_stock = (float) ($stockMap[$b->barang_id] ?? 0);
+            $b->stocks_by_gudang = $stockMatrix[$b->barang_id] ?? [];
+            if ($defaultGudangId) {
+                $b->ready_stock = (float) ($b->stocks_by_gudang[$defaultGudangId] ?? 0);
+            } else {
+                // Default ke stok gudang GDG-FG (6) atau gudang pertama yang ada stok
+                $b->ready_stock = (float) ($b->stocks_by_gudang[6] ?? ($b->stocks_by_gudang[1] ?? 0));
+            }
         }
 
         return $barangs;
@@ -184,10 +185,18 @@ class DirectSalesService
             $suratJalanNo = $this->codeGenerator->generateSuratJalanNo($soTgl);
             $fakturNo = $this->codeGenerator->generateFakturNo($soTgl);
 
-            $gudangFgId = MstGudang::where('gudang_cd', 'GDG-FG')->value('gudang_id') ?? 6;
+            $gudangId = !empty($data['gudang_id']) ? (int) $data['gudang_id'] : (MstGudang::where('gudang_cd', 'MFI-PST')->value('gudang_id') ?? 1);
+            $gudang = MstGudang::findOrFail($gudangId);
 
-            // 1. Validasi Customer
-            $customerId = !empty($data['customer_id']) ? (int) $data['customer_id'] : null;
+            $kategori = strtoupper(trim($data['kategori_penjualan'] ?? 'UMUM'));
+
+            // 1. Validasi Customer & Parameter Berdasarkan Kategori
+            if ($kategori === 'SALES') {
+                $customerId = !empty($data['customer_id_sales']) ? (int) $data['customer_id_sales'] : (!empty($data['customer_id']) ? (int) $data['customer_id'] : null);
+            } else {
+                $customerId = !empty($data['customer_id']) ? (int) $data['customer_id'] : null;
+            }
+
             if (!$customerId) {
                 $defaultCust = $this->getOrCreateCashCustomer();
                 $customerId = $defaultCust->customer_id;
@@ -222,16 +231,20 @@ class DirectSalesService
                     continue;
                 }
 
-                $barang = MstBarang::with('satuanDasar')->findOrFail($barangId);
+                $barang = MstBarang::with(['satuanDasar', 'jenisBarang'])->findOrFail($barangId);
 
-                // Cek ketersediaan stok fisik di Gudang FG
-                $availableStock = (float) DatStokBatch::where('gudang_id', $gudangFgId)
+                if (($barang->jenisBarang->jenis_barang_cd ?? '') !== 'FG') {
+                    throw new Exception("Hanya Produk Jadi (FG) yang dapat dijual pada Penjualan Langsung. '{$barang->barang_nm}' bukan produk FG.");
+                }
+
+                // Cek ketersediaan stok fisik di Gudang pengeluaran
+                $availableStock = (float) DatStokBatch::where('gudang_id', $gudangId)
                     ->where('barang_id', $barangId)
                     ->where('deleted_st', false)
                     ->sum('sisa_qty');
 
                 if ($qty > $availableStock) {
-                    throw new Exception("Stok untuk '{$barang->barang_nm}' tidak mencukupi (Tersedia: {$availableStock}, Diminta: {$qty}).");
+                    throw new Exception("Stok untuk '{$barang->barang_nm}' di gudang {$gudang->gudang_nm} tidak mencukupi (Tersedia: {$availableStock}, Diminta: {$qty}).");
                 }
 
                 $itemBruto = round($qty * $hargaSatuan, 2);
@@ -279,7 +292,33 @@ class DirectSalesService
             $metodeBayar = strtoupper(trim($data['metode_bayar'] ?? 'TUNAI'));
             $uangDiterima = (float) ($data['uang_diterima'] ?? $totalTagihan);
             $uangKembalian = max(0, $uangDiterima - $totalTagihan);
-            $namaPembeli = trim($data['nama_pembeli'] ?? ($customer->customer_nm));
+
+            if ($kategori === 'SALES') {
+                $salesNm = trim($data['sales_nm'] ?? 'Sales Kanvaser');
+                $rute = trim($data['rute_wilayah'] ?? '-');
+                $armada = trim($data['armada_sales'] ?? 'ARMADA SALES');
+                $tokoKanvas = trim($data['toko_kanvas_nm'] ?? '');
+                $notaManual = trim($data['nota_manual_no'] ?? '');
+
+                $namaPembeli = $tokoKanvas ? "{$tokoKanvas} (Sales: {$salesNm})" : "Sales: {$salesNm}";
+                $nopolKendaraan = $armada ?: 'ARMADA SALES';
+                $customerPoNo = 'PENJUALAN LANGSUNG - SALES';
+                $catatanTransaksi = "[SALES KELILING] Sales: {$salesNm} | Rute: {$rute}";
+                if (!empty($notaManual) && $notaManual !== '-') {
+                    $catatanTransaksi .= " | Nota: {$notaManual}";
+                }
+                if (!empty($data['catatan_txt'])) {
+                    $catatanTransaksi .= " | " . $data['catatan_txt'];
+                }
+            } else {
+                $namaPembeli = trim($data['nama_pembeli'] ?? '') ?: ($customer->customer_nm ?? 'Pelanggan Umum');
+                $nopolKendaraan = 'AMBIL SENDIRI';
+                $customerPoNo = 'PENJUALAN LANGSUNG - UMUM';
+                $catatanTransaksi = "[UMUM PABRIK] Pembeli: {$namaPembeli} | Gudang: {$gudang->gudang_nm}";
+                if (!empty($data['catatan_txt'])) {
+                    $catatanTransaksi .= " | " . $data['catatan_txt'];
+                }
+            }
 
             // 3. TAHAP 1: Simpan Sales Order (Status Langsung COMPLETED)
             $order = DatSoHdr::create([
@@ -288,14 +327,14 @@ class DirectSalesService
                 'surat_jalan_no'     => $suratJalanNo,
                 'so_tgl'             => $soTgl,
                 'customer_id'        => $customerId,
-                'customer_po_no'     => 'PENJUALAN LANGSUNG',
+                'customer_po_no'     => $customerPoNo,
                 'top_txt'            => $metodeBayar,
                 'tgl_kirim_estimasi' => $soTgl,
                 'tgl_kirim_aktual'   => $soTgl,
                 'supir_nm'           => $namaPembeli,
-                'nopol_kendaraan'    => $data['nopol_kendaraan'] ?? 'AMBIL SENDIRI',
+                'nopol_kendaraan'    => $nopolKendaraan,
                 'status_cd'          => 'COMPLETED',
-                'catatan_txt'        => "Penjualan Langsung / Tunai. Pembeli: {$namaPembeli}. " . ($data['catatan_txt'] ?? ''),
+                'catatan_txt'        => $catatanTransaksi,
                 'subtotal_bruto'     => $subtotalBruto,
                 'diskon_total'       => $diskonTotal,
                 'potongan_nominal'   => $potonganHeader,
@@ -305,7 +344,7 @@ class DirectSalesService
                 'ppn_nominal'        => $ppnNominal,
                 'total_tagihan'      => $totalTagihan,
                 'total_terkirim_qty' => array_sum(array_column($calculatedItems, 'qty')),
-                'created_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'Kasir',
+                'created_by'         => $userName ?? auth()->user()?->nama_lengkap ?? 'Admin Penjualan',
                 'active_st'          => true,
                 'deleted_st'         => false,
             ]);
@@ -339,13 +378,13 @@ class DirectSalesService
                 'pengeluaran_tgl' => $soTgl,
                 'so_id'           => $order->so_id,
                 'customer_id'     => $customerId,
-                'gudang_id'       => $gudangFgId,
+                'gudang_id'       => $gudangId,
                 'supir_nm'        => $namaPembeli,
-                'nopol_kendaraan' => $data['nopol_kendaraan'] ?? 'AMBIL SENDIRI',
-                'ekspedisi_nm'    => 'Ambil Langsung di Pabrik',
+                'nopol_kendaraan' => $data['nopol_kendaraan'] ?? ($nopolKendaraan ?: 'AMBIL SENDIRI'),
+                'ekspedisi_nm'    => $kategori === 'SALES' ? 'Armada Sales Pabrik' : 'Ambil Langsung di Pabrik',
                 'total_qty'       => array_sum(array_column($calculatedItems, 'qty')),
                 'status_cd'       => 'TERKIRIM',
-                'catatan_txt'     => "Penyerahan barang langsung transaksi {$soNo}",
+                'catatan_txt'     => "Penyerahan barang langsung transaksi {$soNo} dari {$gudang->gudang_nm}",
                 'created_by'      => $userName ?? auth()->user()?->nama_lengkap ?? 'Kasir',
                 'active_st'       => true,
                 'deleted_st'      => false,
@@ -354,10 +393,10 @@ class DirectSalesService
 
             $pengeluaranDetails = [];
             foreach ($soDetails as $item) {
-                // Eksekusi potong stok FEFO/FIFO dari Gudang FG
-                $ketStok = "Penjualan Langsung {$soNo} (SJ: {$suratJalanNo}) Pembeli: {$namaPembeli}";
+                // Eksekusi potong stok FEFO/FIFO dari Gudang pengeluaran
+                $ketStok = "Penjualan Langsung {$soNo} (SJ: {$suratJalanNo}) Pembeli: {$namaPembeli} Gudang: {$gudang->gudang_nm}";
                 $deductions = $this->stokService->deductStockFifo(
-                    gudangId: $gudangFgId,
+                    gudangId: $gudangId,
                     barangId: $item['barang_id'],
                     qty: $item['qty'],
                     refNo: $suratJalanNo,

@@ -1,0 +1,264 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   REKAPITULASI & LAPORAN PENJUALAN - INDEX STYLESHEET
+   PT Mirasa Food Industry (Enterprise Design System)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Full-width container: mengisi 100% layar tanpa margin/max-width buatan */
+.laporan-sales-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header & Action Toolbar */
+.laporan-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.laporan-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.laporan-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
+
+.laporan-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+/* Operational Metrics Grid (Identik dengan format PO & Faktur) */
+.laporan-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.laporan-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.laporan-metric-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.laporan-metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.25rem;
+}
+
+.laporan-metric-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.laporan-metric-val {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+}
+
+.laporan-metric-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.laporan-metric-icon.blue {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.laporan-metric-icon.emerald {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.laporan-metric-icon.amber {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.laporan-metric-icon.slate {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.laporan-metric-subtext {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Filter Card: Enterprise Form Layout */
+.laporan-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.laporan-filter-form {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.laporan-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.laporan-form-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #475569;
+}
+
+.laporan-input,
+.laporan-select {
+    height: 38px;
+    padding: 0 0.75rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: #1e293b;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.laporan-input:focus,
+.laporan-select:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+/* Enterprise Tabs (Menyatu dengan tabel) */
+.laporan-tabs-bar {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+}
+
+.laporan-tab-item {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #64748b;
+    text-decoration: none;
+    border-bottom: 2.5px solid transparent;
+    margin-bottom: -2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.laporan-tab-item:hover {
+    color: #0f172a;
+}
+
+.laporan-tab-item.active {
+    color: #0284c7;
+    border-bottom-color: #0284c7;
+}
+
+/* Card Table Container */
+.laporan-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.laporan-table-header {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.laporan-table-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.laporan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+}
+
+.laporan-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.775rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.laporan-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.laporan-table tbody tr:hover {
+    background: #f8fafc;
+}

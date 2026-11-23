@@ -15,10 +15,10 @@
 
 .cng-stat-card {
     background: #ffffff;
-    border: 1.5px solid #cbd5e1;
+    border: 1px solid #cbd5e1;
     border-radius: 8px;
     padding: 1.15rem 1.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     position: relative;
     overflow: hidden;
     transition: all 0.2s ease-in-out;
@@ -26,27 +26,7 @@
 
 .cng-stat-card:hover {
     border-color: #94a3b8;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.cng-stat-card.card-primary {
-    border-color: #fde68a;
-    background: linear-gradient(135deg, #ffffff 0%, #fffdf5 100%);
-}
-
-.cng-stat-card.card-info {
-    border-color: #bae6fd;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-}
-
-.cng-stat-card.card-success {
-    border-color: #a7f3d0;
-    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-}
-
-.cng-stat-card.card-neutral {
-    border-color: #e2e8f0;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
 }
 
 .cng-stat-header {
@@ -57,30 +37,32 @@
 }
 
 .cng-stat-title {
-    font-size: 0.75rem;
+    font-size: 0.775rem;
     font-weight: 700;
     color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     display: block;
 }
 
 .cng-stat-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    background: #f1f5f9;
+    color: #475569;
 }
 
 .cng-stat-value {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     font-weight: 800;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     line-height: 1.2;
     letter-spacing: -0.02em;
+    color: #0f172a;
     margin-bottom: 0.35rem;
 }
 
@@ -92,59 +74,64 @@
     gap: 0.35rem;
 }
 
-/* ─── SEGMENTED TAB SWITCHER TERPADU ─── */
+/* ─── SEGMENTED TAB SWITCHER TERPADU (ENTERPRISE UNDERLINE STYLE) ─── */
 .cng-tab-switcher-wrap {
     display: flex;
-    gap: 0.35rem;
-    background: #f1f5f9;
-    padding: 0.35rem;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    width: fit-content;
+    gap: 0.25rem;
+    border-bottom: 2px solid #e2e8f0;
     margin-bottom: 1.25rem;
     flex-wrap: wrap;
+    background: transparent;
+    padding: 0;
+}
+
+/* ─── FILTER PERIODE BULAN & TAHUN PROPOSIONAL ─── */
+.hpp-filter-form select.hpp-select-control {
+    background-color: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.hpp-filter-form select.hpp-select-control:hover {
+    border-color: #94a3b8;
+}
+
+.hpp-filter-form select.hpp-select-control:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
 }
 
 .cng-tab-btn {
-    padding: 0.5rem 1.15rem;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    background: transparent;
+    gap: 0.5rem;
+    padding: 0.65rem 1.15rem;
+    font-size: 0.85rem;
+    font-weight: 600;
     color: #64748b;
+    background: transparent;
     border: none;
+    border-bottom: 3px solid transparent;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: all 0.18s ease;
+    margin-bottom: -2px;
+    border-radius: 6px 6px 0 0;
+    text-decoration: none;
 }
 
 .cng-tab-btn:hover {
-    background: #ffffff;
-    color: #0f172a;
+    color: #0284c7;
+    background: #f8fafc;
 }
 
 .cng-tab-btn.active {
-    background: #ffffff;
-    color: #0f172a;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.cng-tab-btn.active.tab-amber {
-    color: #b45309;
-    border-bottom: 2px solid #d97706;
-}
-
-.cng-tab-btn.active.tab-blue {
-    color: #0369a1;
-    border-bottom: 2px solid #0284c7;
-}
-
-.cng-tab-btn.active.tab-emerald {
-    color: #047857;
-    border-bottom: 2px solid #059669;
+    color: #0284c7;
+    border-bottom-color: #0284c7;
+    background: #f0f9ff;
+    font-weight: 700;
 }
 
 /* ─── TAB PANE WRAPPERS ─── */

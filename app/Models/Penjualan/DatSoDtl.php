@@ -20,6 +20,7 @@ class DatSoDtl extends Model
         'barang_id',
         'pesan_qty',
         'kirim_qty',
+        'satuan',
         'harga_satuan',
         'diskon_persen',
         'diskon_nominal',

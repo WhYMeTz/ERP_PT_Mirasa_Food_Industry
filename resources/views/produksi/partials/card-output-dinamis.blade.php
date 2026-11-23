@@ -40,9 +40,14 @@
 
     <div style="padding: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
-            <span style="font-size: 0.825rem; font-weight: 700; color: #1e293b;">
-                Daftar Hasil Penggorengan &amp; Curah:
-            </span>
+            <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                <span style="font-size: 0.825rem; font-weight: 700; color: #1e293b;">
+                    Daftar Hasil Penggorengan &amp; Curah:
+                </span>
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">
+                    💡 Tekan <kbd style="background:#e2e8f0; padding:1px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
+                </span>
+            </div>
             <button type="button" onclick="addFgRow()" class="btn btn-sm btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.775rem;">
                 <span>+ Tambah Baris Hasil</span>
             </button>

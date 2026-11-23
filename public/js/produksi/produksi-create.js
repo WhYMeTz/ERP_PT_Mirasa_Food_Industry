@@ -1047,8 +1047,9 @@
         if (pakaiSelect) {
             Array.from(pakaiSelect.options).forEach((pkOpt, idx) => {
                 if (idx === 0) return; // Placeholder "-- Pilih Dokumen --"
-                const pkPabrik = pkOpt.getAttribute('data-pabrik');
-                if (!pabrikVal || !pkPabrik || pkPabrik === pabrikVal) {
+                const pkPabrik = (pkOpt.getAttribute('data-pabrik') || '').toUpperCase();
+                const pabrikList = pkPabrik.split(',').map(s => s.trim());
+                if (!pabrikVal || pabrikList.includes(pabrikVal.toUpperCase())) {
                     pkOpt.style.display = '';
                 } else {
                     pkOpt.style.display = 'none';
@@ -2422,8 +2423,13 @@
                             }
                         }
 
-                        // 3. Auto-sinkronkan Gudang Asal jika belum terpilih
-                        if (d.gudang_id) {
+                        // 3. Auto-sinkronkan Gudang Penyimpanan (Gudang Tujuan BPPB jika ada, atau Gudang Asal)
+                        if (d.gudang_tujuan_id) {
+                            const elGdg = document.getElementById('gudang_id');
+                            if (elGdg) {
+                                elGdg.value = d.gudang_tujuan_id;
+                            }
+                        } else if (d.gudang_id) {
                             const elGdg = document.getElementById('gudang_id');
                             if (elGdg && (!elGdg.value || elGdg.value === '')) {
                                 elGdg.value = d.gudang_id;
@@ -2609,14 +2615,23 @@
             if (rawGrade && rawGrade !== '-') {
                 const isGradeA = rawGrade === 'A' || rawGrade === 'GRADE A';
                 const isGradeB = rawGrade === 'B' || rawGrade === 'GRADE B';
-                const gText = rawGrade.startsWith('GRADE') ? rawGrade : `Grade ${rawGrade}`;
+                const isNonGrade = rawGrade === 'NON-GRADE' || rawGrade === 'NON GRADE' || rawGrade === 'NON_GRADE';
+
+                let gText = '';
+                if (isNonGrade) {
+                    gText = 'Non Grade';
+                } else if (rawGrade.startsWith('GRADE')) {
+                    gText = rawGrade;
+                } else {
+                    gText = `Grade ${rawGrade}`;
+                }
 
                 if (isGradeA) {
-                    gradeHtml = `<span style="display: inline-block; font-size: 0.725rem; font-weight: 700; color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.1rem 0.45rem; border-radius: 4px;">${gText}</span>`;
+                    gradeHtml = `<span style="display: inline-block; font-size: 0.8rem; font-weight: 700; color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.2rem 0.55rem; border-radius: 6px;">${gText}</span>`;
                 } else if (isGradeB) {
-                    gradeHtml = `<span style="display: inline-block; font-size: 0.725rem; font-weight: 700; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; padding: 0.1rem 0.45rem; border-radius: 4px;">${gText}</span>`;
+                    gradeHtml = `<span style="display: inline-block; font-size: 0.8rem; font-weight: 700; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; padding: 0.2rem 0.55rem; border-radius: 6px;">${gText}</span>`;
                 } else {
-                    gradeHtml = `<span style="display: inline-block; font-size: 0.725rem; font-weight: 700; color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.1rem 0.45rem; border-radius: 4px;">${gText}</span>`;
+                    gradeHtml = `<span style="display: inline-block; font-size: 0.8rem; font-weight: 600; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.2rem 0.55rem; border-radius: 6px;">${gText}</span>`;
                 }
             }
 
@@ -2624,17 +2639,17 @@
 
             html += `
                 <tr style="background: ${rowBg}; border-bottom: 1px solid #e2e8f0; transition: background 0.12s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='${rowBg}'">
-                    <td style="padding: 0.6rem 0.75rem; text-align: center; color: #64748b; font-weight: 600; font-size: 0.8rem;">${idx + 1}</td>
-                    <td style="padding: 0.6rem 0.75rem; color: #475569; font-weight: 500; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${kat}</td>
-                    <td style="padding: 0.6rem 0.75rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.775rem; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.barang_cd || '-'}</td>
-                    <td style="padding: 0.6rem 0.75rem; font-weight: 600; color: #0f172a; font-size: 0.825rem; line-height: 1.35;">${it.barang_nm || '-'}</td>
-                    <td style="padding: 0.6rem 0.75rem; text-align: center;">${gradeHtml}</td>
-                    <td style="padding: 0.6rem 0.75rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.775rem; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.batch_no || '-'}</td>
-                    <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: #0284c7; font-size: 0.85rem; font-variant-numeric: tabular-nums;">
-                        ${formatNumber(itemQty, 2)} <span style="font-weight: 500; font-size: 0.725rem; color: #64748b;">${it.satuan_cd || 'KG'}</span>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; color: #64748b; font-weight: 600; font-size: 0.875rem;">${idx + 1}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; color: #334155; font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${kat}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.barang_cd || '-'}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-weight: 600; color: #0f172a; font-size: 0.9rem; line-height: 1.35;">${it.barang_nm || '-'}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle;">${gradeHtml}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.batch_no || '-'}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-weight: 700; color: #0284c7; font-size: 0.925rem; font-variant-numeric: tabular-nums;">
+                        ${formatNumber(itemQty, 2)} <span style="font-weight: 500; font-size: 0.775rem; color: #64748b;">${it.satuan_cd || 'KG'}</span>
                     </td>
-                    <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 700; color: ${sisaStok > 0 ? '#059669' : '#dc2626'}; font-size: 0.85rem; font-variant-numeric: tabular-nums;">
-                        ${formatNumber(sisaStok, 2)} <span style="font-weight: 500; font-size: 0.725rem; color: #64748b;">${it.satuan_cd || 'KG'}</span>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-weight: 700; color: ${sisaStok > 0 ? '#059669' : '#dc2626'}; font-size: 0.925rem; font-variant-numeric: tabular-nums;">
+                        ${formatNumber(sisaStok, 2)} <span style="font-weight: 500; font-size: 0.775rem; color: #64748b;">${it.satuan_cd || 'KG'}</span>
                     </td>
                 </tr>
             `;
@@ -3294,6 +3309,81 @@
         }
 
         renumberFgRows();
+
+        // Navigasi Keyboard ala Excel / Tekan Enter untuk Baris Baru pada Tabel Hasil Produksi
+        if (tbodyFg) {
+            tbodyFg.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    const target = e.target;
+                    if (!target || (!target.matches('input') && !target.matches('select'))) return;
+
+                    // Cegah submit form bawaan browser saat menekan Enter di dalam tabel
+                    e.preventDefault();
+
+                    const tr = target.closest('.row-output-fg');
+                    if (!tr) return;
+
+                    const allRows = Array.from(tbodyFg.querySelectorAll('.row-output-fg'));
+                    const currentRowIdx = allRows.indexOf(tr);
+
+                    // Jika berada di dropdown barang: Enter memindahkan fokus ke QTY Hasil
+                    if (target.classList.contains('select-fg-barang')) {
+                        const qtyInp = tr.querySelector('input[name*="[qty_hasil]"]');
+                        if (qtyInp) {
+                            qtyInp.focus();
+                            if (typeof qtyInp.select === 'function') qtyInp.select();
+                            return;
+                        }
+                    }
+
+                    // Jika berada di input angka (qty_hasil atau qty_kg)
+                    if (currentRowIdx === allRows.length - 1) {
+                        // Baris terakhir: tambah baris baru otomatis
+                        if (typeof window.addFgRow === 'function') {
+                            window.addFgRow();
+                            setTimeout(() => {
+                                const updatedRows = tbodyFg.querySelectorAll('.row-output-fg');
+                                const lastRow = updatedRows[updatedRows.length - 1];
+                                if (lastRow) {
+                                    const newSelect = lastRow.querySelector('.select-fg-barang');
+                                    if (newSelect) {
+                                        newSelect.focus();
+                                    }
+                                }
+                            }, 50);
+                        }
+                    } else {
+                        // Bukan baris terakhir: pindah fokus ke baris berikutnya
+                        const nextRow = allRows[currentRowIdx + 1];
+                        if (nextRow) {
+                            let nextTarget = null;
+                            if (target.name && target.name.includes('[qty_hasil]')) {
+                                nextTarget = nextRow.querySelector('input[name*="[qty_hasil]"]');
+                            } else if (target.name && target.name.includes('[qty_kg]')) {
+                                nextTarget = nextRow.querySelector('input[name*="[qty_kg]"]');
+                            } else {
+                                nextTarget = nextRow.querySelector('.select-fg-barang') || nextRow.querySelector('input[name*="[qty_hasil]"]');
+                            }
+
+                            if (!nextTarget) {
+                                nextTarget = nextRow.querySelector('.select-fg-barang') || nextRow.querySelector('input');
+                            }
+
+                            if (nextTarget) {
+                                nextTarget.focus();
+                                if (typeof nextTarget.select === 'function') nextTarget.select();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Inisialisasi filter opsi BPPB berdasarkan Lokasi Pabrik terpilih saat pertama load
+        const elLokasiInit = document.getElementById('lokasi_pabrik');
+        if (elLokasiInit && elLokasiInit.value && typeof window.onLokasiProduksiChange === 'function') {
+            window.onLokasiProduksiChange(elLokasiInit.value);
+        }
 
         // Cek apakah ada dokumen BPPB yang sudah terpilih (dari old input atau query param)
         const elPakai = document.getElementById('pakai_id');

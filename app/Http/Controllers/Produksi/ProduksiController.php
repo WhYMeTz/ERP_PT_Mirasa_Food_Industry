@@ -170,7 +170,7 @@ class ProduksiController extends Controller
 
         // Ambil daftar dokumen pemakaian bahan yang belum pernah dipakai oleh produksi
         // Khusus untuk lini produksi penggorengan / olahan curah (WIP), mencakup status POSTED maupun DRAFT (tanpa kewajiban verifikasi)
-        $pakaiList = DatPakaiHdr::with('details.barang')
+        $pakaiList = DatPakaiHdr::with(['details.barang', 'gudang', 'gudangTujuan'])
             ->where('deleted_st', false)
             ->whereIn('status_st', ['POSTED', 'DRAFT'])
             ->whereDoesntHave('produksi')
@@ -311,70 +311,42 @@ class ProduksiController extends Controller
             $isLatest = $request->boolean('latest') || $request->input('mode') === 'latest' || !$request->filled('date');
 
             if ($isLatest) {
-                $record = DatKursHarian::active()
-                    ->orderByDesc('tanggal')
-                    ->first();
-
-                if (!$record) {
-                    $rate = $this->tarifService->getJisdorRate(date('Y-m-d'), true);
-                    $record = DatKursHarian::active()->orderByDesc('tanggal')->first();
-                } else {
-                    $rate = (float) $record->kurs_tengah;
-                }
-
-                $effectiveDateCarbon = $record ? Carbon::parse($record->tanggal) : Carbon::today();
-                $effectiveDate = $effectiveDateCarbon->format('d/m/Y');
-                $keteranganAcuan = 'Kurs terkini Bank Indonesia';
-                $tgl = $effectiveDateCarbon->format('Y-m-d');
+                $detail = $this->tarifService->getLatestJisdorRateDetail(true);
             } else {
                 $rawTgl = $request->input('date') ?: $request->input('tgl', date('Y-m-d'));
-                $prodDateCarbon = Carbon::parse($rawTgl)->timezone(config('app.timezone', 'Asia/Jakarta'));
-                $tgl = $prodDateCarbon->format('Y-m-d');
-                $rate = $this->tarifService->getJisdorRate($tgl, true);
-
-                $record = DatKursHarian::active()
-                    ->whereDate('tanggal', '<=', $tgl)
-                    ->orderByDesc('tanggal')
-                    ->first();
-
-                $effectiveDateCarbon = $record ? Carbon::parse($record->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta')) : $prodDateCarbon;
-                $effectiveDate = $effectiveDateCarbon->format('d/m/Y');
-
-                $keteranganAcuan = '';
-                if ($prodDateCarbon->isWeekend()) {
-                    $dayName = $prodDateCarbon->dayOfWeek === 6 ? 'Sabtu' : ($prodDateCarbon->dayOfWeek === 0 ? 'Minggu' : 'Hari libur');
-                    $keteranganAcuan = "Kurs hari kerja terakhir BI ({$dayName} bursa BI libur)";
-                } elseif ($record && !$effectiveDateCarbon->isSameDay($prodDateCarbon)) {
-                    $keteranganAcuan = "Kurs hari bursa terakhir";
-                }
+                $detail = $this->tarifService->getJisdorRateDetail($rawTgl, true);
             }
 
             return response()->json([
                 'status'           => 'success',
                 'success'          => true,
-                'date'             => $tgl,
-                'tanggal'          => $tgl,
-                'tanggal_acuan'    => $effectiveDate,
-                'keterangan_acuan' => $keteranganAcuan,
-                'kurs'             => $rate,
-                'rate'             => $rate,
-                'kurs_formatted'   => number_format($rate, 2, ',', '.'),
+                'date'             => $detail['date'],
+                'tanggal'          => $detail['date'],
+                'tanggal_acuan'    => $detail['date'],
+                'raw_date'         => $detail['raw_date'],
+                'keterangan_acuan' => $detail['keterangan_acuan'],
+                'is_exact'         => $detail['is_exact'],
+                'kurs'             => $detail['rate'],
+                'rate'             => $detail['rate'],
+                'kurs_formatted'   => number_format($detail['rate'], 2, ',', '.'),
                 'data'             => [
-                    'rate'             => $rate,
-                    'kurs'             => $rate,
-                    'date'             => $effectiveDate,
-                    'tanggal_acuan'    => $effectiveDate,
-                    'keterangan_acuan' => $keteranganAcuan,
-                    'kurs_formatted'   => number_format($rate, 2, ',', '.'),
+                    'rate'             => $detail['rate'],
+                    'kurs'             => $detail['rate'],
+                    'date'             => $detail['date'],
+                    'tanggal_acuan'    => $detail['date'],
+                    'raw_date'         => $detail['raw_date'],
+                    'keterangan_acuan' => $detail['keterangan_acuan'],
+                    'is_exact'         => $detail['is_exact'],
+                    'kurs_formatted'   => number_format($detail['rate'], 2, ',', '.'),
                 ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'status'         => 'error',
                 'success'        => false,
-                'kurs'           => 18103.00,
-                'rate'           => 18103.00,
-                'kurs_formatted' => '18.103,00',
+                'kurs'           => 18252.00,
+                'rate'           => 18252.00,
+                'kurs_formatted' => '18.252,00',
                 'message'        => $e->getMessage(),
             ], 200);
         }
@@ -422,7 +394,7 @@ class ProduksiController extends Controller
 
         $energiRates = $this->tarifService->getEnergiLaborRates();
         $fohRates = $this->tarifService->getFohRates();
-        $defaultCngTarifUsd = 14.50;
+        $defaultCngTarifUsd = (float) ($energiRates['cng_tarif_usd'] ?? 14.50);
 
         // Kelompokkan dokumen fisik siap kalkulasi HPP berdasarkan Tanggal Produksi DAN Entitas (MFI vs BMB)
         // Agar HPP MFI dan BMB terpisah mandiri untuk perbandingan rendemen & efisiensi biaya
@@ -486,15 +458,12 @@ class ProduksiController extends Controller
             : Carbon::today(config('app.timezone', 'Asia/Jakarta'));
         $prodDateStr = $prodCarbon->format('Y-m-d');
 
-        // Ambil kurs JISDOR Bank Indonesia sesuai tanggal produksi SPK (bukan kurs hari ini)
-        $defaultCngKursJisdor = (float) $this->tarifService->getJisdorRate($prodDateStr) ?: 18103.00;
-        $kursRecord = DatKursHarian::active()
-            ->whereDate('tanggal', '<=', $prodDateStr)
-            ->orderByDesc('tanggal')
-            ->first();
-        $latestKursDate = $kursRecord
-            ? Carbon::parse($kursRecord->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta'))->format('d/m/Y')
-            : $prodCarbon->format('d/m/Y');
+        // Ambil kurs JISDOR Bank Indonesia resmi dengan detail tanggal riil BI (auto-sync enabled)
+        $jisdorDetail = $this->tarifService->getJisdorRateDetail($prodDateStr, true);
+        $defaultCngKursJisdor = (float) $jisdorDetail['rate'];
+        $latestKursDate = $jisdorDetail['date'];
+        $kursKeteranganAcuan = $jisdorDetail['keterangan_acuan'];
+        $isKursExactDate = $jisdorDetail['is_exact'];
         $defaultCngTarif = round($defaultCngTarifUsd * $defaultCngKursJisdor, 2);
 
         // Cari seluruh dokumen produksi pada tanggal yang sama untuk notifikasi shift/lini lain
@@ -532,7 +501,9 @@ class ProduksiController extends Controller
             'defaultCngTarifUsd',
             'defaultCngKursJisdor',
             'defaultCngTarif',
-            'latestKursDate'
+            'latestKursDate',
+            'kursKeteranganAcuan',
+            'isKursExactDate'
         ));
     }
 
@@ -1291,9 +1262,13 @@ class ProduksiController extends Controller
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
         $activeTab = $request->input('tab', 'rangkuman');
+        $pabrikFilter = strtoupper((string) $request->input('pabrik', 'ALL'));
+        if (!in_array($pabrikFilter, ['ALL', 'MFI', 'BMB'])) {
+            $pabrikFilter = 'ALL';
+        }
 
         // Ambil data bulanan tanpa external HTTP call (Sangat Cepat & Ringan)
-        $report = $this->produksiService->getMonthlyReport($year, $month);
+        $report = $this->produksiService->getMonthlyReport($year, $month, $pabrikFilter !== 'ALL' ? $pabrikFilter : null);
         $energiRates = $this->tarifService->getEnergiLaborRates();
         $defaultCngTarifUsd = (float) ($energiRates['cng_tarif_usd'] ?? 14.50);
         $tarifCngDefault = $energiRates['cng_tarif'] ?? round($defaultCngTarifUsd * 18138, 2);
@@ -1317,6 +1292,10 @@ class ProduksiController extends Controller
         $totalWipKg = (float) (($report['totals']['total_wip_qty'] ?? 0));
         $workDaysCount = $prodDays->count();
 
+        $countTotalHari = $report['count_total_hari'] ?? 0;
+        $countBaratHari = $report['count_barat_hari'] ?? 0;
+        $countTimurHari = $report['count_timur_hari'] ?? 0;
+
         // Rasio Efisiensi Konsumsi Gas (MMBTU / 1.000 Kg Keripik WIP)
         $ratioMmbtuPerTonWip = $totalWipKg > 0 ? ($totalMmbtu / ($totalWipKg / 1000)) : 0;
         // Rata-rata Pemakaian Gas per Hari Kerja
@@ -1325,8 +1304,9 @@ class ProduksiController extends Controller
         $avgNilaiPerDay = $workDaysCount > 0 ? ($totalNilaiRp / $workDaysCount) : 0;
 
         return view('produksi.cng.monitoring', compact(
-            'year', 'month', 'activeTab', 'report', 'prodDays', 'monthsList',
+            'year', 'month', 'activeTab', 'pabrikFilter', 'report', 'prodDays', 'monthsList',
             'totalMmbtu', 'totalNm3', 'totalNilaiRp', 'totalWipKg', 'workDaysCount',
+            'countTotalHari', 'countBaratHari', 'countTimurHari',
             'ratioMmbtuPerTonWip', 'avgMmbtuPerDay', 'avgNm3PerDay', 'avgNilaiPerDay',
             'defaultCngTarifUsd', 'tarifCngDefault', 'energiRates', 'fohRates', 'allTarif'
         ));
@@ -1339,8 +1319,12 @@ class ProduksiController extends Controller
     {
         $year = (int) $request->input('tahun', date('Y'));
         $month = (int) $request->input('bulan', date('n'));
+        $pabrikFilter = strtoupper((string) $request->input('pabrik', 'ALL'));
+        if (!in_array($pabrikFilter, ['ALL', 'MFI', 'BMB'])) {
+            $pabrikFilter = 'ALL';
+        }
 
-        $report = $this->produksiService->getMonthlyReport($year, $month);
+        $report = $this->produksiService->getMonthlyReport($year, $month, $pabrikFilter !== 'ALL' ? $pabrikFilter : null);
         $fohRates = $this->tarifService->getFohRates();
         $energiRates = $this->tarifService->getEnergiLaborRates();
         $allTarif = $this->tarifService->getAllTarif();
@@ -1354,7 +1338,7 @@ class ProduksiController extends Controller
         ];
 
         return view('produksi.adjust-cng-harian', compact(
-            'year', 'month', 'report', 'fohRates', 'energiRates', 'tarifCngDefault', 'defaultCngTarifUsd', 'allTarif', 'monthsList'
+            'year', 'month', 'pabrikFilter', 'report', 'fohRates', 'energiRates', 'tarifCngDefault', 'defaultCngTarifUsd', 'allTarif', 'monthsList'
         ));
     }
 
@@ -1373,6 +1357,7 @@ class ProduksiController extends Controller
         try {
             $year = (int) $request->input('tahun');
             $month = (int) $request->input('bulan');
+            $pabrik = $request->input('pabrik', 'ALL');
             $days = $request->input('days', []);
             $alasan = $request->input('alasan_txt', '');
             $userId = Auth::user()?->username ?? (Auth::user()?->name ?? 'SYSTEM');
@@ -1386,9 +1371,10 @@ class ProduksiController extends Controller
             }
 
             return redirect()->route('produksi.cng-monitoring', [
-                'tahun' => $year,
-                'bulan' => $month,
-                'tab'   => 'harian',
+                'tahun'  => $year,
+                'bulan'  => $month,
+                'tab'    => 'harian',
+                'pabrik' => $pabrik,
             ])->with('success', $msg);
         } catch (Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan penyesuaian gas harian: ' . $e->getMessage());

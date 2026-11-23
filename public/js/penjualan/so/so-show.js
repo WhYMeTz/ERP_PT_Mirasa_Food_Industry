@@ -5,6 +5,71 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
+// Dropdown Aksi Show View
+let activeDropdownMenu = null;
+let activeTriggerButton = null;
+
+function toggleSmartActionDropdown(button, event, menuId) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    const targetMenu = document.getElementById(menuId);
+    if (!targetMenu) return;
+
+    if (activeDropdownMenu === targetMenu && targetMenu.style.display === 'block') {
+        closeAllActionDropdowns();
+        return;
+    }
+
+    closeAllActionDropdowns();
+
+    targetMenu.style.display = 'block';
+    activeDropdownMenu = targetMenu;
+    activeTriggerButton = button;
+    button.classList.add('active');
+
+    positionActionDropdown(button, targetMenu);
+}
+
+function positionActionDropdown(button, menu) {
+    if (!button || !menu) return;
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = menu.offsetWidth || 240;
+    const menuHeight = menu.offsetHeight || 200;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+        menu.style.top = `${rect.top - menuHeight - 4}px`;
+    } else {
+        menu.style.top = `${rect.bottom + 4}px`;
+    }
+
+    let leftPos = rect.right - menuWidth;
+    if (leftPos < 10) leftPos = 10;
+    if (leftPos + menuWidth > viewportWidth - 10) {
+        leftPos = viewportWidth - menuWidth - 10;
+    }
+    menu.style.left = `${leftPos}px`;
+}
+
+function closeAllActionDropdowns() {
+    if (activeDropdownMenu) {
+        activeDropdownMenu.style.display = 'none';
+        activeDropdownMenu = null;
+    }
+    if (activeTriggerButton) {
+        activeTriggerButton.classList.remove('active');
+        activeTriggerButton = null;
+    }
+}
+
 // Auto-open PDF jika ada session auto_open_pdf dari controller setelah konfirmasi kirim
 document.addEventListener('DOMContentLoaded', function() {
     if (window.appConfig && window.appConfig.autoOpenPdf) {
@@ -293,6 +358,10 @@ function togglePrintMenu(e) {
 
 // Tutup modal / dropdown saat klik overlay luar
 window.addEventListener('click', function(e) {
+    if (activeDropdownMenu && !activeDropdownMenu.contains(e.target) && (!activeTriggerButton || !activeTriggerButton.contains(e.target))) {
+        closeAllActionDropdowns();
+    }
+
     const printDropdown = document.getElementById('printMenuDropdown');
     if (printDropdown && !printDropdown.contains(e.target)) {
         printDropdown.style.display = 'none';
@@ -313,6 +382,16 @@ window.addEventListener('click', function(e) {
     if (e.target === modalRetur) closeReturModal();
     if (e.target === modalVoidRetur) closeVoidReturModal();
     if (e.target === modalArmada) closeModalArmada();
+});
+
+window.addEventListener('scroll', function() {
+    if (activeDropdownMenu && activeTriggerButton) {
+        positionActionDropdown(activeTriggerButton, activeDropdownMenu);
+    }
+}, true);
+
+window.addEventListener('resize', function() {
+    closeAllActionDropdowns();
 });
 
 

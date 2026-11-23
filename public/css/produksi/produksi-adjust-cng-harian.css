@@ -258,6 +258,10 @@
     transition: all 0.15s ease;
 }
 
+.input-cng-nilai {
+    max-width: 125px;
+}
+
 .input-cng-edit:focus {
     border-color: #d97706;
     background: #ffffff;

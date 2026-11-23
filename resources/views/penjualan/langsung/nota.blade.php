@@ -167,7 +167,7 @@
 <body>
 
 <div class="no-print-bar">
-    <button class="btn-print" onclick="window.print()">🖨️ Cetak Nota</button>
+    <button class="btn-print" onclick="window.print()">Cetak Nota</button>
     <button class="btn-close" onclick="window.close()">Tutup</button>
 </div>
 
@@ -192,14 +192,22 @@
             <td>{{ \Carbon\Carbon::parse($order->so_tgl)->format('d/m/Y') }} {{ \Carbon\Carbon::parse($order->created_dt)->format('H:i') }}</td>
         </tr>
         <tr>
-            <td>Kasir</td>
+            <td>Petugas</td>
             <td>:</td>
-            <td>{{ $order->created_by ?? 'Kasir' }}</td>
+            <td>{{ $order->created_by ?? 'Admin Penjualan' }}</td>
+        </tr>
+        @php
+            $isSales = str_contains(strtoupper($order->customer_po_no ?? ''), 'SALES') || str_contains(strtoupper($order->catatan_txt ?? ''), 'SALES KELILING');
+        @endphp
+        <tr>
+            <td>Jalur</td>
+            <td>:</td>
+            <td><strong>{{ $isSales ? 'SALES KELILING' : 'PENJUALAN UMUM PABRIK' }}</strong></td>
         </tr>
         <tr>
-            <td>Pembeli</td>
+            <td>{{ $isSales ? 'Sales / Toko' : 'Pembeli' }}</td>
             <td>:</td>
-            <td>{{ $order->supir_nm ?: ($order->customer->customer_nm ?? 'Pelanggan Tunai') }} @if($order->nopol_kendaraan) ({{ $order->nopol_kendaraan }}) @endif</td>
+            <td>{{ $order->supir_nm ?: ($order->customer->customer_nm ?? 'Pelanggan Tunai') }} @if($isSales && $order->nopol_kendaraan) ({{ $order->nopol_kendaraan }}) @endif</td>
         </tr>
     </table>
 

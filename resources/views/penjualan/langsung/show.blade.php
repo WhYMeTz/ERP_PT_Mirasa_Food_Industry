@@ -22,6 +22,8 @@
                 <span class="ds-badge selesai">Lunas</span>
                 @if (strtoupper($order->top_txt) === 'TRANSFER')
                     <span class="ds-badge transfer">Transfer</span>
+                @elseif (strtoupper($order->top_txt) === 'QRIS')
+                    <span class="ds-badge qris" style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; font-weight: 700;">QRIS</span>
                 @else
                     <span class="ds-badge tunai">Tunai</span>
                 @endif
@@ -34,12 +36,12 @@
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <a href="{{ route('penjualan.langsung.cetak-nota', $order->so_id) }}" target="_blank" class="btn btn-primary" style="background: #059669; border-color: #059669; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; font-weight: 600; font-size: 0.875rem; border-radius: 6px; color: #fff; text-decoration: none;">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                Cetak Struk / Nota Kasir
+                Cetak Nota / Faktur Penjualan
             </a>
 
             @php
-                $firstPengeluaran = $order->pengeluaran->first();
-                $firstFaktur = $order->faktur->first();
+                $firstPengeluaran = $order->pengeluaran ? $order->pengeluaran->first() : null;
+                $firstFaktur = $order->faktur;
             @endphp
 
             @if ($firstPengeluaran)
@@ -71,35 +73,50 @@
         <div class="ds-info-card">
             <div class="ds-info-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                Informasi Pelanggan
+                Informasi Pelanggan &amp; Jalur
+            </div>
+            @php
+                $isSales = str_contains(strtoupper($order->customer_po_no ?? ''), 'SALES') || str_contains(strtoupper($order->catatan_txt ?? ''), 'SALES KELILING');
+            @endphp
+            <div class="ds-info-row">
+                <span class="ds-info-label">Kategori:</span>
+                <span class="ds-info-value">
+                    @if ($isSales)
+                        <span style="font-size: 0.75rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 4px;">PENJUALAN SALES</span>
+                    @else
+                        <span style="font-size: 0.75rem; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 4px;">UMUM PABRIK</span>
+                    @endif
+                </span>
             </div>
             <div class="ds-info-row">
                 <span class="ds-info-label">Akun Mitra:</span>
                 <span class="ds-info-value">{{ $order->customer->customer_nm ?? 'Pelanggan Umum' }}</span>
             </div>
             <div class="ds-info-row">
-                <span class="ds-info-label">Nama Pembeli:</span>
+                <span class="ds-info-label">{{ $isSales ? 'Sales / Toko:' : 'Nama Pembeli:' }}</span>
                 <span class="ds-info-value">{{ $order->supir_nm ?? '-' }}</span>
             </div>
-            <div class="ds-info-row">
-                <span class="ds-info-label">No. Kendaraan:</span>
-                <span class="ds-info-value">{{ $order->nopol_kendaraan ?? '-' }}</span>
-            </div>
+            @if ($isSales)
+                <div class="ds-info-row">
+                    <span class="ds-info-label">Armada Sales:</span>
+                    <span class="ds-info-value">{{ $order->nopol_kendaraan ?? '-' }}</span>
+                </div>
+            @endif
         </div>
 
         {{-- KARTU 2: PARAMETER DOKUMEN --}}
         <div class="ds-info-card">
             <div class="ds-info-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Waktu &amp; Petugas Kasir
+                Waktu &amp; Petugas Penjualan
             </div>
             <div class="ds-info-row">
                 <span class="ds-info-label">Tanggal Transaksi:</span>
                 <span class="ds-info-value">{{ \Carbon\Carbon::parse($order->so_tgl)->format('d/m/Y') }}</span>
             </div>
             <div class="ds-info-row">
-                <span class="ds-info-label">Kasir / Pembuat:</span>
-                <span class="ds-info-value">{{ $order->created_by ?? 'Kasir' }}</span>
+                <span class="ds-info-label">Petugas / Pembuat:</span>
+                <span class="ds-info-value">{{ $order->created_by ?? 'Admin Penjualan' }}</span>
             </div>
             <div class="ds-info-row">
                 <span class="ds-info-label">Waktu Rekam:</span>
@@ -112,6 +129,10 @@
             <div class="ds-info-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Integrasi Otomatis ERP
+            </div>
+            <div class="ds-info-row">
+                <span class="ds-info-label">Gudang Asal:</span>
+                <span class="ds-info-value" style="color: #0284c7; font-weight: 700;">{{ $firstPengeluaran?->gudang?->gudang_nm ?? '-' }}</span>
             </div>
             <div class="ds-info-row">
                 <span class="ds-info-label">Surat Jalan (DO):</span>

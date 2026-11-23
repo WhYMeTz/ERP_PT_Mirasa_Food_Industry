@@ -505,38 +505,62 @@ class User extends Authenticatable
     }
 
     /**
-     * Hak akses Modul Keuangan (Hutang, Pembayaran & Kas/Bank)
+     * Hak akses Pilar 5: Keuangan / Kasir (Saldo Kas/Bank, Kas Masuk, Bayar Hutang, Kas Keluar Harian)
+     */
+    public function canAccessTransaksiKeuangan(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canAccessBayarHutang()
+            || $this->canAccessKasMasuk()
+            || $this->canAccessKasBank();
+    }
+
+    /**
+     * Hak akses Pilar 6: Akuntansi (Tagihan Pembelian GRN, Verifikasi & Jurnal Umum, Buku Besar, COA, Laporan)
+     */
+    public function canAccessAkuntansi(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canAccessHutang()
+            || $this->canAccessLaporanKeuangan()
+            || $this->canAccessJurnal()
+            || $this->canAccessCoa();
+    }
+
+    /**
+     * Hak akses Modul Keuangan Gabungan (Transaksi Operasional atau Akuntansi)
      */
     public function canAccessKeuangan(): bool
     {
-        return $this->isSuperAdmin() 
-            || $this->canAccessHutang() 
-            || $this->canAccessBayarHutang() 
-            || $this->canAccessKasMasuk()
-            || $this->canAccessKasBank()
-            || $this->canAccessCoa()
-            || $this->canAccessJurnal()
-            || $this->canAccessLaporanKeuangan();
+        return $this->canAccessTransaksiKeuangan() || $this->canAccessAkuntansi();
     }
 
     public function canAccessLaporanKeuangan(): bool
     {
-        return $this->isSuperAdmin() || $this->canAccessJurnal() || $this->canAccessCoa();
+        return $this->isSuperAdmin()
+            || $this->canDo('laporan_keuangan_view')
+            || $this->canAccessJurnal()
+            || $this->canAccessCoa();
     }
 
     public function canAccessJurnal(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('jurnal_view') || $this->canAccessCoa() || $this->canAccessHutang();
+        return $this->isSuperAdmin() || $this->canDo('jurnal_view') || $this->canDo('jurnal_create');
+    }
+
+    public function canCreateJurnal(): bool
+    {
+        return $this->isSuperAdmin() || $this->canDo('jurnal_create');
     }
 
     public function canAccessCoa(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('coa_view') || $this->canDo('kas_bank_view') || $this->canDo('hutang_view');
+        return $this->isSuperAdmin() || $this->canDo('coa_view') || $this->canDo('coa_manage');
     }
 
     public function canManageCoa(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('coa_manage') || $this->canDo('kas_bank_manage');
+        return $this->isSuperAdmin() || $this->canDo('coa_manage');
     }
 
     public function canAccessKasMasuk(): bool
@@ -703,6 +727,44 @@ class User extends Authenticatable
             || $this->isFinance() 
             || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN']) 
             || $this->canDo('master_pajak_delete') 
+            || $this->canDo('keuangan_manage');
+    }
+
+    public function canAccessKategoriPengeluaran(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->isFinance()
+            || $this->canAccessTransaksiKeuangan()
+            || $this->canAccessAkuntansi()
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'MANAJER', 'FINANCE', 'KEUANGAN', 'KASIR'])
+            || $this->canDo('master_kategori_pengeluaran_view')
+            || $this->canDo('keuangan_view');
+    }
+
+    public function canCreateMasterKategoriPengeluaran(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->isFinance()
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN'])
+            || $this->canDo('master_kategori_pengeluaran_create')
+            || $this->canDo('keuangan_manage');
+    }
+
+    public function canEditMasterKategoriPengeluaran(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->isFinance()
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN'])
+            || $this->canDo('master_kategori_pengeluaran_edit')
+            || $this->canDo('keuangan_manage');
+    }
+
+    public function canDeleteMasterKategoriPengeluaran(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->isFinance()
+            || $this->hasRole(['ADMIN', 'DIREKTUR', 'FINANCE', 'KEUANGAN'])
+            || $this->canDo('master_kategori_pengeluaran_delete')
             || $this->canDo('keuangan_manage');
     }
 
@@ -1149,6 +1211,14 @@ class User extends Authenticatable
 
         if ($this->isGudang()) {
             return 'gudang.stok.index';
+        }
+
+        if ($this->canAccessTransaksiKeuangan()) {
+            return 'keuangan.bayar.index';
+        }
+
+        if ($this->canAccessAkuntansi()) {
+            return $this->canAccessJurnal() ? 'keuangan.jurnal.index' : 'keuangan.laporan.index';
         }
 
         return 'gudang.stok.index';

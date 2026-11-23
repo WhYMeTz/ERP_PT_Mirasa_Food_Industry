@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DatSoHdr extends Model
 {
@@ -93,6 +94,18 @@ class DatSoHdr extends Model
     public function pengeluaran(): HasMany
     {
         return $this->hasMany(DatPengeluaranHdr::class, 'so_id');
+    }
+
+    public function faktur(): HasOne
+    {
+        return $this->hasOne(DatFakturHdr::class, 'so_id')
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', '!=', 'BATAL');
+    }
+
+    public function fakturs(): HasMany
+    {
+        return $this->hasMany(DatFakturHdr::class, 'so_id');
     }
 
     public function payments(): HasMany

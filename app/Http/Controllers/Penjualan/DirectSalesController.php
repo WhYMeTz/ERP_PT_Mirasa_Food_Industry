@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Penjualan;
 
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstCustomer;
+use App\Models\MasterData\MstGudang;
+use App\Models\MasterData\MstKaryawan;
 use App\Services\Common\CodeGeneratorService;
 use App\Services\Penjualan\DirectSalesService;
 use Exception;
@@ -41,20 +43,33 @@ class DirectSalesController extends Controller
     }
 
     /**
-     * Form Layar Kasir Cepat / Checkout Penjualan Langsung
+     * Form Layar Checkout Penjualan Langsung Pabrik (Umum & Sales Keliling)
      */
     public function create(): View
     {
         $directSaleNo = $this->codeGenerator->generateDirectSaleNo();
         $defaultCashCustomer = $this->directSalesService->getOrCreateCashCustomer();
         $customers = MstCustomer::active()->orderBy('customer_nm')->get();
-        $products = $this->directSalesService->getReadyToSellProducts();
+        $gudangList = MstGudang::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('gudang_id')
+            ->get();
+        // Default selalu PT Mirasa Food Industry (MFI-PST)
+        $defaultGudangId = $gudangList->firstWhere('gudang_cd', 'MFI-PST')?->gudang_id ?? 1;
+        $products = $this->directSalesService->getReadyToSellProducts($defaultGudangId);
+        $karyawans = MstKaryawan::where('deleted_st', false)
+            ->where('active_st', true)
+            ->orderBy('karyawan_nm')
+            ->get(['karyawan_id', 'karyawan_nm', 'nik', 'jabatan_nm']);
 
         return view('penjualan.langsung.create', compact(
             'directSaleNo',
             'defaultCashCustomer',
             'customers',
-            'products'
+            'products',
+            'karyawans',
+            'gudangList',
+            'defaultGudangId'
         ));
     }
 
@@ -64,15 +79,24 @@ class DirectSalesController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'tgl_transaksi'    => 'required|date',
-            'customer_id'      => 'nullable|integer|exists:mst_customer,customer_id',
-            'nama_pembeli'     => 'nullable|string|max:100',
-            'nopol_kendaraan'  => 'nullable|string|max:50',
-            'metode_bayar'     => 'required|string|in:TUNAI,TRANSFER',
-            'uang_diterima'    => 'nullable|numeric|min:0',
-            'potongan_nominal' => 'nullable|numeric|min:0',
-            'is_ppn'           => 'nullable',
-            'catatan_txt'      => 'nullable|string|max:500',
+            'kategori_penjualan' => 'required|string|in:UMUM,SALES',
+            'gudang_id'          => 'required|integer|exists:mst_gudang,gudang_id',
+            'tgl_transaksi'      => 'required|date',
+            'customer_id'        => 'nullable|integer|exists:mst_customer,customer_id',
+            'customer_id_sales'  => 'nullable|integer|exists:mst_customer,customer_id',
+            'nama_pembeli'       => 'nullable|string|max:100',
+            'kontak_pembeli'     => 'nullable|string|max:50',
+            'sales_nm'           => 'nullable|string|max:100',
+            'rute_wilayah'       => 'nullable|string|max:150',
+            'armada_sales'       => 'nullable|string|max:50',
+            'toko_kanvas_nm'     => 'nullable|string|max:150',
+            'nota_manual_no'     => 'nullable|string|max:100',
+            'nopol_kendaraan'    => 'nullable|string|max:50',
+            'metode_bayar'       => 'required|string|in:TUNAI,TRANSFER,QRIS',
+            'uang_diterima'      => 'nullable|numeric|min:0',
+            'potongan_nominal'   => 'nullable|numeric|min:0',
+            'is_ppn'             => 'nullable',
+            'catatan_txt'        => 'nullable|string|max:500',
 
             'items'                    => 'required|array|min:1',
             'items.*.barang_id'        => 'required|integer|exists:mst_barang,barang_id',
@@ -84,7 +108,7 @@ class DirectSalesController extends Controller
         ]);
 
         try {
-            $userName = Auth::user()?->nama_lengkap ?? (Auth::user()?->name ?? 'Kasir');
+            $userName = Auth::user()?->nama_lengkap ?? (Auth::user()?->name ?? 'Admin Penjualan');
             $order = $this->directSalesService->createDirectSale($request->all(), $userName);
 
             return redirect()

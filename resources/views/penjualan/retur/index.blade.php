@@ -20,10 +20,10 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button type="button" onclick="openCreateReturModal()" class="btn btn-primary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+        <a href="{{ route('penjualan.retur.create') }}" class="btn btn-primary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; text-decoration: none;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Catat Retur Baru</span>
-        </button>
+        </a>
         <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <span>Daftar Seluruh PO Penjualan</span>
@@ -251,6 +251,11 @@
                                 </a>
 
                                 @if($qtyMusnah > 0)
+                                    <a href="{{ route('penjualan.retur.berita-acara-pemusnahan', $item->retur_id) }}" class="action-dropdown-item" style="color: #dc2626;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>BAP Pemusnahan (Web)</span>
+                                    </a>
+
                                     <a href="{{ route('penjualan.retur.export-pemusnahan-pdf', $item->retur_id) }}" target="_blank" class="action-dropdown-item" style="color: #dc2626;">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         <span>Cetak BAP Pemusnahan (PDF)</span>

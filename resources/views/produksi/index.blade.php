@@ -259,9 +259,8 @@
                                     <span class="sub-col-title">Sisa Gudang</span>
                                 </div>
                             </th>
-                            <th style="padding: 0.75rem 1rem; min-width: 120px; text-align: right;">Total Berat</th>
-                            <th style="padding: 0.75rem 1rem; min-width: 130px; text-align: center;">Status Kalkulasi HPP</th>
-                            <th style="padding: 0.75rem 1rem; width: 95px; text-align: right;">Aksi</th>
+                            <th style="padding: 0.75rem 0.75rem; width: 140px; min-width: 130px; text-align: center;">Total Berat</th>
+                            <th style="padding: 0.75rem 1rem; width: 105px; text-align: right;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -272,7 +271,6 @@
                                 $isReworkDoc = str_contains(strtoupper($prod->lini_produksi ?? ''), 'SORTIR') || str_contains(strtoupper($prod->lini_produksi ?? ''), 'REWORK');
                                 $liniClean = trim(str_ireplace('PRODUKSI', '', $prod->lini_produksi ?? ''));
                                 $totalDocKg = (float) $prod->details->sum('qty_kg');
-                                $hasHpp = (float) ($prod->hpp_per_kg ?? 0) > 0;
                             @endphp
                             <tr class="prod-main-row">
                                 {{-- 1. NO --}}
@@ -397,34 +395,16 @@
                                 </td>
 
                                 {{-- 5. TOTAL BERAT DOKUMEN --}}
-                                <td style="padding: 0.65rem 0.85rem; text-align: right; vertical-align: top;">
-                                    <div class="prod-total-kg">
+                                <td style="padding: 0.65rem 0.75rem; width: 140px; text-align: center; vertical-align: top;">
+                                    <div class="prod-total-kg" style="text-align: center;">
                                         {{ number_format($totalDocKg, 2, ',', '.') }} <span class="prod-total-unit">kg</span>
                                     </div>
-                                    <small class="prod-total-count">
+                                    <small class="prod-total-count" style="display: block; text-align: center;">
                                         {{ $prod->details->count() }} jenis output
                                     </small>
                                 </td>
 
-                                {{-- 6. STATUS KALKULASI HPP --}}
-                                <td style="padding: 0.65rem 0.85rem; text-align: center; vertical-align: top;">
-                                    @if($hasHpp)
-                                        <div class="badge-hpp-pill done">
-                                            <span>Sudah Dihitung</span>
-                                        </div>
-                                        @if($prod->jurnal_id && $prod->jurnal)
-                                            <a href="{{ route('keuangan.jurnal.index', ['search' => $prod->jurnal->jurnal_no]) }}" style="display: inline-block; margin-top: 3px; font-size: 0.7rem; color: #059669; font-weight: 700; text-decoration: none;" title="Lihat Jurnal Umum">
-                                                {{ $prod->jurnal->jurnal_no }}
-                                            </a>
-                                        @endif
-                                    @else
-                                        <div class="badge-hpp-pill pending">
-                                            <span>Belum Dihitung</span>
-                                        </div>
-                                    @endif
-                                </td>
-
-                                {{-- 7. TOMBOL AKSI TERPADU (1 KALI PER DOKUMEN) --}}
+                                {{-- 6. TOMBOL AKSI TERPADU (1 KALI PER DOKUMEN) --}}
                                 <td style="padding: 0.65rem 0.85rem; text-align: right; position: relative; vertical-align: top;">
                                     <button type="button" 
                                             class="btn-action-trigger" 
@@ -460,7 +440,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                                <td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b;">
                                     <div style="font-size: 0.95rem; font-weight: 700; color: #334155;">Belum Ada Data Transaksi Produksi</div>
                                     <div style="font-size: 0.8rem; margin-top: 0.25rem;">Gunakan tombol <strong>+ Catat Hasil Produksi</strong> di atas untuk menambahkan data.</div>
                                 </td>

@@ -588,7 +588,8 @@
                 const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
                 const prefix = isFifoTop ? '⭐ [FIFO Tertua] ' : '';
                 const gCd = (b.grade_cd || 'A').toUpperCase();
-                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                const isNonG = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(gCd);
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : (isNonG ? 'Non Grade' : `Grade ${gCd}`));
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
 
@@ -728,7 +729,8 @@
                 const isSelected = (b.batch_no === item.batch_no && (b.grade_cd || 'A') === curGrade) ? 'selected' : '';
                 const prefix = isFifoTop ? '⭐ [FIFO Tertua] ' : '';
                 const gCd = (b.grade_cd || 'A').toUpperCase();
-                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : `Grade ${gCd}`);
+                const isNonG = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(gCd);
+                const gradeBadge = (gCd === 'A') ? '🟢 Grade A' : ((gCd === 'B') ? '🟡 Grade B' : (isNonG ? 'Non Grade' : `Grade ${gCd}`));
                 const expInfo = b.expired_tgl ? ` | Exp: ${b.expired_tgl}` : '';
                 const tglTerima = b.tgl_terima ? ` | Masuk: ${b.tgl_terima}` : '';
 
@@ -764,11 +766,14 @@
         }
 
         let badgeHtml = '';
+        const isCurNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(curGrade);
         const gradeBadgeItem = (curGrade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">🟢 Grade A (Super)</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">🟢 Grade A (Super)</span>`
             : ((curGrade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">🟡 Grade B (Standar)</span>`
-                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem;">Grade ${curGrade}</span>`);
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">🟡 Grade B (Standar)</span>`
+                : (isCurNonGrade
+                    ? `<span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">Non Grade</span>`
+                    : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; white-space: nowrap;">Grade ${curGrade}</span>`));
 
         if (item.is_allocated) {
             const badgeBg = item.is_split ? '#fef3c7' : '#ecfdf5';
@@ -1196,16 +1201,19 @@
             const isFullyBooked = b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0) || isUsedUpInForm;
 
             let labelText = '';
+            const isNonG = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(gCd);
+            const gradeLabel = (gCd === 'A') ? 'Grade A' : ((gCd === 'B') ? 'Grade B' : (isNonG ? 'Non Grade' : `Grade ${gCd}`));
+
             if (isUsedUpInForm) {
-                labelText = `⛔ ${b.batch_no} • [Grade ${gCd}] (HABIS - Dipakai di ${usedDetails || 'baris lain'})`;
+                labelText = `⛔ ${b.batch_no} • [${gradeLabel}] (HABIS - Dipakai di ${usedDetails || 'baris lain'})`;
             } else if (b.is_fully_booked || (sisaBebasServer <= 0.0001 && draftQty > 0)) {
-                labelText = `⛔ ${b.batch_no} • [Grade ${gCd}] (HABIS di Draft [${draftDocs}])`;
+                labelText = `⛔ ${b.batch_no} • [${gradeLabel}] (HABIS di Draft [${draftDocs}])`;
             } else if (usedByOthers > 0) {
-                labelText = `⚠️ ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')} | ${usedByOthers.toLocaleString('id-ID')} dipakai di ${usedDetails || 'baris lain'})`;
+                labelText = `⚠️ ${prefix}${b.batch_no} • [${gradeLabel}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')} | ${usedByOthers.toLocaleString('id-ID')} dipakai di ${usedDetails || 'baris lain'})`;
             } else if (draftQty > 0) {
-                labelText = `⚠️ ${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
+                labelText = `⚠️ ${prefix}${b.batch_no} • [${gradeLabel}] (Sisa Bebas: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
             } else {
-                labelText = `${prefix}${b.batch_no} • [Grade ${gCd}] (Sisa: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
+                labelText = `${prefix}${b.batch_no} • [${gradeLabel}] (Sisa: ${netSisaBebas.toLocaleString('id-ID')})${expInfo}`;
             }
 
             const disabledAttr = (isFullyBooked && netSisaBebas <= 0.0001) 
@@ -1447,11 +1455,14 @@
         // Perbarui Kolom Sisa di Gudang
         updateSisaStokCell(row, sisaBebas, sisa, draftQty, draftDocs, isFullyBooked, satuanNm);
 
+        const isNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(grade);
         const gradeBadge = (grade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟢 Grade A</span>`
             : ((grade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
-                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟡 Grade B</span>`
+                : (isNonGrade
+                    ? `<span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Non Grade</span>`
+                    : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Grade ${grade}</span>`));
 
         const oldestInfo = findOldestAvailableBatch(row, grade) || findOldestAvailableBatch(row, null);
         const isSameBatch = selectedOpt && oldestInfo && (selectedOpt.value === oldestInfo.batch_no);
@@ -1630,11 +1641,14 @@
         const draftDocs = selectedBatchOpt ? selectedBatchOpt.getAttribute('data-draft-docs') || '' : '';
         const grade = (selectedBatchOpt?.getAttribute('data-grade') || row.querySelector('.grade-input')?.value || 'A').toUpperCase();
 
+        const isNonGrade = ['NON-GRADE', 'NON_GRADE', 'NON GRADE', 'NON'].includes(grade);
         const gradeBadge = (grade === 'A')
-            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟢 Grade A</span>`
+            ? `<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟢 Grade A</span>`
             : ((grade === 'B')
-                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">🟡 Grade B</span>`
-                : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem;">Grade ${grade}</span>`);
+                ? `<span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">🟡 Grade B</span>`
+                : (isNonGrade
+                    ? `<span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Non Grade</span>`
+                    : `<span style="background: #f1f5f9; color: #334155; font-weight: 600; padding: 1px 6px; border-radius: 4px; font-size: 0.725rem; white-space: nowrap;">Grade ${grade}</span>`));
 
         const qtyWarning = row.querySelector('.qty-warning');
         const sisaBox = row.querySelector('.col-sisa-stok .sisa-box-wrapper');

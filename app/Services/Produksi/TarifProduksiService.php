@@ -62,61 +62,138 @@ class TarifProduksiService
     }
 
     /**
-     * Dapatkan kurs resmi JISDOR Bank Indonesia harian.
-     * Menggunakan tabel historis dat_kurs_harian & master tarif sebagai Single Source of Truth,
-     * serta otomatis melakukan auto-sync ke portal Bank Indonesia jika data belum ada atau sudah kedaluwarsa.
+     * Format tanggal ke bahasa Indonesia lengkap (contoh: 18 November 2026)
+     * agar tidak terjadi salah tafsir antara bulan Oktober dan November.
      */
-    public function getJisdorRate(?string $date = null, bool $allowAutoSync = false): float
+    private function formatIndonesianDate(Carbon $carbon): string
+    {
+        $bulanIndo = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        return $carbon->format('j') . ' ' . ($bulanIndo[(int)$carbon->format('n')] ?? '') . ' ' . $carbon->format('Y');
+    }
+
+    /**
+     * Dapatkan rincian lengkap kurs resmi JISDOR Bank Indonesia dengan penanganan cerdas:
+     * 1. Jika tanggal target sudah dirilis resmi di Bank Indonesia -> gunakan kurs tanggal tersebut.
+     * 2. Jika di web Bank Indonesia kurs tanggal target belum muncul (misal hari ini sebelum jam rilis sore 16:15 WIB,
+     *    atau hari libur/akhir pekan) -> WAJIB menggunakan kurs resmi hari kerja sebelumnya yang sudah terbit di BI,
+     *    serta mencantumkan tanggal riil kurs tersebut secara transparan (TIDAK BOLEH mengarang tanggal target).
+     *
+     * @return array{rate: float, date: string, raw_date: string, is_exact: bool, keterangan_acuan: string}
+     */
+    public function getJisdorRateDetail(?string $date = null, bool $allowAutoSync = true): array
     {
         $targetDate = $date ?: date('Y-m-d');
+        $targetCarbon = Carbon::parse($targetDate)->timezone(config('app.timezone', 'Asia/Jakarta'));
+        $targetDateFmt = $this->formatIndonesianDate($targetCarbon);
 
-        // 1. Cek tanggal spesifik di dat_kurs_harian
+        // 1. Coba lakukan sinkronisasi otomatis dari portal BI agar mendapatkan kurs terbaru
+        if ($allowAutoSync) {
+            $this->syncFromBankIndonesia($targetDate);
+        }
+
+        // 2. Cek apakah tanggal target SUDAH RESMI RILIS di BI (tabel dat_kurs_harian dengan sumber BANK_INDONESIA_JISDOR)
         $exactRecord = DatKursHarian::active()
             ->whereDate('tanggal', $targetDate)
+            ->where('sumber', 'BANK_INDONESIA_JISDOR')
             ->first();
 
         if ($exactRecord && $exactRecord->kurs_tengah > 0) {
-            return (float) $exactRecord->kurs_tengah;
+            return [
+                'rate'             => (float) $exactRecord->kurs_tengah,
+                'date'             => $targetDateFmt,
+                'raw_date'         => $targetDate,
+                'is_exact'         => true,
+                'keterangan_acuan' => 'Sesuai tanggal SPK produksi',
+            ];
         }
 
-        // 2. Jika belum ada dan autoSync diaktifkan, otomatis ambil data resmi portal Bank Indonesia
+        // 3. JIKA TANGGAL TARGET BELUM RILIS DI WEB BI:
+        // Gunakan kurs hari kerja bursa sebelumnya yang sudah terbit di web BI (< targetDate)
+        $prevRecord = DatKursHarian::active()
+            ->whereDate('tanggal', '<', $targetDate)
+            ->orderByDesc('tanggal')
+            ->first();
+
+        if ($prevRecord && $prevRecord->kurs_tengah > 0) {
+            $prevCarbon = Carbon::parse($prevRecord->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta'));
+            $prevDateFmt = $this->formatIndonesianDate($prevCarbon);
+
+            $ket = $targetCarbon->isToday()
+                ? "Kurs bursa terakhir (tgl {$targetDateFmt} belum rilis di BI)"
+                : ($targetCarbon->isWeekend() ? "Kurs bursa terakhir BI (akhir pekan)" : "Kurs bursa terakhir BI (tgl {$targetDateFmt} belum rilis)");
+
+            return [
+                'rate'             => (float) $prevRecord->kurs_tengah,
+                'date'             => $prevDateFmt,
+                'raw_date'         => $prevCarbon->format('Y-m-d'),
+                'is_exact'         => false,
+                'keterangan_acuan' => $ket,
+            ];
+        }
+
+        // 4. Fallback ke master tarif jika tabel dat_kurs_harian kosong sama sekali
+        $map = $this->getTarifMap();
+        $fallbackRate = (float) ($map['KURS_JISDOR'] ?? 18252.00);
+
+        return [
+            'rate'             => $fallbackRate,
+            'date'             => $targetDateFmt,
+            'raw_date'         => $targetDate,
+            'is_exact'         => false,
+            'keterangan_acuan' => 'Standar acuan master data',
+        ];
+    }
+
+    /**
+     * Dapatkan kurs JISDOR bursa paling terakhir yang diterbitkan oleh Bank Indonesia.
+     */
+    public function getLatestJisdorRateDetail(bool $allowAutoSync = true): array
+    {
         if ($allowAutoSync) {
-            $synced = $this->syncFromBankIndonesia($targetDate);
-            if (isset($synced[$targetDate]) && $synced[$targetDate] > 0) {
-                return (float) $synced[$targetDate];
-            }
+            $this->syncFromBankIndonesia();
         }
 
-        // 3. Jika hari libur/akhir pekan atau jam rilis BI belum tercapai, ambil kurs hari kerja terakhir <= targetDate
         $latestRecord = DatKursHarian::active()
-            ->whereDate('tanggal', '<=', $targetDate)
+            ->where('sumber', 'BANK_INDONESIA_JISDOR')
             ->orderByDesc('tanggal')
             ->first();
 
         if ($latestRecord && $latestRecord->kurs_tengah > 0) {
-            return (float) $latestRecord->kurs_tengah;
+            $latestCarbon = Carbon::parse($latestRecord->tanggal)->timezone(config('app.timezone', 'Asia/Jakarta'));
+            return [
+                'rate'             => (float) $latestRecord->kurs_tengah,
+                'date'             => $this->formatIndonesianDate($latestCarbon),
+                'raw_date'         => $latestCarbon->format('Y-m-d'),
+                'is_exact'         => true,
+                'keterangan_acuan' => 'Kurs bursa terakhir resmi Bank Indonesia',
+            ];
         }
 
-        // 4. Fallback ke master tarif produksi
-        $map = $this->getTarifMap();
-        return (float) ($map['KURS_JISDOR'] ?? 18161.00);
+        return $this->getJisdorRateDetail(date('Y-m-d'), false);
+    }
+
+    /**
+     * Dapatkan nilai nominal kurs resmi JISDOR Bank Indonesia harian.
+     */
+    public function getJisdorRate(?string $date = null, bool $allowAutoSync = false): float
+    {
+        $detail = $this->getJisdorRateDetail($date, $allowAutoSync);
+        return (float) $detail['rate'];
     }
 
     /**
      * Sinkronisasi data resmi JISDOR langsung dari portal resmi Bank Indonesia.
-     * Mengambil tabel kurs resmi BI (baik tanggal historis spesifik maupun 10 hari kerja terakhir)
+     * Mengambil tabel kurs resmi BI (baik halaman utama terkini maupun pencarian historis)
      * dan menyimpannya ke dat_kurs_harian & mst_tarif_produksi.
      *
      * @return array<string, float>
      */
     public function syncFromBankIndonesia(?string $targetDate = null): array
     {
-        $monthMap = [
-            'januari' => '01', 'februari' => '02', 'maret' => '03', 'april' => '04',
-            'mei' => '05', 'juni' => '06', 'juli' => '07', 'agustus' => '08',
-            'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12',
-        ];
-
         try {
             $cookieJar = new \GuzzleHttp\Cookie\CookieJar();
             $client = new \GuzzleHttp\Client([
@@ -133,73 +210,44 @@ class TarifProduksiService
             $res = $client->get($url);
             $html = (string) $res->getBody();
 
-            // Jika ada target date historis yang diminta, lakukan filter tanggal spesifik ke form SharePoint BI
-            if ($targetDate) {
-                $targetCarbon = Carbon::parse($targetDate)->timezone(config('app.timezone', 'Asia/Jakarta'));
-                $fromDate = $targetCarbon->copy()->subDays(7)->format('d/m/Y');
-                $toDate = $targetCarbon->copy()->addDays(7)->min(Carbon::today(config('app.timezone', 'Asia/Jakarta')))->format('d/m/Y');
-
-                preg_match('/id="__VIEWSTATE"\s+value="([^"]+)"/', $html, $vs);
-                preg_match('/id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"/', $html, $vsg);
-                preg_match('/id="__EVENTVALIDATION"\s+value="([^"]+)"/', $html, $ev);
-
-                if (!empty($vs[1])) {
-                    $postRes = $client->post($url, [
-                        'form_params' => [
-                            '__VIEWSTATE'          => $vs[1],
-                            '__VIEWSTATEGENERATOR' => $vsg[1] ?? '',
-                            '__EVENTVALIDATION'    => $ev[1] ?? '',
-                            'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$TextBoxFrom' => $fromDate,
-                            'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$TextBoxDateTo' => $toDate,
-                            'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$ButtonCari' => 'Cari',
-                        ]
-                    ]);
-                    $html = (string) $postRes->getBody();
-                }
-            }
-
-            preg_match_all('/<tr[^>]*>.*?<\/tr>/is', $html, $rows);
-
             $synced = [];
-            foreach ($rows[0] as $r) {
-                if (str_contains($r, 'table-search')) continue;
-                preg_match_all('/<td[^>]*>(.*?)<\/td>/is', $r, $cells);
-                if (!empty($cells[1]) && count($cells[1]) >= 2) {
-                    $c0 = trim(strip_tags($cells[1][0])); // contoh: "2 Oktober 2026"
-                    $c1 = trim(strip_tags($cells[1][1])); // contoh: "Rp 17.898,00"
+            // 1. Ekstrak baris tabel kurs terkini dari halaman awal BI (5-10 hari bursa terakhir)
+            $this->parseAndSaveJisdorRows($html, $synced);
 
-                    if (preg_match('/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/', $c0, $mDate)) {
-                        $day = str_pad($mDate[1], 2, '0', STR_PAD_LEFT);
-                        $monthIndo = strtolower($mDate[2]);
-                        $year = $mDate[3];
-                        $monthNum = $monthMap[$monthIndo] ?? null;
+            // 2. Jika tanggal target historis yang diminta belum ada di tabel terkini BI, lakukan pencarian form SharePoint BI
+            if ($targetDate && !isset($synced[$targetDate])) {
+                $targetCarbon = Carbon::parse($targetDate)->timezone(config('app.timezone', 'Asia/Jakarta'));
+                $today = Carbon::today(config('app.timezone', 'Asia/Jakarta'));
 
-                        if ($monthNum) {
-                            $isoDate = "{$year}-{$monthNum}-{$day}";
-                            $cleanRate = preg_replace('/[^\d,]/', '', $c1);
-                            $floatRate = (float) str_replace(',', '.', $cleanRate);
+                // Hanya cari historis ke belakang jika targetDate < hari ini
+                if ($targetCarbon->lt($today)) {
+                    $fromDate = $targetCarbon->copy()->subDays(7)->format('d/m/Y');
+                    $toDate = $targetCarbon->copy()->addDays(7)->min($today)->format('d/m/Y');
 
-                            if ($floatRate > 10000) {
-                                $synced[$isoDate] = $floatRate;
+                    preg_match('/id="__VIEWSTATE"\s+value="([^"]+)"/', $html, $vs);
+                    preg_match('/id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"/', $html, $vsg);
+                    preg_match('/id="__EVENTVALIDATION"\s+value="([^"]+)"/', $html, $ev);
 
-                                DatKursHarian::updateOrCreate(
-                                    ['tanggal' => $isoDate],
-                                    [
-                                        'mata_uang'   => 'USD',
-                                        'kurs_tengah' => $floatRate,
-                                        'sumber'      => 'BANK_INDONESIA_JISDOR',
-                                        'catatan'     => "Kurs resmi JISDOR Bank Indonesia per {$c0}",
-                                        'updated_by'  => 'AUTO_SYNC_BI',
-                                        'updated_dt'  => now(),
-                                    ]
-                                );
-                            }
-                        }
+                    if (!empty($vs[1])) {
+                        $postRes = $client->post($url, [
+                            'form_params' => [
+                                '__VIEWSTATE'          => $vs[1],
+                                '__VIEWSTATEGENERATOR' => $vsg[1] ?? '',
+                                '__EVENTVALIDATION'    => $ev[1] ?? '',
+                                'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$TextBoxFrom' => $fromDate,
+                                'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$TextBoxDateTo' => $toDate,
+                                'ctl00$ctl51$g_8e393016_c37f_48c2_9aa2_ab195a9c1128$ctl00$ButtonCari' => 'Cari',
+                            ]
+                        ]);
+                        $searchHtml = (string) $postRes->getBody();
+                        $this->parseAndSaveJisdorRows($searchHtml, $synced);
                     }
                 }
             }
 
             if (!empty($synced)) {
+                // Urutkan tanggal descending agar tanggal terbaru berada di atas
+                krsort($synced);
                 $latestDate = array_key_first($synced);
                 $latestRate = $synced[$latestDate];
 
@@ -225,6 +273,57 @@ class TarifProduksiService
         } catch (\Throwable $e) {
             Log::warning("Gagal auto-sync JISDOR dari portal BI: " . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Parse HTML tabel kurs JISDOR dari Bank Indonesia dan simpan ke dat_kurs_harian
+     */
+    private function parseAndSaveJisdorRows(string $html, array &$synced): void
+    {
+        $monthMap = [
+            'januari' => '01', 'februari' => '02', 'maret' => '03', 'april' => '04',
+            'mei' => '05', 'juni' => '06', 'juli' => '07', 'agustus' => '08',
+            'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12',
+        ];
+
+        preg_match_all('/<tr[^>]*>.*?<\/tr>/is', $html, $rows);
+        foreach ($rows[0] as $r) {
+            if (str_contains($r, 'table-search')) continue;
+            preg_match_all('/<td[^>]*>(.*?)<\/td>/is', $r, $cells);
+            if (!empty($cells[1]) && count($cells[1]) >= 2) {
+                $c0 = trim(strip_tags($cells[1][0])); // contoh: "18 November 2026"
+                $c1 = trim(strip_tags($cells[1][1])); // contoh: "Rp 18.252,00"
+
+                if (preg_match('/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/', $c0, $mDate)) {
+                    $day = str_pad($mDate[1], 2, '0', STR_PAD_LEFT);
+                    $monthIndo = strtolower($mDate[2]);
+                    $year = $mDate[3];
+                    $monthNum = $monthMap[$monthIndo] ?? null;
+
+                    if ($monthNum) {
+                        $isoDate = "{$year}-{$monthNum}-{$day}";
+                        $cleanRate = preg_replace('/[^\d,]/', '', $c1);
+                        $floatRate = (float) str_replace(',', '.', $cleanRate);
+
+                        if ($floatRate > 10000) {
+                            $synced[$isoDate] = $floatRate;
+
+                            DatKursHarian::updateOrCreate(
+                                ['tanggal' => $isoDate],
+                                [
+                                    'mata_uang'   => 'USD',
+                                    'kurs_tengah' => $floatRate,
+                                    'sumber'      => 'BANK_INDONESIA_JISDOR',
+                                    'catatan'     => "Kurs resmi JISDOR Bank Indonesia per {$c0}",
+                                    'updated_by'  => 'AUTO_SYNC_BI',
+                                    'updated_dt'  => now(),
+                                ]
+                            );
+                        }
+                    }
+                }
+            }
         }
     }
 

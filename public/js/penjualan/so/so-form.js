@@ -141,8 +141,7 @@ function initCustomerListener() {
         // Update TOP (Terms of Payment)
         const inTop = document.getElementById('top_txt');
         if (inTop) {
-            inTop.value = topTxt || '';
-            inTop.placeholder = topTxt ? 'Contoh: 7 Hari / 1 Nota' : (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klasifikasi) ? 'Tidak ada TOP (Modern Trade)' : 'Contoh: 7 Hari / 1 Nota');
+            setTopFieldsFromText(topTxt, 'top_val', 'top_unit', 'top_txt');
         }
 
         // Update Status PPN Header jika ada default dari master customer
@@ -1020,6 +1019,15 @@ document.addEventListener('DOMContentLoaded', function() {
         potInput.addEventListener('input', calculateGrandTotal);
     }
 
+    // Inisialisasi Event Listener TOP (Angka & Satuan)
+    const elTopVal = document.getElementById('top_val');
+    const elTopUnit = document.getElementById('top_unit');
+    if (elTopVal && elTopUnit) {
+        elTopVal.addEventListener('input', () => updateTopText('top_val', 'top_unit', 'top_txt'));
+        elTopVal.addEventListener('change', () => updateTopText('top_val', 'top_unit', 'top_txt'));
+        elTopUnit.addEventListener('change', () => updateTopText('top_val', 'top_unit', 'top_txt'));
+    }
+
     const existingItems = window.soConfig?.existingItems || [];
     if (existingItems.length > 0) {
         existingItems.forEach(item => addRow(item));
@@ -1062,3 +1070,63 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+/**
+ * Sinkronisasi input angka & unit dropdown TOP ke hidden input top_txt
+ */
+function updateTopText(valId, unitId, hiddenId) {
+    const elVal = document.getElementById(valId);
+    const elUnit = document.getElementById(unitId);
+    const elHidden = document.getElementById(hiddenId);
+    if (!elVal || !elUnit || !elHidden) return;
+
+    const unit = elUnit.value === 'NOTA' ? 'NOTA' : 'HARI';
+    elVal.disabled = false;
+    elVal.style.backgroundColor = '#ffffff';
+    elVal.style.cursor = 'text';
+
+    const num = parseInt(elVal.value, 10);
+    const v = isNaN(num) || num < 0 ? 0 : num;
+    if (isNaN(num)) elVal.value = 0;
+
+    elHidden.value = unit === 'NOTA' ? (v + ' Nota') : (v + ' Hari');
+}
+
+/**
+ * Parsing string TOP eksisting dan isi ke input angka & unit dropdown
+ */
+function setTopFieldsFromText(topStr, valId, unitId, hiddenId) {
+    const elVal = document.getElementById(valId);
+    const elUnit = document.getElementById(unitId);
+    const elHidden = document.getElementById(hiddenId);
+    if (!elVal || !elUnit || !elHidden) return;
+
+    elVal.disabled = false;
+    elVal.style.backgroundColor = '#ffffff';
+    elVal.style.cursor = 'text';
+
+    const str = (topStr || '').trim();
+    if (!str || str === '-' || str.toLowerCase().includes('tidak ada')) {
+        elUnit.value = 'HARI';
+        elVal.value = 0;
+        elHidden.value = '0 Hari';
+        return;
+    }
+
+    const upper = str.toUpperCase();
+    if (upper.includes('NOTA')) {
+        elUnit.value = 'NOTA';
+        const m = upper.match(/\d+/);
+        const v = m ? parseInt(m[0], 10) : 0;
+        elVal.value = v;
+        elHidden.value = v + ' Nota';
+        return;
+    }
+
+    // Default: Hari
+    elUnit.value = 'HARI';
+    const m = upper.match(/\d+/);
+    const v = m ? parseInt(m[0], 10) : 0;
+    elVal.value = v;
+    elHidden.value = v + ' Hari';
+}

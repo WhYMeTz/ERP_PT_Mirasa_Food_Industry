@@ -10,24 +10,13 @@
 @section('content')
 <div class="fk-index-container">
 
-    {{-- HEADER & TOMBOL AKSI UTAMA --}}
+    {{-- HEADER HALAMAN FAKTUR --}}
     <div class="fk-header-row">
         <div>
-            <h1 class="fk-page-title">Faktur Penjualan & Piutang Usaha</h1>
+            <h1 class="fk-page-title">Faktur Penjualan &amp; Piutang Usaha</h1>
             <p class="fk-page-subtitle">
-                Monitoring status tagihan piutang customer (AR), pencatatan pembayaran pelunasan, dan rekonsiliasi faktur yang terbit otomatis dari Surat Jalan.
+                Monitoring status tagihan piutang customer (AR), pencatatan pembayaran pelunasan, dan rekonsiliasi faktur penjualan.
             </p>
-        </div>
-
-        <div class="fk-header-buttons">
-            <a href="{{ route('penjualan.pengeluaran.index') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #059669; border-color: #047857;">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                <span>Kelola Surat Jalan</span>
-            </a>
-            <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Daftar PO Penjualan</span>
-            </a>
         </div>
     </div>
 
@@ -135,14 +124,14 @@
             <table class="fk-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px; text-align: center;">No.</th>
+                        <th style="width: 45px; text-align: center;">No.</th>
                         <th>Dokumen Faktur</th>
-                        <th>Referensi Pengiriman &amp; PO</th>
                         <th>Mitra Customer</th>
+                        <th>Referensi (SJ &amp; SO)</th>
                         <th style="text-align: right;">Total Tagihan</th>
                         <th style="text-align: right;">Sisa Piutang</th>
-                        <th style="text-align: center;">Status Bayar</th>
-                        <th style="text-align: center; width: 100px;">Aksi</th>
+                        <th style="text-align: center;">Status &amp; Tempo</th>
+                        <th style="text-align: center; width: 90px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -152,132 +141,145 @@
                             $sj = $faktur->pengeluaran;
                             $customer = $faktur->customer;
                             $menuId = 'actionMenuFk_' . $faktur->faktur_id;
-                            $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
+                            
+                            $todayCarbon = \Carbon\Carbon::today();
+                            $tglTempo = $faktur->tgl_jatuh_tempo ? \Carbon\Carbon::parse($faktur->tgl_jatuh_tempo) : null;
+                            $diffDays = $tglTempo ? $todayCarbon->diffInDays($tglTempo, false) : 0;
                         @endphp
                         <tr>
-                            {{-- No. Urut --}}
-                            <td style="text-align: center; color: #94a3b8; font-weight: 600;">
+                            {{-- 1. No. Urut --}}
+                            <td style="text-align: center; color: #94a3b8; font-weight: 600; font-size: 0.775rem;">
                                 {{ $fakturList->firstItem() + $idx }}
                             </td>
 
-                            {{-- Dokumen Faktur --}}
+                            {{-- 2. Dokumen Faktur & Tgl Terbit --}}
                             <td>
-                                <a href="{{ route('penjualan.faktur.show', $faktur->faktur_id) }}" style="font-weight: 700; color: #059669; text-decoration: none; font-family: monospace; font-size: 0.875rem;">
+                                <a href="{{ route('penjualan.faktur.show', $faktur->faktur_id) }}" class="fk-link-faktur">
                                     {{ $faktur->faktur_no }}
                                 </a>
-                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
-                                    Tgl: {{ \Carbon\Carbon::parse($faktur->faktur_tgl)->translatedFormat('d M Y') }}
-                                    @if ($faktur->tgl_jatuh_tempo)
-                                        &bull; <span style="color: #b45309;">Tempo: {{ \Carbon\Carbon::parse($faktur->tgl_jatuh_tempo)->translatedFormat('d M Y') }}</span>
-                                    @endif
+                                <div class="fk-subtext">
+                                    {{ \Carbon\Carbon::parse($faktur->faktur_tgl)->translatedFormat('d M Y') }}
                                 </div>
                             </td>
 
-                            {{-- Referensi Pengiriman & PO --}}
+                            {{-- 3. Mitra Customer & TOP --}}
                             <td>
-                                @if ($sj)
-                                    <a href="{{ route('penjualan.pengeluaran.show', $sj->pengeluaran_id) }}" style="font-weight: 600; color: #0284c7; text-decoration: none; font-family: monospace; font-size: 0.8125rem;">
-                                        {{ $sj->pengeluaran_no }}
-                                    </a>
-                                @endif
-                                <div style="font-size: 0.725rem; color: #64748b; margin-top: 0.1rem;">
-                                    @if ($order)
-                                        SO: <a href="{{ route('penjualan.so.show', $order->so_id) }}" style="color: #475569; text-decoration: none;">{{ $order->so_no }}</a>
-                                    @endif
-                                    @if ($faktur->customer_po_no)
-                                        &bull; PO Ext: {{ $faktur->customer_po_no }}
-                                    @endif
-                                </div>
-                            </td>
-
-                            {{-- Mitra Customer --}}
-                            <td>
-                                <div style="font-weight: 700; color: #1e293b;">
+                                <div class="fk-customer-name">
                                     {{ $customer?->customer_nm ?: 'Pelanggan Umum' }}
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
-                                    <span class="badge-klasifikasi {{ in_array($klasifikasi, ['IDM', 'MIDI_ALFA', 'IDM_ALFA']) ? 'modern' : strtolower($klasifikasi) }}">
-                                        {{ $klasifikasi === 'MIDI_ALFA' ? 'Midi/Alfa' : $klasifikasi }}
-                                    </span>
-                                    <span style="font-size: 0.725rem; color: #64748b;">
-                                        TOP: {{ $faktur->top_txt ?: '-' }}
-                                    </span>
+                                <div class="fk-subtext">
+                                    <span>TOP: {{ $faktur->top_txt ?: '-' }}</span>
                                 </div>
                             </td>
 
-                            {{-- Total Tagihan --}}
-                            <td style="text-align: right;">
-                                <div style="font-weight: 800; font-family: monospace; color: #0f172a; font-size: 0.875rem;">
-                                    Rp {{ number_format($faktur->total_tagihan, 0, ',', '.') }}
-                                </div>
-                                <div style="font-size: 0.7rem; color: #64748b;">
-                                    DPP: Rp {{ number_format($faktur->dpp_nominal, 0, ',', '.') }}
-                                    @if ($faktur->ppn_nominal > 0)
-                                        | PPN: Rp {{ number_format($faktur->ppn_nominal, 0, ',', '.') }}
+                            {{-- 4. Referensi Surat Jalan & SO/PO --}}
+                            <td>
+                                @if ($sj)
+                                    <a href="{{ route('penjualan.pengeluaran.show', $sj->pengeluaran_id) }}" class="fk-link-ref">
+                                        {{ $sj->pengeluaran_no }}
+                                    </a>
+                                @else
+                                    <span style="color: #94a3b8;">—</span>
+                                @endif
+                                <div class="fk-subtext">
+                                    @if ($order)
+                                        <a href="{{ route('penjualan.so.show', $order->so_id) }}" class="fk-link-sub">SO: {{ $order->so_no }}</a>
+                                    @endif
+                                    @if ($faktur->customer_po_no)
+                                        <span style="color: #cbd5e1;">&bull;</span>
+                                        <span>PO: {{ $faktur->customer_po_no }}</span>
                                     @endif
                                 </div>
                             </td>
 
-                            {{-- Sisa Piutang --}}
+                            {{-- 5. Total Tagihan (Omzet) --}}
                             <td style="text-align: right;">
-                                <div style="font-weight: 800; font-family: monospace; color: {{ $faktur->sisa_piutang > 0 ? '#b45309' : '#059669' }}; font-size: 0.875rem;">
-                                    Rp {{ number_format($faktur->sisa_piutang, 0, ',', '.') }}
+                                <div class="fk-amount-main">
+                                    Rp {{ number_format($faktur->total_tagihan, 0, ',', '.') }}
                                 </div>
-                                @if ($faktur->total_dibayar > 0)
-                                    <div style="font-size: 0.7rem; color: #059669;">
+                                <div class="fk-subtext">
+                                    @if ($faktur->ppn_nominal > 0)
+                                        <span class="tag-tax ppn">PPN 11%</span>
+                                    @else
+                                        <span class="tag-tax non">Non-PPN</span>
+                                    @endif
+                                </div>
+                            </td>
+
+                            {{-- 6. Sisa Piutang --}}
+                            <td style="text-align: right;">
+                                @if ($faktur->status_pembayaran === 'LUNAS')
+                                    <div class="fk-amount-sisa lunas">Rp 0</div>
+                                    <div class="fk-subtext emerald">Lunas</div>
+                                @elseif ($faktur->status_pembayaran === 'SEBAGIAN')
+                                    <div class="fk-amount-sisa sebagian">
+                                        Rp {{ number_format($faktur->sisa_piutang, 0, ',', '.') }}
+                                    </div>
+                                    <div class="fk-subtext emerald">
                                         Dibayar: Rp {{ number_format($faktur->total_dibayar, 0, ',', '.') }}
                                     </div>
+                                @elseif ($diffDays < 0 && $faktur->status_pembayaran === 'BELUM_LUNAS')
+                                    <div class="fk-amount-sisa overdue">
+                                        Rp {{ number_format($faktur->sisa_piutang, 0, ',', '.') }}
+                                    </div>
+                                    <div class="fk-subtext danger">Tertunggak</div>
+                                @else
+                                    <div class="fk-amount-sisa">
+                                        Rp {{ number_format($faktur->sisa_piutang, 0, ',', '.') }}
+                                    </div>
+                                    <div class="fk-subtext">Belum Bayar</div>
                                 @endif
                             </td>
 
-                            {{-- Status Bayar --}}
+                            {{-- 7. Status & Jatuh Tempo --}}
                             <td style="text-align: center;">
                                 @if ($faktur->status_pembayaran === 'LUNAS')
                                     <span class="badge-status lunas">
                                         <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                                         Lunas
                                     </span>
+                                    <div class="fk-subtext emerald">Lengkap</div>
+                                @elseif ($faktur->status_pembayaran === 'BATAL')
+                                    <span class="badge-status batal">
+                                        Batal (Void)
+                                    </span>
                                 @elseif ($faktur->status_pembayaran === 'SEBAGIAN')
                                     <span class="badge-status sebagian">
                                         <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                                         Sebagian
                                     </span>
-                                @elseif ($faktur->status_pembayaran === 'BATAL')
-                                    <span class="badge-status batal">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                        Batal (Void)
-                                    </span>
-                                @else
-                                    @php
-                                        $todayCarbon = \Carbon\Carbon::today();
-                                        $tglTempo = $faktur->tgl_jatuh_tempo ? \Carbon\Carbon::parse($faktur->tgl_jatuh_tempo) : null;
-                                        $diffDays = $tglTempo ? $todayCarbon->diffInDays($tglTempo, false) : 0;
-                                    @endphp
-                                    <span class="badge-status belum-lunas">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                        Belum Lunas
-                                    </span>
                                     @if ($tglTempo)
-                                        <div style="margin-top: 0.25rem;">
-                                            @if ($diffDays < 0)
-                                                <span class="badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
-                                                    Lewat {{ abs($diffDays) }} Hari
-                                                </span>
-                                            @elseif ($diffDays <= 3)
-                                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
-                                                    Tempo H-{{ $diffDays > 0 ? $diffDays : '0' }}
-                                                </span>
-                                            @else
-                                                <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; display: inline-block;">
-                                                    Tempo {{ $diffDays }} Hari
-                                                </span>
-                                            @endif
-                                        </div>
+                                        <div class="fk-subtext">Tempo: {{ $tglTempo->translatedFormat('d M Y') }}</div>
+                                    @endif
+                                @else
+                                    {{-- BELUM LUNAS --}}
+                                    @if ($tglTempo)
+                                        @if ($diffDays < 0)
+                                            <span class="badge-status overdue">
+                                                Lewat {{ abs($diffDays) }} Hari
+                                            </span>
+                                            <div class="fk-subtext danger">Tempo: {{ $tglTempo->translatedFormat('d M Y') }}</div>
+                                        @elseif ($diffDays <= 3)
+                                            <span class="badge-status tempo-dekat">
+                                                Tempo H-{{ $diffDays > 0 ? $diffDays : '0' }}
+                                            </span>
+                                            <div class="fk-subtext amber">Tempo: {{ $tglTempo->translatedFormat('d M Y') }}</div>
+                                        @else
+                                            <span class="badge-status belum-lunas">
+                                                Belum Lunas
+                                            </span>
+                                            <div class="fk-subtext">Tempo: {{ $tglTempo->translatedFormat('d M Y') }}</div>
+                                        @endif
+                                    @else
+                                        <span class="badge-status belum-lunas">
+                                            Belum Lunas
+                                        </span>
+                                        <div class="fk-subtext">—</div>
                                     @endif
                                 @endif
                             </td>
 
-                            {{-- Tombol Aksi (Smart Action Dropdown Standard Wajib) --}}
+                            {{-- 8. Tombol Aksi (Smart Action Dropdown Standard Wajib) --}}
                             <td style="text-align: center;">
                                 <button type="button" class="btn-action-trigger" onclick="toggleSmartActionDropdown(this, event, '{{ $menuId }}')">
                                     <span>Aksi</span>
@@ -312,10 +314,13 @@
                                         </a>
 
                                         @if ($faktur->sisa_piutang > 0 && $faktur->status_pembayaran !== 'BATAL')
-                                            <a href="{{ route('penjualan.so.show', $faktur->order->so_id) }}#pembayaran" class="action-dropdown-item" style="color: #0284c7; font-weight: 600;">
+                                            <button type="button" 
+                                                    class="action-dropdown-item" 
+                                                    style="color: #0284c7; font-weight: 600;"
+                                                    onclick="openFakturPaymentModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->total_tagihan }}, {{ (float) $faktur->sisa_piutang }})">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                                 <span>Catat Pembayaran (BKM)</span>
-                                            </a>
+                                            </button>
                                         @endif
                                     @endif
 
@@ -362,8 +367,9 @@
 
 </div>
 
-{{-- MODAL VOID FAKTUR --}}
+{{-- MODAL VOID & PEMBAYARAN FAKTUR --}}
 @include('penjualan.faktur.partials.modal-void')
+@include('penjualan.faktur.partials.modal-record-payment')
 
 @endsection
 

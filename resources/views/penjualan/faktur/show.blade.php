@@ -58,6 +58,16 @@
                     <span>Cetak Faktur (PDF)</span>
                 </a>
 
+                @if ($faktur->sisa_piutang > 0 && $faktur->status_pembayaran !== 'BATAL')
+                    <button type="button" class="btn btn-primary" 
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #0284c7; border-color: #0369a1; color: #ffffff;"
+                            onclick="openFakturPaymentModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($faktur->customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->total_tagihan }}, {{ (float) $faktur->sisa_piutang }})"
+                            title="Catat bukti kas masuk (BKM) untuk pelunasan faktur ini">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Catat Pembayaran (BKM)</span>
+                    </button>
+                @endif
+
                 @if ($faktur->pengeluaran)
                     <a href="{{ route('penjualan.pengeluaran.show', $faktur->pengeluaran->pengeluaran_id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
@@ -166,7 +176,17 @@
                 <tr>
                     <td style="padding: 0.35rem 0; color: #64748b; width: 130px;">Surat Jalan No.</td>
                     <td style="font-weight: 700; font-family: monospace;">
-                        @if ($faktur->pengeluaran)
+                        @if ($faktur->sisa_piutang > 0 && $faktur->status_pembayaran !== 'BATAL')
+                    <button type="button" class="btn btn-primary" 
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #0284c7; border-color: #0369a1; color: #ffffff;"
+                            onclick="openFakturPaymentModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($faktur->customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->total_tagihan }}, {{ (float) $faktur->sisa_piutang }})"
+                            title="Catat bukti kas masuk (BKM) untuk pelunasan faktur ini">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Catat Pembayaran (BKM)</span>
+                    </button>
+                @endif
+
+                @if ($faktur->pengeluaran)
                             <a href="{{ route('penjualan.pengeluaran.show', $faktur->pengeluaran->pengeluaran_id) }}" style="color: #0284c7; text-decoration: none;">
                                 {{ $faktur->pengeluaran->pengeluaran_no }}
                             </a>
@@ -368,8 +388,9 @@
 
 </div>
 
-{{-- MODAL VOID FAKTUR --}}
+{{-- MODAL VOID & PEMBAYARAN FAKTUR --}}
 @include('penjualan.faktur.partials.modal-void')
+@include('penjualan.faktur.partials.modal-record-payment')
 
 @endsection
 

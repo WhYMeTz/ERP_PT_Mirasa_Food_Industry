@@ -1922,6 +1922,7 @@
                                 <div class="mega-grid">
                                     <div class="mega-col">
                                         <div class="mega-col-title">Order &amp; Retur Langganan</div>
+                                        @if(Auth::user()?->canAccessSo())
                                         <a href="{{ route('penjualan.so.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1935,6 +1936,7 @@
                                                     customer</span>
                                             </div>
                                         </a>
+                                        @endif
                                         <a href="{{ route('penjualan.langsung.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.langsung.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1988,6 +1990,7 @@
                                                     muat armada</span>
                                             </div>
                                         </a>
+                                        @if(Auth::user()?->canAccessFaktur())
                                         <a href="{{ route('penjualan.faktur.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.faktur.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2001,9 +2004,11 @@
                                                     &amp; monitoring tempo</span>
                                             </div>
                                         </a>
+                                        @endif
                                     </div>
                                     <div class="mega-col">
                                         <div class="mega-col-title">Laporan &amp; Analisis</div>
+                                        @if(Auth::user()?->canAccessSo() || Auth::user()?->canAccessFaktur() || Auth::user()?->isSuperAdmin())
                                         <a href="{{ route('penjualan.laporan.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.laporan.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2016,6 +2021,7 @@
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Konsolidasi PO &amp; Non-PO, omzet, produk terlaris</span>
                                             </div>
                                         </a>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

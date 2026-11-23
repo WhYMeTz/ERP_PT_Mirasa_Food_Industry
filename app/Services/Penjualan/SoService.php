@@ -573,6 +573,39 @@ class SoService
             $userModel = $user instanceof \App\Models\User ? $user : \App\Models\User::first();
             $bkm = $kasMasukService->storeKasMasuk($payload, $userModel);
 
+            // Sinkronisasi status dan sisa piutang pada DatFakturHdr terkait SO ini
+            $fakturs = \App\Models\Penjualan\DatFakturHdr::where('so_id', $header->so_id)
+                ->where('deleted_st', false)
+                ->where('status_pembayaran', '!=', 'BATAL')
+                ->orderBy('faktur_id')
+                ->get();
+
+            if ($fakturs->isNotEmpty()) {
+                $freshTotalBayar = (float) $header->fresh()->total_bayar;
+                $runningBayar = $freshTotalBayar;
+
+                foreach ($fakturs as $fkt) {
+                    $tagihan = (float) $fkt->total_tagihan;
+                    $alokasiBayar = min($tagihan, $runningBayar);
+                    $runningBayar = max(0, $runningBayar - $alokasiBayar);
+                    $sisaFkt = max(0, $tagihan - $alokasiBayar);
+
+                    $fktStatus = 'BELUM_LUNAS';
+                    if ($sisaFkt <= 0 && $tagihan > 0) {
+                        $fktStatus = 'LUNAS';
+                    } elseif ($alokasiBayar > 0) {
+                        $fktStatus = 'SEBAGIAN';
+                    }
+
+                    $fkt->update([
+                        'total_dibayar'     => $alokasiBayar,
+                        'sisa_piutang'      => $sisaFkt,
+                        'status_pembayaran' => $fktStatus,
+                        'updated_by'        => $userModel->name ?? 'SYSTEM',
+                    ]);
+                }
+            }
+
             Log::info("Pembayaran SO ID {$header->so_id} ({$header->so_no}) sebesar Rp {$nominal} berhasil dicatat via BKM {$bkm->bkm_no}");
 
             return $bkm;

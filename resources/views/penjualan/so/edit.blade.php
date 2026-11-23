@@ -141,11 +141,36 @@
                 </div>
 
                 {{-- [R2-C2] Syarat Pembayaran (TOP) --}}
+                @php
+                    $initTopTxt = old('top_txt', $order->top_txt ?: $order->customer?->top_txt);
+                    $initVal = 0;
+                    $initUnit = 'HARI';
+                    if (!empty($initTopTxt)) {
+                        $upTop = strtoupper(trim($initTopTxt));
+                        if (str_contains($upTop, 'NOTA')) {
+                            preg_match('/\d+/', $upTop, $mTop);
+                            $initVal = isset($mTop[0]) ? (int)$mTop[0] : 0;
+                            $initUnit = 'NOTA';
+                        } elseif (preg_match('/\d+/', $upTop, $mTop)) {
+                            $initVal = (int)$mTop[0];
+                            $initUnit = 'HARI';
+                        }
+                    }
+                @endphp
                 <div>
-                    <label for="top_txt" class="po-field-label">
+                    <label for="top_val" class="po-field-label">
                         Syarat Pembayaran (TOP)
                     </label>
-                    <input type="text" id="top_txt" name="top_txt" value="{{ old('top_txt', $order->top_txt ?: $order->customer?->top_txt) }}" placeholder="Contoh: 7 Hari / 1 Nota" class="po-field-input">
+                    <div style="display: flex; gap: 0.35rem; align-items: stretch;">
+                        <input type="number" id="top_val" min="0" max="365" class="po-field-input" 
+                               style="width: 75px; text-align: center; font-weight: 700; flex-shrink: 0;" 
+                               placeholder="0" value="{{ $initVal }}">
+                        <select id="top_unit" class="po-field-select" style="flex: 1;">
+                            <option value="HARI" {{ $initUnit === 'HARI' ? 'selected' : '' }}>Hari</option>
+                            <option value="NOTA" {{ $initUnit === 'NOTA' ? 'selected' : '' }}>Nota</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="top_txt" name="top_txt" value="{{ old('top_txt', $initTopTxt ?: ($initVal . ' ' . ($initUnit === 'NOTA' ? 'Nota' : 'Hari'))) }}">
                 </div>
 
                 {{-- [R2-C3] Pajak Faktur (PPN) --}}
@@ -317,14 +342,6 @@
                     <textarea id="catatan_txt" name="catatan_txt" rows="3" class="form-control"
                         placeholder="Instruksi pengiriman, toleransi mutu, catatan tempo pembayaran, dll..."
                         style="border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 0.8125rem; padding: 0.5rem; width: 100%;">{{ old('catatan_txt', $order->catatan_txt) }}</textarea>
-                </div>
-
-                {{-- Panduan Ringkas Alur FEFO Gudang FG --}}
-                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.65rem 0.85rem; font-size: 0.725rem; color: #166534; line-height: 1.45; display: flex; align-items: flex-start; gap: 0.5rem;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <div>
-                        <strong style="color: #14532d;">Sistem Terpadu Penjualan Pabrik:</strong> Pesanan Penjualan (SO) dapat dicatat bebas sesuai order mitra meskipun stok di gudang masih antre produksi. Alokasi pengeluaran fisik barang jadi akan diproses gudang secara otomatis berbasis FEFO saat pengiriman dijadwalkan.
-                    </div>
                 </div>
             </div>
 

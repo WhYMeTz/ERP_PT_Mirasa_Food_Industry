@@ -301,11 +301,20 @@ class PengeluaranBarangService
             ];
         }
 
+        // Tentukan nomor Surat Jalan yang valid (hindari duplikasi jika ini pengiriman parsial ke-2 atau seterusnya)
+        $isExistingSjUsed = !empty($order->surat_jalan_no)
+            && DatPengeluaranHdr::where('pengeluaran_no', $order->surat_jalan_no)->exists();
+
+        $suggestedSjNo = (!empty($order->surat_jalan_no) && !$isExistingSjUsed)
+            ? $order->surat_jalan_no
+            : $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
+
         return [
-            'order'        => $order,
-            'customer'     => $order->customer,
-            'items'        => $items,
-            'gudang_fg_id' => $gudangFgId,
+            'order'           => $order,
+            'customer'        => $order->customer,
+            'items'           => $items,
+            'gudang_fg_id'    => $gudangFgId,
+            'suggested_sj_no' => $suggestedSjNo,
         ];
     }
 
@@ -330,11 +339,19 @@ class PengeluaranBarangService
             }
             $gudangFgId = $fgGudangIds[0] ?? 6;
             $tglKirim = $data['pengeluaran_tgl'] ?? now()->toDateString();
-            $suratJalanNo = !empty($order->surat_jalan_no)
-                ? $order->surat_jalan_no
-                : (!empty($data['pengeluaran_no'])
-                    ? $data['pengeluaran_no']
-                    : $this->codeGenerator->generateSuratJalanNo($tglKirim));
+            
+            // Validasi nomor Surat Jalan: jika input atau nomor SO sudah terpakai di DB (pengiriman parsial), buat nomor baru yang unik
+            $submittedSjNo = !empty($data['pengeluaran_no']) ? trim($data['pengeluaran_no']) : null;
+            $isSubmittedUsed = $submittedSjNo && DatPengeluaranHdr::where('pengeluaran_no', $submittedSjNo)->exists();
+            $isOrderSjUsed = !empty($order->surat_jalan_no) && DatPengeluaranHdr::where('pengeluaran_no', $order->surat_jalan_no)->exists();
+
+            if ($submittedSjNo && !$isSubmittedUsed) {
+                $suratJalanNo = $submittedSjNo;
+            } elseif (!empty($order->surat_jalan_no) && !$isOrderSjUsed) {
+                $suratJalanNo = $order->surat_jalan_no;
+            } else {
+                $suratJalanNo = $this->codeGenerator->generateSuratJalanNo($tglKirim);
+            }
 
             // Buat header pengeluaran
             $header = DatPengeluaranHdr::create([

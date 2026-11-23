@@ -2014,6 +2014,7 @@
                                 'keuangan.kas_bank.*',
                                 'keuangan.kas_masuk.*',
                                 'keuangan.bayar.*',
+                                'keuangan.bayar_piutang.*',
                                 'keuangan.kas_keluar.*'
                             );
                         @endphp
@@ -2063,6 +2064,20 @@
                                                 <div style="display: flex; flex-direction: column;">
                                                     <span style="font-weight: 600; color: #0f172a;">Kas Masuk (Uang Masuk)</span>
                                                     <span style="font-size: 0.6875rem; color: #475569;">Catat uang masuk limbah, modal &amp; piutang</span>
+                                                </div>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canAccessBayarPiutang())
+                                            <a href="{{ route('keuangan.bayar_piutang.index') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.bayar_piutang.*') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #059669;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600; color: #0f172a;">Terima Pembayaran Customer</span>
+                                                    <span style="font-size: 0.6875rem; color: #475569;">Pelunasan faktur penjualan toko &amp; distributor</span>
                                                 </div>
                                             </a>
                                         @endif

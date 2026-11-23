@@ -83,6 +83,11 @@ class DatFakturHdr extends Model
         return $this->hasMany(DatFakturDtl::class, 'faktur_id');
     }
 
+    public function bayarPiutangDetails(): HasMany
+    {
+        return $this->hasMany(\App\Models\Keuangan\DatBayarPiutangDtl::class, 'faktur_id', 'faktur_id');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('deleted_st', false)->where('active_st', true);

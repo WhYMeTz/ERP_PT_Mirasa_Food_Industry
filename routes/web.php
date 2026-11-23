@@ -27,6 +27,7 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\TarifProduksiController;
 use App\Http\Controllers\MasterData\TarifKemasanController;
 use App\Http\Controllers\Keuangan\BayarHutangController;
+use App\Http\Controllers\Keuangan\BayarPiutangController;
 use App\Http\Controllers\Keuangan\KasKeluarController;
 use App\Http\Controllers\Keuangan\CoaController;
 use App\Http\Controllers\Keuangan\HutangController;
@@ -658,6 +659,11 @@ Route::middleware('auth')->group(function () {
         // 4. Penerimaan Kas & Bank (Bukti Kas Masuk - BKM)
         Route::post('kas-masuk/{id}/void', [KasMasukController::class, 'void'])->name('kas_masuk.void')->middleware('role:kas_masuk_void');
         Route::resource('kas-masuk', KasMasukController::class)->names('kas_masuk')->only(['index', 'create', 'store', 'show']);
+
+        // 4b. Pelunasan Piutang Usaha (Bukti Kas Masuk AR - BKM)
+        Route::get('bayar-piutang/faktur-customer/{customerId}', [BayarPiutangController::class, 'getFakturCustomer'])->name('bayar_piutang.faktur_customer')->middleware('role:bayar_piutang_view,bayar_piutang_create,bayar_hutang_view,bayar_hutang_create');
+        Route::post('bayar-piutang/{id}/void', [BayarPiutangController::class, 'void'])->name('bayar_piutang.void')->middleware('role:bayar_piutang_void,bayar_hutang_void');
+        Route::resource('bayar-piutang', BayarPiutangController::class)->names('bayar_piutang')->parameters(['bayar-piutang' => 'id'])->only(['index', 'create', 'store', 'show'])->middleware('role:bayar_piutang_view,bayar_piutang_create,bayar_hutang_view,bayar_hutang_create');
 
         // 5. Bagan Akun (Chart of Accounts / COA)
         Route::resource('coa', CoaController::class)->only(['index'])->middleware('role:coa_view,coa_manage');

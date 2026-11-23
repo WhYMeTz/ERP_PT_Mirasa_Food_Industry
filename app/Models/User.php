@@ -511,6 +511,7 @@ class User extends Authenticatable
     {
         return $this->isSuperAdmin()
             || $this->canAccessBayarHutang()
+            || $this->canAccessBayarPiutang()
             || $this->canAccessKasMasuk()
             || $this->canAccessKasBank();
     }
@@ -611,6 +612,30 @@ class User extends Authenticatable
     public function canVoidBayarHutang(): bool
     {
         return $this->isSuperAdmin() || $this->canDo('bayar_hutang_void');
+    }
+
+    public function canAccessBayarPiutang(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canDo('bayar_piutang_view')
+            || $this->canDo('bayar_piutang_create')
+            || $this->canAccessBayarHutang()
+            || $this->canAccessKasMasuk();
+    }
+
+    public function canCreateBayarPiutang(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canDo('bayar_piutang_create')
+            || $this->canCreateBayarHutang()
+            || $this->canAccessKasMasuk();
+    }
+
+    public function canVoidBayarPiutang(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canDo('bayar_piutang_void')
+            || $this->canVoidBayarHutang();
     }
 
     public function canAccessKasBank(): bool

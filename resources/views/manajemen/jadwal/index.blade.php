@@ -8,6 +8,8 @@
         .fp-btn-emerald { background: #10b981; border-color: #10b981; color: #fff; }
         .fp-btn-emerald:hover { background: #059669; border-color: #059669; color: #fff; }
         .fp-btn-emerald:disabled { opacity: .6; cursor: not-allowed; }
+        .fp-btn-orange { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
+        .fp-btn-orange:hover { background: #fed7aa; border-color: #fb923c; color: #9a3412; }
     </style>
 @endpush
 
@@ -25,6 +27,10 @@
         <p class="fp-sub">Kelompok kerja, kode shift, dan istirahat per karyawan per tanggal.</p>
     </div>
     <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <a href="{{ url('manajemen/kode-shift') }}" class="fp-btn fp-btn-orange">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Input Kode Shift
+        </a>
         <button type="button" class="fp-btn fp-btn-emerald" onclick="fpOpenAdd()">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tambah Jadwal
@@ -61,7 +67,7 @@
         <div class="fp-stat-note">Karyawan pada periode ini</div>
     </div>
     <div class="fp-stat">
-        <div class="fp-stat-label" style="color:#7c3aed">Shift A</div>
+        <div class="fp-stat-label" style="color:#ea580c">Shift A</div>
         <div class="fp-stat-value">{{ number_format($stat['shift_a']) }}</div>
         <div class="fp-stat-note">Karyawan pada periode ini</div>
     </div>

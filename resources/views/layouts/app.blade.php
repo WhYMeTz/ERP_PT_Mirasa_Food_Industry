@@ -1319,10 +1319,13 @@
         header .pill-dropdown-arrow { margin-left: auto; }
         header .pill-item:hover, header .pill-dropdown-btn:hover { background: #f1f5f9; }
         /* grup yang sedang terbuka */
-        header .pill-dropdown.active .pill-dropdown-btn { background: #f1f5f9; color: #0f172a; box-shadow: none; }
+        header .pill-dropdown.active .pill-dropdown-btn { background: #f1f5f9 !important; color: #0f172a; box-shadow: none !important; }
+        header .pill-dropdown-btn.active::after { display: none; }
         /* halaman yang sedang dibuka */
         header .pill-dropdown .pill-dropdown-btn.active,
         header .pill-item.active { background: #e0f2fe; color: #0369a1; box-shadow: none; font-weight: 700; }
+        header .pill-dropdown.active .pill-dropdown-btn.active { background: #e0f2fe !important; color: #0369a1; }
+        header .pill-dropdown-btn .chevron { margin-left: auto; }
         header .pill-nav .pill-dropdown { display: block; width: 100%; position: static; }
         /* dropdown di sidebar = accordion di tempat, bukan popup melayang */
         header .pill-nav .dropdown-menu {
@@ -1332,8 +1335,20 @@
             background: #f8fafc; border: none; border-left: 2px solid #e2e8f0; border-radius: 0 8px 8px 0;
             box-shadow: none; animation: none;
         }
-        header .pill-nav .dropdown-mega { min-width: 0 !important; padding: 0.3rem !important; }
-        header .pill-nav .mega-grid { grid-template-columns: 1fr; gap: 0.25rem; }
+        header .pill-nav .dropdown-mega,
+        header .pill-nav .dropdown-mega-lg,
+        header .pill-nav .dropdown-mega-xl { min-width: 0 !important; max-width: none !important; padding: 0.3rem !important; }
+        header .pill-nav .mega-grid,
+        header .pill-nav .mega-grid-3,
+        header .pill-nav .mega-grid-4 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
+        header .pill-nav .mega-col { min-width: 0; }
+        header .pill-nav .mega-col-title {
+            padding: 0.45rem 0.65rem 0.25rem; font-size: 0.675rem; font-weight: 800; line-height: 1.3;
+            text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;
+            border-bottom: 1px solid #f1f5f9; margin-bottom: 0.2rem;
+        }
+        header .pill-nav .mega-item { align-items: flex-start !important; }
+        header .pill-nav .mega-item > div { min-width: 0; }
         header .pill-nav .mega-header { padding-top: 0.45rem; }
         /* bagian bawah: profil + keluar */
         header .header-right {
@@ -2308,15 +2323,6 @@
                                             </a>
                                         @endif
                                         @if (Auth::user()->canAccessAbsensi())
-                                            <a href="{{ route('manajemen.absensi.index') }}"
-                                                class="mega-item {{ request()->routeIs('manajemen.absensi.*') ? 'active' : '' }}">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #10b981;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8 0l2 2 4-4" />
-                                                </svg>
-                                                <span>Presensi &amp; Kehadiran</span>
-                                            </a>
                                             <a href="{{ route('manajemen.jadwal.index') }}"
                                                 class="mega-item {{ request()->routeIs('manajemen.jadwal.*') ? 'active' : '' }}">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2325,6 +2331,15 @@
                                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
                                                 <span>Jadwal &amp; Shift Kerja</span>
+                                            </a>
+                                            <a href="{{ route('manajemen.absensi.index') }}"
+                                                class="mega-item {{ request()->routeIs('manajemen.absensi.*') ? 'active' : '' }}">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #10b981;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8 0l2 2 4-4" />
+                                                </svg>
+                                                <span>Presensi &amp; Kehadiran</span>
                                             </a>
                                         @endif
                                     </div>
@@ -2809,9 +2824,6 @@
                     if (m) m.style.display = 'none';
                 }
             });
-            
-            const menu = target.querySelector('.dropdown-menu');
-            const triggerBtn = target.querySelector('.pill-dropdown-btn, .user-chip-btn') || target;
 
             if (wasActive) {
                 target.classList.remove('active');

@@ -14,7 +14,10 @@
         <h1 class="fp-title">Kode Shift</h1>
         <p class="fp-sub">Aturan jam kerja tiap kode shift. Kode baru langsung bisa dipakai di jadwal dan absensi.</p>
     </div>
-    <button type="button" class="fp-btn fp-btn-primary" onclick="ksNew()">+ Tambah Kode Shift</button>
+    <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <a href="{{ route('manajemen.jadwal.index') }}" class="fp-btn fp-btn-soft">&larr; Kembali ke Jadwal</a>
+        <button type="button" class="fp-btn fp-btn-primary" onclick="ksNew()">+ Tambah Kode Shift</button>
+    </div>
 </div>
 
 @if ($errors->any())

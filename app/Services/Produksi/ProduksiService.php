@@ -3916,14 +3916,20 @@ class ProduksiService
 
         // Utilitas Gas CNG
         $cngMmbtu = (float) $allDocs->sum('cng_mmbtu');
-        $cngTarifUsd = (float) ($primaryProd->cng_tarif_usd > 0 ? $primaryProd->cng_tarif_usd : 14.50);
         $prodCarbon = $primaryProd->produksi_tgl ? Carbon::parse($primaryProd->produksi_tgl)->timezone(config('app.timezone', 'Asia/Jakarta')) : Carbon::today(config('app.timezone', 'Asia/Jakarta'));
         $prodDateStr = $prodCarbon->format('Y-m-d');
         $tarifProdService = app(\App\Services\Produksi\TarifProduksiService::class);
-        $jisdorDetail = $tarifProdService->getJisdorRateDetail($prodDateStr, true);
+        $jisdorDetail = $tarifProdService->getJisdorRateDetail($prodDateStr, false);
         $prodDateJisdor = (float) $jisdorDetail['rate'];
         $kursEffectiveDateFmt = $jisdorDetail['date'];
         $keteranganAcuan = $jisdorDetail['keterangan_acuan'];
+
+        $tarifMap = $tarifProdService->getTarifMap();
+        $masterCngTarifUsd = (float) ($tarifMap['TARIF_CNG_USD'] ?? 15.00);
+        $isHppFinalized = ($primaryProd->hpp_finalized_at !== null) || ($primaryProd->cng_nilai > 0 && $primaryProd->jurnal_id !== null);
+        $cngTarifUsd = ($isHppFinalized && (float)$primaryProd->cng_tarif_usd > 0)
+            ? (float) $primaryProd->cng_tarif_usd
+            : $masterCngTarifUsd;
 
         $cngKursJisdor = (float) ($primaryProd->cng_nilai > 0 && $primaryProd->cng_kurs_jisdor > 0 ? $primaryProd->cng_kurs_jisdor : ($prodDateJisdor ?: 18252.00));
         $cngTarif = (float) ($primaryProd->cng_nilai > 0 && $primaryProd->cng_tarif > 0 ? $primaryProd->cng_tarif : round($cngTarifUsd * $cngKursJisdor, 2));
@@ -4200,7 +4206,7 @@ class ProduksiService
 
             $akunWip = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_WIP', '1151');
             $akunBahanBaku = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
-            $akunBahanPenolong = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_PENOLONG', '1153');
+            $akunBahanPenolong = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_PENOLONG', '1150');
             $akunGas = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_GAS', '2100');
             $akunTk = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_TENAGA_KERJA', '2102');
 
@@ -4297,7 +4303,7 @@ class ProduksiService
         // Ambil konfigurasi akun dari Pengaturan Pemetaan Jurnal Otomatis
         $akunWip = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_WIP', '1151');
         $akunBahanBaku = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_BAHAN', '1150');
-        $akunBahanPenolong = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_PENOLONG', '1153');
+        $akunBahanPenolong = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_PENOLONG', '1150');
         $akunGas = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_GAS', '2100');
         $akunTk = $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_TENAGA_KERJA', '2102');
 
@@ -4563,25 +4569,51 @@ class ProduksiService
         }
 
         // 5. Cek SPK Sibling (Lini/Shift lain di tanggal yang sama) untuk fitur Line Switcher
-        $siblingSpks = DatProduksiHdr::where('produksi_tgl', $produksi->produksi_tgl)
+        $allSiblings = DatProduksiHdr::where('produksi_tgl', $produksi->produksi_tgl)
             ->where('deleted_st', false)
             ->where('status_cd', '!=', 'VOID')
+            ->orderBy('shift_cd', 'asc')
             ->orderBy('produksi_id', 'asc')
-            ->select(['produksi_id', 'produksi_no', 'shift_cd', 'lini_produksi', 'batch_wip_no', 'total_biaya_produksi', 'hpp_per_kg'])
-            ->get()
-            ->map(function ($s) use ($produksiId) {
-                return [
-                    'produksi_id'          => $s->produksi_id,
-                    'produksi_no'          => $s->produksi_no,
-                    'shift_cd'             => $s->shift_cd,
-                    'lini_produksi'        => $s->lini_produksi ?: 'REGULER',
-                    'batch_wip_no'         => $s->batch_wip_no,
-                    'total_biaya_produksi' => (float) $s->total_biaya_produksi,
-                    'hpp_per_kg'           => (float) $s->hpp_per_kg,
-                    'is_current'           => (int) $s->produksi_id === (int) $produksiId,
-                ];
-            })
-            ->toArray();
+            ->select(['produksi_id', 'produksi_no', 'shift_cd', 'lini_produksi', 'lokasi_pabrik', 'total_wip_qty', 'batch_wip_no', 'total_biaya_produksi', 'hpp_per_kg', 'hpp_finalized_at', 'jurnal_id'])
+            ->get();
+
+        $siblingSpks = $allSiblings->map(function ($s) use ($produksiId, $allSiblings) {
+            $isFinal = ($s->hpp_finalized_at !== null) || ($s->jurnal_id !== null);
+            $pabrikCd = strtoupper(trim((string)$s->lokasi_pabrik));
+            $isBmb = in_array($pabrikCd, ['BMB', 'CV-BMB', 'BAHTERA', 'TIMUR']);
+            
+            $rawLini = strtoupper($s->lini_produksi ?? '');
+            $isIfm = str_contains($rawLini, 'IFM') || str_contains($rawLini, 'IFL') || str_contains($rawLini, 'INDOFOOD');
+            $lineBase = $isIfm ? 'Lini IFM' : 'Lini Manual';
+            
+            $sameLineShift = $allSiblings->filter(function($x) use ($s) {
+                return strtoupper($x->lini_produksi ?? '') === strtoupper($s->lini_produksi ?? '')
+                    && strtoupper($x->shift_cd ?? '') === strtoupper($s->shift_cd ?? '');
+            })->values();
+
+            $lineTitle = $lineBase . ' (Shift ' . strtoupper($s->shift_cd ?: 'A') . ')';
+            if ($sameLineShift->count() > 1) {
+                $subIdx = $sameLineShift->search(fn($x) => $x->produksi_id === $s->produksi_id);
+                $lineTitle = $lineBase . ' (Shift ' . strtoupper($s->shift_cd ?: 'A') . ' #' . ($subIdx + 1) . ')';
+            }
+
+            return [
+                'produksi_id'          => $s->produksi_id,
+                'produksi_no'          => $s->produksi_no,
+                'shift_cd'             => $s->shift_cd,
+                'lini_produksi'        => $s->lini_produksi ?: 'PRODUKSI MANUAL',
+                'line_title'           => $lineTitle,
+                'is_ifm'               => $isIfm,
+                'lokasi_pabrik'        => $isBmb ? 'BMB' : 'MFI',
+                'pabrik_nm'            => $isBmb ? 'CV Bahtera Mandiri Bersama' : 'PT Mirasa Food Industry',
+                'total_wip_qty'        => (float) $s->total_wip_qty,
+                'batch_wip_no'         => $s->batch_wip_no,
+                'total_biaya_produksi' => (float) $s->total_biaya_produksi,
+                'hpp_per_kg'           => (float) $s->hpp_per_kg,
+                'is_hpp_final'         => $isFinal,
+                'is_current'           => (int) $s->produksi_id === (int) $produksiId,
+            ];
+        })->toArray();
 
         return [
             'produksi'                    => $produksi,

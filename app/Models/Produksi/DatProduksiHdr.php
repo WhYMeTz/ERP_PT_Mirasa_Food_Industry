@@ -308,12 +308,21 @@ class DatProduksiHdr extends Model
     }
 
     /**
-     * Relasi ke Rincian Detail Output Hasil Produksi
+     * Relasi ke Rincian Detail Output Hasil Produksi (diurutkan Produk Utama teratas, lalu Berko, Lengket, dan Remahan)
      */
     public function details(): HasMany
     {
         return $this->hasMany(DatProduksiDtl::class, 'produksi_id', 'produksi_id')
-            ->where('deleted_st', false);
+            ->where('deleted_st', false)
+            ->orderByRaw("
+                CASE 
+                    WHEN UPPER(COALESCE(kategori_output, '')) LIKE '%LGT%' OR UPPER(COALESCE(kategori_output, '')) LIKE '%LENGKET%' THEN 3
+                    WHEN UPPER(COALESCE(kategori_output, '')) LIKE '%BRK%' OR UPPER(COALESCE(kategori_output, '')) LIKE '%BERKO%' OR UPPER(COALESCE(kategori_output, '')) LIKE '%KW2%' THEN 2
+                    WHEN UPPER(COALESCE(kategori_output, '')) LIKE '%RMH%' OR UPPER(COALESCE(kategori_output, '')) LIKE '%REMAHAN%' OR UPPER(COALESCE(kategori_output, '')) LIKE '%AFV%' THEN 4
+                    ELSE 1
+                END ASC,
+                qty_kg DESC
+            ");
     }
 
     /**

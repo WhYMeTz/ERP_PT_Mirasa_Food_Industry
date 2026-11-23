@@ -527,7 +527,7 @@
                     <tr class="adj-item-row" data-group="KEMASAN">
                         <td>
                             <div class="adj-item-title">{{ $isIfm ? 'Karton Puteran IFM' : 'Karton Reject / Rusak (Ex-IFM)' }}</div>
-                            <div class="adj-item-code">{{ $isIfm ? 'KIF00G-PUT • Tarif 1/5 Siklus Sirkular' : 'KMS-KTN-REJ • Beban Lunas di IFM (Rp 0)' }}</div>
+                            <div class="adj-item-code">{{ $isIfm ? 'KIF00G-PUT • Beban Lunas saat Baru (Rp 0)' : 'KMS-KTN-REJ • Beban Lunas di IFM (Rp 0)' }}</div>
                             <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.3rem;">
                                 @if(!empty($produksi->bahan_baku_batch_map['karton_bekas']))
                                     <span class="adj-batch-pill" title="No. Batch Pemakaian Karton Bekas">

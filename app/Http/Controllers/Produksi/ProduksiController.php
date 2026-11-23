@@ -215,7 +215,7 @@ class ProduksiController extends Controller
         // Tarif Master Kemasan Karton Sirkular (Single Source of Truth dari mst_barang)
         $kartonRates = [
             'baru'    => (float) (MstBarang::where('barang_cd', 'KIF00G-BP1')->value('harga_beli_standar') ?? 8741.00),
-            'puteran' => (float) (MstBarang::where('barang_cd', 'KIF00G-PUT')->value('harga_beli_standar') ?? 1748.20),
+            'puteran' => (float) (MstBarang::where('barang_cd', 'KIF00G-PUT')->value('harga_beli_standar') ?? 0.00),
             'reject'  => (float) (MstBarang::where('barang_cd', 'KMS-KTN-REJ')->value('harga_beli_standar') ?? 0.00),
         ];
 
@@ -458,8 +458,8 @@ class ProduksiController extends Controller
             : Carbon::today(config('app.timezone', 'Asia/Jakarta'));
         $prodDateStr = $prodCarbon->format('Y-m-d');
 
-        // Ambil kurs JISDOR Bank Indonesia resmi dengan detail tanggal riil BI (auto-sync enabled)
-        $jisdorDetail = $this->tarifService->getJisdorRateDetail($prodDateStr, true);
+        // Ambil kurs JISDOR Bank Indonesia resmi dari database lokal (non-blocking, cepat)
+        $jisdorDetail = $this->tarifService->getJisdorRateDetail($prodDateStr, false);
         $defaultCngKursJisdor = (float) $jisdorDetail['rate'];
         $latestKursDate = $jisdorDetail['date'];
         $kursKeteranganAcuan = $jisdorDetail['keterangan_acuan'];

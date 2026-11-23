@@ -151,65 +151,136 @@
 
 /* 2.B Line Switcher (Peralihan Cepat Antar Lini di Hari yang Sama) */
 .terpadu-switcher-bar {
-    margin-top: 0.85rem;
-    padding-top: 0.75rem;
-    border-top: 1px dashed #e2e8f0;
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.terpadu-switcher-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
+    margin-bottom: 0.65rem;
     flex-wrap: wrap;
 }
 
-.switcher-label {
-    font-size: 0.735rem;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+.terpadu-switcher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
 }
 
-.switcher-pills-group {
+.terpadu-switch-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 7px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.terpadu-switch-card:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.terpadu-switch-card.active {
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    cursor: default;
+    transform: none;
+}
+
+.terpadu-switch-card.card-mfi.active {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.terpadu-switch-card.card-bmb.active {
+    border-color: #a855f7;
+    background: #faf5ff;
+}
+
+.switch-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.switch-card-title {
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    flex-wrap: wrap;
+    font-size: 0.825rem;
+    color: #0f172a;
 }
 
-.btn-switcher-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.775rem;
-    text-decoration: none;
-    transition: all 0.15s ease;
-    border: 1.5px solid #cbd5e1;
-    background: #ffffff;
-    color: #334155;
+.switch-card-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
 }
 
-.btn-switcher-pill:hover {
-    background: #f8fafc;
-    border-color: #0284c7;
+.badge-mfi {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-bmb {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+}
+
+.switch-card-active-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    background: #059669;
+    color: #ffffff;
+    letter-spacing: 0.03em;
+}
+
+.switch-card-hint {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.terpadu-switch-card:hover .switch-card-hint {
     color: #0284c7;
 }
 
-.btn-switcher-pill.active {
-    background: #f0fdf4;
-    border-color: #86efac;
-    color: #166534;
-    font-weight: 700;
-    cursor: default;
-    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.08);
+.switch-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.745rem;
+    color: #64748b;
 }
 
-.btn-switcher-pill.active .dot-active {
-    color: #16a34a;
-    font-size: 0.7rem;
+.switch-card-spk {
+    font-family: monospace;
+    font-weight: 600;
+    color: #475569;
+}
+
+.switch-card-hpp {
+    font-weight: 700;
+    color: #0f172a;
 }
 
 /* 3. Executive Metrics Ribbon (Single unified horizontal bar) */

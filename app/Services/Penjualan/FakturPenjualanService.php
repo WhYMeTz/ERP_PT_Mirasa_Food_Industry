@@ -55,7 +55,17 @@ class FakturPenjualanService
         }
 
         if (!empty($status)) {
-            $query->where('status_pembayaran', strtoupper(trim($status)));
+            $statusUpper = strtoupper(trim($status));
+            if ($statusUpper === 'BELUM_LUNAS') {
+                $query->where(function ($q) {
+                    $q->whereIn('status_pembayaran', ['BELUM_LUNAS', 'SEBAGIAN'])
+                      ->orWhereNull('status_pembayaran');
+                });
+            } elseif ($statusUpper === 'TAK_TERTAGIH' || $statusUpper === 'MACET') {
+                $query->where('status_pembayaran', 'TAK_TERTAGIH');
+            } else {
+                $query->where('status_pembayaran', $statusUpper);
+            }
         }
 
         if (!empty($dateFrom)) {
@@ -93,6 +103,14 @@ class FakturPenjualanService
             ->where('status_pembayaran', 'LUNAS')
             ->count();
 
+        $countTakTertagih = (clone $base)
+            ->where('status_pembayaran', 'TAK_TERTAGIH')
+            ->count();
+
+        $totalPiutangMacet = (float) (clone $base)
+            ->where('status_pembayaran', 'TAK_TERTAGIH')
+            ->sum('sisa_piutang');
+
         // Jumlah Surat Jalan yang belum difakturkan
         $uninvoicedCount = DatPengeluaranHdr::where('deleted_st', false)
             ->where('status_cd', '!=', 'BATAL')
@@ -107,6 +125,8 @@ class FakturPenjualanService
             'total_piutang'             => $totalSisaPiutang,
             'count_belum_lunas'         => (clone $base)->whereIn('status_pembayaran', ['BELUM_LUNAS', 'SEBAGIAN'])->count(),
             'count_lunas'               => $fakturLunasCount,
+            'count_tak_tertagih'        => $countTakTertagih,
+            'total_piutang_macet'       => $totalPiutangMacet,
             'total_penjualan_bulan_ini' => $totalPenjualanBulanIni,
             'faktur_bulan_ini'          => $fakturBulanIni,
             'total_sisa_piutang'        => $totalSisaPiutang,
@@ -159,12 +179,24 @@ class FakturPenjualanService
             $isPpn = ($customer->default_ppn === 'PPN_11');
         }
 
-        // Generate No Faktur resmi standar mentor
+        // Generate No Faktur resmi standar perusahaan: bersih jika 1 kali kirim, sub-indeks (-1, -2) jika parsial
         $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
         $wilayah = $customer?->wilayah ?: ($customer?->alamat_txt ?: $customer?->customer_nm);
-        $generatedFakturNo = !empty($order?->faktur_no)
+        $baseFakturNo = !empty($order?->faktur_no)
             ? $order->faktur_no
             : $this->codeGenerator->generateFakturByKlasifikasi($klasifikasi, $wilayah, $isPpn, $fakturTgl);
+
+        $cleanBaseFakturNo = preg_replace('/-\d+$/', '', $baseFakturNo);
+
+        $soId = $order?->so_id ?? $pengeluaran->so_id;
+        $existingCount = DatFakturHdr::where('so_id', $soId)
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', '!=', 'BATAL')
+            ->count();
+
+        $generatedFakturNo = ($existingCount > 0)
+            ? "{$cleanBaseFakturNo}-" . ($existingCount + 1)
+            : $cleanBaseFakturNo;
 
         // Agregasi item dari baris detail Surat Jalan
         $items = [];
@@ -269,12 +301,47 @@ class FakturPenjualanService
         $ppnTipe = $isPpn ? 'PPN_11' : 'NON_PPN';
         $ppnPersen = $isPpn ? 11.00 : 0.00;
 
-        // Generate No Faktur resmi standar perusahaan
+        // Generate No Faktur resmi: bersih untuk 1 trip penuh, atau sub-indeks (-1, -2) jika pengiriman bertahap/parsial
         $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
         $wilayah = $customer?->wilayah ?: ($customer?->alamat_txt ?: $customer?->customer_nm);
-        $fakturNo = !empty($order?->faktur_no)
+        $baseFakturNo = !empty($order?->faktur_no)
             ? $order->faktur_no
             : $this->codeGenerator->generateFakturByKlasifikasi($klasifikasi, $wilayah, $isPpn, $fakturTgl);
+
+        $cleanBaseFakturNo = preg_replace('/-\d+$/', '', $baseFakturNo);
+
+        $soId = $order?->so_id ?? $pengeluaran->so_id;
+        $existingCount = DatFakturHdr::where('so_id', $soId)
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', '!=', 'BATAL')
+            ->count();
+
+        // Cek apakah pengiriman ini parsial (masih ada item pesanan yang belum terkirim penuh)
+        $isPartial = false;
+        if ($order) {
+            foreach ($order->details as $dtl) {
+                if ((float) $dtl->kirim_qty < (float) $dtl->pesan_qty) {
+                    $isPartial = true;
+                    break;
+                }
+            }
+        }
+
+        if ($existingCount > 0) {
+            // Pengiriman parsial ke-2 atau seterusnya: gunakan nomor induk dengan sub-indeks berantai (-2, -3, dst)
+            $tripIndex = $existingCount + 1;
+            $fakturNo = "{$cleanBaseFakturNo}-{$tripIndex}";
+            while (DatFakturHdr::where('faktur_no', $fakturNo)->exists()) {
+                $tripIndex++;
+                $fakturNo = "{$cleanBaseFakturNo}-{$tripIndex}";
+            }
+        } elseif ($isPartial) {
+            // Pengiriman parsial pertama: gunakan sub-indeks -1
+            $fakturNo = "{$cleanBaseFakturNo}-1";
+        } else {
+            // Pengiriman penuh 100% dalam 1 kali kirim (KIRIM PENUH): NOMOR BERSIH TANPA AKHIRAN (-1, -2)
+            $fakturNo = $cleanBaseFakturNo;
+        }
 
         // Agregasi item dari baris detail Surat Jalan
         $itemsData = [];
@@ -389,16 +456,34 @@ class FakturPenjualanService
         }
 
         $upper = strtoupper(trim($topTxt));
-        if (str_contains($upper, '14')) {
-            return $baseDate->copy()->addDays(14)->toDateString();
-        } elseif (str_contains($upper, '30')) {
-            return $baseDate->copy()->addDays(30)->toDateString();
-        } elseif (str_contains($upper, '60')) {
-            return $baseDate->copy()->addDays(60)->toDateString();
-        } elseif (str_contains($upper, 'CASH') || str_contains($upper, 'TUNAI')) {
+        if (str_contains($upper, 'CASH') || str_contains($upper, 'TUNAI') || str_contains($upper, 'COD')) {
             return $baseDate->toDateString();
-        } elseif (str_contains($upper, 'NOTA')) {
-            return $baseDate->copy()->addDays(14)->toDateString();
+        }
+
+        if (str_contains($upper, 'NOTA')) {
+            preg_match('/\d+/', $upper, $matches);
+            $notaCount = isset($matches[0]) ? (int)$matches[0] : 0;
+            // Tiap 1 nota diasumsikan estimasi perputaran siklus kirim 14 hari
+            return $baseDate->copy()->addDays($notaCount * 14)->toDateString();
+        }
+
+        // Tangkap angka hari dinamis (misal: "0 Hari", "7 Hari", "14 Hari", "21 Hari", "45 Hari", "60 Hari")
+        if (preg_match('/(\d+)\s*(HARI|DAYS|D)?/', $upper, $matches)) {
+            $days = (int) $matches[1];
+            return $baseDate->copy()->addDays($days)->toDateString();
+        }
+
+        if (str_contains($upper, 'NOTA')) {
+            preg_match('/\d+/', $upper, $matches);
+            $notaCount = isset($matches[0]) ? (int)$matches[0] : 0;
+            // Tiap 1 nota diasumsikan estimasi perputaran siklus kirim 14 hari
+            return $baseDate->copy()->addDays($notaCount * 14)->toDateString();
+        }
+
+        // Tangkap angka hari dinamis (misal: "0 Hari", "7 Hari", "14 Hari", "21 Hari", "45 Hari", "60 Hari")
+        if (preg_match('/(\d+)\s*(HARI|DAYS|D)?/', $upper, $matches)) {
+            $days = (int) $matches[1];
+            return $baseDate->copy()->addDays($days)->toDateString();
         }
 
         // Default fallback 7 hari (standar IFM)
@@ -418,8 +503,29 @@ class FakturPenjualanService
             $fakturTgl = $data['faktur_tgl'] ?? now()->toDateString();
             $tglJatuhTempo = $data['tgl_jatuh_tempo'] ?? $this->calculateDueDate($fakturTgl, $data['top_txt'] ?? null);
 
-            $fakturNo = !empty($data['faktur_no']) ? trim($data['faktur_no']) : $order?->faktur_no;
-            if (empty($fakturNo)) {
+            $submittedFakturNo = !empty($data['faktur_no']) ? trim($data['faktur_no']) : null;
+            $isSubmittedUsed = $submittedFakturNo && DatFakturHdr::where('faktur_no', $submittedFakturNo)
+                ->where('deleted_st', false)
+                ->where('status_pembayaran', '!=', 'BATAL')
+                ->exists();
+
+            $isOrderFakturUsed = !empty($order?->faktur_no) && DatFakturHdr::where('faktur_no', $order->faktur_no)
+                ->where('deleted_st', false)
+                ->where('status_pembayaran', '!=', 'BATAL')
+                ->exists();
+
+            if ($submittedFakturNo && !$isSubmittedUsed) {
+                $fakturNo = $submittedFakturNo;
+            } elseif (!empty($order?->faktur_no) && !$isOrderFakturUsed) {
+                $fakturNo = $order->faktur_no;
+            } elseif (!empty($order?->faktur_no)) {
+                $cleanBase = preg_replace('/-\d+$/', '', $order->faktur_no);
+                $existingCount = DatFakturHdr::where('so_id', $order->so_id)
+                    ->where('deleted_st', false)
+                    ->where('status_pembayaran', '!=', 'BATAL')
+                    ->count();
+                $fakturNo = "{$cleanBase}-" . ($existingCount + 1);
+            } else {
                 $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
                 $wilayah = $customer?->wilayah ?: ($customer?->alamat_txt ?: $customer?->customer_nm);
                 $isPpn = ($data['ppn_tipe'] ?? 'NON_PPN') === 'PPN_11';
@@ -565,6 +671,143 @@ class FakturPenjualanService
             }
 
             return $header;
+        });
+    }
+
+    /**
+     * Catat Pembayaran Piutang untuk Faktur Penjualan ini (BKM).
+     */
+    public function recordPayment(int $fakturId, array $data, $user): \App\Models\Keuangan\DatKasMasukHdr
+    {
+        return DB::transaction(function () use ($fakturId, $data, $user) {
+            $faktur = DatFakturHdr::with(['customer', 'order'])->lockForUpdate()->findOrFail($fakturId);
+
+            if ($faktur->status_pembayaran === 'BATAL') {
+                throw new Exception("Tidak dapat mencatat pembayaran untuk faktur yang telah dibatalkan.");
+            }
+
+            if ($faktur->sisa_piutang <= 0) {
+                throw new Exception("Faktur {$faktur->faktur_no} sudah lunas.");
+            }
+
+            $nominal = (float) $data['nominal'];
+            if ($nominal <= 0) {
+                throw new Exception("Nominal pembayaran harus lebih besar dari Rp 0.");
+            }
+
+            $sisa = (float) $faktur->sisa_piutang;
+            if ($nominal > $sisa) {
+                throw new Exception("Nominal pembayaran (Rp " . number_format($nominal, 0, ',', '.') . ") melebihi sisa piutang faktur (Rp " . number_format($sisa, 0, ',', '.') . ").");
+            }
+
+            $kasMasukService = app(\App\Services\Keuangan\KasMasukService::class);
+
+            $payload = [
+                'kas_bank_id'         => $data['kas_bank_id'],
+                'tgl_terima'          => $data['tgl_terima'] ?? now()->toDateString(),
+                'kategori_penerimaan' => 'PELUNASAN_PIUTANG',
+                'customer_id'         => $faktur->customer_id,
+                'penyetor_nama'       => !empty($data['penyetor_nama']) ? $data['penyetor_nama'] : ($faktur->customer?->customer_nm ?? 'Customer'),
+                'metode_terima'       => $data['metode_terima'] ?? 'TRANSFER',
+                'no_referensi_bank'   => $data['no_referensi_bank'] ?? null,
+                'catatan'             => $data['catatan'] ?? "Pelunasan Faktur {$faktur->faktur_no} (PO: " . ($faktur->order?->so_no ?: '-') . ")",
+                'items'               => [
+                    [
+                        'so_id'        => $faktur->so_id,
+                        'uraian'       => "Pelunasan Faktur {$faktur->faktur_no} - " . ($faktur->customer?->customer_nm ?: 'Customer'),
+                        'qty'          => 1,
+                        'satuan'       => 'Trx',
+                        'harga_satuan' => $nominal,
+                        'nominal'      => $nominal,
+                        'catatan'      => $data['catatan'] ?? null,
+                    ]
+                ]
+            ];
+
+            $userModel = $user instanceof \App\Models\User ? $user : \App\Models\User::first();
+            $bkm = $kasMasukService->storeKasMasuk($payload, $userModel);
+
+            // Update Faktur sisa & status
+            $totalDibayarBaru = (float) $faktur->total_dibayar + $nominal;
+            $sisaBaru = max(0, (float) $faktur->total_tagihan - $totalDibayarBaru);
+            $statusBayar = $sisaBaru <= 0 ? 'LUNAS' : 'SEBAGIAN';
+
+            $faktur->update([
+                'total_dibayar'     => $totalDibayarBaru,
+                'sisa_piutang'      => $sisaBaru,
+                'status_pembayaran' => $statusBayar,
+                'updated_by'        => $userModel->name ?? 'SYSTEM',
+            ]);
+
+            Log::info("Pembayaran Faktur ID {$faktur->faktur_id} ({$faktur->faktur_no}) sebesar Rp {$nominal} berhasil dicatat via BKM {$bkm->bkm_no}");
+
+            return $bkm;
+        });
+    }
+
+    /**
+     * Tandai Faktur Penjualan sebagai Piutang Tak Tertagih (Bad Debt / Macet).
+     * Data faktur dan rincian transaksi tetap 100% tersimpan sebagai rekam jejak historis customer.
+     */
+    public function markAsMacet(int $fakturId, string $alasan, ?string $userName = null): DatFakturHdr
+    {
+        return DB::transaction(function () use ($fakturId, $alasan, $userName) {
+            $faktur = DatFakturHdr::with(['customer'])->lockForUpdate()->findOrFail($fakturId);
+
+            if ($faktur->status_pembayaran === 'LUNAS') {
+                throw new Exception("Faktur {$faktur->faktur_no} sudah lunas, tidak dapat ditandai sebagai piutang macet.");
+            }
+
+            if ($faktur->status_pembayaran === 'BATAL') {
+                throw new Exception("Faktur {$faktur->faktur_no} sudah dibatalkan (void).");
+            }
+
+            $currentNote = $faktur->catatan_txt ? trim($faktur->catatan_txt) . "\n" : '';
+            $auditLog = "[PIUTANG TAK TERTAGIH]: " . trim($alasan) . " (Ditandai oleh " . ($userName ?? 'System') . " tgl " . now()->format('d/m/Y H:i') . ")";
+
+            $faktur->update([
+                'status_pembayaran' => 'TAK_TERTAGIH',
+                'tgl_macet'         => now()->toDateString(),
+                'alasan_macet'      => trim($alasan),
+                'macet_by'          => $userName ?? 'System',
+                'catatan_txt'       => $currentNote . $auditLog,
+                'updated_by'        => $userName ?? 'System',
+            ]);
+
+            Log::warning("Faktur Penjualan {$faktur->faktur_no} (ID: {$faktur->faktur_id}, Customer: {$faktur->customer?->customer_nm}) ditandai sebagai PIUTANG TAK TERTAGIH senilai Rp " . number_format($faktur->sisa_piutang, 0, ',', '.') . " oleh " . ($userName ?? 'System') . ". Alasan: {$alasan}");
+
+            return $faktur;
+        });
+    }
+
+    /**
+     * Pulihkan status Faktur dari Tak Tertagih kembali ke status penagihan aktif (Belum Lunas / Sebagian).
+     */
+    public function restoreFromMacet(int $fakturId, ?string $userName = null): DatFakturHdr
+    {
+        return DB::transaction(function () use ($fakturId, $userName) {
+            $faktur = DatFakturHdr::lockForUpdate()->findOrFail($fakturId);
+
+            if ($faktur->status_pembayaran !== 'TAK_TERTAGIH') {
+                throw new Exception("Faktur {$faktur->faktur_no} tidak dalam status Tak Tertagih.");
+            }
+
+            $newStatus = ((float) $faktur->total_dibayar > 0) ? 'SEBAGIAN' : 'BELUM_LUNAS';
+            $currentNote = $faktur->catatan_txt ? trim($faktur->catatan_txt) . "\n" : '';
+            $auditLog = "[PULIHKAN DARI MACET]: Dikembalikan ke penagihan aktif ({$newStatus}) oleh " . ($userName ?? 'System') . " tgl " . now()->format('d/m/Y H:i');
+
+            $faktur->update([
+                'status_pembayaran' => $newStatus,
+                'tgl_macet'         => null,
+                'alasan_macet'      => null,
+                'macet_by'          => null,
+                'catatan_txt'       => $currentNote . $auditLog,
+                'updated_by'        => $userName ?? 'System',
+            ]);
+
+            Log::info("Faktur Penjualan {$faktur->faktur_no} dipulihkan dari Tak Tertagih ke {$newStatus} oleh " . ($userName ?? 'System'));
+
+            return $faktur;
         });
     }
 

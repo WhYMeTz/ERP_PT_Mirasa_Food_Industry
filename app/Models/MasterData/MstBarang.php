@@ -115,6 +115,26 @@ class MstBarang extends Model
     }
 
     /**
+     * Dapatkan HPP per karton terakhir dari batch produksi packaging resmi.
+     */
+    public function getLatestHppAttribute(): float
+    {
+        $latest = \App\Models\Produksi\DatPackagingHdr::where('barang_jadi_id', $this->barang_id)
+            ->where('status_cd', 'POSTED')
+            ->where('deleted_st', false)
+            ->where('hpp_per_karton', '>', 0)
+            ->orderBy('pack_tgl', 'desc')
+            ->orderBy('pack_id', 'desc')
+            ->first();
+
+        if ($latest && (float)$latest->hpp_per_karton > 0) {
+            return (float) $latest->hpp_per_karton;
+        }
+
+        return (float) ($this->harga_beli_standar ?? 0);
+    }
+
+    /**
      * Scope barang khusus Bahan Baku & Bahan Penolong (bukan barang jadi FG atau setengah jadi WIP)
      */
     public function scopeBahanBaku($query)

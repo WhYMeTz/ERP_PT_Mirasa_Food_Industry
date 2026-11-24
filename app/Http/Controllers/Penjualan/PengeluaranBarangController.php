@@ -74,9 +74,7 @@ class PengeluaranBarangController extends Controller
             }
         }
 
-        $defaultSjNo = !empty($prefilledData['order']->surat_jalan_no)
-            ? $prefilledData['order']->surat_jalan_no
-            : $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
+        $defaultSjNo = $prefilledData['suggested_sj_no'] ?? $this->codeGenerator->generateSuratJalanNo(now()->toDateString());
 
         return view('penjualan.pengeluaran.create', compact(
             'readyOrders',
@@ -295,6 +293,10 @@ class PengeluaranBarangController extends Controller
      */
     public function void(Request $request, int $id): RedirectResponse
     {
+        if (!auth()->user()?->canVoidPengeluaran()) {
+            return back()->with('error', 'Akses ditolak: Staf/Admin Gudang tidak memiliki otorisasi untuk membatalkan (void) Surat Jalan. Pembatalan hanya dapat diproses oleh Supervisor Gudang, Sales Admin, Finance, atau Superadmin.');
+        }
+
         $request->validate([
             'reason' => 'required|string|max:255',
         ], [

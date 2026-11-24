@@ -43,6 +43,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Event listener TOP (Angka & Satuan) & Jatuh Tempo Otomatis
+    const elTopVal = document.getElementById('top_val');
+    const elTopUnit = document.getElementById('top_unit');
+    const elFakturTgl = document.getElementById('faktur_tgl');
+    if (elTopVal && elTopUnit) {
+        const onTopChange = function() {
+            updateTopText('top_val', 'top_unit', 'top_txt');
+            syncDueDateFromTop();
+        };
+        elTopVal.addEventListener('input', onTopChange);
+        elTopVal.addEventListener('change', onTopChange);
+        elTopUnit.addEventListener('change', onTopChange);
+    }
+    if (elFakturTgl) {
+        elFakturTgl.addEventListener('change', syncDueDateFromTop);
+    }
+
     // Event submit form validasi
     if (fakturForm) {
         fakturForm.addEventListener('submit', function (e) {
@@ -141,7 +158,7 @@ function populateFakturData(data) {
     document.getElementById('infoSjNo').textContent = pengeluaran.pengeluaran_no || '-';
     document.getElementById('infoSoNo').textContent = order.so_no || '-';
     document.getElementById('customer_po_no').value = data.customer_po_no || order.customer_po_no || '';
-    document.getElementById('top_txt').value = data.top_txt || order.top_txt || customer.top_txt || '14 Hari';
+    setTopFieldsFromText(data.top_txt || order.top_txt || customer.top_txt || '14 Hari', 'top_val', 'top_unit', 'top_txt');
 
     // 3. Nomor Faktur & Tanggal
     if (data.generated_faktur_no) {
@@ -390,4 +407,93 @@ function showFeedback(message, type = 'info') {
         toast.style.transform = 'translateY(-10px)';
         setTimeout(() => toast.remove(), 250);
     }, 3500);
+}
+
+/**
+ * Sinkronisasi input angka & unit dropdown TOP ke hidden input top_txt
+ */
+function updateTopText(valId, unitId, hiddenId) {
+    const elVal = document.getElementById(valId);
+    const elUnit = document.getElementById(unitId);
+    const elHidden = document.getElementById(hiddenId);
+    if (!elVal || !elUnit || !elHidden) return;
+
+    const unit = elUnit.value === 'NOTA' ? 'NOTA' : 'HARI';
+    elVal.disabled = false;
+    elVal.style.backgroundColor = '#ffffff';
+    elVal.style.cursor = 'text';
+
+    const num = parseInt(elVal.value, 10);
+    const v = isNaN(num) || num < 0 ? 0 : num;
+    if (isNaN(num)) elVal.value = 0;
+
+    elHidden.value = unit === 'NOTA' ? (v + ' Nota') : (v + ' Hari');
+}
+
+/**
+ * Parsing string TOP eksisting dan isi ke input angka & unit dropdown
+ */
+function setTopFieldsFromText(topStr, valId, unitId, hiddenId) {
+    const elVal = document.getElementById(valId);
+    const elUnit = document.getElementById(unitId);
+    const elHidden = document.getElementById(hiddenId);
+    if (!elVal || !elUnit || !elHidden) return;
+
+    elVal.disabled = false;
+    elVal.style.backgroundColor = '#ffffff';
+    elVal.style.cursor = 'text';
+
+    const str = (topStr || '').trim();
+    if (!str || str === '-' || str.toLowerCase().includes('tidak ada')) {
+        elUnit.value = 'HARI';
+        elVal.value = 0;
+        elHidden.value = '0 Hari';
+        return;
+    }
+
+    const upper = str.toUpperCase();
+    if (upper.includes('NOTA')) {
+        elUnit.value = 'NOTA';
+        const m = upper.match(/\d+/);
+        const v = m ? parseInt(m[0], 10) : 0;
+        elVal.value = v;
+        elHidden.value = v + ' Nota';
+        return;
+    }
+
+    // Default: Hari
+    elUnit.value = 'HARI';
+    const m = upper.match(/\d+/);
+    const v = m ? parseInt(m[0], 10) : 0;
+    elVal.value = v;
+    elHidden.value = v + ' Hari';
+}
+
+/**
+ * Hitung otomatis tgl_jatuh_tempo berdasarkan tanggal faktur dan TOP
+ */
+function syncDueDateFromTop() {
+    const elFakturTgl = document.getElementById('faktur_tgl');
+    const elTempo = document.getElementById('tgl_jatuh_tempo');
+    const elTopUnit = document.getElementById('top_unit');
+    const elTopVal = document.getElementById('top_val');
+    if (!elFakturTgl || !elTempo || !elTopUnit || !elFakturTgl.value) return;
+
+    const base = new Date(elFakturTgl.value);
+    if (isNaN(base.getTime())) return;
+
+    const unit = elTopUnit.value;
+    let daysToAdd = 0;
+    if (unit === 'NOTA') {
+        const n = parseInt(elTopVal?.value, 10) || 0;
+        daysToAdd = n * 14;
+    } else { // HARI
+        daysToAdd = parseInt(elTopVal?.value, 10) || 0;
+    }
+
+    base.setDate(base.getDate() + daysToAdd);
+    const yyyy = base.getFullYear();
+    const mm = String(base.getMonth() + 1).padStart(2, '0');
+    const dd = String(base.getDate()).padStart(2, '0');
+    elTempo.value = `${yyyy}-${mm}-${dd}`;
 }

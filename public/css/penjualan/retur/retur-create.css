@@ -207,13 +207,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    font-size: 0.775rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    padding: 3px 8px;
+    padding: 3px 7px;
     border-radius: 4px;
     border: 1px solid transparent;
     transition: all 0.15s ease;
+    user-select: none;
+    line-height: 1.25;
+}
+
+.disposisi-option input[type="radio"] {
+    margin: 0;
+    cursor: pointer;
+    accent-color: #059669;
 }
 
 .disposisi-option.opt-simpan {
@@ -223,7 +231,12 @@
 }
 
 .disposisi-option.opt-simpan:hover {
+    background: #dcfce7;
     border-color: #86efac;
+}
+
+.disposisi-option.opt-musnah input[type="radio"] {
+    accent-color: #dc2626;
 }
 
 .disposisi-option.opt-musnah {
@@ -233,6 +246,7 @@
 }
 
 .disposisi-option.opt-musnah:hover {
+    background: #fee2e2;
     border-color: #fca5a5;
 }
 

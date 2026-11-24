@@ -246,8 +246,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             const infoNopol = document.getElementById('infoNopol');
                             const infoCatatan = document.getElementById('infoCatatan');
 
-                            const sjNo = order.surat_jalan_no || '-';
-                            if (sjInput) sjInput.value = order.surat_jalan_no || '';
+                            const sjNo = data.suggested_sj_no || order.surat_jalan_no || '-';
+                            if (sjInput) sjInput.value = data.suggested_sj_no || order.surat_jalan_no || '';
                             if (infoSjNo) infoSjNo.textContent = sjNo;
 
                             const rawTgl = order.tgl_kirim_aktual || order.tgl_kirim_estimasi || order.so_tgl;

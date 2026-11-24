@@ -140,11 +140,36 @@
                 </div>
 
                 {{-- [R2-C2] Syarat Pembayaran (TOP) --}}
+                @php
+                    $initTopTxt = old('top_txt', '');
+                    $initVal = 0;
+                    $initUnit = 'HARI';
+                    if (!empty($initTopTxt)) {
+                        $upTop = strtoupper(trim($initTopTxt));
+                        if (str_contains($upTop, 'NOTA')) {
+                            preg_match('/\d+/', $upTop, $mTop);
+                            $initVal = isset($mTop[0]) ? (int)$mTop[0] : 0;
+                            $initUnit = 'NOTA';
+                        } elseif (preg_match('/\d+/', $upTop, $mTop)) {
+                            $initVal = (int)$mTop[0];
+                            $initUnit = 'HARI';
+                        }
+                    }
+                @endphp
                 <div>
-                    <label for="top_txt" class="po-field-label">
+                    <label for="top_val" class="po-field-label">
                         Syarat Pembayaran (TOP)
                     </label>
-                    <input type="text" id="top_txt" name="top_txt" value="{{ old('top_txt') }}" placeholder="Contoh: 7 Hari / 1 Nota" class="po-field-input">
+                    <div style="display: flex; gap: 0.35rem; align-items: stretch;">
+                        <input type="number" id="top_val" min="0" max="365" class="po-field-input" 
+                               style="width: 75px; text-align: center; font-weight: 700; flex-shrink: 0;" 
+                               placeholder="0" value="{{ $initVal }}">
+                        <select id="top_unit" class="po-field-select" style="flex: 1;">
+                            <option value="HARI" {{ $initUnit === 'HARI' ? 'selected' : '' }}>Hari</option>
+                            <option value="NOTA" {{ $initUnit === 'NOTA' ? 'selected' : '' }}>Nota</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="top_txt" name="top_txt" value="{{ old('top_txt', $initTopTxt ?: ($initVal . ' ' . ($initUnit === 'NOTA' ? 'Nota' : 'Hari'))) }}">
                 </div>
 
                 {{-- [R2-C3] Pajak Faktur (PPN) --}}
@@ -269,16 +294,15 @@
                     <thead>
                         <tr>
                             <th style="width: 35px; text-align: center;">No</th>
-                            <th style="width: 110px; text-align: center;">Kode Barang</th>
-                            <th style="min-width: 250px; text-align: left;">Nama Produk / Barang Jadi <span style="color:#ef4444;">*</span></th>
-                            <th style="width: 135px; text-align: center;">Ketersediaan Stok</th>
-                            <th style="width: 85px; text-align: right;">Jumlah <span style="color:#ef4444;">*</span></th>
-                            <th style="width: 115px; text-align: center;">Satuan</th>
-                            <th style="width: 125px; text-align: right;">Harga Satuan <span style="color:#ef4444;">*</span></th>
-                            <th style="width: 80px; text-align: right;">Diskon (%)</th>
-                            <th style="width: 105px; text-align: right;">Potongan (Rp)</th>
-                            <th style="width: 95px; text-align: center;">PPN</th>
-                            <th style="width: 135px; text-align: right;">Total Harga</th>
+                            <th style="min-width: 260px; text-align: left;">Produk / Barang Jadi <span style="color:#ef4444;">*</span></th>
+                            <th style="width: 80px; text-align: right;">Jumlah <span style="color:#ef4444;">*</span></th>
+                            <th style="width: 100px; text-align: center;">Satuan</th>
+                            <th style="width: 120px; text-align: right;">Harga Satuan <span style="color:#ef4444;">*</span></th>
+                            <th style="width: 190px; text-align: left;">Estimasi Margin (HPP)</th>
+                            <th style="width: 75px; text-align: right;">Diskon (%)</th>
+                            <th style="width: 95px; text-align: right;">Potongan (Rp)</th>
+                            <th style="width: 120px; text-align: center;">PPN</th>
+                            <th style="width: 125px; text-align: right;">Total Harga</th>
                             <th style="width: 40px; text-align: center;">Aksi</th>
                         </tr>
                     </thead>

@@ -64,7 +64,7 @@
                     <th>Nama Barang</th>
                     <th>Jenis</th>
                     <th>Satuan Dasar</th>
-                    <th style="text-align: right;">Batas Minimum</th>
+                    <th style="text-align: right;">Stok Minimum (Qty)</th>
                     <th style="text-align: right;">Harga Standar</th>
                     <th style="width: 130px; text-align: right;">Aksi</th>
                 </tr>
@@ -85,6 +85,7 @@
                         <td>{{ $item->satuanDasar->satuan_nm ?? '-' }} ({{ $item->satuanDasar->satuan_cd ?? '-' }})</td>
                         <td style="text-align: right; font-weight: 600; color: {{ (float) $item->batas_minimum_qty > 0 ? '#b45309' : '#94a3b8' }};">
                             {{ number_format((float) $item->batas_minimum_qty, 2, ',', '.') }}
+                            <small style="font-size: 0.75rem; color: #64748b; font-weight: normal;">{{ $item->satuanDasar->satuan_cd ?? '' }}</small>
                         </td>
                         <td style="text-align: right; font-weight: 600; color: #0f172a;">
                             Rp {{ number_format((float) $item->harga_beli_standar, 2, ',', '.') }}

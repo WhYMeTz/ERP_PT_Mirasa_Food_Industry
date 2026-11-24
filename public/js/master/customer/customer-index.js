@@ -116,6 +116,7 @@ function editCustomer(id, kode, nama, kontak, alamat, klasifikasi, wilayah, kode
     if (elTop) elTop.value = topTxt || '';
     if (elPpn) elPpn.value = defaultPpn || 'NON_PPN';
 
+    setTopFieldsFromText(topTxt || '', 'edit_top_val', 'edit_top_unit', 'edit_top_txt');
     handleKlasifikasiChange('edit');
     
     const baseUrl = (window.masterCustomerConfig && window.masterCustomerConfig.baseUrl) 
@@ -145,18 +146,15 @@ function handleKlasifikasiChange(prefix) {
     const val = klasifikasiElem.value;
 
     if (val === 'IFM') {
-        if (topElem && (!topElem.value || topElem.value === 'Tinggal 1 Nota')) {
-            topElem.value = '7 Hari';
+        if (!topElem || !topElem.value || topElem.value === 'Tinggal 1 Nota' || topElem.value === '1 Nota') {
+            setTopFieldsFromText('7 Hari', prefix + '_top_val', prefix + '_top_unit', prefix + '_top_txt');
         }
         if (refElem && !refElem.value) {
             refElem.placeholder = 'Contoh: IFM01.012007';
         }
         if (ppnGroup) ppnGroup.style.display = 'none';
     } else if (val === 'MIDI_ALFA' || val === 'IDM' || val === 'IDM_ALFA') {
-        if (topElem) {
-            topElem.value = '';
-            topElem.placeholder = 'Tidak ada TOP (Kosong / -)';
-        }
+        setTopFieldsFromText('-', prefix + '_top_val', prefix + '_top_unit', prefix + '_top_txt');
         if (refElem && !refElem.value) {
             refElem.placeholder = 'Kosong';
         }
@@ -164,8 +162,8 @@ function handleKlasifikasiChange(prefix) {
             ppnGroup.style.display = 'none';
         }
     } else { // MANUAL
-        if (topElem && (!topElem.value || topElem.value === '7 Hari' || topElem.value === '14 Hari')) {
-            topElem.value = 'Tinggal 1 Nota';
+        if (!topElem || !topElem.value || topElem.value === '7 Hari' || topElem.value === '14 Hari') {
+            setTopFieldsFromText('1 Nota', prefix + '_top_val', prefix + '_top_unit', prefix + '_top_txt');
         }
         if (refElem && !refElem.value) {
             refElem.placeholder = 'Kode Sales / Toko (Opsional)';
@@ -199,9 +197,84 @@ function openDeleteCustomerModal(id, kode, nama) {
     }
 }
 
+// Event listeners untuk input TOP (Create & Edit Modal Customer)
+document.addEventListener('DOMContentLoaded', function() {
+    ['create', 'edit'].forEach(prefix => {
+        const v = document.getElementById(prefix + '_top_val');
+        const u = document.getElementById(prefix + '_top_unit');
+        if (v && u) {
+            v.addEventListener('input', () => updateTopText(prefix + '_top_val', prefix + '_top_unit', prefix + '_top_txt'));
+            v.addEventListener('change', () => updateTopText(prefix + '_top_val', prefix + '_top_unit', prefix + '_top_txt'));
+            u.addEventListener('change', () => updateTopText(prefix + '_top_val', prefix + '_top_unit', prefix + '_top_txt'));
+        }
+    });
+});
+
+/**
+ * Sinkronisasi input angka & unit dropdown TOP ke hidden input top_txt
+ */
+function updateTopText(valId, unitId, hiddenId) {
+    const elVal = document.getElementById(valId);
+    const elUnit = document.getElementById(unitId);
+    const elHidden = document.getElementById(hiddenId);
+    if (!elVal || !elUnit || !elHidden) return;
+
+    const unit = elUnit.value === 'NOTA' ? 'NOTA' : 'HARI';
+    elVal.disabled = false;
+    elVal.style.backgroundColor = '#ffffff';
+    elVal.style.cursor = 'text';
+
+    const num = parseInt(elVal.value, 10);
+    const v = isNaN(num) || num < 0 ? 0 : num;
+    if (isNaN(num)) elVal.value = 0;
+
+    elHidden.value = unit === 'NOTA' ? (v + ' Nota') : (v + ' Hari');
+}
+
+/**
+ * Parsing string TOP eksisting dan isi ke input angka & unit dropdown
+ */
+function setTopFieldsFromText(topStr, valId, unitId, hiddenId) {
+    const elVal = document.getElementById(valId);
+    const elUnit = document.getElementById(unitId);
+    const elHidden = document.getElementById(hiddenId);
+    if (!elVal || !elUnit || !elHidden) return;
+
+    elVal.disabled = false;
+    elVal.style.backgroundColor = '#ffffff';
+    elVal.style.cursor = 'text';
+
+    const str = (topStr || '').trim();
+    if (!str || str === '-' || str.toLowerCase().includes('tidak ada')) {
+        elUnit.value = 'HARI';
+        elVal.value = 0;
+        elHidden.value = '0 Hari';
+        return;
+    }
+
+    const upper = str.toUpperCase();
+    if (upper.includes('NOTA')) {
+        elUnit.value = 'NOTA';
+        const m = upper.match(/\d+/);
+        const v = m ? parseInt(m[0], 10) : 0;
+        elVal.value = v;
+        elHidden.value = v + ' Nota';
+        return;
+    }
+
+    // Default: Hari
+    elUnit.value = 'HARI';
+    const m = upper.match(/\d+/);
+    const v = m ? parseInt(m[0], 10) : 0;
+    elVal.value = v;
+    elHidden.value = v + ' Hari';
+}
+
 // Expose fungsi ke window
 window.toggleSmartActionDropdown = toggleSmartActionDropdown;
 window.closeAllActionDropdowns = closeAllActionDropdowns;
 window.editCustomer = editCustomer;
 window.openDeleteCustomerModal = openDeleteCustomerModal;
 window.handleKlasifikasiChange = handleKlasifikasiChange;
+window.updateTopText = updateTopText;
+window.setTopFieldsFromText = setTopFieldsFromText;

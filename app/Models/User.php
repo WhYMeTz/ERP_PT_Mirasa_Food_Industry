@@ -331,22 +331,54 @@ class User extends Authenticatable
      */
     public function canAccessSo(): bool
     {
+        if ($this->isGudang() && !$this->isSuperAdmin()) {
+            return false;
+        }
+
         return $this->isSuperAdmin() || $this->canDo('so_view') || $this->canDo('so_create');
     }
 
     public function canCreateSo(): bool
     {
+        if ($this->isGudang() && !$this->isSuperAdmin()) {
+            return false;
+        }
+
         return $this->isSuperAdmin() || $this->canDo('so_create');
     }
 
     public function canEditSo(): bool
     {
+        if ($this->isGudang() && !$this->isSuperAdmin()) {
+            return false;
+        }
+
         return $this->isSuperAdmin() || $this->canDo('so_edit') || $this->canDo('so_create');
     }
 
     public function canDeleteSo(): bool
     {
+        if ($this->isGudang() && !$this->isSuperAdmin()) {
+            return false;
+        }
+
         return $this->isSuperAdmin() || $this->canDo('so_delete');
+    }
+
+    /**
+     * Hak akses Faktur Penjualan (Commercial Invoice) & Tagihan Piutang
+     */
+    public function canAccessFaktur(): bool
+    {
+        if ($this->isGudang() && !$this->isSuperAdmin()) {
+            return false;
+        }
+
+        return $this->isSuperAdmin()
+            || $this->isFinance()
+            || $this->hasRole(['ADMIN_PENJUALAN', 'SALES', 'DIREKSI', 'MANAJER', 'KEUANGAN', 'OWNER'])
+            || $this->canDo('faktur_view')
+            || $this->canAccessSo();
     }
 
     /**
@@ -354,16 +386,21 @@ class User extends Authenticatable
      */
     public function canAccessPengeluaran(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('pengeluaran_view') || $this->canAccessSo() || $this->canAccessTerima();
+        return $this->isSuperAdmin() || $this->canDo('pengeluaran_view') || $this->canAccessSo() || $this->canAccessTerima() || $this->isGudang();
     }
 
     public function canCreatePengeluaran(): bool
     {
-        return $this->isSuperAdmin() || $this->canDo('pengeluaran_create') || $this->canCreateSo() || $this->canCreateTerima();
+        return $this->isSuperAdmin() || $this->canDo('pengeluaran_create') || $this->canCreateSo() || $this->canCreateTerima() || $this->isGudang();
     }
 
     public function canVoidPengeluaran(): bool
     {
+        // Staf / Admin Gudang operasional tidak boleh void Surat Jalan kecuali memiliki izin khusus supervisor
+        if ($this->isGudang() && !$this->isSuperAdmin() && !$this->canDo('pengeluaran_void')) {
+            return false;
+        }
+
         return $this->isSuperAdmin() || $this->canDo('pengeluaran_void') || $this->canDeleteSo();
     }
 
@@ -1209,14 +1246,19 @@ class User extends Authenticatable
         return $this->canDeleteQcMobile() || $this->canDeleteQcWeb();
     }
 
+    public function canAccessDashboard(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canAccessTerima() || $this->canAccessPo() || $this->canAccessHutang()
+            || $this->canAccessSo()
+            || $this->canAccessProduksi();
+    }
+
     /**
      * Dapatkan nama rute halaman muka (dashboard) default berdasarkan role
      */
     public function getDashboardRoute(): string
     {
-        if (in_array(strtoupper((string) $this->role_cd), ['DIREKSI', 'MANAJER'])) {
-            return 'gudang.po.approval_center';
-        }
 
         if ($this->isOperatorPackaging()) {
             return 'produksi.packaging.mobile';
@@ -1224,6 +1266,10 @@ class User extends Authenticatable
 
         if ($this->isQc()) {
             return 'qc.inbound.create';
+        }
+
+        if ($this->canAccessDashboard()) {     // sisipkan di sini (mulai baris 1212)
+            return 'dashboard';
         }
 
         if ($this->isProduksi()) {

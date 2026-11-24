@@ -1320,6 +1320,8 @@
         header .pill-item:hover, header .pill-dropdown-btn:hover { background: #f1f5f9; }
         /* grup yang sedang terbuka */
         header .pill-dropdown.active .pill-dropdown-btn { background: #f1f5f9 !important; color: #0f172a; box-shadow: none !important; }
+        header .pill-dropdown.active .pill-dropdown-btn .nav-parent-badge,
+        .pill-dropdown.active .pill-dropdown-btn .nav-parent-badge { display: none !important; }
         header .pill-dropdown-btn.active::after { display: none; }
         /* halaman yang sedang dibuka */
         header .pill-dropdown .pill-dropdown-btn.active,
@@ -1423,6 +1425,20 @@
 
             @auth
                 <nav class="pill-nav">
+                    {{-- DASHBOARD --}}
+                    @if (Auth::user()->canAccessDashboard())
+                        <a href="{{ route('dashboard') }}"
+                            class="pill-item {{ request()->routeIs('dashboard') ? 'active' : '' }}"
+                            style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+                            </svg>
+                            <span class="nav-text-full">Dashboard</span>
+                            <span class="nav-text-short">Dashboard</span>
+                        </a>
+                    @endif
+
                     {{-- 0. PORTAL EKSEKUTIF / PERSETUJUAN PO KHUSUS ATASAN --}}
                     @if (Auth::user()->canApprovePo())
                         @php
@@ -1909,7 +1925,7 @@
                                 <span class="nav-text-full">Penjualan</span>
                                 <span class="nav-text-short">Penjualan</span>
                                 @if($pendingShipCount > 0)
-                                    <span
+                                    <span class="nav-parent-badge"
                                         style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 9999px; line-height: 1.2;">{{ $pendingShipCount }}</span>
                                 @endif
                                 <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1922,6 +1938,7 @@
                                 <div class="mega-grid">
                                     <div class="mega-col">
                                         <div class="mega-col-title">Order &amp; Retur Langganan</div>
+                                        @if(Auth::user()?->canAccessSo())
                                         <a href="{{ route('penjualan.so.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1935,6 +1952,7 @@
                                                     customer</span>
                                             </div>
                                         </a>
+                                        @endif
                                         <a href="{{ route('penjualan.langsung.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.langsung.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1982,12 +2000,20 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                             </svg>
-                                            <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
+                                            <div style="display: flex; flex-direction: column; flex: 1;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                                    <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
+                                                    @if($pendingShipCount > 0)
+                                                        <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 9999px; line-height: 1.2; white-space: nowrap; flex-shrink: 0;" title="{{ $pendingShipCount }} antrean PO menunggu pengeluaran barang">
+                                                            {{ $pendingShipCount }}
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Fisik keluar Gudang FG &amp;
                                                     muat armada</span>
                                             </div>
                                         </a>
+                                        @if(Auth::user()?->canAccessFaktur())
                                         <a href="{{ route('penjualan.faktur.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.faktur.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2001,9 +2027,11 @@
                                                     &amp; monitoring tempo</span>
                                             </div>
                                         </a>
+                                        @endif
                                     </div>
                                     <div class="mega-col">
                                         <div class="mega-col-title">Laporan &amp; Analisis</div>
+                                        @if(Auth::user()?->canAccessSo() || Auth::user()?->canAccessFaktur() || Auth::user()?->isSuperAdmin())
                                         <a href="{{ route('penjualan.laporan.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.laporan.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2016,6 +2044,7 @@
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Konsolidasi PO &amp; Non-PO, omzet, produk terlaris</span>
                                             </div>
                                         </a>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -2534,30 +2563,7 @@
                                                 <span>Formula Resep (BOM)</span>
                                             </a>
                                         @endif
-                                        @if (Auth::user()->canAccessMesin())
-                                            <a href="{{ route('master.mesin.index') }}"
-                                                class="mega-item {{ request()->routeIs('master.mesin.*') ? 'active' : '' }}">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #d97706;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                <span>Mesin &amp; Fasilitas Pabrik</span>
-                                            </a>
-                                        @endif
-                                        @if (Auth::user()->canAccessTarifProduksi())
-                                            <a href="{{ route('master.tarif_produksi.index') }}"
-                                                class="mega-item {{ request()->routeIs('master.tarif_produksi.*') ? 'active' : '' }}">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #10b981;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Standar Biaya FOH</span>
-                                            </a>
-                                        @endif
+                                        {{-- Catatan: Menu Mesin & Fasilitas Pabrik serta Standar Biaya FOH di-hidden dari navigasi atas arahan bisnis/mentor. Backend kalkulasi HPP tetap aman. --}}
                                     </div>
 
                                     {{-- Kolom 2: Relasi & Sistem Admin --}}

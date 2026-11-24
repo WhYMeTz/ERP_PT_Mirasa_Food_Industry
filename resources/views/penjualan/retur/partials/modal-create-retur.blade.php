@@ -129,7 +129,7 @@
                                     Rincian Barang &amp; Disposisi Fisik Retur <span style="color: #dc2626;">*</span>
                                 </label>
                                 <span style="font-size: 0.75rem; color: #64748b;">
-                                    Pilih apakah barang retur <strong>Masuk Persediaan (Sortir KW 2)</strong> atau <strong>Dimusnahkan di Pabrik (Scrap)</strong>.
+                                    Pilih apakah barang retur <strong>Masuk Persediaan (Sortir KW 2)</strong> atau <strong>Dimusnahkan Resmi di Pabrik</strong>.
                                 </span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.35rem;">
@@ -176,7 +176,7 @@
                                 <strong id="createReturSumMasuk" style="font-size: 1.1rem; font-family: monospace; color: #15803d;">0 Karton</strong>
                             </div>
                             <div>
-                                <span style="font-size: 0.75rem; color: #991b1b; font-weight: 600; display: block;">Dimusnahkan (Scrap):</span>
+                                <span style="font-size: 0.75rem; color: #991b1b; font-weight: 600; display: block;">Dimusnahkan:</span>
                                 <strong id="createReturSumMusnah" style="font-size: 1.1rem; font-family: monospace; color: #dc2626;">0 Karton</strong>
                             </div>
                             <div style="text-align: right;">

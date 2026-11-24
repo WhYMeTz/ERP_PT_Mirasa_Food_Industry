@@ -59,6 +59,7 @@ use App\Http\Controllers\Manajemen\JadwalController;
 use App\Http\Controllers\Manajemen\KodeShiftController;
 use App\Http\Controllers\Manajemen\MultiPayrollController;
 use App\Http\Controllers\Manajemen\WhatsAppWebhookController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +102,7 @@ Route::get('/ajax/generate-code', [CodeGeneratorController::class, 'generate'])-
 
 // Authenticated Routes (Harus Login)
 Route::middleware('auth')->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     // Manajemen Pengguna & Pengaturan Hak Akses Sistem (Khusus Superadmin)
     Route::get('pengguna-sistem/hak-akses', [UserController::class, 'permissions'])
         ->name('admin.users.permissions')
@@ -598,12 +600,16 @@ Route::middleware('auth')->group(function () {
         // Modul Faktur Penjualan (Commercial Invoice & AR Recognition)
         Route::get('faktur/ajax-surat-jalan-detail/{id}', [FakturPenjualanController::class, 'ajaxSuratJalanDetail'])->name('faktur.ajax-surat-jalan-detail');
         Route::get('faktur/{id}/export-pdf', [FakturPenjualanController::class, 'exportPdf'])->name('faktur.export-pdf');
+        Route::post('faktur/{id}/record-payment', [FakturPenjualanController::class, 'recordPayment'])->name('faktur.record-payment');
+        Route::post('faktur/{id}/mark-macet', [FakturPenjualanController::class, 'markMacet'])->name('faktur.mark-macet');
+        Route::post('faktur/{id}/restore-macet', [FakturPenjualanController::class, 'restoreMacet'])->name('faktur.restore-macet');
         Route::post('faktur/{id}/void', [FakturPenjualanController::class, 'void'])->name('faktur.void');
         Route::resource('faktur', FakturPenjualanController::class)->except(['edit', 'update', 'destroy']);
 
         // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
         Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
         Route::get('retur/create', [SoReturController::class, 'create'])->name('retur.create');
+        Route::get('retur/export-excel', [SoReturController::class, 'exportExcel'])->name('retur.export-excel');
         Route::post('retur', [SoReturController::class, 'store'])->name('retur.store');
         Route::get('retur/so-data/{id}', [SoReturController::class, 'getSoData'])->name('retur.so-data');
         Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');

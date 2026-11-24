@@ -28,6 +28,11 @@
                             <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                             Lunas
                         </span>
+                    @elseif ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+                        <span class="badge-status macet">
+                            <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                            Piutang Tak Tertagih
+                        </span>
                     @elseif ($faktur->status_pembayaran === 'SEBAGIAN')
                         <span class="badge-status sebagian">
                             <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
@@ -58,6 +63,34 @@
                     <span>Cetak Faktur (PDF)</span>
                 </a>
 
+                @if ($faktur->sisa_piutang > 0 && !in_array($faktur->status_pembayaran, ['BATAL', 'TAK_TERTAGIH']))
+                    <button type="button" class="btn btn-primary" 
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #0284c7; border-color: #0369a1; color: #ffffff;"
+                            onclick="openFakturPaymentModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($faktur->customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->total_tagihan }}, {{ (float) $faktur->sisa_piutang }})"
+                            title="Catat bukti kas masuk (BKM) untuk pelunasan faktur ini">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Catat Pembayaran (BKM)</span>
+                    </button>
+
+                    <button type="button" class="btn btn-secondary" 
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; color: #be123c; border-color: #fecdd3; background: #fff1f2;"
+                            onclick="openMacetModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($faktur->customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->sisa_piutang }})"
+                            title="Tandai faktur ini sebagai piutang tak tertagih untuk rekam jejak kredit">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Tandai Piutang Tak Tertagih</span>
+                    </button>
+                @endif
+
+                @if ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+                    <form method="POST" action="{{ route('penjualan.faktur.restore-macet', $faktur->faktur_id) }}" onsubmit="return confirm('Apakah Anda yakin ingin memulihkan Faktur {{ $faktur->faktur_no }} kembali ke daftar tagihan aktif?')" style="margin: 0; display: inline-flex;">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; color: #047857; border-color: #a7f3d0; background: #ecfdf5;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Pulihkan ke Tagihan Aktif</span>
+                        </button>
+                    </form>
+                @endif
+
                 @if ($faktur->pengeluaran)
                     <a href="{{ route('penjualan.pengeluaran.show', $faktur->pengeluaran->pengeluaran_id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
@@ -82,6 +115,19 @@
             </div>
         </div>
     </div>
+
+    @if ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+        <div style="background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #881337;">
+            <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>Faktur Ini Dinyatakan Sebagai Piutang Tak Tertagih</span>
+            </div>
+            <div style="font-size: 0.8125rem; margin-top: 0.45rem; color: #9f1239; line-height: 1.5;">
+                <div><strong>Tanggal Penetapan:</strong> {{ $faktur->tgl_macet ? \Carbon\Carbon::parse($faktur->tgl_macet)->translatedFormat('d F Y') : '-' }} &bull; <strong>Ditetapkan Oleh:</strong> {{ $faktur->macet_by ?? 'System' }}</div>
+                <div><strong>Alasan Audit:</strong> {{ $faktur->alasan_macet ?: '-' }}</div>
+            </div>
+        </div>
+    @endif
 
     @if ($faktur->status_pembayaran === 'BATAL')
         <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #991b1b;">
@@ -166,7 +212,35 @@
                 <tr>
                     <td style="padding: 0.35rem 0; color: #64748b; width: 130px;">Surat Jalan No.</td>
                     <td style="font-weight: 700; font-family: monospace;">
-                        @if ($faktur->pengeluaran)
+                        @if ($faktur->sisa_piutang > 0 && !in_array($faktur->status_pembayaran, ['BATAL', 'TAK_TERTAGIH']))
+                    <button type="button" class="btn btn-primary" 
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; font-weight: 700; background: #0284c7; border-color: #0369a1; color: #ffffff;"
+                            onclick="openFakturPaymentModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($faktur->customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->total_tagihan }}, {{ (float) $faktur->sisa_piutang }})"
+                            title="Catat bukti kas masuk (BKM) untuk pelunasan faktur ini">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Catat Pembayaran (BKM)</span>
+                    </button>
+
+                    <button type="button" class="btn btn-secondary" 
+                            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; color: #be123c; border-color: #fecdd3; background: #fff1f2;"
+                            onclick="openMacetModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($faktur->customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->sisa_piutang }})"
+                            title="Tandai faktur ini sebagai piutang tak tertagih untuk rekam jejak kredit">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Tandai Piutang Tak Tertagih</span>
+                    </button>
+                @endif
+
+                @if ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+                    <form method="POST" action="{{ route('penjualan.faktur.restore-macet', $faktur->faktur_id) }}" onsubmit="return confirm('Apakah Anda yakin ingin memulihkan Faktur {{ $faktur->faktur_no }} kembali ke daftar tagihan aktif?')" style="margin: 0; display: inline-flex;">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; color: #047857; border-color: #a7f3d0; background: #ecfdf5;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Pulihkan ke Tagihan Aktif</span>
+                        </button>
+                    </form>
+                @endif
+
+                @if ($faktur->pengeluaran)
                             <a href="{{ route('penjualan.pengeluaran.show', $faktur->pengeluaran->pengeluaran_id) }}" style="color: #0284c7; text-decoration: none;">
                                 {{ $faktur->pengeluaran->pengeluaran_no }}
                             </a>
@@ -368,8 +442,10 @@
 
 </div>
 
-{{-- MODAL VOID FAKTUR --}}
+{{-- MODAL VOID, PEMBAYARAN, & PIUTANG MACET --}}
 @include('penjualan.faktur.partials.modal-void')
+@include('penjualan.faktur.partials.modal-record-payment')
+@include('penjualan.faktur.partials.modal-mark-macet')
 
 @endsection
 

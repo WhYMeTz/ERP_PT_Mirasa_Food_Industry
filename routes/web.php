@@ -58,6 +58,7 @@ use App\Http\Controllers\Manajemen\JadwalController;
 use App\Http\Controllers\Manajemen\KodeShiftController;
 use App\Http\Controllers\Manajemen\MultiPayrollController;
 use App\Http\Controllers\Manajemen\WhatsAppWebhookController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -100,6 +101,7 @@ Route::get('/ajax/generate-code', [CodeGeneratorController::class, 'generate'])-
 
 // Authenticated Routes (Harus Login)
 Route::middleware('auth')->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     // Manajemen Pengguna & Pengaturan Hak Akses Sistem (Khusus Superadmin)
     Route::get('pengguna-sistem/hak-akses', [UserController::class, 'permissions'])
         ->name('admin.users.permissions')

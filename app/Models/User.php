@@ -1184,14 +1184,19 @@ class User extends Authenticatable
         return $this->canDeleteQcMobile() || $this->canDeleteQcWeb();
     }
 
+    public function canAccessDashboard(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canAccessTerima() || $this->canAccessPo() || $this->canAccessHutang()
+            || $this->canAccessSo()
+            || $this->canAccessProduksi();
+    }
+
     /**
      * Dapatkan nama rute halaman muka (dashboard) default berdasarkan role
      */
     public function getDashboardRoute(): string
     {
-        if (in_array(strtoupper((string) $this->role_cd), ['DIREKSI', 'MANAJER'])) {
-            return 'gudang.po.approval_center';
-        }
 
         if ($this->isOperatorPackaging()) {
             return 'produksi.packaging.mobile';
@@ -1199,6 +1204,10 @@ class User extends Authenticatable
 
         if ($this->isQc()) {
             return 'qc.inbound.create';
+        }
+
+        if ($this->canAccessDashboard()) {     // sisipkan di sini (mulai baris 1212)
+            return 'dashboard';
         }
 
         if ($this->isProduksi()) {

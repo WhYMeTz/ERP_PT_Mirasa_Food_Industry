@@ -214,6 +214,50 @@ class FakturPenjualanController extends Controller
     }
 
     /**
+     * Tandai Faktur Penjualan sebagai Piutang Tak Tertagih (Bad Debt).
+     */
+    public function markMacet(Request $request, int $id): RedirectResponse
+    {
+        if (!auth()->user()?->canAccessFaktur()) {
+            return back()->with('error', 'Akses ditolak: Anda tidak memiliki wewenang untuk menandai piutang tak tertagih.');
+        }
+
+        $request->validate([
+            'alasan_macet' => 'required|string|max:500',
+        ], [
+            'alasan_macet.required' => 'Alasan penandaan piutang tak tertagih wajib diisi sebagai rekam jejak audit.',
+        ]);
+
+        try {
+            $userName = auth()->user()?->nama_lengkap ?? (auth()->user()?->name ?? 'Administrator');
+            $faktur = $this->fakturService->markAsMacet($id, $request->input('alasan_macet'), $userName);
+
+            return back()->with('toast_success', "Faktur {$faktur->faktur_no} berhasil ditandai sebagai Piutang Tak Tertagih. Rekam jejak risiko customer telah diperbarui.");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal menandai piutang tak tertagih: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Pulihkan status Faktur dari Tak Tertagih kembali ke penagihan aktif.
+     */
+    public function restoreMacet(int $id): RedirectResponse
+    {
+        if (!auth()->user()?->canAccessFaktur()) {
+            return back()->with('error', 'Akses ditolak: Anda tidak memiliki wewenang untuk memulihkan status faktur.');
+        }
+
+        try {
+            $userName = auth()->user()?->nama_lengkap ?? (auth()->user()?->name ?? 'Administrator');
+            $faktur = $this->fakturService->restoreFromMacet($id, $userName);
+
+            return back()->with('toast_success', "Faktur {$faktur->faktur_no} berhasil dipulihkan kembali ke daftar penagihan aktif.");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal memulihkan status faktur: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Batalkan Faktur Penjualan (Void Invoice).
      */
     public function void(Request $request, int $id): RedirectResponse

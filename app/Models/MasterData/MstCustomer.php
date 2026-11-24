@@ -65,4 +65,21 @@ class MstCustomer extends Model
     {
         return in_array($this->klasifikasi, [self::KLASIFIKASI_MIDI_ALFA, self::KLASIFIKASI_IDM_ALFA]);
     }
+
+    public function fakturs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Penjualan\DatFakturHdr::class, 'customer_id', 'customer_id');
+    }
+
+    public function badDebtFakturs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Penjualan\DatFakturHdr::class, 'customer_id', 'customer_id')
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', 'TAK_TERTAGIH');
+    }
+
+    public function hasBadDebt(): bool
+    {
+        return $this->badDebtFakturs()->exists();
+    }
 }

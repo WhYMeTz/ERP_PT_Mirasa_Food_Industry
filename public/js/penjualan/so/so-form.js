@@ -312,6 +312,42 @@ function renderTopWarningCard(card, data) {
         iconSvg = `<svg width="18" height="18" fill="none" stroke="#059669" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
     }
 
+    let badDebtTableHtml = '';
+    if (data.has_bad_debt && data.bad_debt_invoices && data.bad_debt_invoices.length > 0) {
+        const bdRowsHtml = data.bad_debt_invoices.map(bd => `
+            <tr style="background: #fff5f5;">
+                <td style="font-family: monospace; font-weight: 700; color: #b91c1c;">${bd.faktur_no}</td>
+                <td>${bd.faktur_tgl}</td>
+                <td>${bd.tgl_macet}</td>
+                <td style="text-align: right; font-weight: 700; color: #b91c1c;">${bd.sisa_formatted}</td>
+                <td style="color: #7f1d1d; font-size: 0.775rem;">${bd.alasan}</td>
+            </tr>
+        `).join('');
+
+        badDebtTableHtml = `
+            <div style="margin-top: 0.65rem; background: #fff; border: 1px solid #fecaca; border-radius: 6px; padding: 0.5rem; overflow-x: auto;">
+                <div style="font-weight: 700; font-size: 0.775rem; color: #991b1b; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 4px;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Rekam Jejak Faktur Tak Tertagih:</span>
+                </div>
+                <table class="top-invoices-mini-table">
+                    <thead>
+                        <tr style="background: #fee2e2;">
+                            <th>No. Faktur</th>
+                            <th>Tgl Faktur</th>
+                            <th>Tgl Ditandai</th>
+                            <th style="text-align: right;">Nominal Tak Tertagih</th>
+                            <th>Alasan Rekam Jejak</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bdRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
     let invoicesTableHtml = '';
     if (invoices.length > 0) {
         const rowsHtml = invoices.map(inv => {
@@ -349,11 +385,15 @@ function renderTopWarningCard(card, data) {
 
     let overrideHtml = '';
     if (needsOverride) {
+        const overrideText = data.has_bad_debt
+            ? 'Saya memahami risiko riwayat piutang tak tertagih pelanggan ini & pesanan telah diotorisasi khusus oleh Manajer / Direksi.'
+            : 'Saya telah memverifikasi &amp; memperoleh otorisasi manajer untuk melanjutkan pesanan ini.';
+
         overrideHtml = `
-            <div class="top-override-box">
+            <div class="top-override-box" style="${data.has_bad_debt ? 'background: #fff1f2; border-color: #fecdd3;' : ''}">
                 <label class="top-override-label">
                     <input type="checkbox" id="chkTopOverride" name="top_override_approved" value="1" style="width: 16px; height: 16px; cursor: pointer;">
-                    <span>Saya telah memverifikasi &amp; memperoleh otorisasi manajer untuk melanjutkan pesanan ini.</span>
+                    <span style="${data.has_bad_debt ? 'color: #9f1239; font-weight: 600;' : ''}">${overrideText}</span>
                 </label>
             </div>
         `;
@@ -370,6 +410,7 @@ function renderTopWarningCard(card, data) {
         <div class="top-warning-desc">
             ${message}
         </div>
+        ${badDebtTableHtml}
         ${invoicesTableHtml}
         ${overrideHtml}
     `;

@@ -1074,12 +1074,34 @@ class SoService
             $topType = 'MODERN_TRADE';
         }
 
+        // 1.5 Cek Rekam Jejak Piutang Macet / Tak Tertagih (Bad Debt History)
+        $badDebtFakturs = DatFakturHdr::where('customer_id', $customerId)
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', 'TAK_TERTAGIH')
+            ->orderBy('tgl_macet', 'desc')
+            ->get();
+
+        $hasBadDebt = $badDebtFakturs->count() > 0;
+        $totalBadDebt = (float) $badDebtFakturs->sum('sisa_piutang');
+        $badDebtList = [];
+        foreach ($badDebtFakturs as $bdf) {
+            $badDebtList[] = [
+                'faktur_no'     => $bdf->faktur_no,
+                'faktur_tgl'    => $bdf->faktur_tgl?->format('d/m/Y') ?? '-',
+                'tgl_macet'     => $bdf->tgl_macet?->format('d/m/Y') ?? ($bdf->updated_at?->format('d/m/Y') ?? '-'),
+                'sisa_nominal'  => (float) $bdf->sisa_piutang,
+                'sisa_formatted'=> 'Rp ' . number_format((float) $bdf->sisa_piutang, 0, ',', '.'),
+                'alasan'        => $bdf->alasan_macet ?: 'Penghapusan piutang tidak tertagih',
+                'petugas'       => $bdf->macet_by ?: 'System',
+            ];
+        }
+
         // 2. Kumpulkan Seluruh Faktur Belum Lunas (dat_faktur_hdr)
         $unpaidFakturs = DatFakturHdr::where('customer_id', $customerId)
             ->where('deleted_st', false)
             ->where('active_st', true)
             ->where(function ($q) {
-                $q->where('status_pembayaran', '!=', 'LUNAS')
+                $q->whereNotIn('status_pembayaran', ['LUNAS', 'TAK_TERTAGIH', 'BATAL'])
                   ->orWhereNull('status_pembayaran');
             })
             ->where('sisa_piutang', '>', 0)
@@ -1187,10 +1209,39 @@ class SoService
         $dueSoonTotalFormatted = 'Rp ' . number_format($dueSoonTotal, 0, ',', '.');
 
         // 5. Analisis Berdasarkan Aturan Bisnis
+        // 5.0 PRIORITAS UTAMA: Deteksi Rekam Jejak Piutang Macet / Tak Tertagih
+        if ($hasBadDebt) {
+            $formattedBadDebt = 'Rp ' . number_format($totalBadDebt, 0, ',', '.');
+            $fakturNos = $badDebtFakturs->pluck('faktur_no')->filter()->implode(', ');
+            return [
+                'customer_id'       => $customerId,
+                'customer_nm'       => $customer->customer_nm,
+                'top_txt'           => $topRaw ?: ($topType === 'NOTA' ? 'Tinggal 1 Nota' : 'Tempo'),
+                'top_type'          => $topType,
+                'status'            => 'DANGER',
+                'badge_class'       => 'danger',
+                'badge_label'       => 'REKAM JEJAK: PIUTANG TAK TERTAGIH',
+                'title'             => 'Peringatan Risiko Kredit: Riwayat Piutang Tak Tertagih!',
+                'message'           => "Pelanggan ini memiliki riwayat piutang tak tertagih senilai {$formattedBadDebt} (Faktur: {$fakturNos}). Penjualan tempo/kredit diblokir demi keamanan kas perusahaan. Disarankan hanya melayani transaksi TUNAI di muka (Cash Before Delivery) atau konfirmasi khusus manajer.",
+                'can_proceed'       => false,
+                'needs_override'    => true,
+                'has_bad_debt'      => true,
+                'bad_debt_total'    => $totalBadDebt,
+                'bad_debt_formatted'=> $formattedBadDebt,
+                'bad_debt_invoices' => $badDebtList,
+                'total_piutang'     => $totalPiutang,
+                'total_formatted'   => $totalFormatted,
+                'unpaid_count'      => $unpaidCount,
+                'invoices'          => $invoiceList,
+            ];
+        }
+
+        $result = [];
+
         if ($topType === 'NOTA') {
             // ATURAN TINGGAL 1 NOTA
             if ($unpaidCount === 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
@@ -1209,7 +1260,7 @@ class SoService
                 ];
             } elseif ($unpaidCount === 1) {
                 $inv = $invoiceList[0];
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
@@ -1227,7 +1278,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } else {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
@@ -1248,7 +1299,7 @@ class SoService
         } elseif ($topType === 'TUNAI') {
             // ATURAN PEMBAYARAN TUNAI
             if ($unpaidCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'TUNAI',
@@ -1266,7 +1317,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } else {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'TUNAI',
@@ -1287,7 +1338,7 @@ class SoService
         } else {
             // ATURAN BERBASIS HARI / MODERN TRADE
             if ($overdueCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1307,7 +1358,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } elseif ($dueSoonCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1326,7 +1377,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } elseif ($unpaidCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1344,7 +1395,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } else {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1363,5 +1414,10 @@ class SoService
                 ];
             }
         }
+
+        $result['has_bad_debt'] = $result['has_bad_debt'] ?? false;
+        $result['bad_debt_invoices'] = $result['bad_debt_invoices'] ?? [];
+
+        return $result;
     }
 }

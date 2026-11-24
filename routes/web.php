@@ -601,6 +601,8 @@ Route::middleware('auth')->group(function () {
         Route::get('faktur/ajax-surat-jalan-detail/{id}', [FakturPenjualanController::class, 'ajaxSuratJalanDetail'])->name('faktur.ajax-surat-jalan-detail');
         Route::get('faktur/{id}/export-pdf', [FakturPenjualanController::class, 'exportPdf'])->name('faktur.export-pdf');
         Route::post('faktur/{id}/record-payment', [FakturPenjualanController::class, 'recordPayment'])->name('faktur.record-payment');
+        Route::post('faktur/{id}/mark-macet', [FakturPenjualanController::class, 'markMacet'])->name('faktur.mark-macet');
+        Route::post('faktur/{id}/restore-macet', [FakturPenjualanController::class, 'restoreMacet'])->name('faktur.restore-macet');
         Route::post('faktur/{id}/void', [FakturPenjualanController::class, 'void'])->name('faktur.void');
         Route::resource('faktur', FakturPenjualanController::class)->except(['edit', 'update', 'destroy']);
 

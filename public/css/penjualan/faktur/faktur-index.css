@@ -389,6 +389,18 @@
     border: 1px solid #e2e8f0;
 }
 
+.badge-status.macet {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #f87171;
+    font-weight: 700;
+}
+
+.fk-amount-sisa.macet {
+    color: #991b1b;
+    font-weight: 700;
+}
+
 .badge-klasifikasi {
     display: inline-block;
     padding: 0.15rem 0.45rem;

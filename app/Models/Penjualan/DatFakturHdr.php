@@ -38,6 +38,9 @@ class DatFakturHdr extends Model
         'sisa_piutang',
         'status_pembayaran',
         'catatan_txt',
+        'tgl_macet',
+        'alasan_macet',
+        'macet_by',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -49,6 +52,7 @@ class DatFakturHdr extends Model
     protected $casts = [
         'faktur_tgl'        => 'date',
         'tgl_jatuh_tempo'   => 'date',
+        'tgl_macet'         => 'date',
         'ppn_persen'        => 'decimal:2',
         'subtotal_bruto'    => 'decimal:4',
         'total_diskon'      => 'decimal:4',

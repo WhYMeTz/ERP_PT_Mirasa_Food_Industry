@@ -574,8 +574,7 @@ function updatePriceMarginIndicator(tr) {
             // Jual Rugi (Di bawah HPP)
             const rugiRp = hppBarang - hargaInput;
             priceSourceEl.style.display = 'block';
-            priceSourceEl.style.color = '#dc2626';
-            priceSourceEl.innerHTML = `<span style="font-weight:700;">⚠️ Jual Rugi (-${formatRupiah(rugiRp)})</span> HPP: ${formatRupiah(hppBarang)}`;
+            priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:700; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:4px; padding:2px 6px;">⚠️ Jual Rugi (-${formatRupiah(rugiRp)}) &bull; HPP: ${formatRupiah(hppBarang)}</span>`;
             inHarga.style.borderColor = '#ef4444';
             inHarga.style.background = '#fef2f2';
         } else {
@@ -585,22 +584,19 @@ function updatePriceMarginIndicator(tr) {
             priceSourceEl.style.display = 'block';
             if (marginPct < 10) {
                 // Margin Tipis
-                priceSourceEl.style.color = '#d97706';
-                priceSourceEl.innerHTML = `<span style="font-weight:700;">⚡ Margin Tipis:</span> +${formatRupiah(marginRp)} (${marginPct}%) &bull; HPP: ${formatRupiah(hppBarang)}`;
+                priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#d97706; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:2px 6px;">⚡ Margin Tipis (+${marginPct}%) &bull; HPP: ${formatRupiah(hppBarang)}</span>`;
                 inHarga.style.borderColor = '#f59e0b';
                 inHarga.style.background = '#fffbeb';
             } else {
                 // Margin Sehat
-                priceSourceEl.style.color = '#059669';
-                priceSourceEl.innerHTML = `<span style="font-weight:700;">✓ Margin:</span> +${formatRupiah(marginRp)} (${marginPct}%) &bull; HPP: ${formatRupiah(hppBarang)}`;
+                priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#059669; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:2px 6px;">✓ Margin +${marginPct}% (+${formatRupiah(marginRp)})</span>`;
                 inHarga.style.borderColor = '';
                 inHarga.style.background = '';
             }
         }
     } else if (hargaStandar > 0) {
         priceSourceEl.style.display = 'block';
-        priceSourceEl.style.color = '#059669';
-        priceSourceEl.innerHTML = `<span style="font-weight:700;">✓ Standar Kontrak:</span> ${formatRupiah(hargaStandar)}`;
+        priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#0284c7; background:#f0f9ff; border:1px solid #bae6fd; border-radius:4px; padding:2px 6px;">✓ Standar Kontrak: ${formatRupiah(hargaStandar)}</span>`;
         inHarga.style.borderColor = '';
         inHarga.style.background = '';
     } else {
@@ -701,22 +697,17 @@ function addRow(data = {}) {
 
     tr.innerHTML = `
         <td style="text-align: center; color: #64748b; font-size: 0.8rem;" class="row-num">${tbody.children.length + 1}</td>
-        <td style="text-align: center; vertical-align: middle;">
-            <input type="text" class="form-control item-barang-code" readonly placeholder="-" style="background: #f8fafc; font-family: monospace; font-size: 0.775rem; color: #0284c7; font-weight: 700; cursor: not-allowed; text-align: center; border: 1.5px solid #cbd5e1; border-radius: 6px; width: 100%;">
-        </td>
         <td>
-            <select name="items[${idx}][barang_id]" class="form-control item-barang-select" required style="font-size: 0.8rem; width: 100%;">
+            <select name="items[${idx}][barang_id]" class="form-control item-barang-select" required style="font-size: 0.8125rem; width: 100%;">
                 <option value="">-- Pilih Nama Barang --</option>
                 ${optionsHtml}
             </select>
-            <div class="item-batch-info" style="font-size: 0.72rem; color: #475569; margin-top: 3px; display: none;"></div>
-        </td>
-        <td style="text-align: center; vertical-align: middle; padding: 4px;" class="col-sisa-stok">
-            <div class="box-sisa-gudang stok-placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 6px; border-radius: 6px; font-size: 0.725rem; background: #f8fafc; border: 1px solid #e2e8f0;">
-                <span class="badge-stok-label" style="font-size: 0.65rem; font-weight: 700; color: #64748b; letter-spacing: 0.03em;">STOK GUDANG</span>
-                <div class="val-stok-qty" style="font-weight: 700; font-size: 0.8rem; color: #334155;">-</div>
-                <div class="sub-stok-label" style="font-size: 0.65rem; color: #94a3b8;">Pilih Produk</div>
+            <div class="item-meta-bar" style="display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; min-height: 20px;">
+                <span class="item-barang-code-badge" style="font-family: monospace; font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd; display: none;">-</span>
+                <span class="item-stok-badge" style="font-size: 0.725rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; display: none;"></span>
+                <span class="item-batch-info" style="font-size: 0.72rem; color: #64748b; display: none;"></span>
             </div>
+            <input type="hidden" class="item-barang-code" value="">
         </td>
         <td>
             <input type="number" step="any" min="0.001" name="items[${idx}][pesan_qty]" value="${data.pesan_qty || 1}" required class="form-control item-qty" style="text-align: right; font-weight: 700;">
@@ -740,7 +731,7 @@ function addRow(data = {}) {
         </td>
         <td>
             <input type="number" step="any" min="0" name="items[${idx}][harga_satuan]" value="${data.harga_satuan || 0}" required class="form-control item-harga" style="text-align: right; font-family: monospace; font-weight: 600;">
-            <div class="item-price-source" style="font-size: 0.675rem; color: #059669; font-weight: 600; margin-top: 3px; display: none; line-height: 1.2;"></div>
+            <div class="item-price-source" style="margin-top: 3px; display: none;"></div>
         </td>
         <td>
             <input type="number" step="any" min="0" max="100" name="items[${idx}][diskon_persen]" value="${data.diskon_persen || 0}" class="form-control item-diskon" style="text-align: right;">
@@ -769,6 +760,9 @@ function addRow(data = {}) {
 
     const selBarang = tr.querySelector('.item-barang-select');
     const inCode = tr.querySelector('.item-barang-code');
+    const codeBadge = tr.querySelector('.item-barang-code-badge');
+    const stokBadge = tr.querySelector('.item-stok-badge');
+    const batchInfoEl = tr.querySelector('.item-batch-info');
     const inSatuan = tr.querySelector('.item-satuan');
     const inQty = tr.querySelector('.item-qty');
     const inHarga = tr.querySelector('.item-harga');
@@ -777,11 +771,6 @@ function addRow(data = {}) {
     const inPpn = tr.querySelector('.item-ppn');
     const btnRemove = tr.querySelector('.btn-remove-row');
     const priceSourceEl = tr.querySelector('.item-price-source');
-
-    const boxSisa = tr.querySelector('.box-sisa-gudang');
-    const badgeStokLabel = tr.querySelector('.badge-stok-label');
-    const valStokQty = tr.querySelector('.val-stok-qty');
-    const subStokLabel = tr.querySelector('.sub-stok-label');
 
     let isInitialLoad = !!data.barang_id;
 
@@ -792,7 +781,11 @@ function addRow(data = {}) {
             const stok = parseFloat(opt.getAttribute('data-stok') || 0);
             const satuan = opt.getAttribute('data-satuan') || 'Karton';
 
-            inCode.value = code;
+            if (inCode) inCode.value = code;
+            if (codeBadge) {
+                codeBadge.textContent = code || '-';
+                codeBadge.style.display = code ? 'inline-block' : 'none';
+            }
 
             // Jika belum ada nilai satuan manual dari data, pilih otomatis sesuai master barang
             if (!isInitialLoad || !data.satuan) {
@@ -815,39 +808,18 @@ function addRow(data = {}) {
 
             const formattedStok = formatNumber(stok);
 
-            if (stok <= 0) {
-                if (boxSisa) {
-                    boxSisa.className = 'box-sisa-gudang stok-habis';
-                    boxSisa.style.background = '#fef2f2';
-                    boxSisa.style.border = '1px solid #fecaca';
-                }
-                if (badgeStokLabel) {
-                    badgeStokLabel.textContent = 'ANTRE PRODUKSI';
-                    badgeStokLabel.style.color = '#dc2626';
-                }
-                if (valStokQty) {
-                    valStokQty.innerHTML = `0 <small class="txt-stok-satuan" style="font-size: 0.725rem; font-weight: 700; color: #dc2626;">${satuan}</small>`;
-                }
-                if (subStokLabel) {
-                    subStokLabel.textContent = 'Perlu Produksi';
-                    subStokLabel.style.color = '#dc2626';
-                }
-            } else {
-                if (boxSisa) {
-                    boxSisa.className = 'box-sisa-gudang stok-ada';
-                    boxSisa.style.background = '#f0fdf4';
-                    boxSisa.style.border = '1px solid #bbf7d0';
-                }
-                if (badgeStokLabel) {
-                    badgeStokLabel.textContent = 'READY GUDANG';
-                    badgeStokLabel.style.color = '#15803d';
-                }
-                if (valStokQty) {
-                    valStokQty.innerHTML = `${formattedStok} <small class="txt-stok-satuan" style="font-size: 0.725rem; font-weight: 700; color: #047857;">${satuan}</small>`;
-                }
-                if (subStokLabel) {
-                    subStokLabel.textContent = 'Siap Kirim';
-                    subStokLabel.style.color = '#166534';
+            if (stokBadge) {
+                stokBadge.style.display = 'inline-block';
+                if (stok <= 0) {
+                    stokBadge.style.background = '#fef2f2';
+                    stokBadge.style.color = '#dc2626';
+                    stokBadge.style.border = '1px solid #fecaca';
+                    stokBadge.innerHTML = `⚠️ Stok 0 ${satuan} (Antre Produksi)`;
+                } else {
+                    stokBadge.style.background = '#f0fdf4';
+                    stokBadge.style.color = '#15803d';
+                    stokBadge.style.border = '1px solid #bbf7d0';
+                    stokBadge.innerHTML = `✓ Stok ${formattedStok} ${satuan} (Ready)`;
                 }
             }
 
@@ -867,7 +839,6 @@ function addRow(data = {}) {
             // Reset flag inisialisasi setelah interaksi pertama
             isInitialLoad = false;
 
-            const batchInfoEl = tr.querySelector('.item-batch-info');
             if (batchInfoEl && opt.value) {
                 fetch(`/penjualan/so/ajax/stock-check?barang_id=${opt.value}`)
                     .then(res => res.json())
@@ -875,8 +846,8 @@ function addRow(data = {}) {
                         if (res.success && res.data && res.data.batches && res.data.batches.length > 0) {
                             const b = res.data.batches[0];
                             const expFmt = b.expired_tgl ? b.expired_tgl.substring(0, 10).split('-').reverse().join('/') : '-';
-                            batchInfoEl.innerHTML = `<strong>Batch Siap:</strong> ${b.batch_no} &bull; <span style="color:#be123c;">Exp: ${expFmt}</span>`;
-                            batchInfoEl.style.display = 'block';
+                            batchInfoEl.innerHTML = `&bull; Batch: <strong>${b.batch_no}</strong> <span style="color:#be123c;">(Exp: ${expFmt})</span>`;
+                            batchInfoEl.style.display = 'inline-block';
                         } else {
                             batchInfoEl.style.display = 'none';
                         }
@@ -887,37 +858,15 @@ function addRow(data = {}) {
             }
         } else {
             // Revert ke Default Placeholder
-            if (boxSisa) {
-                boxSisa.className = 'box-sisa-gudang stok-placeholder';
-                boxSisa.style.background = '#f8fafc';
-                boxSisa.style.border = '1px solid #e2e8f0';
-            }
-            if (badgeStokLabel) {
-                badgeStokLabel.textContent = 'STOK GUDANG';
-                badgeStokLabel.style.color = '#64748b';
-            }
-            if (valStokQty) valStokQty.textContent = '-';
-            if (subStokLabel) {
-                subStokLabel.textContent = 'Pilih Produk Dulu';
-                subStokLabel.style.color = '#94a3b8';
-            }
-
-            const batchInfoEl = tr.querySelector('.item-batch-info');
+            if (inCode) inCode.value = '-';
+            if (codeBadge) codeBadge.style.display = 'none';
+            if (stokBadge) stokBadge.style.display = 'none';
             if (batchInfoEl) batchInfoEl.style.display = 'none';
             if (priceSourceEl) priceSourceEl.style.display = 'none';
-            inCode.value = '-';
             inSatuan.value = '';
         }
         calculateRow(tr);
         calculateGrandTotal();
-    });
-
-    // Deteksi jika user menyesuaikan harga secara manual
-    inHarga.addEventListener('input', function() {
-        if (priceSourceEl && priceSourceEl.style.display !== 'none') {
-            priceSourceEl.style.color = '#d97706';
-            priceSourceEl.innerHTML = `<em>Harga disesuaikan manual</em>`;
-        }
     });
 
     // Deteksi jika user memilih satuan kustom / lainnya

@@ -574,9 +574,15 @@ function updatePriceMarginIndicator(tr) {
             // Jual Rugi (Di bawah HPP)
             const rugiRp = hppBarang - hargaInput;
             priceSourceEl.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:700; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:4px; padding:2px 6px; width:fit-content;">⚠️ Jual Rugi (-${formatRupiah(rugiRp)})</span>
-                    <span style="font-size:0.675rem; color:#64748b; font-weight:600;">HPP: ${formatRupiah(hppBarang)}</span>
+                <div style="background:#fff5f5; border:1px solid #fecaca; border-radius:6px; padding:3px 7px; display:flex; flex-direction:column; gap:2px; min-width:160px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:4px;">
+                        <span style="font-size:0.685rem; font-weight:700; color:#dc2626; background:#fee2e2; border-radius:3px; padding:1px 5px;">⚠️ Jual Rugi</span>
+                        <strong style="font-size:0.725rem; color:#dc2626; font-family:monospace;">-${formatRupiah(rugiRp)}</strong>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.675rem; color:#991b1b; border-top:1px dashed #fecaca; padding-top:2px;">
+                        <span>HPP Batch:</span>
+                        <strong style="font-family:monospace; color:#7f1d1d;">${formatRupiah(hppBarang)}</strong>
+                    </div>
                 </div>
             `;
             inHarga.style.borderColor = '#ef4444';
@@ -588,9 +594,15 @@ function updatePriceMarginIndicator(tr) {
             if (marginPct < 10) {
                 // Margin Tipis
                 priceSourceEl.innerHTML = `
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#d97706; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:2px 6px; width:fit-content;">⚡ Margin Tipis (+${marginPct}%)</span>
-                        <span style="font-size:0.675rem; color:#64748b; font-weight:600;">HPP: ${formatRupiah(hppBarang)}</span>
+                    <div style="background:#fffdf5; border:1px solid #fde68a; border-radius:6px; padding:3px 7px; display:flex; flex-direction:column; gap:2px; min-width:160px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:4px;">
+                            <span style="font-size:0.685rem; font-weight:700; color:#b45309; background:#fef3c7; border-radius:3px; padding:1px 5px;">⚡ Tipis (+${marginPct}%)</span>
+                            <strong style="font-size:0.725rem; color:#b45309; font-family:monospace;">+${formatRupiah(marginRp)}</strong>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.675rem; color:#92400e; border-top:1px dashed #fde68a; padding-top:2px;">
+                            <span>HPP Batch:</span>
+                            <strong style="font-family:monospace; color:#78350f;">${formatRupiah(hppBarang)}</strong>
+                        </div>
                     </div>
                 `;
                 inHarga.style.borderColor = '#f59e0b';
@@ -598,9 +610,15 @@ function updatePriceMarginIndicator(tr) {
             } else {
                 // Margin Sehat
                 priceSourceEl.innerHTML = `
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#059669; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:2px 6px; width:fit-content;">✓ Margin +${marginPct}%</span>
-                        <span style="font-size:0.675rem; color:#64748b; font-weight:600;">+${formatRupiah(marginRp)} &bull; HPP: ${formatRupiah(hppBarang)}</span>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:3px 7px; display:flex; flex-direction:column; gap:2px; min-width:160px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:4px;">
+                            <span style="font-size:0.685rem; font-weight:700; color:#15803d; background:#dcfce7; border-radius:3px; padding:1px 5px;">✓ Margin +${marginPct}%</span>
+                            <strong style="font-size:0.725rem; color:#15803d; font-family:monospace;">+${formatRupiah(marginRp)}</strong>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.675rem; color:#166534; border-top:1px dashed #bbf7d0; padding-top:2px;">
+                            <span>HPP Batch:</span>
+                            <strong style="font-family:monospace; color:#14532d;">${formatRupiah(hppBarang)}</strong>
+                        </div>
                     </div>
                 `;
                 inHarga.style.borderColor = '';
@@ -609,9 +627,11 @@ function updatePriceMarginIndicator(tr) {
         }
     } else if (hargaStandar > 0) {
         priceSourceEl.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:2px;">
-                <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#0284c7; background:#f0f9ff; border:1px solid #bae6fd; border-radius:4px; padding:2px 6px; width:fit-content;">✓ Standar Kontrak</span>
-                <span style="font-size:0.675rem; color:#64748b;">${formatRupiah(hargaStandar)}</span>
+            <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:3px 7px; display:flex; flex-direction:column; gap:2px; min-width:160px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:4px;">
+                    <span style="font-size:0.685rem; font-weight:700; color:#0284c7; background:#e0f2fe; border-radius:3px; padding:1px 5px;">✓ Kontrak</span>
+                    <strong style="font-size:0.725rem; color:#0284c7; font-family:monospace;">${formatRupiah(hargaStandar)}</strong>
+                </div>
             </div>
         `;
         inHarga.style.borderColor = '';
@@ -761,7 +781,7 @@ function addRow(data = {}) {
             <input type="number" step="any" min="0" name="items[${idx}][potongan_nominal]" value="${data.potongan_nominal || 0}" class="form-control item-potongan" style="text-align: right;">
         </td>
         <td>
-            <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn" style="font-size: 0.75rem;">
+            <select name="items[${idx}][ppn_tipe]" class="form-control item-ppn" style="font-size: 0.775rem; font-weight: 600; text-align: center; width: 100%; min-width: 105px; padding: 0.35rem 0.4rem; cursor: pointer;">
                 <option value="NON_PPN" ${(data.ppn_tipe || document.getElementById('ppnTipeHeader')?.value || 'NON_PPN') === 'NON_PPN' ? 'selected' : ''}>Non PPN</option>
                 <option value="PPN_11" ${(data.ppn_tipe || document.getElementById('ppnTipeHeader')?.value || 'NON_PPN') === 'PPN_11' ? 'selected' : ''}>PPN 11%</option>
             </select>

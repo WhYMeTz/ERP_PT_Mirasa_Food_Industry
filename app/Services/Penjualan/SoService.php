@@ -184,6 +184,7 @@ class SoService
                 : $this->codeGenerator->generateSuratJalanNo($soTgl);
 
             $topTxt = !empty($data['top_txt']) ? $data['top_txt'] : ($cust?->top_txt ?? null);
+            $catatanTxt = $this->auditHppFloorPrice($calculated['items'], $data['catatan_txt'] ?? null);
 
             $header = DatSoHdr::create([
                 'so_no'              => $soNo,
@@ -197,7 +198,7 @@ class SoService
                 'supir_nm'           => $data['supir_nm'] ?? null,
                 'nopol_kendaraan'    => $data['nopol_kendaraan'] ?? null,
                 'status_cd'          => 'APPROVED',
-                'catatan_txt'        => $data['catatan_txt'] ?? null,
+                'catatan_txt'        => $catatanTxt,
                 'subtotal_bruto'     => $calculated['subtotal_bruto'],
                 'diskon_total'       => $calculated['diskon_total'],
                 'potongan_nominal'   => $calculated['potongan_nominal'],
@@ -249,6 +250,7 @@ class SoService
             }
 
             $calculated = $this->calculateOrderTotals($data['items'] ?? [], (float) ($data['potongan_nominal'] ?? 0));
+            $catatanTxt = $this->auditHppFloorPrice($calculated['items'], $data['catatan_txt'] ?? $header->catatan_txt);
 
             $header->update([
                 'so_tgl'             => $data['so_tgl'] ?? $header->so_tgl,
@@ -260,7 +262,7 @@ class SoService
                 'tgl_kirim_estimasi' => $data['tgl_kirim_estimasi'] ?? $header->tgl_kirim_estimasi,
                 'supir_nm'           => array_key_exists('supir_nm', $data) ? $data['supir_nm'] : $header->supir_nm,
                 'nopol_kendaraan'    => array_key_exists('nopol_kendaraan', $data) ? $data['nopol_kendaraan'] : $header->nopol_kendaraan,
-                'catatan_txt'        => $data['catatan_txt'] ?? $header->catatan_txt,
+                'catatan_txt'        => $catatanTxt,
                 'subtotal_bruto'     => $calculated['subtotal_bruto'],
                 'diskon_total'       => $calculated['diskon_total'],
                 'potongan_nominal'   => $calculated['potongan_nominal'],
@@ -298,6 +300,52 @@ class SoService
 
             return $header;
         });
+    }
+
+    /**
+     * Audit guardrail: Periksa apakah ada item yang dijual di bawah HPP terakhir
+     */
+    protected function auditHppFloorPrice(array $items, ?string $existingCatatan = null): ?string
+    {
+        if (empty($items)) {
+            return $existingCatatan;
+        }
+
+        $barangIds = array_filter(array_column($items, 'barang_id'));
+        if (empty($barangIds)) {
+            return $existingCatatan;
+        }
+
+        $barangs = \App\Models\MasterData\MstBarang::whereIn('barang_id', $barangIds)->get()->keyBy('barang_id');
+
+        $warnings = [];
+        foreach ($items as $item) {
+            $bId = $item['barang_id'] ?? null;
+            $hargaJual = (float) ($item['harga_satuan'] ?? 0);
+            if (!$bId || !isset($barangs[$bId])) {
+                continue;
+            }
+
+            $b = $barangs[$bId];
+            $hpp = (float) $b->latest_hpp;
+
+            if ($hpp > 0 && $hargaJual < $hpp) {
+                $selisih = $hpp - $hargaJual;
+                $warnings[] = "{$b->barang_nm} (Jual: Rp " . number_format($hargaJual, 0, ',', '.') . " < HPP: Rp " . number_format($hpp, 0, ',', '.') . ", Margin Rugi: -Rp " . number_format($selisih, 0, ',', '.') . "/ktn)";
+                \Illuminate\Support\Facades\Log::warning("SO Item dijual di bawah HPP: {$b->barang_nm} [ID: {$bId}], Jual: {$hargaJual}, HPP: {$hpp}");
+            }
+        }
+
+        if (!empty($warnings)) {
+            $tag = "[AUDIT HARGA DI BAWAH HPP]: " . implode('; ', $warnings);
+            if ($existingCatatan && !str_contains($existingCatatan, '[AUDIT HARGA DI BAWAH HPP]')) {
+                return trim($existingCatatan . "\n" . $tag);
+            } elseif (!$existingCatatan) {
+                return $tag;
+            }
+        }
+
+        return $existingCatatan;
     }
 
     /**

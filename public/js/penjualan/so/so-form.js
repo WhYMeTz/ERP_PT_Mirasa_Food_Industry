@@ -229,6 +229,26 @@ function initCustomerListener() {
         // Sync product options according to customer classification
         syncProductOptionsForCustomer(klasifikasi);
 
+        // Sinkronisasi ulang harga kontrak tier pelanggan ke baris-baris produk yang sudah ada di tabel
+        const MASTER_BARANG = window.soConfig?.barangs || [];
+        document.querySelectorAll('#itemsBody tr').forEach(r => {
+            const selBarang = r.querySelector('.item-barang-select');
+            const inHarga = r.querySelector('.item-harga');
+            if (!selBarang || !inHarga) return;
+            const opt = selBarang.selectedOptions?.[0];
+            if (!opt || !opt.value) return;
+
+            const b = MASTER_BARANG.find(item => item.barang_id == opt.value);
+            if (b) {
+                const tierPrice = resolveProductTierPrice(b, selected);
+                opt.setAttribute('data-harga', tierPrice);
+                inHarga.value = tierPrice;
+                calculateRow(r);
+                updatePriceMarginIndicator(r);
+            }
+        });
+        calculateGrandTotal();
+
         // Fetch Nomor Faktur yang sesuai
         if (this.value) {
             fetchFakturNo();
@@ -488,6 +508,108 @@ function syncProductOptionsForCustomer(klasifikasi) {
     });
 }
 
+// Resolusi Harga Jual Berdasarkan Tier Pelanggan (Contract Price List)
+function resolveProductTierPrice(b, custOption) {
+    if (!b) return 0;
+    if (!custOption) return parseFloat(b.harga_jual || b.harga_beli_standar || 0);
+
+    const custId = custOption.value;
+    const custNm = (custOption.text || '').toUpperCase();
+    const custCd = (custOption.getAttribute('data-code') || '').toUpperCase();
+    const klasifikasi = (custOption.getAttribute('data-klasifikasi') || '').toUpperCase();
+
+    // 1. Alfamidi (PT Midi Utama Indonesia)
+    if (custId == 12 || custNm.includes('MIDI') || custCd.includes('MIDI') || klasifikasi.includes('MIDI')) {
+        if (b.harga_jual_alfamidi && parseFloat(b.harga_jual_alfamidi) > 0) {
+            return parseFloat(b.harga_jual_alfamidi);
+        }
+    }
+
+    // 2. Indomaret & Alfamart
+    if (['IDM', 'MIDI_ALFA', 'IDM_ALFA'].includes(klasifikasi) ||
+        custNm.includes('INDOMARET') || custNm.includes('ALFAMART') || custNm.includes('ALFARIA') ||
+        custCd.includes('IDM') || custCd.includes('ALFA')) {
+        if (b.harga_jual_idm_alfa && parseFloat(b.harga_jual_idm_alfa) > 0) {
+            return parseFloat(b.harga_jual_idm_alfa);
+        }
+    }
+
+    // 3. Indofood (IFM)
+    if (klasifikasi === 'IFM' || custNm.includes('INDOFOOD')) {
+        if (custId == 4 || custNm.includes('CIKOKOL') || custNm.includes('CIKUPA') || custCd.includes('CKL')) {
+            if (b.harga_jual_ifm_ckl && parseFloat(b.harga_jual_ifm_ckl) > 0) {
+                return parseFloat(b.harga_jual_ifm_ckl);
+            }
+        }
+        if (b.harga_jual_ifm_smg && parseFloat(b.harga_jual_ifm_smg) > 0) {
+            return parseFloat(b.harga_jual_ifm_smg);
+        }
+    }
+
+    // Default umum / agen
+    return parseFloat(b.harga_jual || b.harga_beli_standar || 0);
+}
+
+// Update Indikator Estimasi Margin & Peringatan Jual Rugi (Floor Price)
+function updatePriceMarginIndicator(tr) {
+    const sel = tr.querySelector('.item-barang-select');
+    const inHarga = tr.querySelector('.item-harga');
+    const priceSourceEl = tr.querySelector('.item-price-source');
+    if (!sel || !inHarga || !priceSourceEl) return;
+
+    const opt = sel.selectedOptions?.[0];
+    if (!opt || !opt.value) {
+        priceSourceEl.style.display = 'none';
+        inHarga.style.borderColor = '';
+        inHarga.style.background = '';
+        return;
+    }
+
+    const hargaInput = parseFloat(inHarga.value) || 0;
+    const hppBarang = parseFloat(opt.getAttribute('data-hpp') || 0);
+    const hargaStandar = parseFloat(opt.getAttribute('data-harga') || 0);
+
+    if (hppBarang > 0) {
+        if (hargaInput < hppBarang) {
+            // Jual Rugi (Di bawah HPP)
+            const rugiRp = hppBarang - hargaInput;
+            priceSourceEl.style.display = 'block';
+            priceSourceEl.style.color = '#dc2626';
+            priceSourceEl.innerHTML = `<span style="font-weight:700;">⚠️ Jual Rugi (-${formatRupiah(rugiRp)})</span> HPP: ${formatRupiah(hppBarang)}`;
+            inHarga.style.borderColor = '#ef4444';
+            inHarga.style.background = '#fef2f2';
+        } else {
+            // Margin Untung
+            const marginRp = hargaInput - hppBarang;
+            const marginPct = ((marginRp / hppBarang) * 100).toFixed(1);
+            priceSourceEl.style.display = 'block';
+            if (marginPct < 10) {
+                // Margin Tipis
+                priceSourceEl.style.color = '#d97706';
+                priceSourceEl.innerHTML = `<span style="font-weight:700;">⚡ Margin Tipis:</span> +${formatRupiah(marginRp)} (${marginPct}%) &bull; HPP: ${formatRupiah(hppBarang)}`;
+                inHarga.style.borderColor = '#f59e0b';
+                inHarga.style.background = '#fffbeb';
+            } else {
+                // Margin Sehat
+                priceSourceEl.style.color = '#059669';
+                priceSourceEl.innerHTML = `<span style="font-weight:700;">✓ Margin:</span> +${formatRupiah(marginRp)} (${marginPct}%) &bull; HPP: ${formatRupiah(hppBarang)}`;
+                inHarga.style.borderColor = '';
+                inHarga.style.background = '';
+            }
+        }
+    } else if (hargaStandar > 0) {
+        priceSourceEl.style.display = 'block';
+        priceSourceEl.style.color = '#059669';
+        priceSourceEl.innerHTML = `<span style="font-weight:700;">✓ Standar Kontrak:</span> ${formatRupiah(hargaStandar)}`;
+        inHarga.style.borderColor = '';
+        inHarga.style.background = '';
+    } else {
+        priceSourceEl.style.display = 'none';
+        inHarga.style.borderColor = '';
+        inHarga.style.background = '';
+    }
+}
+
 // Tambah Baris Baru pada Tabel Inputan
 function addRow(data = {}) {
     rowCounter++;
@@ -530,7 +652,8 @@ function addRow(data = {}) {
         const rawCd = (b.jenis_barang ? b.jenis_barang.jenis_barang_cd : (b.jenis_barang_cd || 'FG')).toUpperCase();
         const jenisNm = b.jenis_barang ? b.jenis_barang.jenis_barang_nm : rawCd;
         const satuanNm = b.satuan_dasar ? b.satuan_dasar.satuan_nm : 'Karton';
-        const hargaJual = b.harga_jual || b.harga_standar || b.harga_beli_standar || 0;
+        const hargaJual = resolveProductTierPrice(b, optCust);
+        const latestHpp = parseFloat(b.latest_hpp || b.harga_beli_standar || 0);
 
         const cd = (b.barang_cd || '').toUpperCase();
         const nm = (b.barang_nm || '').toUpperCase();
@@ -550,6 +673,7 @@ function addRow(data = {}) {
                     data-jenis="${jenisNm}" 
                     data-satuan="${satuanNm}"
                     data-harga="${hargaJual}"
+                    data-hpp="${latestHpp}"
                     data-stok="${stok}"
                     ${disabledAttr}
                     ${isSelected}>
@@ -737,13 +861,8 @@ function addRow(data = {}) {
                 inHarga.value = hargaBarang;
             }
 
-            if (priceSourceEl && hargaBarang > 0) {
-                priceSourceEl.style.display = 'block';
-                priceSourceEl.style.color = '#059669';
-                priceSourceEl.innerHTML = `<span style="font-weight:700;">✓</span> Standar Katalog: ${formatRupiah(hargaBarang)}`;
-            } else if (priceSourceEl) {
-                priceSourceEl.style.display = 'none';
-            }
+            // Update Margin & Peringatan Jual Rugi (Floor Price)
+            updatePriceMarginIndicator(tr);
 
             // Reset flag inisialisasi setelah interaksi pertama
             isInitialLoad = false;
@@ -826,10 +945,12 @@ function addRow(data = {}) {
         el.addEventListener('input', () => {
             calculateRow(tr);
             calculateGrandTotal();
+            if (el === inHarga) updatePriceMarginIndicator(tr);
         });
         el.addEventListener('change', () => {
             calculateRow(tr);
             calculateGrandTotal();
+            if (el === inHarga) updatePriceMarginIndicator(tr);
         });
     });
 
@@ -840,6 +961,7 @@ function addRow(data = {}) {
     });
 
     calculateRow(tr);
+    updatePriceMarginIndicator(tr);
 
     // Sync filter kategori yang sedang aktif ke baris baru
     const activeFilterBtn = document.querySelector('.category-segment-btn.active');
@@ -1105,6 +1227,30 @@ document.addEventListener('DOMContentLoaded', function() {
                         warnCard.style.outline = '3px solid #dc2626';
                         setTimeout(() => warnCard.style.outline = '', 3000);
                     }
+                    return false;
+                }
+            }
+
+            // Validasi Batas Bawah Harga (Floor Price Control vs HPP)
+            const belowHppItems = [];
+            document.querySelectorAll('#itemsBody tr').forEach(r => {
+                const sel = r.querySelector('.item-barang-select');
+                const inHarga = r.querySelector('.item-harga');
+                if (!sel || !inHarga) return;
+                const opt = sel.selectedOptions?.[0];
+                if (!opt || !opt.value) return;
+                const h = parseFloat(inHarga.value) || 0;
+                const hpp = parseFloat(opt.getAttribute('data-hpp') || 0);
+                if (hpp > 0 && h < hpp) {
+                    const itemName = opt.text.split('(')[0].trim();
+                    belowHppItems.push(`• ${itemName}: Harga Jual Rp ${h.toLocaleString('id-ID')} (HPP: Rp ${hpp.toLocaleString('id-ID')})`);
+                }
+            });
+
+            if (belowHppItems.length > 0) {
+                const proceed = confirm(`⚠️ PERINGATAN HARGA DI BAWAH HPP (POTENSI JUAL RUGI):\n\nItem berikut dijual dengan harga di bawah HPP:\n${belowHppItems.join('\n')}\n\nApakah pesanan dengan harga khusus ini telah disetujui oleh Direksi / Manajer Penjualan?`);
+                if (!proceed) {
+                    e.preventDefault();
                     return false;
                 }
             }

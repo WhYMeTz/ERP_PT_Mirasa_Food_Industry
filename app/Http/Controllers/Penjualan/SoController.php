@@ -99,6 +99,19 @@ class SoController extends Controller
             ->orderBy('barang_nm')
             ->get();
 
+        $latestHpps = \App\Models\Produksi\DatPackagingHdr::whereIn('barang_jadi_id', $barangs->pluck('barang_id'))
+            ->where('status_cd', 'POSTED')
+            ->where('deleted_st', false)
+            ->where('hpp_per_karton', '>', 0)
+            ->orderBy('pack_tgl', 'desc')
+            ->get()
+            ->groupBy('barang_jadi_id')
+            ->map(fn($group) => (float) $group->first()->hpp_per_karton);
+
+        foreach ($barangs as $b) {
+            $b->latest_hpp = (float) ($latestHpps[$b->barang_id] ?? ($b->harga_beli_standar ?? 0));
+        }
+
         $stockMap = $this->soService->getStockAvailabilityMap($barangs->pluck('barang_id')->toArray());
 
         return view('penjualan.so.create', compact('soNo', 'fakturNo', 'suratJalanNo', 'customers', 'barangs', 'stockMap'));
@@ -158,6 +171,19 @@ class SoController extends Controller
             ->active()
             ->orderBy('barang_nm')
             ->get();
+
+        $latestHpps = \App\Models\Produksi\DatPackagingHdr::whereIn('barang_jadi_id', $barangs->pluck('barang_id'))
+            ->where('status_cd', 'POSTED')
+            ->where('deleted_st', false)
+            ->where('hpp_per_karton', '>', 0)
+            ->orderBy('pack_tgl', 'desc')
+            ->get()
+            ->groupBy('barang_jadi_id')
+            ->map(fn($group) => (float) $group->first()->hpp_per_karton);
+
+        foreach ($barangs as $b) {
+            $b->latest_hpp = (float) ($latestHpps[$b->barang_id] ?? ($b->harga_beli_standar ?? 0));
+        }
 
         $stockMap = $this->soService->getStockAvailabilityMap($barangs->pluck('barang_id')->toArray());
 

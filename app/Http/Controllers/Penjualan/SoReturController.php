@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Penjualan;
 
+use App\Exports\Penjualan\ReturPenjualanExport;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstCustomer;
 use App\Models\MasterData\MstGudang;
@@ -16,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SoReturController extends Controller
 {
@@ -102,11 +104,20 @@ class SoReturController extends Controller
                     ? ((float) $dtl->subtotal_tagihan / (float) $dtl->pesan_qty) 
                     : (float) $dtl->harga_satuan;
 
+                $shippedBatch = \App\Models\Penjualan\DatPengeluaranDtl::whereHas('header', function ($q) use ($selectedSo) {
+                    $q->where('so_id', $selectedSo->so_id)->where('status_cd', '!=', 'BATAL');
+                })
+                ->where('barang_id', $dtl->barang_id)
+                ->whereNotNull('batch_no')
+                ->where('batch_no', '!=', '')
+                ->value('batch_no');
+
                 return [
                     'sodtl_id'          => $dtl->sodtl_id,
                     'barang_id'         => $dtl->barang_id,
                     'barang_cd'         => $dtl->barang?->barang_cd ?? '-',
                     'barang_nm'         => $dtl->barang?->barang_nm ?? '-',
+                    'batch_no'          => $shippedBatch ?? '',
                     'satuan_nm'         => $dtl->satuan ?: ($dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton'),
                     'kirim_qty'         => (float) $dtl->kirim_qty,
                     'already_retur_qty' => $alreadyRetur,
@@ -135,6 +146,7 @@ class SoReturController extends Controller
             'items'                        => 'required|array|min:1',
             'items.*.sodtl_id'             => 'required|integer',
             'items.*.qty_retur'            => 'required|numeric|min:0',
+            'items.*.batch_no'             => 'nullable|string|max:50',
             'items.*.perlakuan_cd'         => 'required|string|in:MASUK_PERSEDIAAN,DIMUSNAHKAN',
             'items.*.kondisi_cd'           => 'nullable|string|max:50',
             'items.*.catatan_txt'          => 'nullable|string|max:255',
@@ -183,7 +195,7 @@ class SoReturController extends Controller
      */
     public function getSoData(int $id): JsonResponse
     {
-        $so = DatSoHdr::with(['customer', 'details.barang.satuanDasar'])
+        $so = DatSoHdr::with(['customer', 'details.barang.satuanDasar', 'pengeluaran', 'faktur'])
             ->where('deleted_st', false)
             ->findOrFail($id);
 
@@ -204,11 +216,20 @@ class SoReturController extends Controller
                 ? ((float) $dtl->subtotal_tagihan / (float) $dtl->pesan_qty) 
                 : (float) $dtl->harga_satuan;
 
+            $shippedBatch = \App\Models\Penjualan\DatPengeluaranDtl::whereHas('header', function ($q) use ($so) {
+                $q->where('so_id', $so->so_id)->where('status_cd', '!=', 'BATAL');
+            })
+            ->where('barang_id', $dtl->barang_id)
+            ->whereNotNull('batch_no')
+            ->where('batch_no', '!=', '')
+            ->value('batch_no');
+
             return [
                 'sodtl_id'          => $dtl->sodtl_id,
                 'barang_id'         => $dtl->barang_id,
                 'barang_cd'         => $dtl->barang?->barang_cd ?? '-',
                 'barang_nm'         => $dtl->barang?->barang_nm ?? '-',
+                'batch_no'          => $shippedBatch ?? '',
                 'satuan_nm'         => $dtl->barang?->satuanDasar?->satuan_nm ?? 'Unit',
                 'kirim_qty'         => (float) $dtl->kirim_qty,
                 'already_retur_qty' => $alreadyRetur,
@@ -225,6 +246,9 @@ class SoReturController extends Controller
                 'so_no'            => $so->so_no,
                 'customer_nm'      => $so->customer?->customer_nm ?? '-',
                 'so_tgl_formatted' => $so->so_tgl ? $so->so_tgl->format('d/m/Y') : '-',
+                'sj_no'            => $so->surat_jalan_no ?: ($so->pengeluaran?->first()?->pengeluaran_no ?: '-'),
+                'faktur_no'        => $so->faktur_no ?: ($so->faktur?->first()?->faktur_no ?: '-'),
+                'status_cd'        => $so->status_cd ?? '-',
                 'items'            => $items,
             ],
         ]);
@@ -309,5 +333,43 @@ class SoReturController extends Controller
 
         $fileName = 'BAP_PEMUSNAHAN_' . preg_replace('/[^A-Za-z0-9\-]/', '', $retur->retur_no) . '.pdf';
         return $pdf->stream($fileName);
+    }
+
+    /**
+     * Export Rekapitulasi Retur Penjualan ke format Excel (.xlsx) sesuai filter aktif.
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $search = $request->query('search');
+        $filters = [
+            'customer_id' => $request->query('customer_id'),
+            'gudang_id'   => $request->query('gudang_id'),
+            'tindakan_cd' => $request->query('tindakan_cd'),
+            'status_cd'   => $request->query('status_cd'),
+            'date_from'   => $request->query('date_from'),
+            'date_to'     => $request->query('date_to'),
+        ];
+
+        $returns = $this->soService->getReturnsForExport($search, $filters);
+
+        $customerNm = null;
+        if (!empty($filters['customer_id'])) {
+            $customerNm = MstCustomer::find($filters['customer_id'])?->customer_nm;
+        }
+
+        $printedBy = auth()->user()?->karyawan?->karyawan_nm ?? (auth()->user()?->nama_lengkap ?? 'Administrator');
+        $printedAt = now()->translatedFormat('d F Y H:i');
+
+        $export = new ReturPenjualanExport(
+            $returns,
+            $search,
+            $filters,
+            $customerNm,
+            $printedBy,
+            $printedAt
+        );
+
+        $fileName = 'REKAP_RETUR_PENJUALAN_' . date('Ymd_His') . '.xlsx';
+        return $export->download($fileName);
     }
 }

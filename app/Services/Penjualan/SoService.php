@@ -767,10 +767,12 @@ class SoService
                     );
                 }
 
+                $itemBatch = !empty($item['batch_no']) ? trim((string)$item['batch_no']) : $batchNo;
+
                 $detailsToSave[] = [
                     'sodtl_id'               => $sodtlId,
                     'barang_id'              => $dtl->barang_id,
-                    'batch_no'               => $batchNo,
+                    'batch_no'               => $itemBatch,
                     'qty_retur'              => $qtyRetur,
                     'qty_masuk_persediaan'   => $qtyMasuk,
                     'qty_dimusnahkan'        => $qtyMusnah,
@@ -929,6 +931,60 @@ class SoService
         return $query->orderBy('retur_tgl', 'desc')
             ->orderBy('retur_id', 'desc')
             ->paginate($perPage);
+    }
+
+    /**
+     * Mengambil seluruh data retur penjualan sesuai filter untuk keperluan Export Excel.
+     */
+    public function getReturnsForExport(
+        ?string $search = null,
+        array $filters = []
+    ): \Illuminate\Database\Eloquent\Collection {
+        $query = DatSoReturHdr::with([
+            'order.pengeluaran.details',
+            'order.faktur',
+            'customer',
+            'gudang',
+            'details.barang.satuanDasar'
+        ])->active();
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('retur_no', 'LIKE', "%{$search}%")
+                  ->orWhere('alasan_txt', 'LIKE', "%{$search}%")
+                  ->orWhereHas('order', fn($oq) => $oq->where('so_no', 'LIKE', "%{$search}%"))
+                  ->orWhereHas('customer', fn($cq) => $cq->where('customer_nm', 'LIKE', "%{$search}%")->orWhere('customer_cd', 'LIKE', "%{$search}%"))
+                  ->orWhereHas('details.barang', fn($bq) => $bq->where('barang_nm', 'LIKE', "%{$search}%")->orWhere('barang_cd', 'LIKE', "%{$search}%"));
+            });
+        }
+
+        if (!empty($filters['customer_id'])) {
+            $query->where('customer_id', $filters['customer_id']);
+        }
+
+        if (!empty($filters['gudang_id'])) {
+            $query->where('gudang_id', $filters['gudang_id']);
+        }
+
+        if (!empty($filters['tindakan_cd'])) {
+            $query->where('tindakan_cd', $filters['tindakan_cd']);
+        }
+
+        if (!empty($filters['status_cd'])) {
+            $query->where('status_cd', $filters['status_cd']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('retur_tgl', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('retur_tgl', '<=', $filters['date_to']);
+        }
+
+        return $query->orderBy('retur_tgl', 'desc')
+            ->orderBy('retur_id', 'desc')
+            ->get();
     }
 
     /**

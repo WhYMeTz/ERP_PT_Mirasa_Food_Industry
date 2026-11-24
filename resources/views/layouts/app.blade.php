@@ -1946,15 +1946,8 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                             </svg>
-                                            <div style="display: flex; flex-direction: column; flex: 1;">
-                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                                    <span style="font-weight: 600;">PO Penjualan (Sales Order)</span>
-                                                    @if($pendingShipCount > 0)
-                                                        <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 9999px; line-height: 1.2; white-space: nowrap; flex-shrink: 0;">
-                                                            {{ $pendingShipCount }}
-                                                        </span>
-                                                    @endif
-                                                </div>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">PO Penjualan (Sales Order)</span>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Pesanan produk keripik dari
                                                     customer</span>
                                             </div>
@@ -2007,8 +2000,15 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                             </svg>
-                                            <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
+                                            <div style="display: flex; flex-direction: column; flex: 1;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                                    <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
+                                                    @if($pendingShipCount > 0)
+                                                        <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 9999px; line-height: 1.2; white-space: nowrap; flex-shrink: 0;" title="{{ $pendingShipCount }} antrean PO menunggu pengeluaran barang">
+                                                            {{ $pendingShipCount }}
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Fisik keluar Gudang FG &amp;
                                                     muat armada</span>
                                             </div>

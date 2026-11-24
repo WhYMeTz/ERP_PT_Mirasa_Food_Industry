@@ -87,9 +87,9 @@ class DatSoReturHdr extends Model
     public function getStatusBadgeAttribute(): string
     {
         return match ($this->status_cd) {
-            'CONFIRMED' => '<span class="badge" style="background:#dcfce7; color:#166534; font-weight:700;">Terkonfirmasi</span>',
-            'VOID'      => '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:700;">Dibatalkan (Void)</span>',
-            default     => '<span class="badge" style="background:#f1f5f9; color:#475569; font-weight:700;">' . $this->status_cd . '</span>',
+            'CONFIRMED' => '<span class="status-badge status-badge-confirmed"><span class="status-badge-dot"></span>Terkonfirmasi</span>',
+            'VOID'      => '<span class="status-badge status-badge-void"><span class="status-badge-dot"></span>Dibatalkan</span>',
+            default     => '<span class="status-badge status-badge-default"><span class="status-badge-dot"></span>' . e($this->status_cd) . '</span>',
         };
     }
 }

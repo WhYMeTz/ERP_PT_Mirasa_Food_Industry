@@ -19,14 +19,14 @@
         </p>
     </div>
 
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        <a href="{{ route('penjualan.retur.export-excel', request()->query()) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #059669; color: #059669; font-size: 0.825rem; font-weight: 700; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='#ffffff'" title="Export Rekap Retur Penjualan ke file Excel (.xlsx) mengikuti filter yang aktif">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Export Excel</span>
+        </a>
         <a href="{{ route('penjualan.retur.create') }}" class="btn btn-primary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; text-decoration: none;">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Catat Retur Baru</span>
-        </a>
-        <a href="{{ route('penjualan.so.index') }}" class="btn btn-secondary" style="font-size: 0.825rem; padding: 0.45rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <span>Daftar Seluruh PO Penjualan</span>
         </a>
     </div>
 </div>
@@ -128,12 +128,16 @@
         </div>
 
         {{-- Action Buttons --}}
-        <div style="display: flex; gap: 0.35rem;">
+        <div style="display: flex; gap: 0.35rem; align-items: flex-end;">
             <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem;">
                 Filter
             </button>
             <a href="{{ route('penjualan.retur.index') }}" class="btn btn-secondary" style="padding: 0.45rem 0.65rem; font-size: 0.825rem;" title="Reset Filter">
                 Reset
+            </a>
+            <a href="{{ route('penjualan.retur.export-excel', request()->query()) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #059669; color: #047857; font-size: 0.825rem; font-weight: 600; padding: 0.45rem 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem; text-decoration: none;" title="Download Data Sesuai Filter ke Format Excel (.xlsx)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Excel</span>
             </a>
         </div>
     </form>
@@ -168,67 +172,74 @@
                             $qtyMasuk = (float) $item->total_qty; // fallback data lama
                         }
                     @endphp
-                    <tr style="background: {{ $item->status_cd === 'VOID' ? '#fff1f2' : '#ffffff' }};">
-                        <td style="text-align: center; color: #64748b;">
+                    <tr class="{{ $item->status_cd === 'VOID' ? 'tr-void' : '' }}">
+                        <td style="text-align: center; color: #64748b; font-size: 0.8rem;">
                             {{ $returns->firstItem() + $idx }}
                         </td>
                         <td>
-                            <strong style="font-family: monospace; color: #0284c7; font-size: 0.875rem;">{{ $item->retur_no }}</strong>
-                            <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                            <a href="{{ route('penjualan.so.show', $item->so_id) }}" class="retur-code-link">
+                                {{ $item->retur_no }}
+                            </a>
+                            <span class="retur-date-sub">
                                 {{ $item->retur_tgl ? $item->retur_tgl->format('d/m/Y') : '-' }}
-                            </div>
+                            </span>
                             @if($item->alasan_txt)
-                                <div style="font-size: 0.725rem; color: #475569; margin-top: 3px; font-style: italic;">
-                                    "{{ Str::limit($item->alasan_txt, 35) }}"
+                                <div class="retur-note-tag" title="{{ $item->alasan_txt }}">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                                    <span>{{ Str::limit($item->alasan_txt, 30) }}</span>
                                 </div>
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('penjualan.so.show', $item->so_id) }}" style="font-family: monospace; font-weight: 700; color: #0284c7; text-decoration: none;">
+                            <a href="{{ route('penjualan.so.show', $item->so_id) }}" class="doc-link-so">
                                 {{ $item->order?->so_no ?? '-' }}
                             </a>
-                            <div style="font-size: 0.725rem; font-family: monospace; color: #64748b; margin-top: 2px;">
-                                {{ $item->order?->faktur_no ?? '-' }}
-                            </div>
+                            <span class="doc-sub-faktur">
+                                Faktur: {{ $item->order?->faktur_no ?? '-' }}
+                            </span>
                         </td>
                         <td>
-                            <strong style="color: #0f172a; font-size: 0.85rem;">{{ $item->customer?->customer_nm ?? '-' }}</strong>
-                            <span style="display: block; font-size: 0.725rem; color: #64748b;">{{ $item->customer?->customer_cd ?? '-' }}</span>
+                            <div class="customer-nm">{{ $item->customer?->customer_nm ?? '-' }}</div>
+                            <div class="customer-cd">{{ $item->customer?->customer_cd ?? '-' }}</div>
                         </td>
                         <td>
                             @if($item->tindakan_cd === 'POTONG_TAGIHAN')
-                                <span class="badge-tindakan-potong">Potong Tagihan</span>
+                                <span class="badge-tindakan-potong" title="Pengurangan saldo piutang customer / nota kredit">Potong Tagihan</span>
                             @else
-                                <span class="badge-tindakan-tukar">Tukar Guling</span>
+                                <span class="badge-tindakan-tukar" title="Tukar guling fisik barang">Tukar Guling</span>
                             @endif
                         </td>
                         <td>
-                            @foreach($item->details as $dtl)
-                                <div style="margin-bottom: 2px; line-height: 1.3;">
-                                    &bull; <strong>{{ $dtl->barang?->barang_nm ?? '-' }}</strong>: 
-                                    {{ number_format((float) $dtl->qty_retur, 0) }} unit
-                                    <span style="font-size: 0.725rem; color: #64748b;">({{ $dtl->kondisi_label }})</span>
-                                </div>
-                            @endforeach
+                            <div class="retur-item-list">
+                                @foreach($item->details as $dtl)
+                                    <div class="retur-item-row">
+                                        <span class="retur-item-name">{{ $dtl->barang?->barang_nm ?? '-' }}</span>
+                                        <span class="retur-item-qty">{{ number_format((float) $dtl->qty_retur, 0) }} unit</span>
+                                        <span class="retur-item-cond">({{ $dtl->kondisi_label }})</span>
+                                    </div>
+                                @endforeach
+                            </div>
                         </td>
                         <td>
-                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                            <div class="disposisi-tags-wrapper">
                                 @if($qtyMasuk > 0)
-                                    <span class="badge-disposisi-persediaan" title="Masuk ke persediaan sortir untuk diolah kembali jadi KW 2">
-                                        ✓ Masuk KW 2: <strong>{{ number_format($qtyMasuk, 0) }}</strong>
+                                    <span class="disposisi-tag disposisi-tag-kw2" title="Masuk ke persediaan sortir untuk diolah kembali jadi KW 2">
+                                        <svg class="disp-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                        <span>Sortir KW 2: <strong>{{ number_format($qtyMasuk, 0) }}</strong></span>
                                     </span>
                                 @endif
                                 @if($qtyMusnah > 0)
-                                    <span class="badge-disposisi-musnah" title="Barang cacat/rusak/expired langsung dimusnahkan resmi di pabrik">
-                                        ✕ Dimusnahkan: <strong>{{ number_format($qtyMusnah, 0) }}</strong>
+                                    <span class="disposisi-tag disposisi-tag-musnah" title="Barang cacat/rusak langsung dimusnahkan resmi di pabrik">
+                                        <svg class="disp-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <span>Dimusnahkan: <strong>{{ number_format($qtyMusnah, 0) }}</strong></span>
                                     </span>
                                 @endif
                             </div>
                         </td>
-                        <td style="text-align: right; font-family: monospace; font-weight: 700; font-size: 0.85rem;">
+                        <td style="text-align: right;" class="col-tabular">
                             {{ number_format((float) $item->total_qty, 0) }}
                         </td>
-                        <td style="text-align: right; font-family: monospace; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
+                        <td style="text-align: right;" class="col-tabular">
                             Rp {{ number_format((float) $item->total_nilai, 0, ',', '.') }}
                         </td>
                         <td style="text-align: center;">
@@ -242,27 +253,23 @@
                             <div id="{{ $menuId }}" class="action-dropdown-menu">
                                 <a href="{{ route('penjualan.retur.show', $item->retur_id) }}" class="action-dropdown-item">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    <span>Lihat Detail di SO</span>
+                                    <span>Lihat Detail SO</span>
                                 </a>
 
                                 <a href="{{ route('penjualan.retur.export-pdf', $item->retur_id) }}" target="_blank" class="action-dropdown-item">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                    <span>Cetak Berita Acara (PDF)</span>
+                                    <span>Cetak BA Penerimaan Retur (PDF)</span>
                                 </a>
 
                                 @if($qtyMusnah > 0)
-                                    <a href="{{ route('penjualan.retur.berita-acara-pemusnahan', $item->retur_id) }}" class="action-dropdown-item" style="color: #dc2626;">
+                                    <a href="{{ route('penjualan.retur.berita-acara-pemusnahan', $item->retur_id) }}" class="action-dropdown-item">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        <span>BAP Pemusnahan (Web)</span>
-                                    </a>
-
-                                    <a href="{{ route('penjualan.retur.export-pemusnahan-pdf', $item->retur_id) }}" target="_blank" class="action-dropdown-item" style="color: #dc2626;">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        <span>Cetak BAP Pemusnahan (PDF)</span>
+                                        <span>BAP Pemusnahan (Web &amp; Cetak)</span>
                                     </a>
                                 @endif
 
                                 @if($item->status_cd === 'CONFIRMED')
+                                    <div class="action-dropdown-divider"></div>
                                     <button type="button" class="action-dropdown-item danger-item" onclick="openVoidModal({{ $item->retur_id }}, '{{ $item->retur_no }}')">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         <span>Batalkan (Void)</span>

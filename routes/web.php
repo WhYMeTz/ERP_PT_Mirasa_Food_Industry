@@ -609,6 +609,7 @@ Route::middleware('auth')->group(function () {
         // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
         Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
         Route::get('retur/create', [SoReturController::class, 'create'])->name('retur.create');
+        Route::get('retur/export-excel', [SoReturController::class, 'exportExcel'])->name('retur.export-excel');
         Route::post('retur', [SoReturController::class, 'store'])->name('retur.store');
         Route::get('retur/so-data/{id}', [SoReturController::class, 'getSoData'])->name('retur.so-data');
         Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');

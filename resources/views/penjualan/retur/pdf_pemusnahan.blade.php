@@ -5,321 +5,511 @@
     <title>Berita Acara Pemusnahan Barang Retur - {{ $retur->retur_no }}</title>
     <style>
         @page {
-            margin: 10mm 12mm 12mm 12mm;
+            size: a4 portrait;
+            margin: 10mm 12mm 10mm 12mm;
         }
+
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 8.5pt;
-            color: #1e293b;
-            line-height: 1.35;
+            font-family: 'Times-Roman', Times, serif;
+            font-size: 9.5pt;
+            color: #000000;
+            line-height: 1.45;
             margin: 0;
             padding: 0;
         }
 
+        /* Kop Tabel HACCP Mirasa - Proporsional Pas A4 */
         .kop-table {
             width: 100%;
-            border-bottom: 2px solid #dc2626;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            border-collapse: collapse;
+            border: 1.5px solid #000000;
+            margin-bottom: 14px;
         }
-        .kop-logo {
-            width: 50px;
+
+        .kop-table td {
+            border: 1.5px solid #000000;
             vertical-align: middle;
         }
-        .kop-text {
-            padding-left: 10px;
-            vertical-align: middle;
+
+        .kop-logo-cell {
+            width: 105px;
+            text-align: center;
+            padding: 6px;
         }
-        .kop-company {
-            font-size: 13pt;
+
+        .kop-logo-img {
+            max-height: 44px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .kop-slogan {
+            font-size: 6.5pt;
             font-weight: bold;
-            color: #0f172a;
             letter-spacing: 0.5px;
-        }
-        .kop-sub {
-            font-size: 7.5pt;
-            color: #64748b;
             margin-top: 2px;
-        }
-        .kop-title-box {
-            text-align: right;
-            vertical-align: middle;
-        }
-        .doc-title {
-            font-size: 12pt;
-            font-weight: bold;
             color: #dc2626;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .doc-number {
-            font-size: 9.5pt;
-            font-weight: bold;
-            color: #0f172a;
-            margin-top: 2px;
-            font-family: monospace;
-        }
-
-        .info-table {
-            width: 100%;
-            margin-bottom: 12px;
-            border-collapse: collapse;
-        }
-        .info-table td {
-            vertical-align: top;
-            padding: 2px 4px;
-        }
-        .info-card {
-            border: 1px solid #cbd5e1;
-            padding: 6px 10px;
-            background: #f8fafc;
-            border-radius: 4px;
-        }
-
-        table.data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 6px;
-            margin-bottom: 12px;
-        }
-        table.data-table th {
-            background-color: #0f172a;
-            color: #ffffff;
-            font-weight: bold;
-            text-align: left;
-            padding: 6px 8px;
-            font-size: 8pt;
-            border: 1px solid #0f172a;
-            text-transform: uppercase;
-        }
-        table.data-table td {
-            padding: 6px 8px;
-            border: 1px solid #cbd5e1;
-            vertical-align: middle;
-        }
-
-        .legal-clause {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 8pt;
-            color: #991b1b;
-            margin-bottom: 15px;
-            line-height: 1.45;
-        }
-
-        .ttd-table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
+            font-family: Helvetica, Arial, sans-serif;
             text-align: center;
         }
-        .ttd-table td {
-            width: 25%;
-            vertical-align: top;
-            padding: 0 5px;
+
+        .kop-center-cell {
+            text-align: center;
+            padding: 6px 10px;
         }
-        .ttd-space {
-            height: 55px;
-        }
-        .ttd-name {
+
+        .kop-company-name {
+            font-size: 13pt;
             font-weight: bold;
-            text-decoration: underline;
-            color: #0f172a;
+            letter-spacing: 0.5px;
+            text-align: center;
+            font-family: Helvetica, Arial, sans-serif;
+            margin: 0;
+            color: #000000;
         }
-        .ttd-role {
+
+        .kop-form-name {
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #000000;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+            font-family: Helvetica, Arial, sans-serif;
+            margin-top: 4px;
+            line-height: 1.25;
+            white-space: nowrap;
+        }
+
+        .kop-meta-cell {
+            width: 160px;
+            font-size: 7pt;
+            font-family: Helvetica, Arial, sans-serif;
+            line-height: 1.4;
+            padding: 5px 6px;
+            vertical-align: middle;
+        }
+
+        /* Nomor Dokumen & Referensi */
+        .doc-header-box {
+            text-align: center;
+            margin-bottom: 13px;
+        }
+
+        .doc-number {
+            font-size: 11.5pt;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            font-family: Helvetica, Arial, sans-serif;
+        }
+
+        .doc-ref {
+            font-size: 8.5pt;
+            color: #334155;
+            font-style: italic;
+            margin-top: 3px;
+        }
+
+        /* Paragraf Pembuka Legal */
+        .opening-p {
+            margin: 0 0 13px 0;
+            text-align: justify;
+            text-indent: 20px;
+            font-size: 10.5pt;
+            line-height: 1.5;
+        }
+
+        /* Frame Informasi Dossier Dokumen (6 Kolom Presisi - Pas A4) */
+        .ba-dossier-box {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 14px 0;
+            font-size: 10pt;
+        }
+
+        .ba-dossier-box td {
+            padding: 3.5px 0;
+            vertical-align: top;
+            border: none;
+        }
+
+        .dossier-lbl {
+            font-weight: bold;
+            width: 135px;
+            white-space: nowrap;
+        }
+
+        .dossier-sep {
+            width: 10px;
+            text-align: center;
+        }
+
+        .dossier-val-left {
+            padding-right: 12px;
+        }
+
+        .dossier-lbl-right {
+            font-weight: bold;
+            width: 135px;
+            white-space: nowrap;
+        }
+
+        .dossier-val-right {
+            /* natural fit */
+        }
+
+        /* Table Rincian Barang Dimusnahkan (Fixed Proportions - 100% Selaras) */
+        .section-title {
+            font-weight: bold;
+            font-size: 8.5pt;
+            margin: 0 0 6px 0;
+            text-transform: uppercase;
+            font-family: Helvetica, Arial, sans-serif;
+        }
+
+        .ba-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000000;
+            margin: 0 0 13px 0;
+            font-size: 9pt;
+            page-break-inside: avoid;
+        }
+
+        .ba-table th {
+            border: 1px solid #000000;
+            padding: 6px 5px;
+            background-color: #f1f5f9;
+            font-weight: bold;
+            text-align: center;
             font-size: 7.5pt;
-            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            font-family: Helvetica, Arial, sans-serif;
+        }
+
+        .ba-table td {
+            border: 1px solid #000000;
+            padding: 6px 5px;
+            vertical-align: middle;
+        }
+
+        .ba-table tfoot td {
+            background-color: #fafafa;
+            border-top: 1.5px solid #000000;
+            font-weight: bold;
+            padding: 6px 5px;
+        }
+
+        /* Kotak Pernyataan Resmi Keamanan Pangan */
+        .ba-legal-box {
+            border: 1px solid #000000;
+            background-color: #fafafa;
+            padding: 9px 12px;
+            font-size: 9.5pt;
+            line-height: 1.45;
+            margin-bottom: 14px;
+            text-align: justify;
+            page-break-inside: avoid;
+        }
+
+        .ba-legal-box strong {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 8.5pt;
+            letter-spacing: 0.02em;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        /* Tabel Tanda Tangan 4 Kolom Formal (Pas A4 - Baris Rata Sempurna) */
+        .ba-signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            page-break-inside: avoid;
+            margin-top: 4px;
+        }
+
+        .ba-signature-table td {
+            width: 25%;
+            text-align: center;
+            padding: 0 4px;
+            border: none;
+        }
+
+        .ba-sig-head-cell {
+            vertical-align: top;
+            height: 32px;
+        }
+
+        .ba-sig-space-cell {
+            height: 46px;
+        }
+
+        .ba-sig-foot-cell {
+            vertical-align: top;
+        }
+
+        .ba-sig-title {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 7.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            line-height: 1.25;
+        }
+
+        .ba-sig-subrole {
+            font-size: 6.5pt;
+            font-style: italic;
+            color: #475569;
+            margin-top: 3px;
+            line-height: 1.25;
+        }
+
+        .ba-sig-underline {
+            border-bottom: 1px solid #000000;
+            width: 82%;
+            margin: 0 auto 3px auto;
+        }
+
+        .ba-sig-name {
+            font-family: 'Times-Roman', Times, serif;
+            font-weight: bold;
+            font-size: 9pt;
+            line-height: 1.25;
+        }
+
+        .ba-sig-caption {
+            font-size: 6.5pt;
+            color: #334155;
+            line-height: 1.25;
+            margin-top: 3px;
         }
     </style>
 </head>
 <body>
-    {{-- Kop Surat Perusahaan --}}
+@php
+    \Carbon\Carbon::setLocale('id');
+    $tglRetur = $retur->retur_tgl ? \Carbon\Carbon::parse($retur->retur_tgl) : now();
+    $hari = $tglRetur->translatedFormat('l');
+    $tglLengkap = $tglRetur->translatedFormat('d F Y');
+
+    $bapScrapNo = app(\App\Services\Common\CodeGeneratorService::class)->generateBapScrapNo($tglRetur->toDateString(), $retur->retur_no);
+
+    $destroyedItems = $retur->details->filter(function($d) {
+        return $d->perlakuan_cd === 'DIMUSNAHKAN' || (float)$d->qty_dimusnahkan > 0;
+    });
+
+    if ($destroyedItems->isEmpty()) {
+        $destroyedItems = $retur->details;
+    }
+
+    $totalQtyMusnah = (float) ($retur->total_qty_dimusnahkan ?: $destroyedItems->sum('qty_dimusnahkan'));
+    if ($totalQtyMusnah == 0) {
+        $totalQtyMusnah = (float) $destroyedItems->sum('qty_retur');
+    }
+
+    $customerNm = $retur->customer?->customer_nm ?: ($retur->order?->customer?->customer_nm ?: 'Pelanggan Umum');
+    $soNo = $retur->order?->so_no ?: '-';
+    $sjNo = $retur->order?->surat_jalan_no ?: ($retur->order?->pengeluaran?->first()?->pengeluaran_no ?: '-');
+    $fakturNo = $retur->order?->faktur_no ?: ($retur->order?->faktur?->first()?->faktur_no ?: '-');
+@endphp
+
+    {{-- KOP PERUSAHAAN HACCP MIRASA (STANDAR RESMI FORM MFI) --}}
     <table class="kop-table">
         <tr>
-            @if(!empty($logoBase64))
-                <td class="kop-logo">
-                    <img src="{{ $logoBase64 }}" alt="Logo PT Mirasa" style="width: 48px; height: 48px;">
-                </td>
-            @endif
-            <td class="kop-text">
-                <div class="kop-company">PT. MIRASA FOOD INDUSTRY</div>
-                <div class="kop-sub">Divisi Pengendalian Mutu &amp; Karantina Produk Pangan Olahan</div>
-                <div class="kop-sub">Kawasan Industri Candi Blok XI No. 8, Krapyak, Semarang &bull; Telp: (024) 7601234</div>
+            <td class="kop-logo-cell">
+                @if(!empty($logoBase64))
+                    <img src="{{ $logoBase64 }}" alt="Logo PT Mirasa" class="kop-logo-img">
+                @else
+                    <img src="{{ public_path('images/logo.png') }}" alt="Logo PT Mirasa" class="kop-logo-img">
+                @endif
+                <div class="kop-slogan">ENAK - GURIH - LEZAT</div>
             </td>
-            <td class="kop-title-box">
-                <div class="doc-title">BERITA ACARA PEMUSNAHAN BARANG</div>
-                <div class="doc-number">BAP-SCRAP/{{ $retur->retur_no }}</div>
-                <div style="font-size: 7.5pt; color: #64748b; margin-top: 3px;">
-                    Tanggal Eksekusi: <strong>{{ $retur->retur_tgl ? $retur->retur_tgl->format('d/m/Y') : date('d/m/Y') }}</strong>
+            <td class="kop-center-cell">
+                <div class="kop-company-name">PT. MIRASA FOOD INDUSTRY</div>
+                <div class="kop-form-name">
+                    BERITA ACARA PEMUSNAHAN PRODUK JADI RETUR
                 </div>
+            </td>
+            <td class="kop-meta-cell">
+                <div><strong>No. Dokumen:</strong> MFI/HACCP/BAP-RET/{{ $tglRetur->format('Y') }}</div>
+                <div><strong>Revisi:</strong> 01</div>
+                <div><strong>Tgl Berlaku:</strong> 01-01-2024</div>
+                <div><strong>Halaman:</strong> 1 dari 1</div>
             </td>
         </tr>
     </table>
 
-    {{-- Meta Data Transaksi Retur --}}
-    <table class="info-table">
-        <tr>
-            <td style="width: 50%;">
-                <div class="info-card">
-                    <strong style="color: #0f172a; font-size: 8.5pt; display: block; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 4px;">
-                        SUMBER ASAL PENGEMBALIAN BARANG
-                    </strong>
-                    <table style="width: 100%; font-size: 8pt; border-collapse: collapse;">
-                        <tr>
-                            <td style="width: 32%; color: #64748b; padding: 1px 0;">Pelanggan / Toko:</td>
-                            <td style="font-weight: bold; color: #0f172a; padding: 1px 0;">{{ $retur->customer?->customer_nm ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">Ref. Order (SO):</td>
-                            <td style="font-weight: bold; color: #0284c7; padding: 1px 0; font-family: monospace;">{{ $retur->order?->so_no ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">Ref. Faktur:</td>
-                            <td style="color: #334155; padding: 1px 0; font-family: monospace;">{{ $retur->order?->faktur_no ?? '-' }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-            <td style="width: 50%;">
-                <div class="info-card">
-                    <strong style="color: #0f172a; font-size: 8.5pt; display: block; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 4px;">
-                        PARAMETER DOKUMEN RETUR TERKAIT
-                    </strong>
-                    <table style="width: 100%; font-size: 8pt; border-collapse: collapse;">
-                        <tr>
-                            <td style="width: 35%; color: #64748b; padding: 1px 0;">No. Retur Asal:</td>
-                            <td style="font-weight: bold; color: #0f172a; padding: 1px 0; font-family: monospace;">{{ $retur->retur_no }}</td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">Lokasi Pabrik:</td>
-                            <td style="font-weight: bold; color: #0f172a; padding: 1px 0;">Pabrik Ambartawang / Semarang</td>
-                        </tr>
-                        <tr>
-                            <td style="color: #64748b; padding: 1px 0;">Disposisi Fisik:</td>
-                            <td style="font-weight: bold; color: #dc2626; padding: 1px 0;">DIMUSNAHKAN DI TEMPAT (SCRAP)</td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    {{-- Klausul Pemusnahan Resmi --}}
-    <div class="legal-clause">
-        <strong>PERNYATAAN RESMI PEMUSNAHAN BARANG:</strong><br>
-        Menerangkan bahwa produk keripik olahan di bawah ini yang berasal dari retur penjualan pelanggan, setelah dilakukan inspeksi mutu fisik oleh tim Quality Control (QC), dinyatakan <strong>TIDAK LAYAK KONSUMSI / RUSAK BERAT</strong> dan dilarang diedarkan kembali. Seluruh fisik produk ini telah <strong>DIMUSNAHKAN / DISCRAP</strong> di area fasilitas pabrik dengan mematuhi standar sanitasi, keamanan pangan, dan audit HACCP PT. Mirasa Food Industry.
+    {{-- NOMOR DOKUMEN RESMI & REFERENSI --}}
+    <div class="doc-header-box">
+        <div class="doc-number">
+            NOMOR: {{ $bapScrapNo }}
+        </div>
+        <div class="doc-ref">
+            Ref. Dokumen Retur: <strong style="font-family: monospace; color: #000;">{{ $retur->retur_no }}</strong> &bull; Ref. PO Penjualan: <strong style="font-family: monospace; color: #000;">{{ $soNo }}</strong>
+        </div>
     </div>
 
-    {{-- Tabel Rincian Barang yang Dimusnahkan --}}
-    @php
-        $itemsMusnah = $retur->details->filter(function($d) {
-            return (float) ($d->qty_dimusnahkan ?? 0) > 0 || $d->perlakuan_cd === 'DIMUSNAHKAN';
-        });
-        $grandTotalMusnahQty = 0;
-        $grandTotalMusnahNilai = 0;
-    @endphp
+    {{-- PARAGRAF PEMBUKA LEGAL --}}
+    <p class="opening-p">
+        Pada hari ini <strong>{{ $hari }}</strong>, tanggal <strong>{{ $tglLengkap }}</strong>, bertempat di area PT. Mirasa Food Industry, telah dilaksanakan proses inspeksi fisik, pemisahan, dan pemusnahan resmi terhadap produk jadi hasil retur penjualan (customer returns) dengan rincian data sebagai berikut:
+    </p>
 
-    <table class="data-table">
+    {{-- INFORMASI SUMBER DOKUMEN (6 KOLOM PRESISI - PAS A4) --}}
+    <table class="ba-dossier-box">
+        <tr>
+            <td class="dossier-lbl">Mitra Pelanggan</td>
+            <td class="dossier-sep">:</td>
+            <td class="dossier-val-left"><strong>{{ $customerNm }}</strong></td>
+            <td class="dossier-lbl-right">Gudang Pelaksana</td>
+            <td class="dossier-sep">:</td>
+            <td class="dossier-val-right">{{ $retur->gudang?->gudang_nm ?? 'PT Mirasa Food Industry' }}</td>
+        </tr>
+        <tr>
+            <td class="dossier-lbl">No. Faktur Penjualan</td>
+            <td class="dossier-sep">:</td>
+            <td class="dossier-val-left" style="font-family: monospace;">{{ $fakturNo }}</td>
+            <td class="dossier-lbl-right">No. Surat Jalan</td>
+            <td class="dossier-sep">:</td>
+            <td class="dossier-val-right" style="font-family: monospace;">{{ $sjNo }}</td>
+        </tr>
+        <tr>
+            <td class="dossier-lbl">Tindakan Tagihan</td>
+            <td class="dossier-sep">:</td>
+            <td class="dossier-val-left">{{ $retur->tindakan_cd === 'POTONG_TAGIHAN' ? 'Pemotongan Piutang / Nota Kredit' : 'Penggantian Barang Baru' }}</td>
+            <td class="dossier-lbl-right">Alasan Pengembalian</td>
+            <td class="dossier-sep">:</td>
+            <td class="dossier-val-right">{{ $retur->alasan_txt ?: 'Cacat mutu / kemasan rusak dari pelanggan' }}</td>
+        </tr>
+    </table>
+
+    {{-- TABEL RINCIAN BARANG YANG DIMUSNAHKAN (FIXED PROPORTIONS - 100% TIDAK BERTUMPUK) --}}
+    <div class="section-title">
+        A. DAFTAR BARANG YANG DIMUSNAHKAN FISIK:
+    </div>
+    <table class="ba-table">
         <thead>
             <tr>
-                <th style="width: 25px; text-align: center;">No</th>
-                <th style="width: 80px;">Kode Produk</th>
-                <th>Nama Varian Produk</th>
-                <th style="width: 120px;">Kondisi / Alasan Rusak</th>
-                <th style="width: 75px; text-align: right;">Qty Musnah</th>
-                <th style="width: 85px; text-align: right;">Harga Satuan</th>
-                <th style="width: 95px; text-align: right;">Beban Kerugian</th>
+                <th style="width: 25px; text-align: center;">NO</th>
+                <th style="width: 80px; text-align: center;">KODE BARANG</th>
+                <th style="text-align: left;">NAMA PRODUK JADI</th>
+                <th style="width: 75px; text-align: center;">QTY MUSNAH</th>
+                <th style="width: 55px; text-align: center;">SATUAN</th>
+                <th style="width: 120px; text-align: left;">KONDISI / ALASAN</th>
+                <th style="width: 125px; text-align: left;">METODE PEMUSNAHAN</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($itemsMusnah as $index => $item)
+            @foreach ($destroyedItems as $idx => $dtl)
                 @php
-                    $qMusnah = (float) ($item->qty_dimusnahkan > 0 ? $item->qty_dimusnahkan : $item->qty_retur);
-                    $subtotalMusnah = round($qMusnah * (float) $item->harga_satuan, 2);
-                    $grandTotalMusnahQty += $qMusnah;
-                    $grandTotalMusnahNilai += $subtotalMusnah;
+                    $qty = (float) ($dtl->qty_dimusnahkan > 0 ? $dtl->qty_dimusnahkan : $dtl->qty_retur);
+                    $kondisiMap = [
+                        'RUSAK_KEMASAN'   => 'Kemasan Rusak / Cacat',
+                        'REMUK_MELEMPEM'  => 'Remuk / Melempem',
+                        'KADALUARSA'      => 'Kadaluarsa / Expired',
+                        'SALAH_KIRIM'     => 'Salah Kirim / Lebih',
+                        'REJECT_CUSTOMER' => 'Reject Mitra / Customer',
+                    ];
+                    $kondisiTxt = $kondisiMap[$dtl->kondisi_cd] ?? ($dtl->kondisi_cd ?: 'Cacat Mutu Fisik');
                 @endphp
                 <tr>
-                    <td style="text-align: center; color: #64748b;">{{ $loop->iteration }}</td>
-                    <td style="font-family: monospace; font-size: 8pt; color: #475569;">{{ $item->barang?->barang_cd ?? '-' }}</td>
+                    <td style="text-align: center;">{{ $idx + 1 }}</td>
+                    <td style="text-align: center; font-family: monospace;">{{ $dtl->barang?->barang_cd ?? '-' }}</td>
                     <td>
-                        <strong style="color: #0f172a;">{{ $item->barang?->barang_nm ?? '-' }}</strong>
-                        @if($item->catatan_txt)
-                            <div style="font-size: 7pt; color: #64748b; margin-top: 1px;">Catatan: {{ $item->catatan_txt }}</div>
+                        <strong>{{ $dtl->barang?->barang_nm ?? '-' }}</strong>
+                        <div style="font-size: 7.5pt; color: #475569; margin-top: 2px;">
+                            No. Batch: <span style="font-family: monospace; font-weight: bold; color: #000000;">{{ $dtl->production_batch_no ?: '-' }}</span>
+                        </div>
+                        @if(!empty($dtl->catatan_txt))
+                            <div style="font-size: 7.5pt; color: #475569; font-style: italic; margin-top: 1px;">Catatan: {{ $dtl->catatan_txt }}</div>
                         @endif
                     </td>
-                    <td style="font-size: 7.5pt; color: #dc2626; font-weight: 600;">
-                        {{ $item->kondisi_label }}
-                    </td>
                     <td style="text-align: right; font-weight: bold; font-family: monospace; color: #dc2626;">
-                        {{ number_format($qMusnah, 0) }} {{ $item->barang?->satuan_kecil ?? 'Karton' }}
+                        {{ number_format($qty, 0) }}
                     </td>
-                    <td style="text-align: right; font-family: monospace;">
-                        Rp {{ number_format((float) $item->harga_satuan, 0, ',', '.') }}
+                    <td style="text-align: center;">
+                        {{ $dtl->satuan ?: ($dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton') }}
                     </td>
-                    <td style="text-align: right; font-weight: bold; font-family: monospace; color: #dc2626;">
-                        Rp {{ number_format($subtotalMusnah, 0, ',', '.') }}
+                    <td style="font-size: 8pt;">
+                        <strong style="color: #991b1b;">{{ $kondisiTxt }}</strong>
+                    </td>
+                    <td style="font-size: 7.5pt; color: #334155;">
+                        Pembongkaran &amp; Pembuangan Akhir Limbah
                     </td>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="7" style="text-align: center; color: #94a3b8; padding: 15px;">
-                        Tidak ada item yang dimusnahkan pada dokumen retur ini.
-                    </td>
-                </tr>
-            @endforelse
+            @endforeach
         </tbody>
         <tfoot>
-            <tr style="background-color: #fef2f2; font-weight: bold;">
-                <td colspan="4" style="text-align: right; padding: 6px 8px; color: #991b1b;">
-                    TOTAL PEMUSNAHAN BARANG:
+            <tr>
+                <td colspan="3" style="text-align: right; padding: 5px 6px;">TOTAL KUANTITAS DIMUSNAHKAN:</td>
+                <td style="text-align: right; font-family: monospace; font-size: 9pt; color: #dc2626; padding: 5px 6px;">
+                    {{ number_format($totalQtyMusnah, 0) }}
                 </td>
-                <td style="text-align: right; padding: 6px 8px; font-family: monospace; font-size: 9pt; color: #dc2626;">
-                    {{ number_format($grandTotalMusnahQty, 0) }} Karton
-                </td>
-                <td></td>
-                <td style="text-align: right; padding: 6px 8px; font-family: monospace; font-size: 9.5pt; color: #dc2626;">
-                    Rp {{ number_format($grandTotalMusnahNilai, 0, ',', '.') }}
+                <td colspan="3" style="color: #475569; font-size: 8pt; padding: 5px 6px;">
+                    Karton / Satuan (Stok Persediaan Telah Dikeluarkan)
                 </td>
             </tr>
         </tfoot>
     </table>
 
-    {{-- Tanda Tangan 4 Pihak Berita Acara --}}
-    <table class="ttd-table">
+    {{-- PERNYATAAN RESMI KEAMANAN PANGAN & MUTU --}}
+    <div class="ba-legal-box">
+        <strong>PERNYATAAN RESMI JAMINAN KEAMANAN PANGAN &amp; MUTU:</strong>
+        Seluruh produk yang tercantum pada tabel di atas dinyatakan tidak layak konsumsi dan/atau tidak memenuhi standar mutu peredaran pasar PT. Mirasa Food Industry. Produk telah dimusnahkan secara fisik di area PT. Mirasa Food Industry, tidak diperjualbelikan kembali ke pihak mana pun, dan tidak dimasukkan ke dalam persediaan barang jadi (finished goods). Berita Acara ini sah sebagai bukti otentik pengurangan aset persediaan barang pabrik.
+    </div>
+
+    {{-- TABEL TANDA TANGAN 4 PIHAK RESMI (PAS A4) --}}
+    <div class="section-title">
+        B. PIHAK YANG MELAKSANAKAN, MEMERIKSA &amp; MENYETUJUI PEMUSNAHAN:
+    </div>
+    <table class="ba-signature-table">
         <tr>
-            <td>
-                <div class="ttd-role">Petugas QC / Inspeksi Mutu</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-name">Siti Astiyanti</div>
-                <div class="ttd-role">Staf QC Pabrik</div>
+            <td class="ba-sig-head-cell">
+                <div class="ba-sig-title">PETUGAS SORTIR &amp; GUDANG</div>
+                <div class="ba-sig-subrole">Pelaksana Pemisahan Fisik</div>
             </td>
-            <td>
-                <div class="ttd-role">Kepala Gudang Barang Jadi</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-name">{{ auth()->user()?->karyawan?->karyawan_nm ?? 'Raden Rahmat' }}</div>
-                <div class="ttd-role">Penanggung Jawab Gudang</div>
+            <td class="ba-sig-head-cell">
+                <div class="ba-sig-title">QUALITY CONTROL (QC)</div>
+                <div class="ba-sig-subrole">Verifikator Cacat Mutu Produk</div>
             </td>
-            <td>
-                <div class="ttd-role">Bagian Keuangan / Akuntansi</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-name">Mei Nur Rahmawati</div>
-                <div class="ttd-role">Pencatat Beban Kerugian</div>
+            <td class="ba-sig-head-cell">
+                <div class="ba-sig-title">BAGIAN FINANCE / AKUNTANSI</div>
+                <div class="ba-sig-subrole">Verifikator Tagihan / Nota Kredit</div>
             </td>
-            <td>
-                <div class="ttd-role">Pimpinan Pabrik / Direktur</div>
-                <div class="ttd-space"></div>
-                <div class="ttd-name">Habieb Soleh Y.</div>
-                <div class="ttd-role">Menyetujui Pemusnahan</div>
+            <td class="ba-sig-head-cell">
+                <div class="ba-sig-title">KEPALA PABRIK / DIREKTUR</div>
+                <div class="ba-sig-subrole">Persetujuan Otorisasi Pemusnahan</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="ba-sig-space-cell"></td>
+            <td class="ba-sig-space-cell"></td>
+            <td class="ba-sig-space-cell"></td>
+            <td class="ba-sig-space-cell"></td>
+        </tr>
+        <tr>
+            <td class="ba-sig-foot-cell">
+                <div class="ba-sig-underline"></div>
+                <div class="ba-sig-name">Raden Rahmat</div>
+                <div class="ba-sig-caption">Penanggung Jawab Gudang FG</div>
+            </td>
+            <td class="ba-sig-foot-cell">
+                <div class="ba-sig-underline"></div>
+                <div class="ba-sig-name">Siti Astiyanti</div>
+                <div class="ba-sig-caption">Staf Pengendalian Mutu (QC)</div>
+            </td>
+            <td class="ba-sig-foot-cell">
+                <div class="ba-sig-underline"></div>
+                <div class="ba-sig-name">Mei Nur Rahmawati</div>
+                <div class="ba-sig-caption">Staf Keuangan &amp; Piutang</div>
+            </td>
+            <td class="ba-sig-foot-cell">
+                <div class="ba-sig-underline"></div>
+                <div class="ba-sig-name">Habieb Soleh Y.</div>
+                <div class="ba-sig-caption">Pimpinan Pabrik / Direktur</div>
             </td>
         </tr>
     </table>
-
-    <div style="margin-top: 15px; font-size: 7pt; color: #94a3b8; text-align: right;">
-        Dokumen dicetak otomatis oleh sistem ERP PT. Mirasa Food Industry pada {{ now()->translatedFormat('d F Y H:i') }}.
-    </div>
 </body>
 </html>
-

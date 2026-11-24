@@ -1280,12 +1280,71 @@ class CodeGeneratorService
     }
 
     /**
-     * Generate Nomor Dokumen Retur PO Penjualan (format: RET-SO-YYYYMM-0001)
+     * Generate Nomor Dokumen Retur PO Penjualan Resmi PT Mirasa
+     * Format Standar Korporat: {seq:3}/RET/MFI/{mm}/{yy}
+     * Contoh: 001/RET/MFI/11/26
+     * Reset ke urutan 001 pada setiap awal bulan baru secara otomatis.
      */
-    public function generateSoReturNo(?string $date = null): string
+    public function generateSoReturNo(?string $date = null, ?int $excludeReturId = null): string
     {
-        $prefix = 'RET-SO-' . date('Ym', strtotime($date ?? date('Y-m-d'))) . '-';
-        return $this->generate('dat_so_retur_hdr', 'retur_no', $prefix, 4);
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        $suffix = "/RET/MFI/{$month}/{$year}";
+
+        // Cari nomor retur yang berakhiran format resmi pada bulan & tahun ini
+        $query = DB::table('dat_so_retur_hdr')
+            ->where('retur_no', 'LIKE', '%' . $suffix);
+
+        if ($excludeReturId) {
+            $query->where('retur_id', '!=', $excludeReturId);
+        }
+
+        $existing = $query->pluck('retur_no');
+
+        $maxNumber = 0;
+        $regex = '/^(\d+)\/RET\/MFI\/' . $month . '\/' . $year . '$/i';
+
+        foreach ($existing as $returNo) {
+            if (preg_match($regex, trim((string) $returNo), $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $maxNumber++;
+            $generated = str_pad((string) $maxNumber, 3, '0', STR_PAD_LEFT) . $suffix;
+            $checkQuery = DB::table('dat_so_retur_hdr')->where('retur_no', $generated);
+            if ($excludeReturId) {
+                $checkQuery->where('retur_id', '!=', $excludeReturId);
+            }
+            $exists = $checkQuery->exists();
+        } while ($exists);
+
+        return $generated;
+    }
+
+    /**
+     * Generate Nomor Berita Acara Pemusnahan Produk Jadi Retur Resmi PT Mirasa
+     * Format Standar Korporat: {seq:3}/BAP/MFI/{mm}/{yy}
+     * Contoh: 001/BAP/MFI/11/26
+     */
+    public function generateBapScrapNo(?string $date = null, ?string $returNo = null): string
+    {
+        if (!empty($returNo)) {
+            if (preg_match('/^(\d+)\/RET\/MFI\/(\d{2})\/(\d{2})$/i', trim($returNo), $m)) {
+                return "{$m[1]}/BAP/MFI/{$m[2]}/{$m[3]}";
+            }
+            return "BAP/" . preg_replace('/[^A-Za-z0-9\/\-]/', '', $returNo);
+        }
+
+        $timestamp = strtotime($date ?? date('Y-m-d'));
+        $month = date('m', $timestamp);
+        $year = date('y', $timestamp);
+        return "001/BAP/MFI/{$month}/{$year}";
     }
 
     /**

@@ -55,7 +55,11 @@ function loadSoData(soId) {
                 document.getElementById('infoSoNo').textContent = data.so_no || '-';
                 document.getElementById('infoCustNm').textContent = data.customer_nm || '-';
                 document.getElementById('infoSoTgl').textContent = data.so_tgl_formatted || '-';
-                if (infoBox) infoBox.style.display = 'grid';
+                const sjInput = document.getElementById('infoSjNo');
+                if (sjInput) sjInput.value = data.sj_no || '-';
+                const fakturInput = document.getElementById('infoFakturNo');
+                if (fakturInput) fakturInput.value = data.faktur_no || '-';
+                if (infoBox) infoBox.style.display = 'flex';
 
                 // Render Table Items
                 itemsTbody.innerHTML = '';
@@ -83,9 +87,9 @@ function loadSoData(soId) {
                             <td style="width: 110px;">
                                 <input type="number" step="any" min="0" max="${item.max_returnable}"
                                     name="items[${idx}][qty_retur]"
-                                    class="retur-ctrl qty-retur-input"
+                                    class="form-control qty-retur-input"
                                     value="0"
-                                    style="text-align: right; font-weight: 800; font-family: monospace;"
+                                    style="text-align: right; font-weight: 800; font-family: monospace; border: 1.5px solid #cbd5e1; border-radius: 5px; height: 32px;"
                                     data-idx="${idx}">
                             </td>
                             <td style="text-align: center; color: #475569; font-weight: 600;">
@@ -94,7 +98,7 @@ function loadSoData(soId) {
                             <td style="text-align: right; font-family: monospace; color: #475569;">
                                 ${item.formatted_price}
                             </td>
-                            <td style="width: 220px;">
+                            <td style="width: 240px;">
                                 <div class="disposisi-card-group">
                                     <label class="disposisi-option opt-simpan">
                                         <input type="radio" name="items[${idx}][perlakuan_cd]" value="MASUK_PERSEDIAAN" checked class="disposisi-radio" data-idx="${idx}">
@@ -106,8 +110,8 @@ function loadSoData(soId) {
                                     </label>
                                 </div>
                             </td>
-                            <td style="width: 140px;">
-                                <select name="items[${idx}][kondisi_cd]" class="retur-ctrl" style="font-size: 0.775rem;">
+                            <td style="width: 160px;">
+                                <select name="items[${idx}][kondisi_cd]" class="form-control" style="font-size: 0.775rem; border: 1.5px solid #cbd5e1; border-radius: 5px; height: 32px;">
                                     <option value="RUSAK_KEMASAN">Kemasan Rusak / Cacat</option>
                                     <option value="REMUK_MELEMPEM">Remuk / Melempem</option>
                                     <option value="KADALUARSA">Kadaluarsa (Expired)</option>
@@ -123,7 +127,7 @@ function loadSoData(soId) {
                     });
                     bindAllRowEvents();
                 } else {
-                    itemsTbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #94a3b8;">Tidak ada item terkirim pada dokumen pesanan ini.</td></tr>`;
+                    itemsTbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">Tidak ada item terkirim pada dokumen pesanan ini.</td></tr>`;
                 }
                 calculateTotals();
             } else {
@@ -216,6 +220,12 @@ function calculateTotals() {
     if (dispQtyMasuk) dispQtyMasuk.textContent = totQtyMasuk.toLocaleString('id-ID') + ' Karton';
     if (dispQtyMusnah) dispQtyMusnah.textContent = totQtyMusnah.toLocaleString('id-ID') + ' Karton';
     if (dispTotNilai) dispTotNilai.textContent = 'Rp ' + Math.round(totNilai).toLocaleString('id-ID');
+
+    // Update Top Live KPI Widget
+    const topLiveReturTotal = document.getElementById('topLiveReturTotal');
+    const topLiveQtyRetur = document.getElementById('topLiveQtyRetur');
+    if (topLiveReturTotal) topLiveReturTotal.textContent = 'Rp ' + Math.round(totNilai).toLocaleString('id-ID');
+    if (topLiveQtyRetur) topLiveQtyRetur.textContent = totQtyRetur.toLocaleString('id-ID') + ' Karton';
 
     if (warningMusnahBanner) {
         if (totQtyMusnah > 0) {

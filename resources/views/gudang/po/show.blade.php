@@ -82,12 +82,19 @@
                     $taxSifatGlobal = $firstTaxItem?->pajak?->sifat_pajak ?? 'TAMBAH';
                     $isPotongGlobal = ($taxSifatGlobal === 'POTONG');
                     $taxCdGlobal = $firstTaxItem?->pajak?->pajak_cd ?? ($firstTaxItem?->ppn_tipe ?? 'Pajak');
-                    if ($taxCdGlobal === 'PPH-22-KOMODITAS') $taxCdGlobal = 'PPh 22';
+                    if ($isPotongGlobal || str_contains(strtoupper($taxCdGlobal), 'PPH')) {
+                        $taxCdGlobal = \App\Models\Gudang\DatPoHdr::formatShortPphName($taxCdGlobal);
+                    }
                 @endphp
 
                 @if($isPotongGlobal)
-                    <span class="badge"
-                        style="background:#fef2f2; color:#dc2626; border: 1px solid #fecaca; font-weight:700;">Potongan Pajak ({{ $taxCdGlobal }})</span>
+                    @if($firstTaxItem?->is_harga_termasuk_pajak)
+                        <span class="badge"
+                            style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;">Inc {{ $taxCdGlobal }}</span>
+                    @else
+                        <span class="badge"
+                            style="background:#fef2f2; color:#dc2626; border: 1px solid #fecaca; font-weight:700;">Potongan Pajak ({{ $taxCdGlobal }})</span>
+                    @endif
                 @elseif($po->is_harga_termasuk_pajak)
                     <span class="badge"
                         style="background:#dcfce7; color:#15803d; border: 1px solid #86efac; font-weight:700;">Harga Termasuk
@@ -133,17 +140,17 @@
                 {{-- DROPDOWN MENU ITEMS --}}
                 <div id="showActionMenuDropdown" class="show-action-menu-dropdown" style="display: none;">
 
-                    {{-- AKSI JIKA MENUNGGU VERIFIKASI: KIRIM ULANG EMAIL --}}
+                    {{-- AKSI JIKA MENUNGGU VERIFIKASI: KIRIM EMAIL --}}
                     @if ($po->status_cd == 'PENDING_APPROVAL')
                         <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
                             @csrf
                             <button type="submit" class="action-dropdown-item"
-                                title="Kirim ulang surat permohonan persetujuan ke email Atasan">
+                                title="Kirim surat permohonan persetujuan ke email Atasan">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
-                                <span style="font-weight: 700; color: #b45309;">Kirim Ulang Email Approval</span>
+                                <span style="font-weight: 700; color: #b45309;">Kirim Email Approval</span>
                             </button>
                         </form>
                         <div class="action-dropdown-divider"></div>
@@ -361,7 +368,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
-                                    <span>Kirim Ulang Email Approval</span>
+                                    <span>Kirim Email Approval</span>
                                 </button>
                             </form>
                         </div>
@@ -713,8 +720,8 @@
 
                                             $taxLabel = $item->pajak?->pajak_nm ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak');
                                             $taxCode = $item->pajak?->pajak_cd ?? ($item->ppn_tipe ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak'));
-                                            if ($taxCode === 'PPH-22-KOMODITAS') {
-                                                $taxCode = 'PPh 22';
+                                            if ($item->pajak?->sifat_pajak === 'POTONG' || str_contains(strtoupper($taxCode), 'PPH')) {
+                                                $taxCode = \App\Models\Gudang\DatPoHdr::formatShortPphName($taxCode);
                                             } elseif (strlen($taxCode) > 12) {
                                                 $taxCode = substr($taxCode, 0, 12);
                                             }

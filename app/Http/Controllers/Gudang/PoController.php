@@ -375,19 +375,27 @@ class PoController extends Controller
 
         try {
             $data = $request->all();
+            $oldPo = DatPoHdr::select('status_cd')->find($id);
+            $initialStatus = $oldPo?->status_cd;
+
             $po = $this->poService->update($id, $data);
+
+            $message = "Dokumen Purchase Order {$po->po_no} berhasil diperbarui.";
+            if ($initialStatus === 'APPROVED' && $po->status_cd === 'PENDING_APPROVAL') {
+                $message = "Dokumen Purchase Order {$po->po_no} berhasil diperbarui dan diajukan ulang ke Atasan untuk persetujuan (Re-Approval) karena terdapat perubahan finansial/kuantitas.";
+            }
 
             if ($request->wantsJson()) {
                 return response()->json([
                     'status'  => 'success',
-                    'message' => "Dokumen Purchase Order {$po->po_no} berhasil diperbarui.",
+                    'message' => $message,
                     'data'    => $po,
                 ]);
             }
 
             return redirect()
                 ->route('gudang.po.show', $po->po_id)
-                ->with('success', "Dokumen Purchase Order {$po->po_no} berhasil diperbarui.");
+                ->with('success', $message);
         } catch (\Exception $e) {
             return back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }

@@ -5,159 +5,200 @@
 @endpush
 
 @section('content')
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-    <div>
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Purchase Order (PO) Pengadaan</h1>
-        <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; margin-bottom: 0;">
-            Kelola dokumen pemesanan bahan baku singkong, minyak, bumbu, dan kemasan ke mitra supplier.
-        </p>
-    </div>
-    <div>
-        <a href="{{ route('gudang.po.create') }}" class="btn btn-primary">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Buat PO Baru
-        </a>
-    </div>
-</div>
+<div class="po-page-wrapper">
 
-{{-- 5 KARTU METRIK OPERASIONAL (INFORMATIF) --}}
-@php
-    $currentStatus = $status ?? '';
-@endphp
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-    {{-- SEMUA PO --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                    Semua Dokumen PO
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($statusCounts['all'] ?? 0) }}
-                </div>
-            </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
+    {{-- 1. TOP HEADER SECTION (PERSIS KAS KELUAR) --}}
+    <div class="po-top-header">
+        <div>
+            <div class="po-header-kicker">Pengadaan &amp; Logistik</div>
+            <h1 class="po-header-title">Purchase Order (PO)</h1>
+            <p class="po-header-subtitle">
+                Kelola dokumen pemesanan bahan baku singkong, minyak, bumbu, dan kemasan ke mitra supplier.
+            </p>
         </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Total transaksi pengadaan aktif
-        </div>
-    </div>
 
-    {{-- MENUNGGU APPROVAL ATASAN --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #b45309;">
-                    Menunggu Approval
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #b45309; margin-top: 0.25rem;">
-                    {{ number_format($statusCounts['pending_approval'] ?? 0) }}
-                </div>
-            </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #b45309;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <div style="font-size: 0.75rem; color: #b45309; margin-top: 0.4rem;">
-            Menunggu verifikasi atasan
-        </div>
-    </div>
-
-    {{-- MENUNGGU PENGIRIMAN (APPROVED) --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0284c7;">
-                    Menunggu Pengiriman
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($statusCounts['approved'] ?? 0) }}
-                </div>
-            </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            PO disetujui &bull; Supplier siap kirim
-        </div>
-    </div>
-
-    {{-- MASUK SEBAGIAN (PARTIAL) --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
-                    Masuk Sebagian (Parsial)
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($statusCounts['partial'] ?? 0) }}
-                </div>
-            </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zM4 17h1m4 0h6m4 0h1m-1-4V6a1 1 0 00-1-1H4a1 1 0 00-1 1v7m14 0h3l2 3v1a1 1 0 01-1 1h-1m-17 0H3a1 1 0 01-1-1v-1l2-3h12"/>
+        <div class="po-header-actions">
+            <a href="{{ route('gudang.terima.index') }}" class="btn-pill-outline">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-            </div>
-        </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Truk sudah tiba &bull; Masih ada sisa
+                <span>Penerimaan (Inbound)</span>
+            </a>
+
+            <a href="{{ route('gudang.po.create') }}" class="btn-pill-dark">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Buat PO Baru</span>
+            </a>
         </div>
     </div>
 
-    {{-- SELESAI / DITUTUP --}}
-    <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">
-                    Selesai &amp; Ditutup
-                </span>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                    {{ number_format($statusCounts['completed'] ?? 0) }}
+    {{-- 2. METRICS CARDS (GAYA PERSIS KAS KELUAR - 5 KOLOM) --}}
+    @php
+        $currentStatus = $status ?? '';
+    @endphp
+    <div class="po-metrics-grid">
+        {{-- Card 1: Semua PO --}}
+        <div class="po-metric-card">
+            <div class="po-metric-top">
+                <div class="po-metric-header-left">
+                    <span class="po-metric-icon">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </span>
+                    <span class="po-metric-label">Semua Dokumen PO</span>
+                </div>
+                <span class="po-metric-dots">&bull;&bull;&bull;</span>
+            </div>
+            <div class="po-metric-value">{{ number_format($statusCounts['all'] ?? 0) }}</div>
+            <div class="po-metric-footer">Total transaksi pengadaan aktif</div>
+        </div>
+
+        {{-- Card 2: Menunggu Approval --}}
+        <div class="po-metric-card">
+            <div class="po-metric-top">
+                <div class="po-metric-header-left">
+                    <span class="po-metric-icon">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <span class="po-metric-label">Menunggu Approval</span>
+                </div>
+                <span class="po-metric-dots">&bull;&bull;&bull;</span>
+            </div>
+            <div class="po-metric-value">{{ number_format($statusCounts['pending_approval'] ?? 0) }}</div>
+            <div class="po-metric-footer">Menunggu verifikasi atasan</div>
+        </div>
+
+        {{-- Card 3: Menunggu Pengiriman --}}
+        <div class="po-metric-card">
+            <div class="po-metric-top">
+                <div class="po-metric-header-left">
+                    <span class="po-metric-icon">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <span class="po-metric-label">Menunggu Kirim</span>
+                </div>
+                <span class="po-metric-dots">&bull;&bull;&bull;</span>
+            </div>
+            <div class="po-metric-value">{{ number_format($statusCounts['approved'] ?? 0) }}</div>
+            <div class="po-metric-footer">PO disetujui &bull; Siap kirim</div>
+        </div>
+
+        {{-- Card 4: Masuk Sebagian --}}
+        <div class="po-metric-card">
+            <div class="po-metric-top">
+                <div class="po-metric-header-left">
+                    <span class="po-metric-icon">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zM4 17h1m4 0h6m4 0h1m-1-4V6a1 1 0 00-1-1H4a1 1 0 00-1 1v7m14 0h3l2 3v1a1 1 0 01-1 1h-1m-17 0H3a1 1 0 01-1-1v-1l2-3h12" />
+                        </svg>
+                    </span>
+                    <span class="po-metric-label">Masuk Sebagian</span>
+                </div>
+                <span class="po-metric-dots">&bull;&bull;&bull;</span>
+            </div>
+            <div class="po-metric-value">{{ number_format($statusCounts['partial'] ?? 0) }}</div>
+            <div class="po-metric-footer">Truk tiba &bull; Ada sisa kuota</div>
+        </div>
+
+        {{-- Card 5: Selesai & Arsip --}}
+        <div class="po-metric-card">
+            <div class="po-metric-top">
+                <div class="po-metric-header-left">
+                    <span class="po-metric-icon">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </span>
+                    <span class="po-metric-label">Selesai &amp; Arsip</span>
+                </div>
+                <span class="po-metric-dots">&bull;&bull;&bull;</span>
+            </div>
+            <div class="po-metric-value">{{ number_format($statusCounts['completed'] ?? 0) }}</div>
+            <div class="po-metric-footer">Pengadaan selesai &bull; Arsip tuntas</div>
+        </div>
+    </div>
+
+    {{-- 3. MAIN DATA CARD (TABLE & CONTROLS) --}}
+    <div class="po-main-card">
+        {{-- Control Bar --}}
+        <div class="po-control-bar">
+            {{-- Tabs Status Row --}}
+            <div class="po-tabs-row">
+                <div class="po-status-pills">
+                    <a href="{{ route('gudang.po.index') }}"
+                       class="po-status-tab {{ empty($currentStatus) ? 'active' : '' }}">
+                        <span>Semua</span>
+                        <span class="badge-count">{{ $statusCounts['all'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ route('gudang.po.index', ['status' => 'PENDING_APPROVAL']) }}"
+                       class="po-status-tab {{ $currentStatus === 'PENDING_APPROVAL' ? 'active' : '' }}">
+                        <span>Menunggu Approval</span>
+                        <span class="badge-count">{{ $statusCounts['pending_approval'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ route('gudang.po.index', ['status' => 'APPROVED']) }}"
+                       class="po-status-tab {{ $currentStatus === 'APPROVED' ? 'active' : '' }}">
+                        <span>Disetujui</span>
+                        <span class="badge-count">{{ $statusCounts['approved'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ route('gudang.po.index', ['status' => 'PARTIAL']) }}"
+                       class="po-status-tab {{ $currentStatus === 'PARTIAL' ? 'active' : '' }}">
+                        <span>Masuk Sebagian</span>
+                        <span class="badge-count">{{ $statusCounts['partial'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ route('gudang.po.index', ['status' => 'COMPLETED']) }}"
+                       class="po-status-tab {{ in_array($currentStatus, ['COMPLETED', 'COMPLETED_CLOSED', 'CLOSED']) ? 'active' : '' }}">
+                        <span>Selesai</span>
+                        <span class="badge-count">{{ $statusCounts['completed'] ?? 0 }}</span>
+                    </a>
                 </div>
             </div>
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; color: #059669;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            </div>
+
+            {{-- Filter Form Row --}}
+            <form action="{{ route('gudang.po.index') }}" method="GET" class="po-filter-form">
+                <div class="po-search-wrapper">
+                    <span class="po-search-icon">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="{{ $search ?? '' }}"
+                           placeholder="Cari nomor PO atau nama supplier mitra..."
+                           class="po-search-input">
+                </div>
+
+                <select name="status" class="po-select-control" onchange="this.form.submit()">
+                    <option value="">-- Status Spesifik --</option>
+                    <option value="PENDING_APPROVAL" {{ ($currentStatus == 'PENDING_APPROVAL') ? 'selected' : '' }}>Menunggu Approval</option>
+                    <option value="REVISION" {{ ($currentStatus == 'REVISION') ? 'selected' : '' }}>Perlu Revisi Atasan</option>
+                    <option value="APPROVED" {{ ($currentStatus == 'APPROVED') ? 'selected' : '' }}>Disetujui (Approved)</option>
+                    <option value="PARTIAL" {{ ($currentStatus == 'PARTIAL') ? 'selected' : '' }}>Sebagian Diterima</option>
+                    <option value="COMPLETED_CLOSED" {{ ($currentStatus == 'COMPLETED_CLOSED') ? 'selected' : '' }}>Selesai / Ditutup</option>
+                    <option value="COMPLETED" {{ ($currentStatus == 'COMPLETED') ? 'selected' : '' }}>Selesai (Completed)</option>
+                    <option value="CLOSED" {{ ($currentStatus == 'CLOSED') ? 'selected' : '' }}>Ditutup (Closed)</option>
+                    <option value="REJECTED" {{ ($currentStatus == 'REJECTED') ? 'selected' : '' }}>Ditolak Atasan (Rejected)</option>
+                    <option value="DRAFT" {{ ($currentStatus == 'DRAFT') ? 'selected' : '' }}>Draft</option>
+                    <option value="CANCELLED" {{ ($currentStatus == 'CANCELLED') ? 'selected' : '' }}>Dibatalkan</option>
+                </select>
+
+                <button type="submit" class="btn-po-filter">Filter</button>
+                @if(!empty($search) || !empty($currentStatus))
+                    <a href="{{ route('gudang.po.index') }}" class="btn-po-reset">Reset</a>
+                @endif
+
+                <div class="po-total-badge">
+                    Total PO: <strong>{{ $poList->total() }}</strong> dokumen
+                </div>
+            </form>
         </div>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-            Pengadaan selesai &bull; Arsip tuntas
-        </div>
-    </div>
-</div>
-
-{{-- KARTU TABEL UTAMA --}}
-<div class="card">
-    <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <form action="{{ route('gudang.po.index') }}" method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; max-width: 650px; width: 100%;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nomor PO atau nama supplier..." class="form-control" style="padding: 0.45rem 0.75rem; max-width: 280px; font-size: 0.85rem;">
-            
-            <select name="status" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">-- Semua Status --</option>
-                <option value="PENDING_APPROVAL" {{ ($currentStatus == 'PENDING_APPROVAL') ? 'selected' : '' }}>Menunggu Approval</option>
-                <option value="REVISION" {{ ($currentStatus == 'REVISION') ? 'selected' : '' }}>Perlu Revisi Atasan</option>
-                <option value="APPROVED" {{ ($currentStatus == 'APPROVED') ? 'selected' : '' }}>Disetujui (Approved)</option>
-                <option value="PARTIAL" {{ ($currentStatus == 'PARTIAL') ? 'selected' : '' }}>Sebagian Diterima</option>
-                <option value="COMPLETED_CLOSED" {{ ($currentStatus == 'COMPLETED_CLOSED') ? 'selected' : '' }}>Selesai / Ditutup</option>
-                <option value="COMPLETED" {{ ($currentStatus == 'COMPLETED') ? 'selected' : '' }}>Selesai (Completed)</option>
-                <option value="CLOSED" {{ ($currentStatus == 'CLOSED') ? 'selected' : '' }}>Ditutup (Closed)</option>
-                <option value="REJECTED" {{ ($currentStatus == 'REJECTED') ? 'selected' : '' }}>Ditolak Atasan (Rejected)</option>
-                <option value="DRAFT" {{ ($currentStatus == 'DRAFT') ? 'selected' : '' }}>Draft</option>
-                <option value="CANCELLED" {{ ($currentStatus == 'CANCELLED') ? 'selected' : '' }}>Dibatalkan</option>
-            </select>
-
-            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Filter</button>
-            @if(!empty($search) || !empty($currentStatus))
-                <a href="{{ route('gudang.po.index') }}" class="btn btn-secondary btn-sm" title="Reset Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
-            @endif
-        </form>
-
-        <span style="color: #64748b; font-size: 0.85rem;">
-            Total PO: <strong style="color: #0f172a;">{{ $poList->total() }}</strong> dokumen
-        </span>
-    </div>
 
     <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse;">
@@ -228,35 +269,36 @@
                                     <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
                                         <a href="javascript:void(0)" 
                                            onclick="openPoDetailModal({{ $po->po_id }})" 
-                                           style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.9rem;" 
+                                           class="po-table-no" 
                                            title="Klik untuk melihat detail dokumen PO">
                                             {{ $po->po_no }}
                                         </a>
                                         @if ($po->is_ada_revisi)
-                                            <span class="badge" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-size:0.625rem; padding:1px 4px; border-radius:3px; font-weight:700;" title="Dokumen ini telah direvisi {{ $po->total_revisi_count }}x (Terakhir oleh: {{ $po->terakhir_direvisi_by }})">
-                                                🔄 Rev {{ $po->total_revisi_count }}
+                                            <span class="po-badge-revision" title="Dokumen ini telah direvisi {{ $po->total_revisi_count }}x (Terakhir oleh: {{ $po->terakhir_direvisi_by }})">
+                                                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                <span>Rev {{ $po->total_revisi_count }}</span>
                                             </span>
                                         @endif
                                     </div>
-                                    <small style="display: block; font-size: 0.725rem; color: #64748b;">
+                                    <span class="po-table-subtext" style="display: block;">
                                         {{ $po->details->count() }} item bahan baku
-                                    </small>
+                                    </span>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div style="font-weight: 600; color: #334155; font-size: 0.85rem;">
+                            <div class="po-table-date">
                                 {{ \Carbon\Carbon::parse($po->po_tgl)->format('d/m/Y') }}
                             </div>
                             @if ($po->tgl_estimasi_datang)
-                                <small style="display: block; font-size: 0.725rem; color: #0369a1;">
+                                <span class="po-table-eta">
                                     ETA: {{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->format('d/m/Y') }}
-                                </small>
+                                </span>
                             @endif
                         </td>
                         <td>
                             <strong style="color: #0f172a; font-size: 0.875rem;">{{ $po->supplier?->supplier_nm ?? '-' }}</strong>
-                            <small style="display: block; font-size: 0.725rem; color: #64748b;">{{ $po->supplier?->supplier_cd }}</small>
+                            <span class="po-table-subtext" style="display: block;">{{ $po->supplier?->supplier_cd }}</span>
                         </td>
                         <td>
                             <span style="font-size: 0.85rem; color: #334155;">{{ $po->gudang?->gudang_nm ?? '-' }}</span>
@@ -265,66 +307,74 @@
                             {{-- BADGE STATUS & PROGRESS BAR REALISASI FISIK --}}
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <div>
-                                    @if ($po->status_cd == 'PENDING_APPROVAL')
-                                        <span class="badge" style="background:#fef3c7; color:#b45309; border: 1px solid #fde68a; font-weight:700;">Menunggu Approval</span>
-                                    @elseif ($po->status_cd == 'REVISION')
-                                        <span class="badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; font-weight:700;">🔄 Perlu Revisi Atasan</span>
-                                    @elseif ($po->status_cd == 'REJECTED')
-                                        <span class="badge" style="background:#fee2e2; color:#b91c1c; border: 1px solid #fecaca; font-weight:700;">Ditolak Atasan</span>
-                                    @elseif ($po->status_cd == 'COMPLETED')
-                                        @if (!empty($po->closed_at))
-                                            <span class="badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;" title="Selesai dengan pembatalan sisa kuota: {{ $po->closed_reason }}">Selesai (Batal Sisa)</span>
-                                        @else
-                                            <span class="badge badge-success">Selesai (100%)</span>
-                                        @endif
-                                    @elseif ($po->status_cd == 'PARTIAL')
-                                        <span class="badge badge-info">Sebagian Diterima ({{ $pct }}%)</span>
+                                    @if ($po->status_cd == 'COMPLETED')
+                                        <span class="po-status-indicator po-status-completed">
+                                            <span class="po-status-dot"></span>
+                                            <span>{{ !empty($po->closed_at) ? 'Selesai (Batal Sisa)' : 'Selesai (100%)' }}</span>
+                                        </span>
                                     @elseif ($po->status_cd == 'CLOSED')
-                                        <span class="badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;" title="Selesai dengan pembatalan sisa kuota: {{ $po->closed_reason }}">Selesai (Batal Sisa)</span>
+                                        <span class="po-status-indicator po-status-closed" title="Selesai dengan pembatalan sisa kuota: {{ $po->closed_reason }}">
+                                            <span class="po-status-dot"></span>
+                                            <span>Selesai (Batal Sisa)</span>
+                                        </span>
                                     @elseif ($po->status_cd == 'APPROVED')
-                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">Disetujui</span>
+                                        <span class="po-status-indicator po-status-approved">
+                                            <span class="po-status-dot"></span>
+                                            <span>Disetujui</span>
+                                        </span>
+                                    @elseif ($po->status_cd == 'PARTIAL')
+                                        <span class="po-status-indicator po-status-partial">
+                                            <span class="po-status-dot"></span>
+                                            <span>Masuk Sebagian ({{ $pct }}%)</span>
+                                        </span>
+                                    @elseif ($po->status_cd == 'PENDING_APPROVAL')
+                                        <span class="po-status-indicator po-status-pending-approval">
+                                            <span class="po-status-dot"></span>
+                                            <span>Menunggu Approval</span>
+                                        </span>
+                                    @elseif ($po->status_cd == 'REVISION')
+                                        <span class="po-status-indicator po-status-revision">
+                                            <span class="po-status-dot"></span>
+                                            <span>Perlu Revisi Atasan</span>
+                                        </span>
+                                    @elseif ($po->status_cd == 'REJECTED')
+                                        <span class="po-status-indicator po-status-rejected">
+                                            <span class="po-status-dot"></span>
+                                            <span>Ditolak Atasan</span>
+                                        </span>
                                     @elseif ($po->status_cd == 'DRAFT')
-                                        <span class="badge" style="background:#f1f5f9; color:#475569;">Draft</span>
+                                        <span class="po-status-indicator po-status-draft">
+                                            <span class="po-status-dot"></span>
+                                            <span>Draft</span>
+                                        </span>
                                     @else
-                                        <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
+                                        <span class="po-status-indicator po-status-cancelled">
+                                            <span class="po-status-dot"></span>
+                                            <span>Dibatalkan</span>
+                                        </span>
                                     @endif
                                 </div>
 
                                 {{-- Memo Revisi / Catatan Tolak dari Atasan --}}
                                 @if ($po->status_cd == 'REVISION' && !empty($po->reject_reason))
-                                    <div style="font-size: 0.725rem; color: #1e40af; background: #eff6ff; padding: 2px 6px; border-radius: 4px; margin-top: 3px; border: 1px solid #dbeafe; line-height: 1.3;" title="{{ $po->reject_reason }}">
+                                    <div class="po-memo-box po-memo-revision" title="{{ $po->reject_reason }}">
                                         <strong>Memo Revisi:</strong> {{ \Illuminate\Support\Str::limit($po->reject_reason, 40) }}
                                     </div>
                                 @elseif ($po->status_cd == 'REJECTED' && !empty($po->reject_reason))
-                                    <div style="font-size: 0.725rem; color: #991b1b; background: #fef2f2; padding: 2px 6px; border-radius: 4px; margin-top: 3px; border: 1px solid #fecaca; line-height: 1.3;" title="{{ $po->reject_reason }}">
+                                    <div class="po-memo-box po-memo-rejected" title="{{ $po->reject_reason }}">
                                         <strong>Alasan Tolak:</strong> {{ \Illuminate\Support\Str::limit($po->reject_reason, 40) }}
                                     </div>
                                 @endif
 
-                                {{-- Progress Bar Ramping --}}
-                                @php
-                                    $barBg = '#e2e8f0';
-                                    $barFill = '#0284c7';
-                                    if ($po->status_cd == 'COMPLETED') {
-                                        $barFill = '#10b981';
-                                    } elseif ($po->status_cd == 'PARTIAL') {
-                                        $barFill = '#f59e0b';
-                                    } elseif ($po->status_cd == 'CLOSED') {
-                                        $barFill = '#94a3b8';
-                                    } elseif ($po->status_cd == 'PENDING_APPROVAL') {
-                                        $barFill = '#f59e0b';
-                                    } elseif ($po->status_cd == 'REJECTED') {
-                                        $barFill = '#ef4444';
-                                    }
-                                @endphp
-                                <div style="width: 100%; max-width: 160px; height: 5px; background: {{ $barBg }}; border-radius: 9999px; overflow: hidden; margin-top: 2px;">
-                                    <div style="width: {{ min(100, $pct) }}%; height: 100%; background: {{ $barFill }}; border-radius: 9999px;"></div>
+                                {{-- Progress Bar Ramping & Tenang --}}
+                                <div class="po-progress-track">
+                                    <div class="po-progress-bar {{ in_array($po->status_cd, ['COMPLETED', 'CLOSED']) ? 'is-completed' : '' }}" style="width: {{ min(100, $pct) }}%;"></div>
                                 </div>
-                                <div style="font-size: 0.725rem; color: #64748b;">
+                                <div class="po-table-subtext">
                                     @if ($po->status_cd == 'PENDING_APPROVAL')
-                                        Approver: <strong style="color: #b45309;">{{ $po->approver?->name ?? 'Belum ditentukan' }}</strong>
+                                        Approver: <strong style="color: #475569;">{{ $po->approver?->name ?? 'Belum ditentukan' }}</strong>
                                     @elseif ($po->status_cd == 'REJECTED')
-                                        <span style="color: #b91c1c;" title="{{ $po->reject_reason }}">Alasan: {{ \Illuminate\Support\Str::limit($po->reject_reason ?? 'Tidak ada catatan', 30) }}</span>
+                                        <span title="{{ $po->reject_reason }}">Alasan: {{ \Illuminate\Support\Str::limit($po->reject_reason ?? 'Tidak ada catatan', 30) }}</span>
                                     @elseif ($po->status_cd == 'COMPLETED')
                                         @if (!empty($po->closed_at))
                                             Realisasi {{ number_format($totalTerima, 0) }} / {{ number_format($totalPesan, 0) }} &bull; Sisa dibatalkan
@@ -345,9 +395,9 @@
                                 {{-- BADGE STATUS EMAIL KE SUPPLIER --}}
                                 @if ($po->isSentToSupplier())
                                     <div style="margin-top: 2px;">
-                                        <span class="badge" style="background:#dbeafe; color:#1e40af; border: 1px solid #bfdbfe; font-size: 0.675rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;" title="Terkirim ke {{ $po->supplier_email_sent }} pada {{ \Carbon\Carbon::parse($po->sent_to_supplier_at)->format('d/m/Y H:i') }}">
+                                        <span class="po-badge-email" title="Terkirim ke {{ $po->supplier_email_sent }} pada {{ \Carbon\Carbon::parse($po->sent_to_supplier_at)->format('d/m/Y H:i') }}">
                                             <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                            PO Terkirim ke Supplier
+                                            <span>PO Terkirim</span>
                                         </span>
                                     </div>
                                 @endif
@@ -356,17 +406,29 @@
                                 @php $qcInfo = $po->qc_status_info; @endphp
                                 <div style="margin-top: 3px;">
                                     @if ($qcInfo['tested'])
-                                        <span class="badge" style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }}; font-size: 0.675rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700;" title="{{ $qcInfo['label'] }} ({{ $qcInfo['count'] }} Tiket Uji QC Inbound)">
-                                            <span>{{ $qcInfo['icon'] }}</span>
+                                        @php
+                                            $qcDotColor = '#16a34a'; // lolos
+                                            if ($qcInfo['status'] === 'DITOLAK') {
+                                                $qcDotColor = '#dc2626';
+                                            } elseif ($qcInfo['status'] === 'PARSIAL') {
+                                                $qcDotColor = '#d97706';
+                                            } elseif ($qcInfo['status'] === 'DRAFT') {
+                                                $qcDotColor = '#64748b';
+                                            }
+                                        @endphp
+                                        <span class="po-qc-pill" title="{{ $qcInfo['label'] }} ({{ $qcInfo['count'] }} Tiket Uji QC Inbound)">
+                                            <span class="po-qc-dot" style="background: {{ $qcDotColor }};"></span>
                                             <span>{{ $qcInfo['short_label'] }} ({{ $qcInfo['count'] }})</span>
                                         </span>
                                     @elseif (in_array($po->status_cd, ['APPROVED', 'PARTIAL']))
-                                        <span class="badge" style="background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; font-size: 0.65rem; padding: 1px 5px;" title="Belum ada catatan inspeksi kedatangan oleh tim QC Lapangan">
-                                            🔬 Belum Diuji QC
+                                        <span class="po-qc-pill" title="Belum ada catatan inspeksi kedatangan oleh tim QC Lapangan">
+                                            <span class="po-qc-dot" style="background: #94a3b8;"></span>
+                                            <span>Belum Diuji QC</span>
                                         </span>
                                     @endif
                                 </div>
                             </div>
+                        </td>
                         @php
                             $nominalRow = (float) $po->total_tagihan > 0 
                                 ? (float) $po->total_tagihan 
@@ -374,13 +436,13 @@
                                     ? (float) $po->total_nominal 
                                     : (float) $po->details->sum(fn($d) => (float)$d->subtotal_tagihan > 0 ? (float)$d->subtotal_tagihan : ((float)$d->subtotal_nominal > 0 ? (float)$d->subtotal_nominal : (float)$d->pesan_qty * (float)$d->harga_nominal)));
                         @endphp
-                        <td style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem;">
-                            <div>Rp {{ number_format($nominalRow, 0, ',', '.') }}</div>
-                            @if ($po->is_harga_termasuk_pajak)
-                                <span class="badge" style="background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 600; padding: 1px 5px;" title="Harga barang sudah termasuk PPN (Include)">Inc PPN</span>
-                            @elseif ((float) $po->ppn_nominal > 0)
-                                <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.65rem; font-weight: 600; padding: 1px 5px;" title="PPN ditambahkan di atas DPP (Exclude)">+PPN</span>
-                            @endif
+                        <td style="text-align: right;">
+                            <div class="po-nominal-value">Rp {{ number_format($nominalRow, 0, ',', '.') }}</div>
+                            <div style="display: flex; gap: 4px; justify-content: flex-end; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                                @foreach ($po->getTaxBadges() as $tb)
+                                    <span class="po-tax-capsule" title="{{ $tb['title'] }}">{{ $tb['label'] }}</span>
+                                @endforeach
+                            </div>
                         </td>
                         <td style="text-align: right; position: relative;">
                             <button type="button" 
@@ -441,9 +503,9 @@
                                     @if ($po->status_cd == 'PENDING_APPROVAL')
                                         <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
                                             @csrf
-                                            <button type="submit" class="action-dropdown-item" title="Kirim ulang surat permohonan persetujuan ke email Atasan">
+                                            <button type="submit" class="action-dropdown-item" title="Kirim surat permohonan persetujuan ke email Atasan">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                                <span style="font-weight: 600; color: #b45309;">Kirim Ulang Approval</span>
+                                                <span style="font-weight: 600; color: #b45309;">Kirim Email Approval</span>
                                             </button>
                                         </form>
                                     @endif
@@ -609,6 +671,7 @@
 {{-- MODAL BATALKAN SISA & SELESAIKAN PO --}}
 @include('gudang.po.partials.modal-force-close')
 
+</div>
 @endsection
 
 @push('scripts')

@@ -1,6 +1,249 @@
 /* =========================================================================
  * ERP PT MIRASA - PURCHASE ORDER FORM STYLES (CREATE & EDIT)
+ * Harmonized with Kas Keluar / WaveDash Minimalist Enterprise Standard
+ * Clean Modern Architecture, Bebas Gradasi, Monokromatik Slate Halus
  * ========================================================================= */
+
+.po-full-container,
+.bkk-full-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.25rem 0 3rem 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+   1. Breadcrumb Bar (Harmonized with Kas Keluar)
+   -------------------------------------------------------------------------- */
+.po-breadcrumb,
+.bkk-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.775rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+}
+
+.po-breadcrumb a,
+.bkk-breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.po-breadcrumb a:hover,
+.bkk-breadcrumb a:hover {
+    color: #0f172a;
+}
+
+.breadcrumb-separator {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+}
+
+.breadcrumb-current {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   2. Header Bar (Harmonized with Kas Keluar)
+   -------------------------------------------------------------------------- */
+.po-header-bar,
+.bkk-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+
+.po-header-info,
+.bkk-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.po-header-title,
+.bkk-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.po-header-title h1,
+.bkk-header-title h1 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.po-back-link,
+.bkk-back-link {
+    color: #475569;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: all 0.15s ease;
+}
+
+.po-back-link:hover,
+.bkk-back-link:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+
+.po-pill-badge,
+.bkk-pill-badge {
+    border-radius: 9999px;
+    font-size: 0.725rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    letter-spacing: 0.01em;
+}
+
+.po-pill-code,
+.bkk-pill-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 700;
+    color: #0f172a;
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.po-header-actions,
+.bkk-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-header-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: all 0.15s ease;
+}
+
+.btn-header-secondary:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+/* --------------------------------------------------------------------------
+   3. Alert Banner (Harmonized with Kas Keluar)
+   -------------------------------------------------------------------------- */
+.po-alert-banner,
+.bkk-alert-banner {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 10px;
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 1.25rem;
+    color: #991b1b;
+}
+
+.po-alert-heading,
+.bkk-alert-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
+}
+
+.po-alert-list,
+.bkk-alert-list {
+    margin: 0;
+    padding-left: 1.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   4. Minimalist Card Component (WaveDash / Kas Keluar Standard)
+   -------------------------------------------------------------------------- */
+.po-card,
+.bkk-card,
+.modern-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    margin-bottom: 1.25rem;
+    position: relative;
+}
+
+.po-card-header,
+.bkk-card-header,
+.modern-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1rem 1.35rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+}
+
+.po-card-title,
+.bkk-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.po-card-body,
+.bkk-card-body {
+    padding: 1.25rem 1.35rem;
+}
+
+/* --------------------------------------------------------------------------
+   5. Excel-Style High Density Grid Table (Retaining Table Layout!)
+   -------------------------------------------------------------------------- */
+.order-station-grid, .excel-grid-table, .category-segmented-control {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
 
 .order-station-grid {
     display: grid;
@@ -14,69 +257,77 @@
     .order-station-grid {
         grid-template-columns: 1fr;
     }
-    .sticky-action-sidebar {
-        position: static !important;
-        top: auto !important;
-    }
 }
 
-/* Excel-Style Dense Grid Table */
-.excel-grid-table {
+/* Harmonized Table Header (Light Slate Clean Aesthetic like Kas Keluar) */
+.excel-grid-table,
+.po-workstation-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.825rem;
+    font-size: 0.8125rem;
 }
 
-.excel-grid-table th {
-    background: #0f172a;
-    color: #f8fafc;
-    font-weight: 600;
-    padding: 0.55rem 0.45rem;
-    border: 1px solid #334155;
-    font-size: 0.775rem;
-    letter-spacing: 0.02em;
+.excel-grid-table th,
+.po-workstation-table th {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 0.6rem !important;
+    border: 1px solid #e2e8f0 !important;
+    border-bottom: 1.5px solid #cbd5e1 !important;
+    font-size: 0.725rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
 }
 
-.excel-grid-table td {
-    padding: 0.35rem 0.45rem;
-    border: 1px solid #cbd5e1;
+.excel-grid-table td,
+.po-workstation-table td {
+    padding: 0.45rem 0.55rem;
+    border: 1px solid #e2e8f0;
     background: #ffffff;
     vertical-align: middle;
 }
 
-.excel-grid-table tr:nth-child(even) td {
-    background: #fafafa;
+.excel-grid-table tr:nth-child(even) td,
+.po-workstation-table tr:nth-child(even) td {
+    background: #fafbfc;
 }
 
-.excel-grid-table tr:hover td {
-    background: #f0f9ff;
+.excel-grid-table tr:hover td,
+.po-workstation-table tr:hover td {
+    background: #f8fafc;
 }
 
-.excel-grid-table .form-control {
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    padding: 0.35rem 0.5rem !important;
-    font-size: 0.825rem !important;
-    height: 32px;
+.excel-grid-table .form-control,
+.po-workstation-table .form-control {
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.35rem 0.55rem !important;
+    font-size: 0.8125rem !important;
+    height: 34px;
     box-sizing: border-box;
     width: 100%;
+    background: #ffffff;
+    color: #0f172a;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.excel-grid-table .form-control:focus {
-    border-color: #0284c7 !important;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25) !important;
+.excel-grid-table .form-control:focus,
+.po-workstation-table .form-control:focus {
+    border-color: #0f172a !important;
+    box-shadow: 0 0 0 1px #0f172a !important;
     background: #ffffff !important;
+    outline: none !important;
 }
 
 /* Category Segmented Control */
 .category-segmented-control {
     display: inline-flex;
-    background: #f1f5f9;
+    background: #f8fafc;
     padding: 3px;
-    border-radius: 6px;
-    gap: 2px;
-    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    gap: 3px;
+    border: 1px solid #e2e8f0;
 }
 
 .category-segment-btn {
@@ -86,7 +337,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: #475569;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -101,10 +352,10 @@
 }
 
 .category-segment-btn.active {
-    background: #ffffff;
-    color: #0284c7;
-    font-weight: 700;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 
 .category-segment-count {
@@ -118,8 +369,59 @@
 }
 
 .category-segment-btn.active .category-segment-count {
-    background: #e0f2fe;
-    color: #0284c7;
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   6. Action Buttons & Dock Footer (Kas Keluar WaveDash Standard)
+   -------------------------------------------------------------------------- */
+.btn-dock-cancel {
+    background: #ffffff;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.btn-dock-cancel:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.btn-dock-submit {
+    font-weight: 700;
+    padding: 0.625rem 1.5rem;
+    background: #0f172a;
+    border: 1.5px solid #0f172a;
+    color: #ffffff;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.btn-dock-submit:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.btn-dock-submit:active {
+    transform: translateY(0);
 }
 
 /* Supplier Modal Tabs */
@@ -132,6 +434,111 @@
     padding: 0.3rem 0.65rem;
     border-radius: 4px;
     cursor: pointer;
+    transition: all 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.sup-modal-tab:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.sup-modal-tab.active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+}
+
+/* Safety Stock Modal Tabs */
+.safety-modal-tab {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.safety-modal-tab:hover {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.safety-modal-tab.active {
+    background: #d97706;
+    border-color: #d97706;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(217, 119, 6, 0.25);
+}
+
+/* Supplier Dropdown Items */
+.sup-option-item {
+    padding: 0.65rem 0.95rem;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.1s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sup-option-item:hover, .sup-option-item.highlighted {
+    background: #f8fafc;
+}
+
+.sup-option-item:last-child {
+    border-bottom: none;
+}
+
+/* Supplier Modal Table Row */
+.sup-modal-row {
+    cursor: pointer;
+    transition: background 0.08s ease;
+}
+
+.sup-modal-row:hover td {
+    background: #f8fafc !important;
+}
+
+/* PO Mode Switcher (Single / Auto-Split) */
+.po-mode-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 5px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.po-mode-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.po-mode-btn:hover:not(.active) {
+    color: #1e293b;
+}
     transition: all 0.12s ease;
     display: inline-flex;
     align-items: center;

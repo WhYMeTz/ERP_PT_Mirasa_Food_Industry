@@ -129,11 +129,18 @@ function calculateAllTotals() {
         let rowPpn = 0;
         let rowTagihan = 0;
 
-        if (rowIsInc && rowTarif > 0 && rowSifat !== 'POTONG') {
+        if (rowIsInc && rowTarif > 0) {
             hasIncTax = true;
-            rowDpp = Math.round((grossRowTotal / (1 + (rowTarif / 100))) * 10000) / 10000;
-            rowPpn = Math.round((grossRowTotal - rowDpp) * 10000) / 10000;
-            rowTagihan = grossRowTotal;
+            if (rowSifat === 'POTONG') {
+                hasPotongTax = true;
+                rowDpp = grossRowTotal;
+                rowPpn = Math.round((rowDpp * (rowTarif / 100)) * 10000) / 10000;
+                rowTagihan = grossRowTotal;
+            } else {
+                rowDpp = Math.round((grossRowTotal / (1 + (rowTarif / 100))) * 10000) / 10000;
+                rowPpn = Math.round((grossRowTotal - rowDpp) * 10000) / 10000;
+                rowTagihan = grossRowTotal;
+            }
         } else {
             rowDpp = grossRowTotal;
             rowPpn = Math.round((rowDpp * (rowTarif / 100)) * 10000) / 10000;
@@ -177,11 +184,11 @@ function calculateAllTotals() {
     if (elPpn) {
         if (totalPpn > 0) {
             if (hasPotongTax && !hasIncTax) {
-                elPpn.innerHTML = `<span style="color: #dc2626;">- Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #ef4444; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
+                elPpn.innerHTML = `<span style="color: #92400e;">- Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #b45309; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
             } else if (hasIncTax) {
-                elPpn.innerHTML = `<span style="color: #16a34a;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #15803d; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
+                elPpn.innerHTML = `<span style="color: #334155;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #64748b; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
             } else {
-                elPpn.innerHTML = `<span style="color: #0284c7;">+ Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
+                elPpn.innerHTML = `<span style="color: #0f172a;">+ Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
             }
         } else {
             elPpn.innerHTML = '<span style="color: #64748b;">Rp 0</span>';

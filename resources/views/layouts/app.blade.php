@@ -1320,6 +1320,8 @@
         header .pill-item:hover, header .pill-dropdown-btn:hover { background: #f1f5f9; }
         /* grup yang sedang terbuka */
         header .pill-dropdown.active .pill-dropdown-btn { background: #f1f5f9 !important; color: #0f172a; box-shadow: none !important; }
+        header .pill-dropdown.active .pill-dropdown-btn .nav-parent-badge,
+        .pill-dropdown.active .pill-dropdown-btn .nav-parent-badge { display: none !important; }
         header .pill-dropdown-btn.active::after { display: none; }
         /* halaman yang sedang dibuka */
         header .pill-dropdown .pill-dropdown-btn.active,
@@ -1923,7 +1925,7 @@
                                 <span class="nav-text-full">Penjualan</span>
                                 <span class="nav-text-short">Penjualan</span>
                                 @if($pendingShipCount > 0)
-                                    <span
+                                    <span class="nav-parent-badge"
                                         style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 9999px; line-height: 1.2;">{{ $pendingShipCount }}</span>
                                 @endif
                                 <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1945,11 +1947,11 @@
                                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                             </svg>
                                             <div style="display: flex; flex-direction: column; flex: 1;">
-                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                                                     <span style="font-weight: 600;">PO Penjualan (Sales Order)</span>
                                                     @if($pendingShipCount > 0)
-                                                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
-                                                            {{ $pendingShipCount }} Aktif
+                                                        <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 9999px; line-height: 1.2; white-space: nowrap; flex-shrink: 0;">
+                                                            {{ $pendingShipCount }}
                                                         </span>
                                                     @endif
                                                 </div>
@@ -2005,15 +2007,8 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                             </svg>
-                                            <div style="display: flex; flex-direction: column; flex: 1;">
-                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                                                    <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
-                                                    @if($pendingShipCount > 0)
-                                                        <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
-                                                            {{ $pendingShipCount }} Siap Kirim
-                                                        </span>
-                                                    @endif
-                                                </div>
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Fisik keluar Gudang FG &amp;
                                                     muat armada</span>
                                             </div>

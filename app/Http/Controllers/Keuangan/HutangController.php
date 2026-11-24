@@ -186,16 +186,21 @@ class HutangController extends Controller
     public function storeGas(Request $request): RedirectResponse
     {
         $request->validate([
-            'periode_bulan'    => 'required|string',
-            'tgl_tagihan'      => 'required|date',
-            'tgl_jatuh_tempo'  => 'required|date',
+            'supplier_id'        => 'required|exists:mst_supplier,supplier_id',
+            'periode_bulan'      => 'required|string',
+            'tgl_tagihan'        => 'required|date',
+            'tgl_jatuh_tempo'    => 'required|date',
+            'no_faktur_supplier' => 'nullable|string|max:100',
+            'dpp_vendor'         => 'required|numeric|min:0',
+            'total_ppn'          => 'nullable|numeric|min:0',
+            'total_tagihan'      => 'required|numeric|min:0',
         ]);
 
         try {
             $hdr = $this->hutangService->createTagihanGas($request->all(), Auth::user());
 
             return redirect()->route('keuangan.hutang.show', $hdr->hutang_id)
-                ->with('success', "Tagihan Konsinyasi Gas {$hdr->hutang_no} Periode {$hdr->periode_bulan} berhasil diterbitkan sebesar Rp " . number_format($hdr->total_tagihan, 0, ',', '.') . ".");
+                ->with('success', "Tagihan Utilitas Gas {$hdr->hutang_no} Periode {$hdr->periode_bulan} berhasil direkonsiliasi & diterbitkan sebesar Rp " . number_format($hdr->total_tagihan, 0, ',', '.') . ".");
         } catch (Exception $e) {
             return redirect()->back()
                 ->withInput()

@@ -12,7 +12,7 @@
     <div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
             <h1 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
-                💰 Hutang Usaha &amp; Tagihan Supplier (AP)
+                Hutang Usaha &amp; Tagihan Supplier (AP)
             </h1>
             <span style="background: #f0fdf4; color: #166534; font-size: 0.725rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
                 Accounts Payable
@@ -27,13 +27,14 @@
         @if (Auth::user()->canCreateBayarHutang())
             <a href="{{ route('keuangan.bayar.create') }}" class="btn btn-secondary" style="font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 0.95rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                <span>💳 Bayar Tagihan (BKK)</span>
+                <span>Bayar Tagihan (BKK)</span>
             </a>
         @endif
 
         @if (Auth::user()->canCreateHutang())
-            <a href="{{ route('keuangan.hutang.create_gas') }}" class="btn" style="background: #fff7ed; color: #c2410c; border: 1.5px solid #fed7aa; font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 0.95rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
-                <span>🔥 + Tagihan Gas Bulanan</span>
+            <a href="{{ route('keuangan.hutang.create_gas') }}" class="btn" style="background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 0.95rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Tagihan Gas Bulanan</span>
             </a>
 
             <a href="{{ route('keuangan.hutang.create') }}" class="btn btn-primary" style="font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 1.15rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);">
@@ -140,10 +141,10 @@
             
             <select name="status_pembayaran" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem; height: 36px;" onchange="this.form.submit()">
                 <option value="">-- Semua Status --</option>
-                <option value="BELUM_LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'BELUM_LUNAS' ? 'selected' : '' }}>🔴 Belum Lunas</option>
-                <option value="SEBAGIAN" {{ ($filters['status_pembayaran'] ?? '') === 'SEBAGIAN' ? 'selected' : '' }}>🟡 Cicilan / Parsial</option>
-                <option value="LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'LUNAS' ? 'selected' : '' }}>🟢 Lunas</option>
-                <option value="JATUH_TEMPO" {{ ($filters['status_pembayaran'] ?? '') === 'JATUH_TEMPO' ? 'selected' : '' }}>⚠️ Lewat Jatuh Tempo</option>
+                <option value="BELUM_LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'BELUM_LUNAS' ? 'selected' : '' }}>Belum Lunas</option>
+                <option value="SEBAGIAN" {{ ($filters['status_pembayaran'] ?? '') === 'SEBAGIAN' ? 'selected' : '' }}>Cicilan / Parsial</option>
+                <option value="LUNAS" {{ ($filters['status_pembayaran'] ?? '') === 'LUNAS' ? 'selected' : '' }}>Lunas</option>
+                <option value="JATUH_TEMPO" {{ ($filters['status_pembayaran'] ?? '') === 'JATUH_TEMPO' ? 'selected' : '' }}>Lewat Jatuh Tempo</option>
             </select>
 
             <select name="supplier_id" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 180px; font-size: 0.85rem; height: 36px;" onchange="this.form.submit()">
@@ -157,9 +158,9 @@
 
             <select name="tipe_hutang" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 165px; font-size: 0.85rem; height: 36px;" onchange="this.form.submit()">
                 <option value="">-- Semua Tipe --</option>
-                <option value="PEMBELIAN_GRN" {{ ($filters['tipe_hutang'] ?? '') === 'PEMBELIAN_GRN' ? 'selected' : '' }}>🌾 Pembelian Bahan</option>
-                <option value="GAS_UTILITAS" {{ ($filters['tipe_hutang'] ?? '') === 'GAS_UTILITAS' ? 'selected' : '' }}>🔥 Gas Utilitas</option>
-                <option value="OPERASIONAL_UMUM" {{ ($filters['tipe_hutang'] ?? '') === 'OPERASIONAL_UMUM' ? 'selected' : '' }}>📦 Operasional</option>
+                <option value="PEMBELIAN_GRN" {{ ($filters['tipe_hutang'] ?? '') === 'PEMBELIAN_GRN' ? 'selected' : '' }}>Pembelian Bahan</option>
+                <option value="GAS_UTILITAS" {{ ($filters['tipe_hutang'] ?? '') === 'GAS_UTILITAS' ? 'selected' : '' }}>Gas Utilitas</option>
+                <option value="OPERASIONAL_UMUM" {{ ($filters['tipe_hutang'] ?? '') === 'OPERASIONAL_UMUM' ? 'selected' : '' }}>Operasional</option>
             </select>
 
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem; height: 36px;">Filter</button>
@@ -249,15 +250,15 @@
                         <td style="padding: 0.75rem 0.75rem;">
                             @if ($h->tipe_hutang === 'GAS_UTILITAS')
                                 <span class="badge-tipe-hutang badge-tipe-gas">
-                                    🔥 Gas ({{ $h->periode_bulan }})
+                                    Gas ({{ $h->periode_bulan }})
                                 </span>
                             @elseif ($h->tipe_hutang === 'PEMBELIAN_GRN')
                                 <span class="badge-tipe-hutang badge-tipe-grn">
-                                    🌾 Beli Bahan
+                                    Beli Bahan
                                 </span>
                             @else
                                 <span class="badge-tipe-hutang badge-tipe-ops">
-                                    📦 Beban Ops
+                                    Beban Ops
                                 </span>
                             @endif
                         </td>
@@ -305,19 +306,19 @@
                         <td style="padding: 0.75rem 0.75rem; text-align: center;">
                             @if ($h->status_pembayaran === 'LUNAS')
                                 <span class="badge-status-hutang badge-paid">
-                                    <span>✓</span> <span>LUNAS</span>
+                                    <span>LUNAS</span>
                                 </span>
                             @elseif ($isOverdue)
                                 <span class="badge-status-hutang badge-overdue">
-                                    <span>⚠️</span> <span>OVERDUE</span>
+                                    <span>OVERDUE</span>
                                 </span>
                             @elseif ($h->status_pembayaran === 'SEBAGIAN')
                                 <span class="badge-status-hutang badge-partial">
-                                    <span>⏳</span> <span>PARSIAL</span>
+                                    <span>PARSIAL</span>
                                 </span>
                             @else
                                 <span class="badge-status-hutang badge-unpaid">
-                                    <span>🔴</span> <span>BELUM BAYAR</span>
+                                    <span>BELUM BAYAR</span>
                                 </span>
                             @endif
                         </td>
@@ -384,7 +385,9 @@
                 @empty
                     <tr>
                         <td colspan="11" style="padding: 3.5rem 1.5rem; text-align: center; color: #64748b;">
-                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💳</div>
+                            <div style="display: flex; justify-content: center; margin-bottom: 0.5rem; color: #94a3b8;">
+                                <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            </div>
                             <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">Belum Ada Tagihan Hutang</div>
                             <div style="font-size: 0.85rem; margin-top: 0.25rem;">
                                 Tidak ada data tagihan supplier yang sesuai kriteria filter di atas.

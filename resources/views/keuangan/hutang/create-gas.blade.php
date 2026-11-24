@@ -1,66 +1,96 @@
 @extends('layouts.app')
 
-@section('title', 'Tagihan Gas Utilitas Bulanan (Konsinyasi/Pasca-Bayar)')
+@section('title', 'Tagihan Gas Utilitas - ERP PT Mirasa')
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/keuangan/kas_keluar/kas-keluar-form.css') }}?v={{ filemtime(public_path('css/keuangan/kas_keluar/kas-keluar-form.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/keuangan/hutang/tagihan-gas.css') }}?v={{ file_exists(public_path('css/keuangan/hutang/tagihan-gas.css')) ? filemtime(public_path('css/keuangan/hutang/tagihan-gas.css')) : time() }}">
+@endpush
 
 @section('content')
-<div class="content-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-    <div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <a href="{{ route('keuangan.hutang.index') }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
-                &larr; Riwayat Hutang
-            </a>
-            <span style="color: #cbd5e1;">/</span>
-            <h1 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
-                🔥 Tagihan Gas Utilitas Bulanan (Konsinyasi Pabrik)
-            </h1>
+<div class="bkk-full-container">
+
+    {{-- BREADCRUMB STANDAR --}}
+    <nav class="bkk-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('keuangan.hutang.index') }}">Keuangan</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ route('keuangan.hutang.index') }}">Hutang Usaha</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Baru</span>
+    </nav>
+
+    {{-- HEADER BAR STANDAR KAS KELUAR --}}
+    <div class="bkk-header-bar">
+        <div class="bkk-header-info">
+            <div class="bkk-header-title">
+                <a href="{{ route('keuangan.hutang.index') }}"
+                   class="bkk-back-link"
+                   aria-label="Kembali ke riwayat hutang">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </a>
+                <h1>Tagihan Gas Utilitas</h1>
+                <span class="bkk-pill-badge">Konsinyasi Pabrik</span>
+                <span class="bkk-pill-badge bkk-pill-code">Periode: {{ $periode }}</span>
+            </div>
         </div>
-        <p style="font-size: 0.8125rem; color: #64748b; margin: 0.2rem 0 0 0;">
-            Penerbitan invoice bulanan pasca-bayar berdasarkan meteran riil pemakaian dapur penggorengan keripik.
-        </p>
+
+        <div class="bkk-header-actions">
+            <a href="{{ route('keuangan.hutang.index') }}" class="btn-header-secondary">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                <span>Riwayat Hutang</span>
+            </a>
+        </div>
     </div>
 
-    <div>
-        <a href="{{ route('keuangan.hutang.index') }}" class="btn btn-secondary" style="font-weight: 700; font-size: 0.8125rem;">
-            Batal
-        </a>
-    </div>
-</div>
+    @if ($errors->any())
+        <div role="alert" class="bkk-alert-banner">
+            <div class="bkk-alert-heading">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span>Mohon periksa kembali formulir berikut:</span>
+            </div>
+            <ul class="bkk-alert-list">
+                @foreach ($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-<form action="{{ route('keuangan.hutang.store_gas') }}" method="POST">
-    @csrf
+    {{-- FORM UTAMA TAGIHAN GAS --}}
+    <form action="{{ route('keuangan.hutang.store_gas') }}" method="POST" id="formTagihanGas" autocomplete="off">
+        @csrf
 
-    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: flex-start;">
-        <div>
-            {{-- KARTU 1: PERIODE & VENDOR --}}
-            <div class="card" style="padding: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1.25rem;">
-                <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0 0 1rem 0;">
-                    1. Periode Pemakaian &amp; Rekanan Vendor Gas
-                </h3>
+        {{-- Hidden defaults untuk pemenuhan kalkulasi service backend --}}
+        <input type="hidden" name="cng_nm3_vendor" id="inputNm3Vendor" value="{{ old('cng_nm3_vendor', $gasSummary['total_cng_nm3']) }}">
+        <input type="hidden" name="kurs_jisdor" id="inputKursJisdor" value="{{ old('kurs_jisdor', $gasSummary['avg_kurs_jisdor'] > 0 ? round($gasSummary['avg_kurs_jisdor']) : 16000) }}">
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Bulan Periode Pemakaian <span style="color: #dc2626;">*</span>
+        {{-- ========================================================
+             KARTU 1: INFORMASI REKANAN & FAKTUR VENDOR
+             ======================================================== --}}
+        <div class="bkk-card">
+            <div class="bkk-card-header">
+                <div>
+                    <h2 class="bkk-card-title">Informasi Rekanan &amp; Faktur Vendor</h2>
+                    <p class="bkk-card-subtitle">Pemasok gas utilitas, periode bulan pemakaian, nomor invoice fisik, dan termin jatuh tempo pembayaran.</p>
+                </div>
+            </div>
+
+            <div class="bkk-card-body">
+                {{-- Baris 1: Grid 3 Kolom Simetris --}}
+                <div class="gas-grid-3col">
+                    {{-- Kolom 1: Vendor Gas Pemasok --}}
+                    <div class="form-group">
+                        <label for="selectSupplier" class="form-label form-label-senior">
+                            <span>Vendor Gas Pemasok <span class="req-star">*</span></span>
                         </label>
-                        <input type="month" 
-                               name="periode_bulan" 
-                               id="periodeBulanInput" 
-                               value="{{ old('periode_bulan', $periode) }}" 
-                               class="form-control" 
-                               style="font-size: 0.85rem; height: 38px; font-weight: 700;" 
-                               onchange="window.location.href='{{ route('keuangan.hutang.create_gas') }}?periode=' + this.value"
-                               required>
-                        <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
-                            Mengubah bulan akan memuat ulang data rekap pemakaian.
-                        </div>
-                    </div>
-
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Vendor Pemasok Gas Industri <span style="color: #dc2626;">*</span>
-                        </label>
-                        <select name="supplier_id" class="form-control" style="font-size: 0.85rem; height: 38px;" required>
-                            <option value="">-- Pilih Vendor Gas (PGN / Samator / Rekanan) --</option>
+                        <select name="supplier_id" id="selectSupplier" class="form-control form-control-senior" required>
+                            <option value="">-- Pilih Rekanan Vendor Gas --</option>
                             @foreach ($suppliers as $supp)
                                 <option value="{{ $supp->supplier_id }}" {{ old('supplier_id') == $supp->supplier_id ? 'selected' : '' }}>
                                     {{ $supp->supplier_nm }} ({{ $supp->supplier_cd }})
@@ -69,215 +99,328 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            No. Faktur / Tagihan Vendor
+                    {{-- Kolom 2: Bulan Pemakaian --}}
+                    <div class="form-group">
+                        <label for="inputPeriodeBulan" class="form-label form-label-senior">
+                            <span>Bulan Pemakaian <span class="req-star">*</span></span>
                         </label>
-                        <input type="text" 
-                               name="no_faktur_supplier" 
-                               value="{{ old('no_faktur_supplier') }}" 
-                               class="form-control" 
-                               placeholder="INV/GAS/2026/..." 
-                               style="font-size: 0.85rem; height: 38px;">
+                        <input type="month"
+                               name="periode_bulan"
+                               id="inputPeriodeBulan"
+                               value="{{ old('periode_bulan', $periode) }}"
+                               class="form-control form-control-senior font-mono"
+                               onchange="window.location.href='{{ route('keuangan.hutang.create_gas') }}?periode=' + this.value"
+                               required>
                     </div>
 
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                            Tanggal Jatuh Tempo <span style="color: #dc2626;">*</span>
+                    {{-- Kolom 3: Nomor Faktur / Invoice Vendor --}}
+                    <div class="form-group">
+                        <label for="inputNoFaktur" class="form-label form-label-senior">
+                            <span>Nomor Faktur / Invoice Vendor <span class="req-star">*</span></span>
                         </label>
-                        <input type="date" 
-                               name="tgl_jatuh_tempo" 
-                               value="{{ old('tgl_jatuh_tempo', date('Y-m-d', strtotime('+14 days'))) }}" 
-                               class="form-control" 
-                               style="font-size: 0.85rem; height: 38px;" 
+                        <input type="text"
+                               name="no_faktur_supplier"
+                               id="inputNoFaktur"
+                               value="{{ old('no_faktur_supplier') }}"
+                               placeholder="Contoh: INV/PGN/2026/XI/0091"
+                               class="form-control form-control-senior font-mono"
+                               autocomplete="off"
+                               required>
+                    </div>
+                </div>
+
+                {{-- Baris 2: Grid 3 Kolom Simetris --}}
+                <div class="gas-grid-3col" style="margin-top: 1rem;">
+                    {{-- Kolom 1: Tanggal Tagihan --}}
+                    <div class="form-group">
+                        <label for="inputTglTagihan" class="form-label form-label-senior">
+                            <span>Tanggal Tagihan <span class="req-star">*</span></span>
+                        </label>
+                        <input type="date"
+                               name="tgl_tagihan"
+                               id="inputTglTagihan"
+                               value="{{ old('tgl_tagihan', date('Y-m-d')) }}"
+                               class="form-control form-control-senior font-mono"
+                               required>
+                    </div>
+
+                    {{-- Kolom 2: Tempo Pembayaran (TOP) --}}
+                    <div class="form-group">
+                        <label for="inputTopHari" class="form-label form-label-senior">
+                            <span>Tempo Pembayaran (TOP)</span>
+                        </label>
+                        <div class="input-suffix-wrapper">
+                            <input type="number"
+                                   id="inputTopHari"
+                                   name="top_hari"
+                                   min="0"
+                                   max="180"
+                                   value="{{ old('top_hari', 14) }}"
+                                   class="form-control form-control-senior font-mono text-center"
+                                   placeholder="14">
+                            <span class="input-suffix-tag">Hari</span>
+                        </div>
+                    </div>
+
+                    {{-- Kolom 3: Tanggal Jatuh Tempo --}}
+                    <div class="form-group">
+                        <label for="inputTglJatuhTempo" class="form-label form-label-senior">
+                            <span>Tanggal Jatuh Tempo <span class="req-star">*</span></span>
+                        </label>
+                        <input type="date"
+                               name="tgl_jatuh_tempo"
+                               id="inputTglJatuhTempo"
+                               value="{{ old('tgl_jatuh_tempo', date('Y-m-d', strtotime('+14 days'))) }}"
+                               class="form-control form-control-senior font-mono"
                                required>
                     </div>
                 </div>
             </div>
+        </div>
 
-            {{-- KARTU 2: REKAP PEMAKAIAN FISIK & HARGA SATUAN --}}
-            <div class="card" style="padding: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1.25rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-                    <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">
-                        2. Rekap Meteran Pemakaian Gas Periode {{ $periode }}
-                    </h3>
-                    <span style="font-size: 0.75rem; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
-                        {{ $gasSummary['jumlah_batch'] ?? 0 }} Hari Masak Terdata
-                    </span>
+        {{-- ========================================================
+             KARTU 2: RINCIAN NILAI TAGIHAN & PEMAKAIAN
+             ======================================================== --}}
+        <div class="bkk-card">
+            <div class="bkk-card-header">
+                <div>
+                    <h2 class="bkk-card-title">Rincian Nilai Tagihan &amp; Pemakaian</h2>
+                    <p class="bkk-card-subtitle">Masukkan nilai pemakaian gas dari faktur vendor. Sistem otomatis menghitung PPN dan total tagihan.</p>
                 </div>
+            </div>
 
-                <div style="background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                    <div style="font-size: 0.8rem; color: #9a3412; line-height: 1.4;">
-                        <strong>Informasi Sinkronisasi Dapur Produksi:</strong><br>
-                        Nilai kuantitas di bawah ini ditarik otomatis dari buku pemakaian gas dapur penggorengan pada modul produksi. Anda dapat menyesuaikan angkanya jika terdapat selisih pembacaan meteran fisik dari vendor.
+            <div class="bkk-card-body">
+                {{-- Baris 1: Grid 3 Kolom Simetris & Sejajar --}}
+                <div class="gas-grid-3col">
+                    {{-- Kolom 1: Pemakaian Gas Vendor (MMBTU) --}}
+                    <div class="form-group">
+                        <label for="inputMmbtuVendor" class="form-label form-label-senior">
+                            <span>Pemakaian Gas Vendor (MMBTU) <span class="req-star">*</span></span>
+                        </label>
+                        <div class="input-suffix-wrapper">
+                            <input type="number"
+                                   step="0.0001"
+                                   min="0"
+                                   name="cng_mmbtu_vendor"
+                                   id="inputMmbtuVendor"
+                                   value="{{ old('cng_mmbtu_vendor', $gasSummary['total_cng_mmbtu']) }}"
+                                   class="form-control form-control-senior font-mono text-right"
+                                   placeholder="0.0000"
+                                   required>
+                            <span class="input-suffix-tag">MMBTU</span>
+                        </div>
+                        <div class="form-sub-badge-row">
+                            <span class="badge-coa-item text-slate">
+                                Acuan Pabrik: <strong>{{ number_format($gasSummary['total_cng_mmbtu'], 4) }} MMBTU</strong>
+                                <span id="noteSelisihMmbtu" class="helper-diff-tag">(Cocok)</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Kolom 2: Nilai Tagihan DPP (Sebelum PPN) --}}
+                    <div class="form-group">
+                        <label for="inputDppDisplay" class="form-label form-label-senior">
+                            <span>Nilai Tagihan DPP (Sebelum PPN) <span class="req-star">*</span></span>
+                        </label>
+                        <div class="input-money-container">
+                            <span class="money-prefix">Rp</span>
+                            <input type="text"
+                                   id="inputDppDisplay"
+                                   class="form-control form-control-senior form-control-money font-mono"
+                                   placeholder="0"
+                                   required>
+                            <input type="hidden"
+                                   name="dpp_vendor"
+                                   id="inputDppVendor"
+                                   value="{{ old('dpp_vendor', round($gasSummary['estimasi_biaya'])) }}">
+                        </div>
+                        <div class="form-sub-badge-row">
+                            <button type="button"
+                                    class="btn-copy-dpp-link"
+                                    id="btnSalinPabrik"
+                                    onclick="useFactoryEstimate()"
+                                    title="Salin estimasi biaya dari meteran dapur pabrik">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/>
+                                </svg>
+                                <span>Gunakan Nilai Pabrik: Rp {{ number_format($gasSummary['estimasi_biaya'], 0, ',', '.') }}</span>
+                            </button>
+                            <span class="badge-coa-tag">
+                                Akun Beban (D): <strong>5102 - Pemakaian CNG</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Kolom 3: Skema Pajak PPN --}}
+                    <div class="form-group">
+                        <label for="selectPpnMode" class="form-label form-label-senior">
+                            <span>Skema Pajak PPN <span class="req-star">*</span></span>
+                        </label>
+                        <select id="selectPpnMode" class="form-control form-control-senior" onchange="setPpnMode(this.value)">
+                            <option value="11" selected>PPN 11% (Standar)</option>
+                            <option value="0">Bebas PPN (0%)</option>
+                            <option value="manual">Input Manual</option>
+                        </select>
+                        <div class="form-sub-badge-row">
+                            <span class="badge-coa-item text-slate" id="ppnModeSubBadge">
+                                Tarif Pajak Masukan 11%
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <table class="table-compact" style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; font-size: 0.75rem; color: #475569; text-transform: uppercase;">
-                            <th style="padding: 0.75rem;">Jenis Pasokan Gas</th>
-                            <th style="padding: 0.75rem; text-align: right; width: 140px;">Pemakaian Terdata</th>
-                            <th style="padding: 0.75rem; text-align: center; width: 80px;">Satuan</th>
-                            <th style="padding: 0.75rem; text-align: right; width: 160px;">Tarif / Satuan (Rp)</th>
-                            <th style="padding: 0.75rem; text-align: right; width: 170px;">Subtotal Biaya</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- GAS CNG --}}
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 0.75rem;">
-                                <div style="font-weight: 800; color: #0f172a;">Gas CNG (Compressed Natural Gas)</div>
-                                <div style="font-size: 0.7rem; color: #64748b;">Pipa / Skid tank untuk wajan penggorengan kontinu</div>
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                <input type="number" 
-                                       step="0.01" 
-                                       min="0" 
-                                       name="qty_m3" 
-                                       id="qtyM3Input" 
-                                       value="{{ old('qty_m3', $gasSummary['total_gas_m3'] ?? 0) }}" 
-                                       class="form-control" 
-                                       style="text-align: right; font-weight: 700; height: 34px;" 
-                                       oninput="calcGasTotals()">
-                            </td>
-                            <td style="padding: 0.75rem; text-align: center; font-weight: 700; color: #475569;">
-                                M³
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                <input type="number" 
-                                       step="1" 
-                                       min="0" 
-                                       name="harga_m3" 
-                                       id="hargaM3Input" 
-                                       value="{{ old('harga_m3', $gasSummary['tarif_m3'] ?? 11500) }}" 
-                                       class="form-control" 
-                                       style="text-align: right; font-weight: 700; height: 34px;" 
-                                       oninput="calcGasTotals()">
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: 800; color: #0284c7; font-size: 0.9rem;" id="subtotalM3Text">
-                                Rp 0
-                            </td>
-                        </tr>
+                {{-- Baris 2: Grid 3 Kolom Simetris & Sejajar --}}
+                <div class="gas-grid-3col" style="margin-top: 1.15rem;">
+                    {{-- Kolom 1: Nominal Pajak PPN --}}
+                    <div class="form-group">
+                        <label for="inputPpnDisplay" class="form-label form-label-senior">
+                            <span>Nominal Pajak PPN</span>
+                        </label>
+                        <div class="input-money-container">
+                            <span class="money-prefix">Rp</span>
+                            <input type="text"
+                                   id="inputPpnDisplay"
+                                   class="form-control form-control-senior form-control-money font-mono"
+                                   readonly>
+                            <input type="hidden"
+                                   name="total_ppn"
+                                   id="inputTotalPpn"
+                                   value="{{ old('total_ppn', 0) }}">
+                        </div>
+                        <div class="form-sub-badge-row">
+                            <span class="badge-coa-tag">
+                                Akun Pajak (D): <strong>1130 - PPN Masukan</strong>
+                            </span>
+                        </div>
+                    </div>
 
-                        {{-- GAS LPG --}}
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 0.75rem;">
-                                <div style="font-weight: 800; color: #0f172a;">Gas LPG Industri</div>
-                                <div style="font-size: 0.7rem; color: #64748b;">Tabung gas operasional pabrik</div>
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                <input type="number" 
-                                       step="0.01" 
-                                       min="0" 
-                                       name="qty_kg" 
-                                       id="qtyKgInput" 
-                                       value="{{ old('qty_kg', $gasSummary['total_gas_kg'] ?? 0) }}" 
-                                       class="form-control" 
-                                       style="text-align: right; font-weight: 700; height: 34px;" 
-                                       oninput="calcGasTotals()">
-                            </td>
-                            <td style="padding: 0.75rem; text-align: center; font-weight: 700; color: #475569;">
-                                KG
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                <input type="number" 
-                                       step="1" 
-                                       min="0" 
-                                       name="harga_kg" 
-                                       id="hargaKgInput" 
-                                       value="{{ old('harga_kg', $gasSummary['tarif_kg'] ?? 18000) }}" 
-                                       class="form-control" 
-                                       style="text-align: right; font-weight: 700; height: 34px;" 
-                                       oninput="calcGasTotals()">
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: 800; color: #0284c7; font-size: 0.9rem;" id="subtotalKgText">
-                                Rp 0
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                    {{-- Kolom 2: Total Tagihan Yang Harus Dibayar --}}
+                    <div class="form-group">
+                        <label for="inputTotalTagihanDisplay" class="form-label form-label-senior">
+                            <span>Total Tagihan Yang Harus Dibayar <span class="req-star">*</span></span>
+                        </label>
+                        <div class="input-money-container">
+                            <span class="money-prefix">Rp</span>
+                            <input type="text"
+                                   id="inputTotalTagihanDisplay"
+                                   class="form-control form-control-senior form-control-money font-mono font-bold gas-total-highlight-input"
+                                   readonly>
+                            <input type="hidden"
+                                   name="total_tagihan"
+                                   id="inputTotalTagihan"
+                                   value="{{ old('total_tagihan', round($gasSummary['estimasi_biaya'])) }}">
+                        </div>
+                        <div class="form-sub-badge-row">
+                            <span class="badge-coa-tag">
+                                Akun Hutang (K): <strong>2100 - Hutang Usaha</strong>
+                            </span>
+                        </div>
+                    </div>
 
-            {{-- KARTU 3: CATATAN --}}
-            <div class="card" style="padding: 1rem 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                    Catatan Tagihan Gas
-                </label>
-                <textarea name="catatan" 
-                          rows="2" 
-                          class="form-control" 
-                          style="font-size: 0.8125rem;">{{ old('catatan', "Tagihan Gas Utilitas Pabrik Periode {$periode}") }}</textarea>
-            </div>
-        </div>
-
-        {{-- SISI KANAN: SUMMARY & TOMBOL --}}
-        <div>
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: sticky; top: 80px;">
-                <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9;">
-                    Total Tagihan Gas
-                </h3>
-
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.85rem; color: #475569; border-bottom: 1px dashed #f1f5f9;">
-                    <span>Subtotal Pemakaian</span>
-                    <strong id="gasTotalBrutoText" style="color: #0f172a;">Rp 0</strong>
+                    {{-- Kolom 3: Status Rekonsiliasi Meteran --}}
+                    <div class="form-group">
+                        <label class="form-label form-label-senior">
+                            <span>Status Rekonsiliasi Meteran</span>
+                        </label>
+                        <div class="gas-recon-status-box recon-match" id="reconStatusBox">
+                            <div class="gas-recon-status-content" id="totalStatusNote">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Cocok dengan fisik dapur (Selisih Rp 0)</span>
+                            </div>
+                        </div>
+                        <div class="form-sub-badge-row">
+                            <span class="badge-coa-item text-slate" id="reconSummarySubNote">
+                                Komparasi Faktur vs Estimasi Dapur Pabrik
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="padding: 0.75rem 0; border-bottom: 1px dashed #e2e8f0;">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">
-                        PPN (Jika Ada)
+                {{-- Baris 3: Catatan / Keterangan Tagihan --}}
+                <div class="form-group" style="margin-top: 1.15rem;">
+                    <label for="inputCatatan" class="form-label form-label-senior">
+                        <span>Catatan / Keterangan Tagihan (Opsional)</span>
                     </label>
-                    <input type="number" 
-                           step="1" 
-                           min="0" 
-                           name="total_ppn" 
-                           id="gasPpnInput" 
-                           value="0" 
-                           class="form-control" 
-                           style="font-size: 0.85rem; height: 34px; text-align: right;" 
-                           oninput="calcGasTotals()">
+                    <input type="text"
+                           name="catatan"
+                           id="inputCatatan"
+                           class="form-control form-control-senior"
+                           value="{{ old('catatan', "Tagihan Utilitas Gas Periode {$periode}") }}"
+                           placeholder="Catatan termin pembayaran, transfer rekening vendor, keterangan meteran...">
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #e2e8f0; margin-top: 0.5rem; padding-top: 0.75rem; font-size: 1.15rem; font-weight: 800; color: #0284c7;">
-                    <span>Grand Total</span>
-                    <strong id="gasGrandTotalText">Rp 0</strong>
-                </div>
-
-                <input type="hidden" name="tgl_tagihan" value="{{ date('Y-m-d') }}">
-
-                <div style="margin-top: 1.25rem;">
-                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 800; font-size: 0.9rem; border-radius: 8px; box-shadow: 0 3px 6px rgba(2, 132, 199, 0.3);">
-                        🔥 Terbitkan Tagihan Gas
-                    </button>
-                    <div style="font-size: 0.72rem; color: #64748b; text-align: center; margin-top: 0.5rem; line-height: 1.3;">
-                        Tagihan akan masuk ke daftar hutang dan siap dijadwalkan bayar ke vendor gas.
+                {{-- Strip Baris Ringkas: Jurnal Umum Otomatis (Gaya Kas Keluar) --}}
+                <div class="live-jurnal-badge-bar">
+                    <div class="jurnal-badge-title">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Jurnal Umum Otomatis:</span>
+                    </div>
+                    <div class="jurnal-badge-entries">
+                        <span class="jurnal-coa-pill pill-debet"><strong>(D) 5102</strong> - Pemakaian CNG</span>
+                        <span class="jurnal-badge-sep">&bull;</span>
+                        <span class="jurnal-coa-pill pill-debet"><strong>(D) 1130</strong> - PPN Masukan</span>
+                        <span class="jurnal-badge-sep">&bull;</span>
+                        <span class="jurnal-coa-pill pill-kredit"><strong>(K) 2100</strong> - Hutang Usaha Vendor</span>
                     </div>
                 </div>
+
+                {{-- Garis Pemisah & Baris 4: Info Meteran Pabrik 1 Baris di Bagian Bawah --}}
+                <div class="gas-meter-bottom-summary">
+                    <div class="gas-meter-summary-text">
+                        Catatan Dapur Pabrik: <strong>{{ number_format($gasSummary['total_cng_mmbtu'], 4) }} MMBTU</strong> ({{ number_format($gasSummary['total_cng_nm3'], 2) }} Nm³) &bull; Estimasi: <strong>Rp {{ number_format($gasSummary['estimasi_biaya'], 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="gas-meter-summary-action">
+                        <button type="button" class="btn-header-secondary btn-sm-rincian" onclick="openModalRincianHarian()">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            <span>Lihat Rincian Harian ({{ count($gasSummary['daily_details']) }} Data)</span>
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
-    </div>
-</form>
 
-<script>
-    function calcGasTotals() {
-        const qM3 = parseFloat(document.getElementById('qtyM3Input')?.value || 0);
-        const pM3 = parseFloat(document.getElementById('hargaM3Input')?.value || 0);
-        const subM3 = qM3 * pM3;
+        {{-- ========================================================
+             BOTTOM ACTION BAR
+             ======================================================== --}}
+        <div class="gas-bottom-action-bar">
+            <a href="{{ route('keuangan.hutang.index') }}" class="btn-dock-cancel">
+                Batal
+            </a>
+            <button type="button" class="btn-dock-submit" onclick="openModalConfirmGas()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Simpan Tagihan Gas</span>
+            </button>
+        </div>
 
-        const qKg = parseFloat(document.getElementById('qtyKgInput')?.value || 0);
-        const pKg = parseFloat(document.getElementById('hargaKgInput')?.value || 0);
-        const subKg = qKg * pKg;
+    </form>
+</div>
 
-        const ppn = parseFloat(document.getElementById('gasPpnInput')?.value || 0);
-        const bruto = subM3 + subKg;
-        const total = bruto + ppn;
+{{-- MODALS PARTIALS --}}
+@include('keuangan.hutang.partials.modal-rincian-harian-gas')
+@include('keuangan.hutang.partials.modal-confirm-gas')
 
-        document.getElementById('subtotalM3Text').textContent = 'Rp ' + Math.round(subM3).toLocaleString('id-ID');
-        document.getElementById('subtotalKgText').textContent = 'Rp ' + Math.round(subKg).toLocaleString('id-ID');
-        document.getElementById('gasTotalBrutoText').textContent = 'Rp ' + Math.round(bruto).toLocaleString('id-ID');
-        document.getElementById('gasGrandTotalText').textContent = 'Rp ' + Math.round(total).toLocaleString('id-ID');
-    }
-
-    document.addEventListener('DOMContentLoaded', calcGasTotals);
-</script>
 @endsection
+
+@push('scripts')
+    <script>
+        window.gasConfig = {
+            totalMmbtuPabrik: {{ (float) ($gasSummary['total_cng_mmbtu'] ?? 0) }},
+            totalNm3Pabrik: {{ (float) ($gasSummary['total_cng_nm3'] ?? 0) }},
+            totalEstimasiAkrual: {{ (float) ($gasSummary['estimasi_biaya'] ?? 0) }},
+            avgKursJisdor: {{ (float) ($gasSummary['avg_kurs_jisdor'] ?? 0) }},
+            avgTarifUsd: {{ (float) ($gasSummary['avg_tarif_usd'] ?? 0) }},
+            periodeBulan: '{{ $periode }}',
+            baseUrl: '{{ url('') }}'
+        };
+    </script>
+    <script src="{{ asset('js/keuangan/hutang/tagihan-gas.js') }}?v={{ file_exists(public_path('js/keuangan/hutang/tagihan-gas.js')) ? filemtime(public_path('js/keuangan/hutang/tagihan-gas.js')) : time() }}"></script>
+@endpush

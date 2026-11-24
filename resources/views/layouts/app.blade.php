@@ -2185,7 +2185,7 @@
                                         <div class="mega-col-title" style="color: #0369a1;">Pembukuan &amp; Verifikasi</div>
                                         @if (Auth::user()->canAccessHutang())
                                             <a href="{{ route('keuangan.hutang.index') }}"
-                                                class="mega-item {{ request()->routeIs('keuangan.hutang.*') ? 'active' : '' }}">
+                                                class="mega-item {{ request()->routeIs('keuangan.hutang.index') || request()->routeIs('keuangan.hutang.show') || request()->routeIs('keuangan.hutang.create') ? 'active' : '' }}">
                                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                                     style="color: #b91c1c;">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -2193,7 +2193,7 @@
                                                 </svg>
                                                 <div style="display: flex; flex-direction: column; flex: 1;">
                                                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
-                                                        <span style="font-weight: 700; color: #0f172a;">Tagihan Pembelian (GRN &amp; Gas)</span>
+                                                        <span style="font-weight: 700; color: #0f172a;">Tagihan Pembelian (GRN)</span>
                                                         @if ($unbilledGrnBadge > 0)
                                                             <span style="background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
                                                                 {{ $unbilledGrnBadge }} GRN Baru
@@ -2201,6 +2201,24 @@
                                                         @endif
                                                     </div>
                                                     <span style="font-size: 0.6875rem; color: #475569;">Buat tagihan barang masuk &amp; jurnal hutang</span>
+                                                </div>
+                                            </a>
+
+                                            <a href="{{ route('keuangan.hutang.create_gas') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.hutang.create_gas') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #ea580c;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column; flex: 1;">
+                                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+                                                        <span style="font-weight: 700; color: #0f172a;">Tagihan Gas Bulanan</span>
+                                                        <span style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
+                                                            Utilitas
+                                                        </span>
+                                                    </div>
+                                                    <span style="font-size: 0.6875rem; color: #475569;">Rekonsiliasi meteran fryer &amp; invoice vendor</span>
                                                 </div>
                                             </a>
                                         @endif

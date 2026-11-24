@@ -8,6 +8,14 @@
     .dash-head h1 { font-size:1.35rem; font-weight:800; color:#0f172a; margin:0; }
     .dash-head p  { margin:.15rem 0 0; font-size:.82rem; color:#64748b; }
     .dash-filter { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+    .dash-lbl { font-size:.75rem; font-weight:700; color:#64748b; display:flex; align-items:center; gap:.35rem; }
+    .dash-filter input[type=date] { padding:.38rem .55rem; border:1px solid #cbd5e1; border-radius:8px; font-size:.82rem; background:#fff; color:#0f172a; }
+    .dash-btn { padding:.45rem .95rem; border:0; border-radius:8px; background:#0369a1; color:#fff; font-weight:700; font-size:.82rem; cursor:pointer; }
+    .dash-btn:hover { background:#075985; }
+    .dash-presets { width:100%; display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end; }
+    .dash-presets a { font-size:.74rem; font-weight:700; padding:.22rem .65rem; border-radius:999px; background:#f1f5f9; color:#475569; text-decoration:none; }
+    .dash-presets a:hover { background:#e2e8f0; }
+    .dash-presets a.on { background:#e0f2fe; color:#0369a1; }
     .dash-filter select { padding:.42rem .7rem; border:1px solid #cbd5e1; border-radius:8px; font-size:.82rem; background:#fff; color:#0f172a; }
     .dash-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:.8rem; margin-bottom:1rem; }
     .dash-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:.85rem 1rem; border-left:4px solid var(--c); }
@@ -40,20 +48,33 @@
             <h1>Dashboard</h1>
             <p>PT Mirasa Food Industry · Periode {{ $periode }}</p>
         </div>
-        <form method="GET" class="dash-filter">
-            <select name="bulan" onchange="this.form.submit()">
-                @foreach([3 => '3 bulan terakhir', 6 => '6 bulan terakhir', 12 => '12 bulan terakhir', 24 => '24 bulan terakhir'] as $v => $t)
-                    <option value="{{ $v }}" @selected($bulan === $v)>{{ $t }}</option>
-                @endforeach
-            </select>
+        <form method="GET" class="dash-filter" id="dashFilter">
+            <label class="dash-lbl">Dari <input type="date" name="dari" value="{{ $dari }}" max="{{ now()->toDateString() }}"></label>
+            <label class="dash-lbl">Sampai <input type="date" name="sampai" value="{{ $sampai }}"></label>
             @if($bolehProd)
-            <select name="pabrik" onchange="this.form.submit()" title="Berlaku untuk Produksi & HPP">
+            <select name="pabrik" title="Berlaku untuk Produksi & HPP">
                 <option value="">Semua pabrik</option>
                 <option value="BARAT" @selected($pabrik === 'BARAT')>Pabrik Barat</option>
                 <option value="TIMUR" @selected($pabrik === 'TIMUR')>Pabrik Timur</option>
             </select>
             @endif
+            <button type="submit" class="dash-btn">Terapkan</button>
         </form>
+        <div class="dash-presets">
+            @php
+                $t = now();
+                $preset = [
+                    'Bulan ini'  => [$t->copy()->startOfMonth(), $t],
+                    '3 bulan'    => [$t->copy()->subMonthsNoOverflow(2)->startOfMonth(), $t],
+                    'Tahun ini'  => [$t->copy()->startOfYear(), $t],
+                    'Tahun lalu' => [$t->copy()->subYear()->startOfYear(), $t->copy()->subYear()->endOfYear()],
+                ];
+            @endphp
+            @foreach($preset as $nama => [$a, $b])
+                <a href="{{ request()->fullUrlWithQuery(['dari' => $a->toDateString(), 'sampai' => $b->toDateString()]) }}"
+                   class="{{ $dari === $a->toDateString() && $sampai === $b->toDateString() ? 'on' : '' }}">{{ $nama }}</a>
+            @endforeach
+        </div>
     </div>
 
     <div class="dash-cards">
@@ -78,7 +99,7 @@
             <div class="sub">{{ number_format($kartu['produksi']['dok']) }} dokumen produksi</div>
         </div>
         <div class="dash-card" style="--c:#8b5cf6">
-            <div class="lbl">HPP / kg Bulan Terakhir</div>
+            <div class="lbl">HPP / kg Terakhir</div>
             <div class="val">{{ $kartu['hpp']['terakhir'] !== null ? 'Rp ' . number_format($kartu['hpp']['terakhir'], 0, ',', '.') : '—' }}</div>
             <div class="sub">Rata-rata periode: {{ $kartu['hpp']['rata'] !== null ? 'Rp ' . number_format($kartu['hpp']['rata'], 0, ',', '.') : '—' }}</div>
         </div>
@@ -88,21 +109,21 @@
     <div class="dash-grid">
         @if($bolehBeli)
         <div class="dash-panel">
-            <h2>Pembelian per Bulan</h2>
+            <h2>Pembelian {{ $harian ? 'per Hari' : 'per Bulan' }}</h2>
             <div class="note">Total tagihan penerimaan barang (GRN), tidak termasuk dokumen void/dibatalkan.</div>
             <div class="dash-chart"><canvas id="chBeli"></canvas></div>
         </div>
         @endif
         @if($bolehJual)
         <div class="dash-panel">
-            <h2>Penjualan per Bulan</h2>
+            <h2>Penjualan {{ $harian ? 'per Hari' : 'per Bulan' }}</h2>
             <div class="note">Omzet pesanan non-batal, dibedakan PO dan Penjualan Langsung.</div>
             <div class="dash-chart"><canvas id="chJual"></canvas></div>
         </div>
         @endif
         @if($bolehProd)
         <div class="dash-panel">
-            <h2>Hasil Produksi per Bulan</h2>
+            <h2>Hasil Produksi {{ $harian ? 'per Hari' : 'per Bulan' }}</h2>
             <div class="note">Total WIP hasil timbangan (kg).</div>
             <div class="dash-chart"><canvas id="chProd"></canvas></div>
         </div>

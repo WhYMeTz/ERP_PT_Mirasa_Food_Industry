@@ -724,7 +724,7 @@ class HutangService
                 ) . $ppnSuffix;
 
                 $akunPersediaanBaku = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PERSEDIAAN', '1150');
-                $akunPersediaanPenolong = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PENOLONG', '1153');
+                $akunPersediaanPenolong = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PENOLONG', '1150');
                 $akunHutang = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
                 $akunPpnMasukan = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
                 $akunPph22 = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPH_22', '2107');

@@ -197,9 +197,9 @@
     background: #f8fafc;
     color: #475569;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.725rem;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     padding: 0.85rem 1rem;
     border-bottom: 1.5px solid #e2e8f0;
     white-space: nowrap;
@@ -215,9 +215,127 @@
 }
 
 .fk-table tbody td {
-    padding: 0.85rem 1rem;
+    padding: 0.8rem 1rem;
     color: #334155;
     vertical-align: middle;
+}
+
+/* Table Links & Typography */
+.fk-link-faktur {
+    font-weight: 700;
+    color: #0f172a;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.15s ease;
+    display: inline-block;
+}
+
+.fk-link-faktur:hover {
+    color: #059669;
+    text-decoration: underline;
+}
+
+.fk-link-ref {
+    font-weight: 600;
+    color: #0284c7;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    transition: color 0.15s ease;
+    display: inline-block;
+}
+
+.fk-link-ref:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.fk-link-sub {
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.fk-link-sub:hover {
+    color: #334155;
+    text-decoration: underline;
+}
+
+.fk-customer-name {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+/* Subtext & Hierarchy */
+.fk-subtext {
+    font-size: 0.725rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    line-height: 1.3;
+}
+
+.fk-subtext.danger {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.fk-subtext.amber {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.fk-subtext.emerald {
+    color: #059669;
+    font-weight: 600;
+}
+
+/* Amounts */
+.fk-amount-main {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.fk-amount-sisa {
+    font-weight: 700;
+    color: #334155;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.fk-amount-sisa.overdue {
+    color: #dc2626;
+}
+
+.fk-amount-sisa.sebagian {
+    color: #0284c7;
+}
+
+.fk-amount-sisa.lunas {
+    color: #059669;
+}
+
+/* Tax Tags */
+.tag-tax {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.tag-tax.ppn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.tag-tax.non {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px solid #f1f5f9;
 }
 
 /* Badges */
@@ -225,36 +343,50 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.25rem 0.65rem;
+    padding: 0.2rem 0.65rem;
     border-radius: 9999px;
     font-size: 0.725rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
 }
 
 .badge-status.lunas {
     background: #ecfdf5;
-    color: #059669;
+    color: #047857;
     border: 1px solid #a7f3d0;
 }
 
 .badge-status.belum-lunas {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.badge-status.tempo-dekat {
     background: #fffbeb;
     color: #b45309;
     border: 1px solid #fde68a;
+    font-weight: 700;
+}
+
+.badge-status.overdue {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    font-weight: 700;
 }
 
 .badge-status.sebagian {
     background: #eff6ff;
-    color: #2563eb;
+    color: #1d4ed8;
     border: 1px solid #bfdbfe;
 }
 
 .badge-status.batal {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
 }
 
 .badge-klasifikasi {
@@ -267,8 +399,8 @@
 }
 
 .badge-klasifikasi.ifm {
-    background: #e0f2fe;
-    color: #0369a1;
+    background: #f1f5f9;
+    color: #475569;
 }
 
 .badge-klasifikasi.manual {
@@ -277,8 +409,8 @@
 }
 
 .badge-klasifikasi.modern {
-    background: #fae8ff;
-    color: #86198f;
+    background: #f1f5f9;
+    color: #475569;
 }
 
 /* SMART ACTION DROPDOWN (Strict AGENTS.md Standard) */

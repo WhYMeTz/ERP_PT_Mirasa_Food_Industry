@@ -57,7 +57,7 @@ class MasterKartonSirkularSeeder extends Seeder
                     'barang_nm'          => 'KARTON POLOS IFM (PUTERAN)',
                     'jenis_barang_id'    => $jenisId,
                     'satuan_dasar_id'    => $satuanId,
-                    'harga_beli_standar' => 1748.20, // Rp 8.741 / 5 (Amortisasi 20%)
+                    'harga_beli_standar' => 0.00, // Beban lunas saat karton baru, puteran Rp 0
                     'batas_minimum_qty'  => 50,
                     'konversi_qty'       => 1.0,
                     'active_st'          => true,

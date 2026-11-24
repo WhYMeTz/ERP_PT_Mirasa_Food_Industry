@@ -146,57 +146,49 @@
                         </td>
 
                         @if($d['has_data'] && !empty($d['is_hpp_partial']))
-                            {{-- NOTIFIKASI INFORMATIF PARSIAL: SEBAGIAN SHIFT SUDAH FINAL, SEBAGIAN BELUM --}}
+                            {{-- NOTIFIKASI PARSIAL: SEBAGIAN SHIFT SUDAH FINAL, SEBAGIAN BELUM --}}
                             <td colspan="41" style="border: {{ $cellBorder }}; padding: 0.65rem 0.85rem; text-align: left; background: #fffdf5;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
-                                    <div style="display: flex; align-items: center; gap: 0.6rem;">
-                                        <span style="font-size: 0.9rem;">⚠️</span>
-                                        <div>
-                                            <div style="font-size: 0.825rem; font-weight: 700; color: #92400e;">
-                                                Sebagian Dokumen Produksi di Tanggal Ini Belum Difinalisasi ({{ $d['pending_spk_count'] }} dari {{ $d['total_spk_count'] }} Shift/Lini Menunggu Penarikan Data &amp; Perhitungan HPP)
-                                            </div>
-                                            <div style="display: flex; gap: 0.6rem; margin-top: 3px; font-size: 0.725rem; align-items: center; flex-wrap: wrap;">
-                                                @foreach($d['finalized_spks'] as $fSpk)
-                                                    <span style="color: #166534; font-weight: 600;">✓ Shift {{ $fSpk['shift_cd'] }} ({{ $fSpk['lini_produksi'] }}): Rp {{ number_format($fSpk['hpp_per_kg'], 0, ',', '.') }}/kg</span>
-                                                @endforeach
-                                                @foreach($d['pending_spks'] as $pSpk)
-                                                    <span style="color: #b45309; font-weight: 600;">⏳ Shift {{ $pSpk['shift_cd'] }} ({{ $pSpk['lini_produksi'] }}): Belum Ditarik</span>
-                                                @endforeach
-                                            </div>
+                                    <div>
+                                        <div style="font-size: 0.785rem; font-weight: 600; color: #475569;">
+                                            Dokumen Produksi Harian ({{ $d['finalized_spk_count'] }}/{{ $d['total_spk_count'] }} Selesai Finalisasi)
+                                        </div>
+                                        <div style="display: flex; gap: 0.6rem; margin-top: 3px; font-size: 0.725rem; align-items: center; flex-wrap: wrap;">
+                                            @foreach($d['finalized_spks'] as $fSpk)
+                                                <span style="color: #166534; font-weight: 600;">Shift {{ $fSpk['shift_cd'] }} ({{ $fSpk['lini_produksi'] }}): Rp {{ number_format($fSpk['hpp_per_kg'], 0, ',', '.') }}/kg</span>
+                                            @endforeach
+                                            @foreach($d['pending_spks'] as $pSpk)
+                                                <span style="color: #a16207; font-weight: 600;">Shift {{ $pSpk['shift_cd'] }} ({{ $pSpk['lini_produksi'] }}): Belum Final</span>
+                                            @endforeach
                                         </div>
                                     </div>
                                     <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
                                         @foreach($d['pending_spks'] as $pSpk)
                                             <a href="{{ route('produksi.hpp.create', ['produksi_id' => $pSpk['produksi_id']]) }}" 
-                                               style="font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.25rem 0.65rem; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
-                                                <span>Tarik Shift {{ $pSpk['shift_cd'] }} ({{ $pSpk['lini_produksi'] }}) &rarr;</span>
+                                               style="font-size: 0.725rem; font-weight: 600; color: #ffffff; background: #0284c7; border: 1px solid #0369a1; padding: 0.25rem 0.65rem; border-radius: 4px; text-decoration: none; white-space: nowrap;">
+                                                <span>Kalkulasi Shift {{ $pSpk['shift_cd'] }}</span>
                                             </a>
                                         @endforeach
                                     </div>
                                 </div>
                             </td>
                         @elseif($d['has_data'] && empty($d['is_hpp_final']))
-                            {{-- NOTIFIKASI INFORMATIF: HASIL PRODUKSI BELUM DIFINALISASI FINANCE SAMA SEKALI --}}
+                            {{-- NOTIFIKASI: HASIL PRODUKSI BELUM DIFINALISASI FINANCE SAMA SEKALI --}}
                             <td colspan="41" style="border: {{ $cellBorder }}; padding: 0.65rem 0.85rem; text-align: left; background: #fffdf5;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
-                                    <div style="display: flex; align-items: center; gap: 0.6rem;">
-                                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #fef3c7; color: #b45309; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; border: 1px solid #fde68a;">
-                                            ⏳
-                                        </span>
-                                        <div>
-                                            <div style="font-size: 0.825rem; font-weight: 700; color: #92400e;">
-                                                Hasil produksi fisik tercatat (SPK #{{ $d['primary_produksi_no'] ?? $d['produksi_no'] }} &bull; {{ $d['lini_produksi'] }}), belum dilakukan finalisasi HPP.
-                                            </div>
-                                            <div style="font-size: 0.725rem; color: #b45309; margin-top: 2px;">
-                                                Data biaya dan HPP akan muncul ditabel ini setelah dilakukan penarikan data dan perhitungan HPP.
-                                            </div>
+                                    <div>
+                                        <div style="font-size: 0.8rem; font-weight: 600; color: #0f172a;">
+                                            {{ $d['primary_produksi_no'] ?? $d['produksi_no'] }} &bull; {{ $d['lini_produksi'] }}
+                                        </div>
+                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                            Produksi fisik tercatat, belum difinalisasi HPP.
                                         </div>
                                     </div>
                                     <a href="{{ route('produksi.hpp.create', ['produksi_id' => $d['produksi_id']]) }}" 
                                        class="btn-tarik-finalisasi-hpp btn-loading-trigger"
-                                       style="font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.3rem 0.7rem; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
+                                       style="font-size: 0.725rem; font-weight: 600; color: #ffffff; background: #0284c7; border: 1px solid #0369a1; padding: 0.3rem 0.7rem; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                        <span>Tarik &amp; Finalisasi HPP</span>
+                                        <span>Kalkulasi HPP</span>
                                     </a>
                                 </div>
                             </td>

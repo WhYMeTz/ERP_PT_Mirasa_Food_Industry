@@ -107,8 +107,8 @@
                     'desc' => 'Pemakaian minyak goreng, bumbu rendam & perenyah',
                     'posisi' => 'KREDIT',
                     'picker_title' => 'Persediaan Bahan Penolong Terpakai',
-                    'fallback_code' => '1153',
-                    'fallback_nama' => 'Persediaan Bahan Penolong',
+                    'fallback_code' => '1150',
+                    'fallback_nama' => 'Persediaan Bahan Baku & Penolong',
                     'default_urutan' => 3,
                 ],
                 'HPP_WIP_AKUN_GAS' => [
@@ -548,8 +548,8 @@
                     'desc' => 'Minyak, Bumbu, Dus Karton, Lakban (DPP sebelum pajak)',
                     'posisi' => 'DEBET',
                     'picker_title' => 'Persediaan Bahan Penolong & Kemasan Masuk',
-                    'fallback_code' => '1153',
-                    'fallback_nama' => 'Persediaan Bahan Penolong & Kemasan',
+                    'fallback_code' => '1150',
+                    'fallback_nama' => 'Persediaan Bahan Baku & Penolong',
                     'default_urutan' => 2,
                 ],
                 'PEMBELIAN_AKUN_ONGKIR' => [

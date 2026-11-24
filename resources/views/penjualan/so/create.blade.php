@@ -140,11 +140,36 @@
                 </div>
 
                 {{-- [R2-C2] Syarat Pembayaran (TOP) --}}
+                @php
+                    $initTopTxt = old('top_txt', '');
+                    $initVal = 0;
+                    $initUnit = 'HARI';
+                    if (!empty($initTopTxt)) {
+                        $upTop = strtoupper(trim($initTopTxt));
+                        if (str_contains($upTop, 'NOTA')) {
+                            preg_match('/\d+/', $upTop, $mTop);
+                            $initVal = isset($mTop[0]) ? (int)$mTop[0] : 0;
+                            $initUnit = 'NOTA';
+                        } elseif (preg_match('/\d+/', $upTop, $mTop)) {
+                            $initVal = (int)$mTop[0];
+                            $initUnit = 'HARI';
+                        }
+                    }
+                @endphp
                 <div>
-                    <label for="top_txt" class="po-field-label">
+                    <label for="top_val" class="po-field-label">
                         Syarat Pembayaran (TOP)
                     </label>
-                    <input type="text" id="top_txt" name="top_txt" value="{{ old('top_txt') }}" placeholder="Contoh: 7 Hari / 1 Nota" class="po-field-input">
+                    <div style="display: flex; gap: 0.35rem; align-items: stretch;">
+                        <input type="number" id="top_val" min="0" max="365" class="po-field-input" 
+                               style="width: 75px; text-align: center; font-weight: 700; flex-shrink: 0;" 
+                               placeholder="0" value="{{ $initVal }}">
+                        <select id="top_unit" class="po-field-select" style="flex: 1;">
+                            <option value="HARI" {{ $initUnit === 'HARI' ? 'selected' : '' }}>Hari</option>
+                            <option value="NOTA" {{ $initUnit === 'NOTA' ? 'selected' : '' }}>Nota</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="top_txt" name="top_txt" value="{{ old('top_txt', $initTopTxt ?: ($initVal . ' ' . ($initUnit === 'NOTA' ? 'Nota' : 'Hari'))) }}">
                 </div>
 
                 {{-- [R2-C3] Pajak Faktur (PPN) --}}

@@ -141,7 +141,7 @@
                                 <span>No. Surat Jalan Resmi <span class="req">*</span></span>
                             </label>
                             <input type="text" name="pengeluaran_no" id="pengeluaran_no" required
-                                   value="{{ old('pengeluaran_no', $prefilledData['order']->surat_jalan_no ?? $defaultSjNo) }}"
+                                   value="{{ old('pengeluaran_no', $defaultSjNo) }}"
                                    class="sj-form-input" style="font-family: monospace; font-weight: 700; background: #f8fafc;">
                         </div>
 

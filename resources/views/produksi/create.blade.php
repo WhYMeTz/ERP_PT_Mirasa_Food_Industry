@@ -345,7 +345,7 @@
             oldOutputItems: @json(old('output_items', [])),
             initialFohRates: @json($fohRates ?? []),
             initialEnergiTkRates: @json($energiTkRates ?? []),
-            kartonRates: @json($kartonRates ?? ['baru' => 8741, 'puteran' => 1748.20, 'reject' => 0]),
+            kartonRates: @json($kartonRates ?? ['baru' => 8741, 'puteran' => 0, 'reject' => 0]),
             quickUpdateTarifUrl: "{{ route('master.tarif_produksi.quick-update') }}"
         };
     </script>

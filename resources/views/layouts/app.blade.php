@@ -1936,6 +1936,7 @@
                                 <div class="mega-grid">
                                     <div class="mega-col">
                                         <div class="mega-col-title">Order &amp; Retur Langganan</div>
+                                        @if(Auth::user()?->canAccessSo())
                                         <a href="{{ route('penjualan.so.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.so.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1949,6 +1950,7 @@
                                                     customer</span>
                                             </div>
                                         </a>
+                                        @endif
                                         <a href="{{ route('penjualan.langsung.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.langsung.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2002,6 +2004,7 @@
                                                     muat armada</span>
                                             </div>
                                         </a>
+                                        @if(Auth::user()?->canAccessFaktur())
                                         <a href="{{ route('penjualan.faktur.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.faktur.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2015,9 +2018,11 @@
                                                     &amp; monitoring tempo</span>
                                             </div>
                                         </a>
+                                        @endif
                                     </div>
                                     <div class="mega-col">
                                         <div class="mega-col-title">Laporan &amp; Analisis</div>
+                                        @if(Auth::user()?->canAccessSo() || Auth::user()?->canAccessFaktur() || Auth::user()?->isSuperAdmin())
                                         <a href="{{ route('penjualan.laporan.index') }}"
                                             class="mega-item {{ request()->routeIs('penjualan.laporan.*') ? 'active' : '' }}">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -2030,6 +2035,7 @@
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Konsolidasi PO &amp; Non-PO, omzet, produk terlaris</span>
                                             </div>
                                         </a>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -2043,6 +2049,7 @@
                                 'keuangan.kas_bank.*',
                                 'keuangan.kas_masuk.*',
                                 'keuangan.bayar.*',
+                                'keuangan.bayar_piutang.*',
                                 'keuangan.kas_keluar.*'
                             );
                         @endphp
@@ -2092,6 +2099,20 @@
                                                 <div style="display: flex; flex-direction: column;">
                                                     <span style="font-weight: 600; color: #0f172a;">Kas Masuk (Uang Masuk)</span>
                                                     <span style="font-size: 0.6875rem; color: #475569;">Catat uang masuk limbah, modal &amp; piutang</span>
+                                                </div>
+                                            </a>
+                                        @endif
+                                        @if (Auth::user()->canAccessBayarPiutang())
+                                            <a href="{{ route('keuangan.bayar_piutang.index') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.bayar_piutang.*') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #059669;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <span style="font-weight: 600; color: #0f172a;">Terima Pembayaran Customer</span>
+                                                    <span style="font-size: 0.6875rem; color: #475569;">Pelunasan faktur penjualan toko &amp; distributor</span>
                                                 </div>
                                             </a>
                                         @endif

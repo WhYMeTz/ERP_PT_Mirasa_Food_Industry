@@ -30,6 +30,10 @@ class SoController extends Controller
      */
     public function index(Request $request): View
     {
+        if (!auth()->user()?->canAccessSo()) {
+            abort(403, 'Akses ditolak: Dokumen PO Penjualan komersial hanya dapat diakses oleh Departemen Penjualan, Keuangan, atau Manajemen.');
+        }
+
         $search = $request->query('search');
         $status = $request->query('status');
         $filters = [
@@ -123,6 +127,10 @@ class SoController extends Controller
      */
     public function show(int $id): View
     {
+        if (!auth()->user()?->canAccessSo()) {
+            abort(403, 'Akses ditolak: Dokumen PO Penjualan komersial hanya dapat diakses oleh Departemen Penjualan, Keuangan, atau Manajemen.');
+        }
+
         $order = $this->soService->getById($id);
         $stockMap = $this->soService->getStockAvailabilityMap($order->details->pluck('barang_id')->toArray());
         $kasBanks = \App\Models\Keuangan\MstKasBank::active()->orderBy('nama_akun')->get();

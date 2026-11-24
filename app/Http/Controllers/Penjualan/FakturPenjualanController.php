@@ -26,6 +26,10 @@ class FakturPenjualanController extends Controller
      */
     public function index(Request $request): View
     {
+        if (!auth()->user()?->canAccessFaktur()) {
+            abort(403, 'Akses ditolak: Dokumen faktur penjualan dan tagihan piutang hanya dapat diakses oleh Departemen Keuangan, Sales/Penjualan, atau Manajemen.');
+        }
+
         $perPage  = (int) $request->input('per_page', 15);
         $search   = $request->input('search');
         $status   = $request->input('status');
@@ -41,10 +45,12 @@ class FakturPenjualanController extends Controller
         );
 
         $metrics = $this->fakturService->getMetrics();
+        $kasBanks = \App\Models\Keuangan\MstKasBank::active()->orderBy('nama_akun')->get();
 
         return view('penjualan.faktur.index', compact(
             'fakturList',
             'metrics',
+            'kasBanks',
             'search',
             'status',
             'dateFrom',
@@ -57,6 +63,10 @@ class FakturPenjualanController extends Controller
      */
     public function create(Request $request): View
     {
+        if (!auth()->user()?->canAccessFaktur()) {
+            abort(403, 'Akses ditolak: Dokumen faktur penjualan dan tagihan piutang hanya dapat diakses oleh Departemen Keuangan, Sales/Penjualan, atau Manajemen.');
+        }
+
         $uninvoicedSuratJalan = $this->fakturService->getUninvoicedSuratJalan();
         $selectedPengeluaranId = $request->input('pengeluaran_id') ? (int) $request->input('pengeluaran_id') : null;
         $prefilledData = null;
@@ -118,9 +128,43 @@ class FakturPenjualanController extends Controller
      */
     public function show(int $id): View
     {
-        $faktur = $this->fakturService->getById($id);
+        if (!auth()->user()?->canAccessFaktur()) {
+            abort(403, 'Akses ditolak: Dokumen faktur penjualan dan tagihan piutang hanya dapat diakses oleh Departemen Keuangan, Sales/Penjualan, atau Manajemen.');
+        }
 
-        return view('penjualan.faktur.show', compact('faktur'));
+        $faktur = $this->fakturService->getById($id);
+        $kasBanks = \App\Models\Keuangan\MstKasBank::active()->orderBy('nama_akun')->get();
+
+        return view('penjualan.faktur.show', compact('faktur', 'kasBanks'));
+    }
+
+    /**
+     * Catat Penerimaan Pembayaran Kas Masuk (BKM) langsung untuk Faktur Penjualan ini.
+     */
+    public function recordPayment(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'kas_bank_id'       => 'required|exists:mst_kas_bank,kas_bank_id',
+            'tgl_terima'        => 'required|date',
+            'nominal'           => 'required|numeric|min:1',
+            'metode_terima'     => 'required|string|in:TRANSFER,CASH,GIRO_CEK,EDC_QRIS',
+            'penyetor_nama'     => 'nullable|string|max:150',
+            'no_referensi_bank' => 'nullable|string|max:100',
+            'catatan'           => 'nullable|string|max:255',
+        ], [
+            'kas_bank_id.required' => 'Pilih rekening kas/bank tujuan penerimaan.',
+            'tgl_terima.required'  => 'Tanggal pembayaran wajib diisi.',
+            'nominal.required'     => 'Nominal pembayaran wajib diisi.',
+            'nominal.min'          => 'Nominal pembayaran minimal Rp 1.',
+        ]);
+
+        try {
+            $bkm = $this->fakturService->recordPayment($id, $validated, auth()->user());
+
+            return back()->with('toast_success', "Pembayaran sebesar Rp " . number_format((float) $validated['nominal'], 0, ',', '.') . " berhasil dicatat dengan Bukti Kas Masuk {$bkm->bkm_no}!");
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal mencatat pembayaran: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -128,6 +172,10 @@ class FakturPenjualanController extends Controller
      */
     public function exportPdf(Request $request, int $id): Response
     {
+        if (!auth()->user()?->canAccessFaktur()) {
+            abort(403, 'Akses ditolak: Dokumen faktur penjualan dan tagihan piutang hanya dapat diakses oleh Departemen Keuangan, Sales/Penjualan, atau Manajemen.');
+        }
+
         $faktur = $this->fakturService->getById($id);
         $order = $faktur->order;
 
@@ -170,6 +218,10 @@ class FakturPenjualanController extends Controller
      */
     public function void(Request $request, int $id): RedirectResponse
     {
+        if (!auth()->user()?->canAccessFaktur()) {
+            return back()->with('error', 'Akses ditolak: Anda tidak memiliki otorisasi untuk membatalkan (void) Faktur Penjualan.');
+        }
+
         $request->validate([
             'reason' => 'required|string|max:255',
         ], [

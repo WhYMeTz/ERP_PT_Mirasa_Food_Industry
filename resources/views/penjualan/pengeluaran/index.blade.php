@@ -209,9 +209,15 @@
                                         {{ $sj->keperluan_txt ?: 'Pengeluaran Non-PO' }}
                                     </div>
                                 @elseif ($order)
-                                    <a href="{{ route('penjualan.so.show', $order->so_id) }}" style="font-weight: 600; color: #334155; text-decoration: none; font-size: 0.8125rem;">
-                                        {{ $order->so_no }}
-                                    </a>
+                                    @if(Auth::user()?->canAccessSo() ?? false)
+                                        <a href="{{ route('penjualan.so.show', $order->so_id) }}" style="font-weight: 600; color: #334155; text-decoration: none; font-size: 0.8125rem;">
+                                            {{ $order->so_no }}
+                                        </a>
+                                    @else
+                                        <span style="font-weight: 600; color: #334155; font-size: 0.8125rem;">
+                                            {{ $order->so_no }}
+                                        </span>
+                                    @endif
                                     @if ($order->customer_po_no)
                                         <div style="font-size: 0.725rem; color: #64748b; font-family: monospace;">
                                             PO Ext: {{ $order->customer_po_no }}
@@ -340,8 +346,8 @@
                                         <span>{{ $sj->isSample() ? 'Cetak Bukti Sampel (PDF)' : 'Cetak Surat Jalan (PDF)' }}</span>
                                     </a>
 
-                                    @if ($sj->faktur && $sj->status_cd !== 'BATAL')
-                                        {{-- Cetak PDF Faktur Penjualan --}}
+                                    {{-- Cetak & Lihat Faktur Penjualan (Khusus Keuangan / Sales / Superadmin) --}}
+                                    @if ($sj->faktur && $sj->status_cd !== 'BATAL' && (Auth::user()?->canAccessFaktur() ?? false))
                                         <a href="{{ route('penjualan.faktur.export-pdf', $sj->faktur->faktur_id) }}" target="_blank" class="action-dropdown-item" style="color: #059669; font-weight: 600;">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                             <span>Cetak Faktur Penjualan (PDF)</span>
@@ -353,7 +359,8 @@
                                         </a>
                                     @endif
 
-                                    @if ($sj->status_cd !== 'BATAL')
+                                    {{-- Batalkan Pengiriman (Void SJ - Khusus Supervisor / Berwenang) --}}
+                                    @if ($sj->status_cd !== 'BATAL' && (Auth::user()?->canVoidPengeluaran() ?? false))
                                         <div class="action-dropdown-divider"></div>
                                         @if ($sj->faktur && (float) $sj->faktur->total_dibayar > 0)
                                             <div class="action-dropdown-item" style="color: #94a3b8; font-size: 0.75rem; cursor: not-allowed;" title="SJ terkunci karena Faktur Penjualan sudah ada pembayaran piutang.">
@@ -361,7 +368,6 @@
                                                 <span>Terkunci (Ada Bayar)</span>
                                             </div>
                                         @else
-                                            {{-- Batalkan Pengiriman (Void) --}}
                                             <button type="button" class="action-dropdown-item danger-item" onclick="openVoidModal('{{ $sj->pengeluaran_id }}', '{{ $sj->pengeluaran_no }}')">
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 <span>Batalkan (Void SJ)</span>
@@ -616,8 +622,10 @@
         </div>
     </div>
 
-{{-- MODAL VOID / PEMBATALAN SURAT JALAN --}}
-@include('penjualan.pengeluaran.partials.modal-void')
+{{-- MODAL VOID / PEMBATALAN SURAT JALAN (Hanya untuk Pengguna Berwenang) --}}
+@if (Auth::user()?->canVoidPengeluaran() ?? false)
+    @include('penjualan.pengeluaran.partials.modal-void')
+@endif
 
 @endsection
 

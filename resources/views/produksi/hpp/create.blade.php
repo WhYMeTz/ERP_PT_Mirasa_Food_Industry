@@ -216,75 +216,70 @@
 
                 <div class="card-inner-divider" style="margin: 1.35rem 0; border-top: 1.5px dashed #e2e8f0;"></div>
 
-                {{-- INFO DOKUMEN BPPB --}}
-                <div class="bppb-info-banner">
-                    <div class="bppb-info-item">
-                        <span class="bppb-info-lbl">No Dokumen BPPB:</span>
-                        <strong class="bppb-info-val" id="lblBppbNo">-</strong>
-                    </div>
-                    <div class="bppb-info-item">
-                        <span class="bppb-info-lbl">Tanggal Pengeluaran:</span>
-                        <strong class="bppb-info-val" id="lblBppbTgl">-</strong>
-                    </div>
-                    <div class="bppb-info-item">
-                        <span class="bppb-info-lbl">Gudang Asal Bahan:</span>
-                        <strong class="bppb-info-val" id="lblBppbGudang">-</strong>
-                    </div>
-                    <div class="bppb-info-item" style="margin-left: auto;">
-                        <span class="bppb-info-lbl">Total Nilai Pemakaian:</span>
-                        <strong class="bppb-info-val highlight-bppb-val" id="lblBppbTotal">Rp 0</strong>
-                    </div>
-                </div>
+                {{-- CARD RINCIAN PEMAKAIAN BAHAN BPPB (IDENTIK DENGAN HALAMAN HASIL PRODUKSI) --}}
+                <div style="border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03); margin-top: 0.5rem;">
+                    {{-- HEADER RINGKASAN BPPB --}}
+                    <div style="background: #f8fafc; border-bottom: 1px solid #cbd5e1; padding: 0.65rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <strong style="color: #0f172a; font-size: 0.85rem;">Rincian Barang Keluar dari Gudang (BPPB)</strong>
+                            <span id="badgeJumlahItemBppb" style="font-size: 0.725rem; font-weight: 700; background: #e2e8f0; color: #334155; padding: 0.15rem 0.45rem; border-radius: 4px;">0 Item</span>
+                            <span id="bppbMetaDocHpp" style="font-size: 0.75rem; color: #64748b; font-weight: 500;">
+                                <span id="lblBppbNo" style="display:none;">-</span>
+                                <span id="lblBppbTgl" style="display:none;">-</span>
+                                <span id="lblBppbGudang" style="display:none;">-</span>
+                            </span>
+                        </div>
 
-                {{-- TOOLBAR & TABEL BARANG YANG DIGUNAKAN (DITARIK DARI BPPB) --}}
-                <div class="table-bppb-toolbar">
-                    <div class="table-bppb-title">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                        <span>Rincian Barang Keluar dari Gudang (BPPB)</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.75rem; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 600;">
+                                Sesuai Dokumen Gudang (Read-Only)
+                            </span>
+                            <span id="badgeTotalBahanNilaiHpp" style="font-size: 0.75rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.2rem 0.6rem; border-radius: 4px;">
+                                <span id="lblBppbTotal">Total: Rp 0</span>
+                            </span>
+                        </div>
                     </div>
-                    <div class="table-bppb-actions">
-                        <button type="button" id="btnResetBppb" class="btn-reset-bppb" style="display: none;" onclick="resetBppbToOriginal()" title="Kembalikan semua nilai ke data asli BPPB">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span>Reset</span>
-                        </button>
-                        <button type="button" id="btnToggleKoreksiBppb" class="btn-koreksi-bppb" onclick="toggleKoreksiBppb()" title="Buka pengunci untuk menyesuaikan nilai bahan">
-                            <svg id="svgLockBppb" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            <span id="txtBtnKoreksiBppb">Koreksi</span>
-                        </button>
-                    </div>
-                </div>
 
-                <div class="table-pemakaian-wrap">
-                    <table class="table-pemakaian">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px;">No</th>
-                                <th>Nama Bahan &amp; Kode</th>
-                                <th>Kategori Barang</th>
-                                <th>Batch Bahan Masuk</th>
-                                <th style="text-align: right;">Qty Keluar</th>
-                                <th style="text-align: center; width: 70px;">Satuan</th>
-                                <th style="text-align: right; width: 140px;">Harga Satuan</th>
-                                <th style="text-align: right; width: 170px;">Subtotal Nilai (Rp)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pemakaianTableBody">
-                            <tr>
-                                <td colspan="8" class="table-empty-row">
-                                    <div class="empty-info-msg">
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span>Pilih dokumen produksi fisik pada Card 1 untuk menarik rincian barang dari dokumen pengeluaran gudang (BPPB).</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot id="pemakaianTableFoot" style="display: none;">
-                            <tr class="pemakaian-tfoot-row">
-                                <td colspan="7" style="text-align: right; font-weight: 700;">TOTAL ESTIMASI BAHAN TERPAKAI:</td>
-                                <td style="text-align: right; font-weight: 800; color: #0f172a;" id="lblSubtotalPemakaian">Rp 0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                    {{-- TABEL RINCIAN BAHAN DENGAN FIXED LAYOUT & STANDAR ENTERPRISE ERP --}}
+                    <div style="overflow-x: auto;">
+                        <table class="table-pemakaian" style="width: 100%; border-collapse: collapse; font-size: 0.875rem; table-layout: fixed;" id="tableBppbHpp">
+                            <thead>
+                                <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 700; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                                    <th style="padding: 0.75rem 0.5rem; width: 5%; text-align: center; vertical-align: middle;">No</th>
+                                    <th style="padding: 0.75rem 0.5rem; width: 14%; text-align: center; vertical-align: middle;">Kategori</th>
+                                    <th style="padding: 0.75rem 0.5rem; width: 13%; text-align: center; vertical-align: middle;">Kode Barang</th>
+                                    <th style="padding: 0.75rem 0.85rem; width: 22%; text-align: left; vertical-align: middle;">Nama Bahan Baku</th>
+                                    <th style="padding: 0.75rem 0.5rem; width: 12%; text-align: center; vertical-align: middle;">Batch Gudang</th>
+                                    <th style="padding: 0.75rem 0.85rem; width: 11%; text-align: right; vertical-align: middle;">Qty Keluar</th>
+                                    <th style="padding: 0.75rem 0.85rem; width: 11%; text-align: right; vertical-align: middle;">Harga Satuan</th>
+                                    <th style="padding: 0.75rem 0.85rem; width: 12%; text-align: right; vertical-align: middle;">Subtotal Nilai</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pemakaianTableBody">
+                                <tr>
+                                    <td colspan="8" style="padding: 1.5rem 1rem; text-align: center; vertical-align: middle; color: #94a3b8; font-style: italic; font-size: 0.875rem;">
+                                        Pilih dokumen produksi fisik pada Card 1 untuk menarik rincian barang dari dokumen pengeluaran gudang (BPPB).
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="pemakaianTableFoot" style="display: none;">
+                                <tr>
+                                    <td colspan="5" style="padding: 0.85rem 1rem; text-align: right; vertical-align: middle; color: #1e293b; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                                        Total Akumulasi Bahan Terpakai:
+                                    </td>
+                                    <td id="tfootTotalBppbQty" style="padding: 0.85rem 0.85rem; text-align: right; vertical-align: middle; color: #0284c7; font-size: 0.925rem; font-weight: 800; font-variant-numeric: tabular-nums; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                                        0,00 KG
+                                    </td>
+                                    <td style="padding: 0.85rem 0.5rem; text-align: center; vertical-align: middle; color: #64748b; font-size: 0.85rem; font-weight: 600; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                                        Estimasi
+                                    </td>
+                                    <td id="lblSubtotalPemakaian" style="padding: 0.85rem 0.85rem; text-align: right; vertical-align: middle; color: #0284c7; font-size: 0.95rem; font-weight: 800; font-variant-numeric: tabular-nums; background: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+                                        Rp 0
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
 
                 {{-- HIDDEN INPUTS AGAR FORM SUBMIT KE CONTROLLER TETAP 100% KOMPATIBEL --}}
@@ -350,9 +345,6 @@
                                 <label for="cng_mmbtu" class="hpp-label">Nilai Energi Gas (MMBTU) <span class="required">*</span></label>
                                 <input type="number" step="any" min="0" name="cng_mmbtu" id="cng_mmbtu" class="hpp-input" value="{{ old('cng_mmbtu', 0) }}" required oninput="calcNm3FromMmbtu()">
                                 <small class="helper-text">Satuan energi panas (1 MMBTU &approx; 27,92 Nm³).</small>
-                                <div id="cngEntityShareAlert" style="display: none; margin-top: 0.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.4rem 0.65rem; font-size: 0.725rem; color: #166534; line-height: 1.4;">
-                                    <span id="cngEntityShareText"></span>
-                                </div>
                             </div>
                         </div>
 
@@ -587,10 +579,10 @@
                             <input type="number" step="0.1" min="1" id="factorMultiplier" value="2.5" class="input-factor" title="Faktor rasio pengali HPP produk utama terhadap produk sampingan">
                             <span class="multiplier-formula-lbl">× dari harga</span>
                             <select id="targetMultiplierRow" class="select-target-baris" title="Pilih baris produk pembanding (acuan rasio)">
-                                <option value="all_kw2">Semua KW 2 (Berko, Lengket, Remahan)</option>
-                                <option value="berko_only">KS BERKO</option>
-                                <option value="lengket_only">KS BERKO LENGKET</option>
-                                <option value="remahan_only">KS REMAHAN</option>
+                                <option value="all_kw2">Semua KW 2 (Berko &amp; Remahan Sekaligus)</option>
+                                <option value="berko_only">Hanya KS BERKO</option>
+                                <option value="remahan_only">Hanya KS REMAHAN</option>
+                                <option value="lengket_only">Hanya KS BERKO LENGKET</option>
                             </select>
                             <button type="button" class="btn-apply-diferensiasi" onclick="applyRasioProdukUtama()" title="Terapkan rasio perbandingan ke produk utama dan produk sampingan agar seimbang">
                                 <span>Terapkan</span>

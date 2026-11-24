@@ -184,15 +184,9 @@ class PackagingController extends Controller
                     }
                 }
 
-                // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
-                if ($b->barang_cd === 'KMS-KTN-REJ' || str_contains($nm, 'REJECT') || str_contains($nm, 'MANUAL')) {
-                    $hargaStandar = 0.00; // Manual karton tidak masuk hitungan HPP
-                } elseif ($b->barang_cd === 'KIF00G-BP1' || (str_contains($nm, 'IFM') && str_contains($nm, 'KARTON'))) {
-                    if ($hargaStandar > 2000) {
-                        $hargaStandar = round($hargaStandar / 5, 2); // Khusus IFM langsung dibagi 5 = Rp 1.748,20
-                    }
-                } elseif ($b->barang_cd === 'KIF00G-PUT') {
-                    $hargaStandar = 1748.20;
+                // Karton Bekas/Puteran Rp 0 (karena beban dibebankan penuh saat baru)
+                if ($b->barang_cd === 'KMS-KTN-REJ' || $b->barang_cd === 'KIF00G-PUT' || str_contains($nm, 'REJECT') || str_contains($nm, 'PUTERAN') || str_contains($nm, 'BEKAS') || str_contains($nm, 'MANUAL')) {
+                    $hargaStandar = 0.00;
                 }
 
                 return [
@@ -725,7 +719,7 @@ class PackagingController extends Controller
                     'qty_standar'    => $puteranQty,
                     'qty_aktual'     => $puteranQty,
                     'satuan_cd'      => $puteranSatuan,
-                    'harga_satuan'   => 1748.20,
+                    'harga_satuan'   => 0.00,
                 ];
             }
 
@@ -742,7 +736,7 @@ class PackagingController extends Controller
                     'qty_standar'    => $baruQty,
                     'qty_aktual'     => $baruQty,
                     'satuan_cd'      => $baruSatuan,
-                    'harga_satuan'   => round($hBeli / 5, 2),
+                    'harga_satuan'   => $hBeli,
                 ];
             }
 
@@ -752,6 +746,7 @@ class PackagingController extends Controller
                 $kQty = (float) ($request->input('karton_qty') ?: $request->input('hasil_karton_qty', 0));
                 if ($kId && $kQty > 0) {
                     $kBarang = MstBarang::find($kId);
+                    $fallbackHarga = (float) ($kBarang?->harga_beli_standar ?? ($kBarang?->barang_cd === 'KIF00G-PUT' ? 0.00 : 8741.00));
                     $items[] = [
                         'barang_id'      => (int) $kId,
                         'kategori_bahan' => 'KEMASAN',
@@ -759,7 +754,7 @@ class PackagingController extends Controller
                         'qty_standar'    => $kQty,
                         'qty_aktual'     => $kQty,
                         'satuan_cd'      => 'LEMBAR',
-                        'harga_satuan'   => (float) ($kBarang?->harga_beli_standar ?? 1748.20),
+                        'harga_satuan'   => $fallbackHarga,
                     ];
                 }
             }

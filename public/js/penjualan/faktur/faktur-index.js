@@ -99,3 +99,65 @@ function closeVoidModal() {
         modal.classList.remove('active');
     }
 }
+
+/**
+ * Modal Catat Pembayaran Faktur Penjualan (BKM Terpusat)
+ */
+let currentFakturSisaPiutang = 0;
+
+function openFakturPaymentModal(fakturId, fakturNo, customerNm, totalTagihan, sisaPiutang) {
+    const modal = document.getElementById('modalRecordFakturPayment');
+    const form = document.getElementById('formRecordFakturPayment');
+    const textFakturNo = document.getElementById('fkModalFakturNoText');
+    const textCust = document.getElementById('fkModalCustomerNmText');
+    const textTotal = document.getElementById('fkModalTotalTagihanText');
+    const textSisa = document.getElementById('fkModalSisaPiutangText');
+    const inputNominal = document.getElementById('fkModalNominalInput');
+    const inputPenyetor = document.getElementById('fkModalPenyetorInput');
+    const inputCatatan = document.getElementById('fkModalCatatanInput');
+    const btnSetFull = document.getElementById('fkBtnSetFullPayment');
+
+    if (!modal || !form) return;
+
+    currentFakturSisaPiutang = parseFloat(sisaPiutang) || 0;
+
+    form.action = `/penjualan/faktur/${fakturId}/record-payment`;
+    if (textFakturNo) textFakturNo.textContent = fakturNo;
+    if (textCust) textCust.textContent = customerNm || 'Pelanggan Umum';
+    if (textTotal) textTotal.textContent = 'Rp ' + (parseFloat(totalTagihan) || 0).toLocaleString('id-ID');
+    if (textSisa) textSisa.textContent = 'Rp ' + currentFakturSisaPiutang.toLocaleString('id-ID');
+    
+    if (inputNominal) {
+        inputNominal.value = currentFakturSisaPiutang;
+        inputNominal.max = currentFakturSisaPiutang;
+    }
+
+    if (btnSetFull) {
+        btnSetFull.textContent = 'Set Bayar Penuh (Rp ' + currentFakturSisaPiutang.toLocaleString('id-ID') + ')';
+    }
+
+    if (inputPenyetor) inputPenyetor.value = customerNm || '';
+    if (inputCatatan) inputCatatan.value = `Pelunasan Faktur ${fakturNo} - ${customerNm || ''}`;
+
+    modal.style.display = 'flex';
+}
+
+function closeFakturPaymentModal() {
+    const modal = document.getElementById('modalRecordFakturPayment');
+    if (modal) modal.style.display = 'none';
+}
+
+function fillFakturFullPayment() {
+    const inputNominal = document.getElementById('fkModalNominalInput');
+    if (inputNominal && currentFakturSisaPiutang > 0) {
+        inputNominal.value = currentFakturSisaPiutang;
+    }
+}
+
+// Tutup modal jika klik di latar belakang
+window.addEventListener('click', function(e) {
+    const modalPayment = document.getElementById('modalRecordFakturPayment');
+    if (e.target === modalPayment) {
+        closeFakturPaymentModal();
+    }
+});

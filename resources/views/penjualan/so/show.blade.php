@@ -18,8 +18,10 @@
         $isOrderAlfa = $klasifikasi === 'MIDI_ALFA' || $klasifikasi === 'IDM_ALFA' || str_contains($custNmUpper, 'ALFA') || str_contains($custNmUpper, 'SUMBER ALFARIA') || str_contains($custNmUpper, 'MIDI') || str_contains($custCdUpper, 'MIDI') || str_contains($custCdUpper, 'ALFA');
         $isOrderPpn = $order->ppn_nominal > 0 || $order->ppn_tipe === 'PPN_11';
 
-        $activeSj = $order->pengeluaran->where('status_cd', '!=', 'BATAL')->first();
-        $activeFaktur = $activeSj?->faktur ?? \App\Models\Penjualan\DatFakturHdr::where('so_id', $order->so_id)->where('deleted_st', false)->where('status_pembayaran', '!=', 'BATAL')->first();
+        $validSjs = $order->pengeluaran ? $order->pengeluaran->where('status_cd', '!=', 'BATAL')->values() : collect();
+        $activeSj = $validSjs->first();
+        $validFakturs = \App\Models\Penjualan\DatFakturHdr::where('so_id', $order->so_id)->where('deleted_st', false)->where('status_pembayaran', '!=', 'BATAL')->orderBy('faktur_id')->get();
+        $activeFaktur = $validFakturs->first();
         $namaGdg = $activeSj?->gudang?->gudang_nm ?? 'PT Mirasa Food Industry';
 
         $totalItem = $order->details->count();
@@ -87,7 +89,15 @@
                     <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
                 @endif
 
-                @if ($activeFaktur)
+                @if ($validFakturs->count() > 1)
+                    @foreach ($validFakturs as $vfIdx => $vf)
+                        <a href="{{ route('penjualan.faktur.show', $vf->faktur_id) }}" style="text-decoration: none;">
+                            <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700;">
+                                Faktur #{{ $vfIdx + 1 }}: {{ $vf->faktur_no }} ({{ $vf->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum Lunas' }})
+                            </span>
+                        </a>
+                    @endforeach
+                @elseif ($activeFaktur)
                     <a href="{{ route('penjualan.faktur.show', $activeFaktur->faktur_id) }}" style="text-decoration: none;">
                         <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700;">
                             Ditagihkan: {{ $activeFaktur->faktur_no }} ({{ $activeFaktur->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum Lunas' }})
@@ -105,7 +115,30 @@
         </div>
 
         <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
-            @if ($activeSj)
+            @if ($validSjs->count() > 1)
+                {{-- Multi-Trip: Navigasi Cepat ke Riwayat Pengiriman & Cetak Dokumen Lengkap --}}
+                <a href="#riwayat-pengiriman" class="btn btn-secondary" style="background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: -2px; margin-right: 4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    Lihat Dokumen Pengiriman ({{ $validSjs->count() }}x SJ &amp; Faktur)
+                </a>
+
+                @if ($lastSj = $validSjs->last())
+                    <a href="{{ route('penjualan.pengeluaran.export-pdf', $lastSj->pengeluaran_id) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #1e293b; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;" title="Cetak Surat Jalan Trip Terakhir">
+                        Cetak SJ Terakhir (PDF)
+                    </a>
+                @endif
+
+                @if ($lastFk = $validFakturs->last())
+                    <a href="{{ route('penjualan.faktur.export-pdf', $lastFk->faktur_id) }}" target="_blank" class="btn btn-primary" style="background: #059669; border-color: #047857; color: #ffffff; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;" title="Cetak Faktur Penjualan Trip Terakhir">
+                        Cetak Faktur Terakhir (PDF)
+                    </a>
+                @endif
+
+                {{-- Catat Retur Penjualan (Dedicated Page) --}}
+                <a href="{{ route('penjualan.retur.create', ['so_id' => $order->so_id]) }}" class="btn btn-warning" style="background: #fffbeb; border: 1.5px solid #fde68a; color: #b45309; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px; text-decoration: none;" title="Catat pengembalian barang dari pesanan ini">
+                    + Catat Retur
+                </a>
+            @elseif ($activeSj)
                 {{-- Cetak Lembar Surat Jalan Resmi --}}
                 <a href="{{ route('penjualan.pengeluaran.export-pdf', $activeSj->pengeluaran_id) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #1e293b; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); border-radius: 6px;" title="Cetak Surat Jalan Resmi Dokumen PDF">
                     Cetak Surat Jalan (PDF)
@@ -234,10 +267,22 @@
                         @endif
                     </span>
                 </div>
-                <div class="so-kv-row">
-                    <span class="so-kv-label">No. Surat Jalan</span>
+                <div class="so-kv-row" style="{{ $validSjs->count() > 1 ? 'align-items: flex-start;' : '' }}">
+                    <span class="so-kv-label" style="{{ $validSjs->count() > 1 ? 'padding-top: 2px;' : '' }}">No. Surat Jalan</span>
                     <span class="so-kv-value">
-                        @if($activeSj)
+                        @if($validSjs->count() > 1)
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                @foreach($validSjs as $sIdx => $sj)
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem;">
+                                        <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.675rem; font-weight: 700; padding: 1px 5px; border-radius: 3px;">Trip {{ $sIdx + 1 }}</span>
+                                        <a href="{{ route('penjualan.pengeluaran.show', $sj->pengeluaran_id) }}" style="color: #0284c7; font-weight: 700; font-family: monospace; text-decoration: underline;">
+                                            {{ $sj->pengeluaran_no }}
+                                        </a>
+                                        <span style="color: #64748b; font-size: 0.725rem;">({{ number_format($sj->total_qty, 0) }} ctn)</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif($activeSj)
                             <a href="{{ route('penjualan.pengeluaran.show', $activeSj->pengeluaran_id) }}" style="color: #0284c7; font-weight: 700; font-family: monospace; text-decoration: underline;">
                                 {{ $activeSj->pengeluaran_no }}
                             </a>
@@ -259,10 +304,25 @@
                         <button type="button" onclick="openModalArmada()" class="btn-xs-armada" title="Atur Sopir / Armada">Atur</button>
                     </span>
                 </div>
-                <div class="so-kv-row">
-                    <span class="so-kv-label">Faktur Penjualan</span>
+                <div class="so-kv-row" style="{{ $validFakturs->count() > 1 ? 'align-items: flex-start;' : '' }}">
+                    <span class="so-kv-label" style="{{ $validFakturs->count() > 1 ? 'padding-top: 2px;' : '' }}">Faktur Penjualan</span>
                     <span class="so-kv-value">
-                        @if($activeFaktur)
+                        @if($validFakturs->count() > 1)
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                @foreach($validFakturs as $fIdx => $vf)
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem;">
+                                        <span class="badge" style="background: #d1fae5; color: #047857; font-size: 0.675rem; font-weight: 700; padding: 1px 5px; border-radius: 3px;">Trip {{ $fIdx + 1 }}</span>
+                                        <a href="{{ route('penjualan.faktur.show', $vf->faktur_id) }}" style="color: #059669; font-weight: 700; font-family: monospace; text-decoration: underline;">
+                                            {{ $vf->faktur_no }}
+                                        </a>
+                                        <span style="color: #0f172a; font-weight: 700; font-family: monospace; font-size: 0.75rem;">Rp {{ number_format($vf->total_tagihan, 0, ',', '.') }}</span>
+                                        <span class="badge {{ $vf->status_pembayaran === 'LUNAS' ? 'badge-success' : 'badge-warning' }}" style="font-size: 0.65rem; padding: 1px 4px;">
+                                            {{ $vf->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum' }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif($activeFaktur)
                             <a href="{{ route('penjualan.faktur.show', $activeFaktur->faktur_id) }}" style="color: #0284c7; font-weight: 700; font-family: monospace; text-decoration: underline;">
                                 {{ $activeFaktur->faktur_no }}
                             </a>
@@ -474,6 +534,126 @@
             </div>
         </div>
     </div>
+
+    {{-- KARTU RIWAYAT PENGIRIMAN FISIK (SURAT JALAN) & DOKUMEN FAKTUR --}}
+    @if($validSjs->count() > 0)
+        <div class="card" id="riwayat-pengiriman" style="margin-bottom: 1.5rem;">
+            <div class="card-header" style="background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 0.85rem 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="20" height="20" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Pengiriman Fisik (Surat Jalan) &amp; Dokumen Faktur</strong>
+                        <div style="font-size: 0.75rem; color: #64748b; font-weight: 400; margin-top: 1px;">
+                            Setiap keberangkatan truk memiliki Surat Jalan fisik &amp; Faktur Penjualan resmi terpisah
+                        </div>
+                    </div>
+                </div>
+                <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.775rem; border: 1px solid #bae6fd; padding: 4px 10px;">
+                    {{ $validSjs->count() }} Kali Pengiriman Terpisah
+                </span>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="so-sheet-table">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.65rem 0.85rem; text-align: center; width: 60px;">Trip</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: left; min-width: 150px;">No. Surat Jalan</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: left; min-width: 115px;">Tanggal Kirim</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: left; min-width: 150px;">Supir &amp; Armada</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: left; min-width: 260px;">Rincian Barang &amp; Batch FEFO</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: left; min-width: 150px;">Dokumen Faktur</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: right; min-width: 125px;">Nilai Tagihan</th>
+                            <th style="padding: 0.65rem 0.85rem; text-align: center; min-width: 160px;">Aksi Dokumen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($validSjs as $sIdx => $sj)
+                            @php
+                                $fk = $sj->faktur;
+                            @endphp
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.8rem; padding: 3px 8px; border-radius: 4px;">
+                                        Trip {{ $sIdx + 1 }}
+                                    </span>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <a href="{{ route('penjualan.pengeluaran.show', $sj->pengeluaran_id) }}" style="font-family: monospace; font-weight: 700; color: #0284c7; text-decoration: underline; font-size: 0.875rem;">
+                                        {{ $sj->pengeluaran_no }}
+                                    </a>
+                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
+                                        Total: <strong style="color: #0f172a;">{{ number_format($sj->total_qty, 0) }} Karton</strong>
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <div style="font-weight: 600; color: #334155; font-size: 0.825rem;">
+                                        {{ $sj->pengeluaran_tgl ? \Carbon\Carbon::parse($sj->pengeluaran_tgl)->translatedFormat('d F Y') : '-' }}
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <div style="font-weight: 600; color: #0f172a; font-size: 0.825rem;">
+                                        {{ $sj->supir_nm ?: '-' }}
+                                    </div>
+                                    <div style="font-size: 0.725rem; color: #64748b;">
+                                        {{ $sj->nopol_kendaraan ?: ($sj->ekspedisi_nm ?: 'Armada Internal') }}
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    @foreach ($sj->details as $sjd)
+                                        <div style="font-size: 0.8rem; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                                            <div>
+                                                <strong style="color: #1e293b;">{{ $sjd->barang?->barang_nm ?? 'Produk' }}</strong>
+                                                @if($sjd->batch_no)
+                                                    <span style="color: #64748b; font-size: 0.725rem; font-family: monospace;">({{ $sjd->batch_no }})</span>
+                                                @endif
+                                            </div>
+                                            <div style="font-weight: 700; color: #059669; font-family: monospace; white-space: nowrap;">
+                                                {{ number_format($sjd->kirim_qty, 0) }} ctn
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    @if ($fk)
+                                        <a href="{{ route('penjualan.faktur.show', $fk->faktur_id) }}" style="font-family: monospace; font-weight: 700; color: #059669; text-decoration: underline; font-size: 0.85rem;">
+                                            {{ $fk->faktur_no }}
+                                        </a>
+                                        <div style="margin-top: 3px;">
+                                            <span class="badge {{ $fk->status_pembayaran === 'LUNAS' ? 'badge-success' : 'badge-warning' }}" style="font-size: 0.675rem; padding: 2px 6px; border-radius: 3px;">
+                                                {{ $fk->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum Lunas' }}
+                                            </span>
+                                        </div>
+                                    @else
+                                        <span style="color: #94a3b8; font-style: italic; font-size: 0.775rem;">Belum Terbit</span>
+                                    @endif
+                                </td>
+                                <td style="text-align: right; vertical-align: middle; font-weight: 700; font-family: monospace; color: #0f172a; font-size: 0.875rem;">
+                                    @if ($fk)
+                                        Rp {{ number_format($fk->total_tagihan, 0, ',', '.') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
+                                    <div style="display: inline-flex; gap: 4px;">
+                                        <a href="{{ route('penjualan.pengeluaran.export-pdf', $sj->pengeluaran_id) }}" target="_blank" class="btn btn-xs" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0284c7; font-weight: 700; font-size: 0.725rem; padding: 4px 8px; border-radius: 4px;" title="Cetak Dokumen Surat Jalan Resmi PDF">
+                                            Cetak SJ
+                                        </a>
+                                        @if ($fk)
+                                            <a href="{{ route('penjualan.faktur.export-pdf', $fk->faktur_id) }}" target="_blank" class="btn btn-xs" style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: 700; font-size: 0.725rem; padding: 4px 8px; border-radius: 4px;" title="Cetak Dokumen Faktur Penjualan PDF">
+                                                Cetak Faktur
+                                            </a>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 
     {{-- KARTU RETUR PENJUALAN (JIKA ADA RETUR) --}}
     @if($order->returns && $order->returns->count() > 0)

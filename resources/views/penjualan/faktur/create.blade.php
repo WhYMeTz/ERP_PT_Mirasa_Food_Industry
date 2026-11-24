@@ -144,12 +144,36 @@
                     </div>
 
                     {{-- Syarat Bayar / TOP --}}
+                    @php
+                        $initFakturTop = old('top_txt', '');
+                        $fkTopVal = 0;
+                        $fkTopUnit = 'HARI';
+                        if (!empty($initFakturTop)) {
+                            $upFkTop = strtoupper(trim($initFakturTop));
+                            if (str_contains($upFkTop, 'NOTA')) {
+                                preg_match('/\d+/', $upFkTop, $mFk);
+                                $fkTopVal = isset($mFk[0]) ? (int)$mFk[0] : 0;
+                                $fkTopUnit = 'NOTA';
+                            } elseif (preg_match('/\d+/', $upFkTop, $mFk)) {
+                                $fkTopVal = (int)$mFk[0];
+                                $fkTopUnit = 'HARI';
+                            }
+                        }
+                    @endphp
                     <div class="fk-field-group">
-                        <label class="fk-label" for="top_txt">
+                        <label class="fk-label" for="top_val">
                             Syarat Bayar (TOP)
                         </label>
-                        <input type="text" id="top_txt" name="top_txt" class="fk-input" 
-                               value="{{ old('top_txt', '14 Hari') }}" placeholder="Contoh: 14 Hari / 30 Hari">
+                        <div style="display: flex; gap: 0.35rem; align-items: stretch;">
+                            <input type="number" id="top_val" min="0" max="365" class="fk-input" 
+                                   style="width: 75px; text-align: center; font-weight: 700; flex-shrink: 0;" 
+                                   placeholder="0" value="{{ $fkTopVal }}">
+                            <select id="top_unit" class="fk-select" style="flex: 1;">
+                                <option value="HARI" {{ $fkTopUnit === 'HARI' ? 'selected' : '' }}>Hari</option>
+                                <option value="NOTA" {{ $fkTopUnit === 'NOTA' ? 'selected' : '' }}>Nota</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="top_txt" name="top_txt" value="{{ old('top_txt', $initFakturTop ?: ($fkTopVal . ' ' . ($fkTopUnit === 'NOTA' ? 'Nota' : 'Hari'))) }}">
                     </div>
                 </div>
 

@@ -218,7 +218,7 @@ class KemasanSirkularService
 
                 // MUTASI FISIK 2: Tambah Stok Karton Puteran Layak (Putaran 1 s/d 4)
                 if ($mulusQty > 0 && $barangMulusId) {
-                    $hargaStandar = (float) ($defaultBarangMulus?->harga_beli_standar ?? 1748.20);
+                    $hargaStandar = (float) ($defaultBarangMulus?->harga_beli_standar ?? 0.00);
                     $this->stokService->addStock(
                         gudangId: $gudangId,
                         barangId: $barangMulusId,

@@ -50,8 +50,17 @@
                         <input type="text" id="create_kode_pelanggan" name="kode_pelanggan" class="form-control" placeholder="Contoh: IFM01.012007 (Opsional)">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="create_top_txt" class="form-label">Terms of Payment (TOP)</label>
-                        <input type="text" id="create_top_txt" name="top_txt" class="form-control" value="Tinggal 1 Nota" placeholder="Contoh: 7 Hari / Tinggal 1 Nota">
+                        <label for="create_top_val" class="form-label">Terms of Payment (TOP)</label>
+                        <div style="display: flex; gap: 0.35rem; align-items: stretch;">
+                            <input type="number" id="create_top_val" min="0" max="365" class="form-control" 
+                                   style="width: 75px; text-align: center; font-weight: 700; flex-shrink: 0;" 
+                                   placeholder="0" value="0">
+                            <select id="create_top_unit" class="form-control" style="flex: 1;">
+                                <option value="HARI" selected>Hari</option>
+                                <option value="NOTA">Nota</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="create_top_txt" name="top_txt" value="0 Hari">
                     </div>
                 </div>
 

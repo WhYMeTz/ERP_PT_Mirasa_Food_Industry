@@ -665,15 +665,9 @@ function onManualBarangChange(selectEl, idx) {
     const kodeBrg = (opt.getAttribute('data-kode') || '').toUpperCase();
     const namaBrg = (opt.getAttribute('data-nama') || '').toUpperCase();
 
-    // POIN 28: Rule Amortisasi HPP Karton Khusus IFM (Dibagi 5) & Karton Manual (Rp 0)
-    if (kodeBrg === 'KMS-KTN-REJ' || namaBrg.includes('REJECT') || namaBrg.includes('MANUAL')) {
-        harga = 0; // Manual karton tidak masuk hitungan HPP
-    } else if (kodeBrg === 'KIF00G-BP1' || (namaBrg.includes('IFM') && namaBrg.includes('KARTON'))) {
-        if (harga > 2000) {
-            harga = Math.round((harga / 5) * 100) / 100; // Khusus IFM langsung dibagi 5 = Rp 1.748,20
-        }
-    } else if (kodeBrg === 'KIF00G-PUT') {
-        harga = 1748.20;
+    // Karton Bekas/Puteran Rp 0 (beban lunas saat baru)
+    if (kodeBrg === 'KMS-KTN-REJ' || kodeBrg === 'KIF00G-PUT' || namaBrg.includes('REJECT') || namaBrg.includes('PUTERAN') || namaBrg.includes('BEKAS') || namaBrg.includes('MANUAL')) {
+        harga = 0; // Karton bekas/puteran tidak masuk hitungan HPP (Rp 0)
     }
 
     if (catBadge) {
@@ -1303,18 +1297,18 @@ function buildMaterialRowsFromOperator(item) {
             const bId = item.karton_puteran_barang_id || puteranObj?.barang_id || puteranMaster?.barang_id || 82;
             const bNm = puteranObj?.barang_nm || puteranMaster?.barang_nm || 'KARTON POLOS IFM (PUTERAN)';
             const bCd = puteranObj?.barang_cd || puteranMaster?.barang_cd || 'KIF00G-PUT';
-            const harga = parseFloat(puteranMaster?.harga_standar || puteranObj?.harga_beli_standar || 1748.20);
+            const harga = 0.00; // Karton puteran / bekas beban Rp 0
 
             addMaterialRow({
                 kategori_bahan: 'KEMASAN',
                 barang_id: bId,
-                barang_nm: bNm,
+                barang_nm: bNm + ' (Sirkular / Bekas: Rp 0)',
                 barang_cd: bCd,
                 satuan_cd: 'LEMBAR',
                 qty_standar: puteranQty,
                 qty_aktual: puteranQty,
                 harga_satuan: harga,
-                subtotal_nilai: puteranQty * harga,
+                subtotal_nilai: 0,
                 batch_no: '',
                 is_wip: false
             });
@@ -1326,14 +1320,14 @@ function buildMaterialRowsFromOperator(item) {
             const bNm = baruObj?.barang_nm || baruMaster?.barang_nm || 'KARTON POLOS IFM (BARU)';
             const bCd = baruObj?.barang_cd || baruMaster?.barang_cd || 'KIF00G-BP1';
             
-            // POIN 28: Karton khusus IFM langsung dibagi 5 (Amortisasi 5x = Rp 1.748,20)
+            // Karton baru dibebankan penuh (100% harga beli standar, tidak dibagi 5)
             const hargaBeliPenuh = parseFloat(baruMaster?.harga_standar || baruObj?.harga_beli_standar || 8741.00);
-            const harga = Math.round((hargaBeliPenuh / 5) * 100) / 100;
+            const harga = hargaBeliPenuh;
 
             addMaterialRow({
                 kategori_bahan: 'KEMASAN',
                 barang_id: bId,
-                barang_nm: bNm + ' (Amortisasi 5x: Rp 1.748,20/Lbr)',
+                barang_nm: bNm,
                 barang_cd: bCd,
                 satuan_cd: 'LEMBAR',
                 qty_standar: baruQty,

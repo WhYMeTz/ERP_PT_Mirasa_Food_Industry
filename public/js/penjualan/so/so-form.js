@@ -559,7 +559,7 @@ function updatePriceMarginIndicator(tr) {
 
     const opt = sel.selectedOptions?.[0];
     if (!opt || !opt.value) {
-        priceSourceEl.style.display = 'none';
+        priceSourceEl.innerHTML = '<span style="color: #94a3b8; font-size: 0.75rem;">-</span>';
         inHarga.style.borderColor = '';
         inHarga.style.background = '';
         return;
@@ -573,34 +573,51 @@ function updatePriceMarginIndicator(tr) {
         if (hargaInput < hppBarang) {
             // Jual Rugi (Di bawah HPP)
             const rugiRp = hppBarang - hargaInput;
-            priceSourceEl.style.display = 'block';
-            priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:700; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:4px; padding:2px 6px;">⚠️ Jual Rugi (-${formatRupiah(rugiRp)}) &bull; HPP: ${formatRupiah(hppBarang)}</span>`;
+            priceSourceEl.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:700; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:4px; padding:2px 6px; width:fit-content;">⚠️ Jual Rugi (-${formatRupiah(rugiRp)})</span>
+                    <span style="font-size:0.675rem; color:#64748b; font-weight:600;">HPP: ${formatRupiah(hppBarang)}</span>
+                </div>
+            `;
             inHarga.style.borderColor = '#ef4444';
             inHarga.style.background = '#fef2f2';
         } else {
             // Margin Untung
             const marginRp = hargaInput - hppBarang;
             const marginPct = ((marginRp / hppBarang) * 100).toFixed(1);
-            priceSourceEl.style.display = 'block';
             if (marginPct < 10) {
                 // Margin Tipis
-                priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#d97706; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:2px 6px;">⚡ Margin Tipis (+${marginPct}%) &bull; HPP: ${formatRupiah(hppBarang)}</span>`;
+                priceSourceEl.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#d97706; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:2px 6px; width:fit-content;">⚡ Margin Tipis (+${marginPct}%)</span>
+                        <span style="font-size:0.675rem; color:#64748b; font-weight:600;">HPP: ${formatRupiah(hppBarang)}</span>
+                    </div>
+                `;
                 inHarga.style.borderColor = '#f59e0b';
                 inHarga.style.background = '#fffbeb';
             } else {
                 // Margin Sehat
-                priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#059669; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:2px 6px;">✓ Margin +${marginPct}% (+${formatRupiah(marginRp)})</span>`;
+                priceSourceEl.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#059669; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:2px 6px; width:fit-content;">✓ Margin +${marginPct}%</span>
+                        <span style="font-size:0.675rem; color:#64748b; font-weight:600;">+${formatRupiah(marginRp)} &bull; HPP: ${formatRupiah(hppBarang)}</span>
+                    </div>
+                `;
                 inHarga.style.borderColor = '';
                 inHarga.style.background = '';
             }
         }
     } else if (hargaStandar > 0) {
-        priceSourceEl.style.display = 'block';
-        priceSourceEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#0284c7; background:#f0f9ff; border:1px solid #bae6fd; border-radius:4px; padding:2px 6px;">✓ Standar Kontrak: ${formatRupiah(hargaStandar)}</span>`;
+        priceSourceEl.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.685rem; font-weight:600; color:#0284c7; background:#f0f9ff; border:1px solid #bae6fd; border-radius:4px; padding:2px 6px; width:fit-content;">✓ Standar Kontrak</span>
+                <span style="font-size:0.675rem; color:#64748b;">${formatRupiah(hargaStandar)}</span>
+            </div>
+        `;
         inHarga.style.borderColor = '';
         inHarga.style.background = '';
     } else {
-        priceSourceEl.style.display = 'none';
+        priceSourceEl.innerHTML = '<span style="color: #94a3b8; font-size: 0.75rem;">-</span>';
         inHarga.style.borderColor = '';
         inHarga.style.background = '';
     }
@@ -731,7 +748,11 @@ function addRow(data = {}) {
         </td>
         <td>
             <input type="number" step="any" min="0" name="items[${idx}][harga_satuan]" value="${data.harga_satuan || 0}" required class="form-control item-harga" style="text-align: right; font-family: monospace; font-weight: 600;">
-            <div class="item-price-source" style="margin-top: 3px; display: none;"></div>
+        </td>
+        <td style="vertical-align: middle; padding: 4px 6px;">
+            <div class="item-price-source" style="font-size: 0.725rem;">
+                <span style="color: #94a3b8;">-</span>
+            </div>
         </td>
         <td>
             <input type="number" step="any" min="0" max="100" name="items[${idx}][diskon_persen]" value="${data.diskon_persen || 0}" class="form-control item-diskon" style="text-align: right;">

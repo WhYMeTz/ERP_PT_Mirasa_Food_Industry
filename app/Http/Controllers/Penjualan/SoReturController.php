@@ -46,6 +46,13 @@ class SoReturController extends Controller
         $customers = MstCustomer::active()->orderBy('customer_nm')->get(['customer_id', 'customer_cd', 'customer_nm']);
         $gudangs = MstGudang::active()->orderBy('gudang_nm')->get(['gudang_id', 'gudang_cd', 'gudang_nm']);
 
+        // Cek apakah ada filter spesifik yang aktif
+        $hasActiveFilter = !empty($filters['customer_id']) 
+            || !empty($filters['tindakan_cd']) 
+            || !empty($filters['date_from']) 
+            || !empty($filters['date_to'])
+            || !empty($filters['gudang_id']);
+
         // Daftar pesanan (SO) yang telah terkirim (siap dicatat retur)
         $eligibleSos = DatSoHdr::with('customer')
             ->whereIn('status_cd', ['COMPLETED', 'PARTIAL'])
@@ -53,7 +60,7 @@ class SoReturController extends Controller
             ->orderByDesc('so_tgl')
             ->get(['so_id', 'so_no', 'so_tgl', 'customer_id', 'status_cd', 'total_tagihan']);
 
-        return view('penjualan.retur.index', compact('returns', 'kpi', 'customers', 'gudangs', 'search', 'filters', 'eligibleSos'));
+        return view('penjualan.retur.index', compact('returns', 'kpi', 'customers', 'gudangs', 'search', 'filters', 'eligibleSos', 'hasActiveFilter'));
     }
 
     /**

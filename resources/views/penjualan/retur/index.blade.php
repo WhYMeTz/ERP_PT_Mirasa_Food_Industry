@@ -82,126 +82,77 @@
     </div>
 </div>
 
-{{-- KARTU TABEL UTAMA DENGAN SEARCH & FILTER SESUAI STANDAR --}}
-<div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-    {{-- BARIS UTAMA FILTER & SEARCH --}}
-    <div class="card-header" style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <form action="{{ route('penjualan.retur.index') }}" method="GET" id="searchFilterForm" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; flex: 1;">
-            {{-- Search: (No. Retur / No. SO / Customer / Nama Barang) --}}
-            <div style="position: relative; flex: 1; min-width: 260px; max-width: 380px;">
-                <input type="text" name="search" value="{{ $search ?? '' }}" 
-                       placeholder="Search : (No. Retur / No. SO / Customer / Barang)" 
-                       class="form-control" style="padding: 0.45rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+{{-- FILTER PENCARIAN & PARAMETER --}}
+<div class="retur-filter-card">
+    <form action="{{ route('penjualan.retur.index') }}" method="GET" class="retur-filter-grid">
+        {{-- Cari Teks --}}
+        <div>
+            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Pencarian Umum</label>
+            <div style="position: relative;">
+                <input type="text" name="search" value="{{ $search }}" placeholder="No. Retur / No. SO / Nama Customer / Catatan..." class="form-control" style="width: 100%; padding-left: 2rem; font-size: 0.825rem;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
-            
-            {{-- Dropdown Status --}}
-            <select name="status_cd" class="form-control" style="padding: 0.45rem 0.75rem; max-width: 175px; font-size: 0.85rem;" onchange="document.getElementById('searchFilterForm').submit()">
-                <option value="">-- Semua Status --</option>
-                <option value="CONFIRMED" {{ (($filters['status_cd'] ?? '') === 'CONFIRMED') ? 'selected' : '' }}>Terkonfirmasi</option>
-                <option value="VOID" {{ (($filters['status_cd'] ?? '') === 'VOID') ? 'selected' : '' }}>Dibatalkan (Void)</option>
+        </div>
+
+        {{-- Dari Tanggal --}}
+        <div>
+            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Dari Tanggal</label>
+            <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" class="form-control" style="width: 100%; font-size: 0.825rem; background: #ffffff;">
+        </div>
+
+        {{-- Sampai Tanggal --}}
+        <div>
+            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Sampai Tanggal</label>
+            <input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" class="form-control" style="width: 100%; font-size: 0.825rem; background: #ffffff;">
+        </div>
+
+        {{-- Filter Customer --}}
+        <div>
+            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Mitra Customer</label>
+            <select name="customer_id" class="form-control" style="width: 100%; font-size: 0.825rem; background: #ffffff;">
+                <option value="">-- Semua Customer --</option>
+                @foreach($customers as $c)
+                    <option value="{{ $c->customer_id }}" {{ ($filters['customer_id'] ?? '') == $c->customer_id ? 'selected' : '' }}>
+                        {{ $c->customer_nm }}
+                    </option>
+                @endforeach
             </select>
+        </div>
 
-            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem;">Cari</button>
+        {{-- Filter Tindakan --}}
+        <div>
+            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Tindakan Komersial</label>
+            <select name="tindakan_cd" class="form-control" style="width: 100%; font-size: 0.825rem; background: #ffffff;">
+                <option value="">-- Semua Tindakan --</option>
+                <option value="POTONG_TAGIHAN" {{ ($filters['tindakan_cd'] ?? '') === 'POTONG_TAGIHAN' ? 'selected' : '' }}>Potong Tagihan (Credit Note)</option>
+                <option value="TUKAR_GULING" {{ ($filters['tindakan_cd'] ?? '') === 'TUKAR_GULING' ? 'selected' : '' }}>Tukar Guling Fisik</option>
+            </select>
+        </div>
 
-            {{-- Tombol Toggle Filter Spesifik (Tanggal, Customer, Tindakan) --}}
-            <button type="button" onclick="toggleFilterDrawer()" class="btn btn-sm" style="background: {{ $hasActiveFilter ? '#e0f2fe' : '#f1f5f9' }}; color: {{ $hasActiveFilter ? '#0284c7' : '#475569' }}; border: 1px solid {{ $hasActiveFilter ? '#bae6fd' : '#cbd5e1' }}; padding: 0.45rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                <span>Filter Spesifik</span>
-                @if($hasActiveFilter)
-                    <span style="background: #0284c7; color: white; border-radius: 9999px; font-size: 0.65rem; padding: 1px 5px;">Aktif</span>
-                @endif
+        {{-- Filter Status --}}
+        <div>
+            <label style="display: block; font-size: 0.775rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Status</label>
+            <select name="status_cd" class="form-control" style="width: 100%; font-size: 0.825rem; background: #ffffff;">
+                <option value="">-- Semua Status --</option>
+                <option value="CONFIRMED" {{ ($filters['status_cd'] ?? '') === 'CONFIRMED' ? 'selected' : '' }}>Terkonfirmasi</option>
+                <option value="VOID" {{ ($filters['status_cd'] ?? '') === 'VOID' ? 'selected' : '' }}>Dibatalkan (Void)</option>
+            </select>
+        </div>
+
+        {{-- Action Buttons --}}
+        <div style="display: flex; gap: 0.35rem; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.825rem;">
+                Filter
             </button>
-
-            @if(!empty($search) || !empty($filters['status_cd']) || $hasActiveFilter)
-                <a href="{{ route('penjualan.retur.index') }}" class="btn btn-secondary btn-sm" title="Reset Semua Filter" style="padding: 0.45rem 0.65rem;">Reset</a>
-            @endif
-
-            {{-- Hidden input sync untuk drawer jika submit dari form atas --}}
-            <input type="hidden" name="date_from" value="{{ $filters['date_from'] ?? '' }}">
-            <input type="hidden" name="date_to" value="{{ $filters['date_to'] ?? '' }}">
-            <input type="hidden" name="customer_id" value="{{ $filters['customer_id'] ?? '' }}">
-            <input type="hidden" name="tindakan_cd" value="{{ $filters['tindakan_cd'] ?? '' }}">
-        </form>
-
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <a href="{{ route('penjualan.retur.export-excel', request()->query()) }}" class="btn btn-secondary btn-sm" style="background: #ffffff; border: 1.5px solid #059669; color: #047857; font-weight: 600; padding: 0.45rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;" title="Download Data Sesuai Filter ke Format Excel (.xlsx)">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Export Excel</span>
+            <a href="{{ route('penjualan.retur.index') }}" class="btn btn-secondary" style="padding: 0.45rem 0.65rem; font-size: 0.825rem;" title="Reset Filter">
+                Reset
             </a>
-            <span style="color: #64748b; font-size: 0.85rem; white-space: nowrap;">
-                Total Retur: <strong style="color: #0f172a;">{{ $returns->total() }}</strong> dokumen
-            </span>
         </div>
-    </div>
+    </form>
+</div>
 
-    {{-- FILTER DRAWER: SPESIFIK TANGGAL, CUSTOMER, & TINDAKAN --}}
-    <div id="filterDrawer" style="display: {{ $hasActiveFilter ? 'block' : 'none' }}; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.35rem;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-            Filter Spesifik Retur Penjualan
-        </div>
-        <form action="{{ route('penjualan.retur.index') }}" method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end;">
-            @if(!empty($search))
-                <input type="hidden" name="search" value="{{ $search }}">
-            @endif
-            @if(!empty($filters['status_cd']))
-                <input type="hidden" name="status_cd" value="{{ $filters['status_cd'] }}">
-            @endif
-
-            {{-- 1. Dari Tanggal Retur --}}
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; display: block;">
-                    Dari Tanggal Retur
-                </label>
-                <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.65rem;">
-            </div>
-
-            {{-- 2. Sampai Tanggal Retur --}}
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; display: block;">
-                    Sampai Tanggal Retur
-                </label>
-                <input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.65rem;">
-            </div>
-
-            {{-- 3. Mitra Customer --}}
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; display: block;">
-                    Mitra Customer
-                </label>
-                <select name="customer_id" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.65rem; background: #ffffff;">
-                    <option value="">-- Semua Customer --</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->customer_id }}" {{ ($filters['customer_id'] ?? '') == $c->customer_id ? 'selected' : '' }}>
-                            {{ $c->customer_nm }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- 4. Tindakan Komersial --}}
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; display: block;">
-                    Tindakan Komersial
-                </label>
-                <select name="tindakan_cd" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.65rem; background: #ffffff;">
-                    <option value="">-- Semua Tindakan --</option>
-                    <option value="POTONG_TAGIHAN" {{ ($filters['tindakan_cd'] ?? '') === 'POTONG_TAGIHAN' ? 'selected' : '' }}>Potong Tagihan (Credit Note)</option>
-                    <option value="TUKAR_GULING" {{ ($filters['tindakan_cd'] ?? '') === 'TUKAR_GULING' ? 'selected' : '' }}>Tukar Guling Fisik</option>
-                </select>
-            </div>
-
-            {{-- Tombol Submit Filter Spesifik --}}
-            <div style="display: flex; gap: 0.4rem;">
-                <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
-                    Terapkan Filter
-                </button>
-                <a href="{{ route('penjualan.retur.index', ['search' => $search, 'status_cd' => $filters['status_cd'] ?? '']) }}" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.65rem; font-size: 0.8rem;">
-                    Batal
-                </a>
-            </div>
-        </form>
-    </div>
+{{-- TABEL DATA RETUR PENJUALAN --}}
+<div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
     <div style="overflow-x: auto;">
         <table class="table-retur">
             <thead>
@@ -365,12 +316,4 @@
 
 @push('scripts')
     <script src="{{ asset('js/penjualan/retur/retur-index.js') }}"></script>
-    <script>
-        function toggleFilterDrawer() {
-            const drawer = document.getElementById('filterDrawer');
-            if (!drawer) return;
-            const isHidden = (drawer.style.display === 'none' || drawer.style.display === '');
-            drawer.style.display = isHidden ? 'block' : 'none';
-        }
-    </script>
 @endpush

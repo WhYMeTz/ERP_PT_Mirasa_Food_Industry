@@ -222,73 +222,43 @@
     line-height: 1.5;
 }
 
-/* Container 2 Panel Informasi Sumber Dokumen (50% / 50% - Terkunci & Anti Bergeser) */
-.ba-dossier-container {
+/* Informasi Sumber Dokumen (Format Formal Sinkron 1 Tabel - Tanpa Kotak) */
+.ba-dossier-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
     margin: 0 0 14px 0;
-}
-
-.dossier-col-left {
-    width: 50%;
-    vertical-align: top;
-    padding-right: 6px;
     border: none !important;
 }
 
-.dossier-col-right {
-    width: 50%;
-    vertical-align: top;
-    padding-left: 6px;
-    border: none !important;
-}
-
-.dossier-panel {
-    border: 1.5px solid #000000;
-    background-color: #fafafa;
-    padding: 6px 10px;
-}
-
-.dossier-panel-title {
-    font-size: 8.5pt;
-    font-weight: 800;
-    font-family: Arial, sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    border-bottom: 1px solid #000000;
-    padding-bottom: 3px;
-    margin-bottom: 5px;
-    color: #000000;
-}
-
-.dossier-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    font-size: 9pt;
-}
-
-.dossier-table td {
+.ba-dossier-table td {
     padding: 2.5px 0;
     vertical-align: top;
+    font-size: 9pt;
+    line-height: 1.35;
     border: none !important;
 }
 
-.dossier-table .lbl {
+.ba-dossier-table .lbl {
     font-weight: 700;
-    width: 110px;
     white-space: nowrap;
-    color: #000000;
+    color: #1e293b;
 }
 
-.dossier-table .sep {
-    width: 10px;
+.ba-dossier-table .sep {
     text-align: center;
+    color: #475569;
+    width: 10px;
 }
 
-.dossier-table .val {
-    width: auto;
+.ba-dossier-table .val {
+    color: #0f172a;
+    word-wrap: break-word;
+    padding-left: 3px;
+}
+
+.ba-dossier-table .spacer {
+    width: 18px;
 }
 
 /* Judul Bagian */

@@ -560,6 +560,7 @@ Route::middleware('auth')->group(function () {
         // Modul Penjualan Langsung Pabrik (Direct Sales - Non-PO & Potong Stok Instan)
         Route::prefix('langsung')->name('langsung.')->group(function () {
             Route::get('/', [DirectSalesController::class, 'index'])->name('index');
+            Route::get('/export-excel', [DirectSalesController::class, 'exportExcel'])->name('export-excel');
             Route::get('/create', [DirectSalesController::class, 'create'])->name('create');
             Route::post('/', [DirectSalesController::class, 'store'])->name('store');
             Route::get('/{id}', [DirectSalesController::class, 'show'])->name('show')->whereNumber('id');
@@ -569,6 +570,7 @@ Route::middleware('auth')->group(function () {
         // Modul Penjualan Bahan Penolong, Kemasan & Bumbu (Non-Core Sales)
         Route::prefix('bahan-penolong')->name('bahan-penolong.')->group(function () {
             Route::get('/', [PenjualanBahanPenolongController::class, 'index'])->name('index');
+            Route::get('/export-excel', [PenjualanBahanPenolongController::class, 'exportExcel'])->name('export-excel');
             Route::get('/create', [PenjualanBahanPenolongController::class, 'create'])->name('create');
             Route::post('/', [PenjualanBahanPenolongController::class, 'store'])->name('store');
             Route::get('/{id}', [PenjualanBahanPenolongController::class, 'show'])->name('show')->whereNumber('id');
@@ -587,6 +589,7 @@ Route::middleware('auth')->group(function () {
         Route::get('so/ajax/stock-check', [SoController::class, 'ajaxStockCheck'])->name('so.ajax.stock-check');
         Route::get('so/ajax/generate-faktur-no', [SoController::class, 'ajaxGenerateFakturNo'])->name('so.ajax.generate-faktur-no');
         Route::get('so/ajax/customer-top-check', [SoController::class, 'ajaxCustomerTopCheck'])->name('so.ajax.customer-top-check');
+        Route::get('so/export-excel', [SoController::class, 'exportExcel'])->name('so.export-excel');
         Route::resource('so', SoController::class);
 
         // Modul Pengeluaran Barang / Surat Jalan (Gudang FG - Outbound Delivery)

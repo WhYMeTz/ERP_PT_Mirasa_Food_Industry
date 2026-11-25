@@ -119,72 +119,43 @@
             line-height: 1.5;
         }
 
-        /* Frame Informasi Sumber Dokumen (2 Panel Terkunci 50% / 50% - Struktur Baku & Stabil) */
-        .ba-dossier-container {
+        /* Informasi Sumber Dokumen (Format Formal Sinkron 1 Tabel - Tanpa Kotak) */
+        .ba-dossier-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin: 0 0 12px 0;
-        }
-
-        .dossier-col-left {
-            width: 50%;
-            vertical-align: top;
-            padding-right: 5px;
+            margin: 0 0 13px 0;
             border: none;
         }
 
-        .dossier-col-right {
-            width: 50%;
+        .ba-dossier-table td {
+            padding: 2.5px 0;
             vertical-align: top;
-            padding-left: 5px;
+            font-size: 9pt;
+            line-height: 1.35;
             border: none;
         }
 
-        .dossier-panel {
-            border: 1px solid #000000;
-            background-color: #fafafa;
-            padding: 5px 8px;
-        }
-
-        .dossier-panel-title {
-            font-size: 8pt;
+        .ba-dossier-table .lbl {
             font-weight: bold;
-            font-family: Helvetica, Arial, sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            border-bottom: 1px solid #000000;
-            padding-bottom: 2px;
-            margin-bottom: 4px;
-            color: #000000;
-        }
-
-        .dossier-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            font-size: 8.5pt;
-        }
-
-        .dossier-table td {
-            padding: 2px 0;
-            vertical-align: top;
-            border: none;
-        }
-
-        .dossier-table .lbl {
-            font-weight: bold;
-            width: 95px;
             white-space: nowrap;
+            color: #1e293b;
         }
 
-        .dossier-table .sep {
-            width: 10px;
+        .ba-dossier-table .sep {
             text-align: center;
+            color: #475569;
+            width: 10px;
         }
 
-        .dossier-table .val {
-            width: auto;
+        .ba-dossier-table .val {
+            color: #0f172a;
+            word-wrap: break-word;
+            padding-left: 3px;
+        }
+
+        .ba-dossier-table .spacer {
+            width: 18px;
         }
 
         /* Table Rincian Barang Dimusnahkan (Fixed Proportions - 100% Selaras) */
@@ -385,82 +356,48 @@
         Pada hari ini <strong>{{ $hari }}</strong>, tanggal <strong>{{ $tglLengkap }}</strong>, bertempat di area PT. Mirasa Food Industry, telah dilaksanakan proses inspeksi fisik, pemisahan, dan pemusnahan resmi terhadap produk jadi hasil retur penjualan (customer returns) dengan rincian data sebagai berikut:
     </p>
 
-    {{-- INFORMASI SUMBER DOKUMEN (2 PANEL TERKUNCI 50% / 50% - STRUKTUR STABIL TIDAK BERUBAH) --}}
-    <table class="ba-dossier-container">
+    {{-- INFORMASI SUMBER DOKUMEN (FORMAT FORMAL SINKRON - TANPA KOTAK) --}}
+    <table class="ba-dossier-table">
+        <colgroup>
+            <col style="width: 114px;">
+            <col style="width: 10px;">
+            <col style="width: 235px;">
+            <col style="width: 18px;">
+            <col style="width: 104px;">
+            <col style="width: 10px;">
+            <col style="width: auto;">
+        </colgroup>
         <tr>
-            <td class="dossier-col-left">
-                <div class="dossier-panel">
-                    <div class="dossier-panel-title">DATA MITRA PELANGGAN (CUSTOMER)</div>
-                    <table class="dossier-table">
-                        <colgroup>
-                            <col style="width: 95px;">
-                            <col style="width: 10px;">
-                            <col style="width: auto;">
-                        </colgroup>
-                        <tr>
-                            <td class="lbl">Pelanggan</td>
-                            <td class="sep">:</td>
-                            <td class="val"><strong>{{ $customerNm }}</strong></td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Kode Customer</td>
-                            <td class="sep">:</td>
-                            <td class="val" style="font-family: monospace;">{{ $customerCd ?? ($retur->customer?->customer_cd ?? '-') }}</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">No. Faktur</td>
-                            <td class="sep">:</td>
-                            <td class="val" style="font-family: monospace;">{{ $fakturNo }}</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Tindakan</td>
-                            <td class="sep">:</td>
-                            <td class="val">
-                                <strong>{{ $retur->tindakan_cd === 'POTONG_TAGIHAN' ? 'Pemotongan Piutang / Nota Kredit' : 'Penggantian Barang Baru' }}</strong>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+            <td class="lbl">Mitra Pelanggan</td>
+            <td class="sep">:</td>
+            <td class="val">
+                <strong>{{ $customerNm }}</strong>
+                <span style="font-size: 7.5pt; color: #475569; font-family: monospace;">({{ $customerCd ?? ($retur->customer?->customer_cd ?? '-') }})</span>
             </td>
-            <td class="dossier-col-right">
-                <div class="dossier-panel">
-                    <div class="dossier-panel-title">DETAIL REFERENSI DOKUMEN &amp; GUDANG</div>
-                    <table class="dossier-table">
-                        <colgroup>
-                            <col style="width: 95px;">
-                            <col style="width: 10px;">
-                            <col style="width: auto;">
-                        </colgroup>
-                        <tr>
-                            <td class="lbl">Tgl. Retur</td>
-                            <td class="sep">:</td>
-                            <td class="val">{{ $tglLengkap }}</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Ref. PO Penjualan</td>
-                            <td class="sep">:</td>
-                            <td class="val" style="font-family: monospace;">{{ $soNo }}</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">No. Surat Jalan</td>
-                            <td class="sep">:</td>
-                            <td class="val" style="font-family: monospace;">{{ $sjNo }}</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Gudang Pelaksana</td>
-                            <td class="sep">:</td>
-                            <td class="val">{{ $retur->gudang?->gudang_nm ?? 'PT Mirasa Food Industry' }}</td>
-                        </tr>
-                        @if($retur->alasan_txt)
-                        <tr>
-                            <td class="lbl">Alasan Retur</td>
-                            <td class="sep">:</td>
-                            <td class="val">{{ $retur->alasan_txt }}</td>
-                        </tr>
-                        @endif
-                    </table>
-                </div>
+            <td class="spacer"></td>
+            <td class="lbl">Gudang Pelaksana</td>
+            <td class="sep">:</td>
+            <td class="val">{{ $retur->gudang?->gudang_nm ?? 'PT Mirasa Food Industry' }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">No. Faktur Penjualan</td>
+            <td class="sep">:</td>
+            <td class="val" style="font-family: monospace;">{{ $fakturNo }}</td>
+            <td class="spacer"></td>
+            <td class="lbl">No. Surat Jalan</td>
+            <td class="sep">:</td>
+            <td class="val" style="font-family: monospace;">{{ $sjNo }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Tindakan Komersial</td>
+            <td class="sep">:</td>
+            <td class="val">
+                {{ $retur->tindakan_cd === 'POTONG_TAGIHAN' ? 'Pemotongan Piutang / Nota Kredit' : 'Penggantian Barang Baru' }}
             </td>
+            <td class="spacer"></td>
+            <td class="lbl">Alasan Retur</td>
+            <td class="sep">:</td>
+            <td class="val">{{ $retur->alasan_txt ?: 'Cacat mutu / kemasan rusak dari pelanggan' }}</td>
         </tr>
     </table>
 

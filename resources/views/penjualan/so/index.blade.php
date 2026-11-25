@@ -12,7 +12,11 @@
             Kelola pesanan penjualan produk hasil produksi (barang jadi &amp; barang setengah jadi) ke pelanggan dan mitra distributor.
         </p>
     </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ route('penjualan.so.export-excel', request()->query()) }}" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #059669; color: #047857; font-size: 0.825rem; font-weight: 700; padding: 0.625rem 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.15s ease-in-out;" onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='#ffffff'" title="Export Data PO Penjualan ke Format Excel (.xlsx) sesuai filter aktif">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Export Excel</span>
+        </a>
         <a href="{{ route('penjualan.so.create') }}" class="btn btn-primary">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Buat PO Penjualan

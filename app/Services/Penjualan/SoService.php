@@ -115,6 +115,87 @@ class SoService
     }
 
     /**
+     * Mengambil seluruh data PO Penjualan untuk diexport ke Excel sesuai filter aktif.
+     */
+    public function getAllForExport(
+        ?string $search = null,
+        ?string $status = null,
+        array $filters = []
+    ): Collection {
+        $query = DatSoHdr::with([
+            'customer',
+            'details.barang.satuanDasar',
+            'details.barang.jenisBarang',
+            'payments.header.kasBank',
+            'pengeluaran.faktur',
+        ])->active();
+
+        if (!empty($status)) {
+            $query->where('status_cd', $status);
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('so_no', 'LIKE', "%{$search}%")
+                  ->orWhere('customer_po_no', 'LIKE', "%{$search}%")
+                  ->orWhereHas('customer', function ($cq) use ($search) {
+                      $cq->where('customer_nm', 'LIKE', "%{$search}%")
+                         ->orWhere('customer_cd', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('details.barang', function ($bq) use ($search) {
+                      $bq->where('barang_nm', 'LIKE', "%{$search}%")
+                         ->orWhere('barang_cd', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        if (!empty($filters['barang_cd'])) {
+            $query->whereHas('details.barang', function ($bq) use ($filters) {
+                $bq->where('barang_cd', 'LIKE', "%{$filters['barang_cd']}%");
+            });
+        }
+
+        if (!empty($filters['barang_nm'])) {
+            $query->whereHas('details.barang', function ($bq) use ($filters) {
+                $bq->where('barang_nm', 'LIKE', "%{$filters['barang_nm']}%");
+            });
+        }
+
+        if (!empty($filters['barang_id'])) {
+            $query->whereHas('details', function ($dq) use ($filters) {
+                $dq->where('barang_id', $filters['barang_id']);
+            });
+        }
+
+        if (!empty($filters['customer_cd'])) {
+            $query->whereHas('customer', function ($cq) use ($filters) {
+                $cq->where('customer_cd', 'LIKE', "%{$filters['customer_cd']}%");
+            });
+        }
+
+        if (!empty($filters['customer_nm'])) {
+            $query->whereHas('customer', function ($cq) use ($filters) {
+                $cq->where('customer_nm', 'LIKE', "%{$filters['customer_nm']}%");
+            });
+        }
+
+        if (!empty($filters['customer_id'])) {
+            $query->where('customer_id', $filters['customer_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('so_tgl', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('so_tgl', '<=', $filters['date_to']);
+        }
+
+        return $query->orderBy('so_tgl', 'desc')
+            ->orderBy('so_id', 'desc')
+            ->get();
+    }
+
+    /**
      * Mengambil detail 1 dokumen SO beserta relasi lengkap.
      */
     public function getById(int $id): DatSoHdr

@@ -204,7 +204,12 @@ class FakturPenjualanController extends Controller
             'isPpn'      => $isPpn,
         ]);
 
-        $pdf->setPaper('a4', 'portrait');
+        if ($isPpn) {
+            // Ukuran Continuous Form 9.5 x 5.5 inch (bagi 2): 684pt x 396pt
+            $pdf->setPaper([0, 0, 684, 396]);
+        } else {
+            $pdf->setPaper('a4', 'portrait');
+        }
 
         $cleanFakturNo = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace('/', '-', $faktur->faktur_no));
         $prefix = $isPpn ? 'FAKTUR_PPN-' : 'FAKTUR_NON_PPN-';

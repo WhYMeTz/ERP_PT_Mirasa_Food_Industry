@@ -74,7 +74,7 @@ class PoController extends Controller
             ]);
         }
 
-        return view('gudang.po.index', compact('poList', 'search', 'status', 'statusCounts'));
+        return view('gudang.po.index', compact('poList', 'search', 'status', 'statusCounts', 'perPage'));
     }
 
     public function create(): View

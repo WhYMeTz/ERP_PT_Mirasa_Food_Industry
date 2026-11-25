@@ -122,7 +122,7 @@
                         <input type="hidden" name="is_harga_termasuk_pajak" value="0">
                         <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak') ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)"
                             style="width: 15px; height: 15px; accent-color: #059669; cursor: pointer;">
-                        <span style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk PPN</span>
+                        <span id="lblHeaderTaxInclusive" style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk Pajak</span>
                         <span class="badge" id="badgeTaxMode"
                             style="background: #e2e8f0; color: #475569; font-size: 0.65rem; font-weight: 700; margin-left: 0.2rem;">Net</span>
                     </label>
@@ -454,7 +454,7 @@
                                     title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
                                     <input type="hidden" name="items[0][is_harga_termasuk_pajak]" value="0">
                                     <input type="checkbox" name="items[0][is_harga_termasuk_pajak]" value="1"
-                                        class="item-include-tax" onchange="calculateGrandTotal()"
+                                        class="item-include-tax" onchange="onRowTaxInclusiveChange(this)"
                                         style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;"
                                         {{ old('items.0.is_harga_termasuk_pajak', old('is_harga_termasuk_pajak')) ? 'checked' : '' }}>
                                     <span style="font-weight: 600;">Termasuk (Inc)</span>

@@ -530,5 +530,48 @@ function closePoRevisiModal() {
 }
 window.closePoRevisiModal = closePoRevisiModal;
 
+/**
+ * Modal Konfirmasi Batalkan PO
+ */
+function openCancelPoModal() {
+    const modal = document.getElementById('modalCancelPo');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.openCancelPoModal = openCancelPoModal;
+
+function closeCancelPoModal() {
+    const modal = document.getElementById('modalCancelPo');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+window.closeCancelPoModal = closeCancelPoModal;
+
+/**
+ * Modal Konfirmasi Hapus PO
+ */
+function openDeletePoModal() {
+    const modal = document.getElementById('modalDeletePo');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.openDeletePoModal = openDeletePoModal;
+
+function closeDeletePoModal() {
+    const modal = document.getElementById('modalDeletePo');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+window.closeDeletePoModal = closeDeletePoModal;
+
+
 
 

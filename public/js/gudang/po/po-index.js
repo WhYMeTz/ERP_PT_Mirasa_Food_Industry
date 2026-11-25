@@ -280,7 +280,7 @@ function renderPoDetail(po) {
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    const formatRp = (num) => 'Rp ' + (parseFloat(num) || 0).toLocaleString('id-ID');
+    const formatRp = (num) => 'Rp ' + Math.round(parseFloat(num) || 0).toLocaleString('id-ID');
 
     // Set Header Nomor PO
     document.getElementById('poDetailNo').textContent = po.po_no || '-';
@@ -382,7 +382,7 @@ function renderPoDetail(po) {
     const sup = po.supplier || {};
     document.getElementById('poDetailSupplierNm').textContent = sup.supplier_nm || '-';
     document.getElementById('poDetailSupplierCd').textContent = sup.supplier_cd ? `Kode: ${sup.supplier_cd}` : '';
-    const supContact = [sup.telepon ? `📞 ${sup.telepon}` : (sup.kontak_no ? `📞 ${sup.kontak_no}` : ''), sup.alamat_txt || sup.alamat || ''].filter(Boolean).join(' • ');
+    const supContact = [sup.telepon ? `Telp: ${sup.telepon}` : (sup.kontak_no ? `Kontak: ${sup.kontak_no}` : ''), sup.alamat_txt || sup.alamat || ''].filter(Boolean).join(' • ');
     document.getElementById('poDetailSupplierAlamat').textContent = supContact || '-';
 
     // Gudang
@@ -427,32 +427,28 @@ function renderPoDetail(po) {
         const hargaNetto = (parseFloat(d.harga_netto) || (hargaBruto - diskonNominal)) || 0;
         const subtotalFinal = (parseFloat(d.subtotal_tagihan) || parseFloat(d.subtotal_nominal) || (pQty * hargaNetto)) || 0;
 
-        // Diskon & Potongan Label (Ringkas & Rapi)
-        let diskonPotonganHtml = '';
-        if (diskonPersen > 0 || diskonNominal > 0 || potonganNominal > 0) {
-            const parts = [];
-            if (diskonPersen > 0) {
-                parts.push(`<span class="mac-badge-pill" style="background:#fef2f2; color:#dc2626; border-color:#fecaca; font-weight:800; font-size:0.675rem;">-${diskonPersen}%</span>`);
-            }
-            if (diskonNominal > 0) {
-                parts.push(`<div style="color: #dc2626; font-size: 0.675rem; white-space: nowrap;">Disc: Rp ${diskonNominal.toLocaleString('id-ID')}</div>`);
-            }
-            if (potonganNominal > 0) {
-                parts.push(`<div style="color: #b91c1c; font-size: 0.675rem; font-weight:700; white-space: nowrap;">Pot: -Rp ${potonganNominal.toLocaleString('id-ID')}</div>`);
-            }
-            diskonPotonganHtml = parts.join('');
-        } else {
-            diskonPotonganHtml = '<span style="color:#94a3b8; font-size:0.75rem;">-</span>';
+        // Diskon & Potongan Subtext di bawah Harga Satuan
+        let discPotSubHtml = '';
+        const discPotParts = [];
+        if (diskonPersen > 0) {
+            discPotParts.push(`Disc ${diskonPersen}%`);
+        } else if (diskonNominal > 0) {
+            discPotParts.push(`Disc -Rp ${Math.round(diskonNominal).toLocaleString('id-ID')}`);
+        }
+        if (potonganNominal > 0) {
+            discPotParts.push(`Pot -Rp ${Math.round(potonganNominal).toLocaleString('id-ID')}`);
+        }
+        if (discPotParts.length > 0) {
+            discPotSubHtml = `<div style="font-size: 0.675rem; color: #dc2626; margin-top: 2px; white-space: nowrap;">${discPotParts.join(' • ')}</div>`;
         }
 
-        // Pajak / PPN Item: Hanya Tampilkan KODE & Persentase Ringkas
+        // Pajak / PPN Item: Badge Micro-capsule Bersih Satu Baris
         const pjk = d.pajak || {};
         const taxRate = parseFloat(d.ppn_persen) || parseFloat(pjk.tarif_persen) || 0;
         if (taxRate > maxTaxRate) maxTaxRate = taxRate;
         const isPotongItem = (pjk.sifat_pajak === 'POTONG');
         
         let taxCode = pjk.pajak_cd || d.ppn_tipe || (taxRate > 0 ? `PPN ${taxRate}%` : 'NON');
-        // Singkatkan jika berupa kode komoditas panjang
         if (taxCode === 'PPH-22-KOMODITAS') taxCode = 'PPh 22';
         else if (taxCode.length > 12) taxCode = taxCode.substring(0, 12);
         allTaxes.add(taxCode);
@@ -462,48 +458,53 @@ function renderPoDetail(po) {
             : Boolean(po.is_harga_termasuk_pajak);
         const taxNominal = parseFloat(d.ppn_nominal) || 0;
 
-        let taxCellHtml = '';
+        let taxBadgeHtml = '';
         if (taxRate > 0 || taxNominal > 0) {
-            taxCellHtml = `
-                <span class="mac-badge-pill" style="background: ${isPotongItem ? '#fef2f2' : '#eff6ff'}; color: ${isPotongItem ? '#dc2626' : '#0284c7'}; border-color: ${isPotongItem ? '#fecaca' : '#bfdbfe'}; font-weight: 800; font-family: monospace; font-size: 0.675rem;">
-                    ${taxCode}
-                </span>
-                <div style="font-size: 0.675rem; color: ${isPotongItem ? '#dc2626' : (isInclude ? '#1e40af' : '#15803d')}; font-weight: 600; margin-top: 1px; white-space: nowrap;">
-                    ${isPotongItem ? `-${taxRate}% (Potong)` : `${taxRate}% (${isInclude ? 'Inc' : 'Exc'})`}
-                </div>
-                ${taxNominal > 0 ? `<div style="font-size: 0.675rem; color: ${isPotongItem ? '#dc2626' : '#64748b'}; font-family: monospace; white-space: nowrap;">${isPotongItem ? '- ' : ''}Rp ${taxNominal.toLocaleString('id-ID')}</div>` : ''}
-            `;
+            const badgeBg = isPotongItem ? '#fef2f2' : '#eff6ff';
+            const badgeColor = isPotongItem ? '#dc2626' : '#0284c7';
+            const badgeBorder = isPotongItem ? '#fecaca' : '#bfdbfe';
+            const taxSuffix = isPotongItem ? '(Potong)' : (isInclude ? 'Inc' : 'Exc');
+            taxBadgeHtml = `<span class="mac-badge-pill" style="background: ${badgeBg}; color: ${badgeColor}; border-color: ${badgeBorder}; font-weight: 700; font-size: 0.7rem; white-space: nowrap;">${taxCode} ${taxSuffix}</span>`;
         } else {
-            taxCellHtml = '<span class="mac-badge-pill" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0; font-size: 0.675rem;">Bebas (0%)</span>';
+            taxBadgeHtml = '<span class="mac-badge-pill" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0; font-size: 0.7rem; white-space: nowrap;">Bebas (0%)</span>';
         }
 
-        const sisaCellHtml = (po.closed_at && sQty > 0)
-            ? `<span style="color: #dc2626; font-weight: 700;">${sQty.toLocaleString('id-ID')}</span><span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; display:block; margin-top:2px;">Batal Sisa</span>`
-            : `<span style="color: ${sQty > 0 ? '#ea580c' : '#64748b'}; font-weight: 600;">${sQty.toLocaleString('id-ID')}</span>`;
+        // Status Realisasi Diterima
+        const isFull = (sQty <= 0 && pQty > 0);
+        const terimaStatusColor = isFull ? '#16a34a' : (tQty > 0 ? '#ea580c' : '#64748b');
+        const sisaText = (po.closed_at && sQty > 0)
+            ? ' <span style="color: #dc2626; font-weight: 700;">(batal)</span>'
+            : (sQty > 0 ? ` <span style="color: #ea580c;">(sisa ${sQty.toLocaleString('id-ID')})</span>` : '');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
             <td>
-                <strong style="color: #0f172a; display: block; font-size: 0.8rem; line-height: 1.2;">${brg.barang_nm || '-'}</strong>
-                <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">${brg.barang_cd || ''}</span>
+                <strong style="color: #0f172a; display: block; font-size: 0.8125rem; line-height: 1.25;">${brg.barang_nm || '-'}</strong>
+                <span style="font-family: monospace; font-size: 0.725rem; color: #64748b; margin-top: 2px; display: inline-block;">${brg.barang_cd || ''}${satuan && satuan !== '-' ? ` • ${satuan}` : ''}</span>
             </td>
-            <td style="text-align: center; color: #475569; font-weight: 600;">${satuan}</td>
-            <td style="text-align: right; font-weight: 700; color: #0f172a; white-space: nowrap;">${pQty.toLocaleString('id-ID')}</td>
-            <td style="text-align: right; font-size: 0.75rem; white-space: nowrap;">
-                <span style="color: #16a34a; font-weight: 700;">${tQty.toLocaleString('id-ID')}</span> <span style="color:#cbd5e1;">/</span> ${sisaCellHtml}
+            <td style="text-align: right; white-space: nowrap;">
+                <div style="font-weight: 700; color: #0f172a; font-size: 0.8125rem;">${pQty.toLocaleString('id-ID')} <span style="font-weight: 500; font-size: 0.75rem; color: #64748b;">${satuan}</span></div>
+                <div style="font-size: 0.725rem; color: ${terimaStatusColor}; font-weight: 600; margin-top: 2px;">
+                    ${tQty.toLocaleString('id-ID')} diterima${sisaText}
+                </div>
             </td>
-            <td style="text-align: right; color: #475569; white-space: nowrap;">Rp ${hargaBruto.toLocaleString('id-ID')}</td>
-            <td style="text-align: right;">${diskonPotonganHtml}</td>
-            <td style="text-align: right; font-weight: 600; color: #0f172a; white-space: nowrap;">Rp ${hargaNetto.toLocaleString('id-ID')}</td>
-            <td style="text-align: right;">${taxCellHtml}</td>
-            <td style="text-align: right; font-weight: 800; color: #0f172a; font-family: monospace; font-size: 0.825rem; white-space: nowrap;">Rp ${subtotalFinal.toLocaleString('id-ID')}</td>
+            <td style="text-align: right; white-space: nowrap;">
+                <div style="font-weight: 700; color: #0f172a; font-size: 0.8125rem; font-family: monospace;">Rp ${Math.round(hargaNetto).toLocaleString('id-ID')}</div>
+                ${discPotSubHtml}
+            </td>
+            <td style="text-align: center; white-space: nowrap;">
+                ${taxBadgeHtml}
+            </td>
+            <td style="text-align: right; font-weight: 800; color: #0f172a; font-family: monospace; font-size: 0.85rem; white-space: nowrap;">
+                Rp ${Math.round(subtotalFinal).toLocaleString('id-ID')}
+            </td>
         `;
         tbody.appendChild(tr);
     });
 
     if (details.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #94a3b8;">Tidak ada rincian bahan dalam PO ini.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8; font-size: 0.8125rem;">Tidak ada rincian bahan dalam PO ini.</td></tr>';
     }
 
     // Progress Realisasi
@@ -615,13 +616,13 @@ function renderPoDetail(po) {
                 
                 let qcBadgeHtml = '';
                 if (qc.status_qc === 'DITOLAK_TOTAL' || qc.status_qc === 'DITOLAK') {
-                    qcBadgeHtml = '<span class="badge" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; font-weight:800; font-size:0.7rem;">🔴 Ditolak QC</span>';
+                    qcBadgeHtml = '<span class="badge" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; font-weight:800; font-size:0.7rem;">Ditolak QC</span>';
                 } else if (qc.status_qc === 'DITERIMA_PARSIAL' || ref > 0 || rej > 0) {
-                    qcBadgeHtml = `<span class="badge" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-weight:800; font-size:0.7rem;">🟡 Lolos Bersyarat (Gr. ${grade})</span>`;
+                    qcBadgeHtml = `<span class="badge" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-weight:800; font-size:0.7rem;">Lolos Bersyarat (Gr. ${grade})</span>`;
                 } else if (qc.status_qc === 'DRAFT') {
-                    qcBadgeHtml = '<span class="badge" style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; font-weight:700; font-size:0.7rem;">⏳ Sedang Diuji</span>';
+                    qcBadgeHtml = '<span class="badge" style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; font-weight:700; font-size:0.7rem;">Sedang Diuji</span>';
                 } else {
-                    qcBadgeHtml = `<span class="badge" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:800; font-size:0.7rem;">🟢 Lolos Mutu (Gr. ${grade})</span>`;
+                    qcBadgeHtml = `<span class="badge" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:800; font-size:0.7rem;">Lulus Mutu (Gr. ${grade})</span>`;
                 }
 
                 const card = document.createElement('div');
@@ -633,7 +634,7 @@ function renderPoDetail(po) {
                             <span style="color: #64748b; font-size: 0.75rem;">• Tgl: ${formatDate(qc.tgl_periksa)}</span>
                         </div>
                         <div style="color: #475569; font-size: 0.75rem; margin-top: 0.2rem;">
-                            🚛 Truk: <strong>${qc.plat_nomor_truk || '-'}</strong> ${qc.sopir_nama ? `(Sopir: ${qc.sopir_nama})` : ''} ${qc.surat_jalan_supplier ? `• SJ: ${qc.surat_jalan_supplier}` : ''}
+                            Truk: <strong>${qc.plat_nomor_truk || '-'}</strong> ${qc.sopir_nama ? `(Sopir: ${qc.sopir_nama})` : ''} ${qc.surat_jalan_supplier ? `• SJ: ${qc.surat_jalan_supplier}` : ''}
                         </div>
                         <div style="color: #64748b; font-size: 0.725rem; margin-top: 0.15rem;">
                             Netto: <strong style="color: #047857;">${netto.toLocaleString('id-ID')}</strong> (Gross: ${gross.toLocaleString('id-ID')} ${ref > 0 ? `| Ref: -${ref.toLocaleString('id-ID')}` : ''} ${rej > 0 ? `| Rej: -${rej.toLocaleString('id-ID')}` : ''})
@@ -1086,6 +1087,36 @@ function closeForceCloseModal() {
     }
 }
 window.closeForceCloseModal = closeForceCloseModal;
+
+/**
+ * =========================================================================
+ * Quick Jump & Per Page Selector Helpers
+ * =========================================================================
+ */
+function jumpToPoPage(maxPage) {
+    const input = document.getElementById('poJumpPageInput');
+    if (!input) return;
+    let page = parseInt(input.value, 10);
+    if (isNaN(page) || page < 1) page = 1;
+    if (maxPage && page > maxPage) page = maxPage;
+    
+    const url = new URL(window.location.href);
+    const curPage = parseInt(url.searchParams.get('page') || '1', 10);
+    if (page === curPage) return; // Jangan reload jika halaman sama
+    
+    url.searchParams.set('page', page);
+    window.location.href = url.toString();
+}
+window.jumpToPoPage = jumpToPoPage;
+
+function changePoPerPage(size) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', size);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+}
+window.changePoPerPage = changePoPerPage;
+
 
 
 

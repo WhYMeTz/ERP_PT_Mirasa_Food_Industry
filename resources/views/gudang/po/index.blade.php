@@ -652,11 +652,7 @@
         </table>
     </div>
 
-    @if ($poList->hasPages())
-        <div style="padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9;">
-            {{ $poList->withQueryString()->links() }}
-        </div>
-    @endif
+    @include('gudang.po.partials.pagination-modern')
 </div>
 
 {{-- MODAL DETAIL DOKUMEN PO (QUICK VIEW POPUP) --}}

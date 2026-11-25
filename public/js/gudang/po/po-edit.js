@@ -51,15 +51,80 @@ function onHeaderTaxInclusiveToggle(headerCheckbox) {
         }
     }
 
-    // Sinkronisasi otomatis ke semua baris barang
+    // Sinkronisasi otomatis ke SEMUA baris barang (1 barang maupun lebih dari 1 barang)
     document.querySelectorAll('.item-include-tax').forEach(cb => {
         cb.checked = isInc;
     });
 
     calculateAllTotals();
 }
+window.onHeaderTaxInclusiveToggle = onHeaderTaxInclusiveToggle;
+
+function onRowTaxInclusiveChange(rowCheckbox) {
+    const rowCheckboxes = document.querySelectorAll('.item-include-tax');
+    const headerCheckbox = document.getElementById('is_harga_termasuk_pajak');
+    const badge = document.getElementById('badgeTaxMode');
+
+    if (rowCheckboxes.length > 0 && headerCheckbox) {
+        let allChecked = true;
+        let anyChecked = false;
+        rowCheckboxes.forEach(cb => {
+            if (cb.checked) anyChecked = true;
+            else allChecked = false;
+        });
+
+        if (allChecked) {
+            headerCheckbox.checked = true;
+            if (badge) {
+                badge.innerText = 'Gross';
+                badge.style.background = '#dcfce7';
+                badge.style.color = '#15803d';
+            }
+        } else if (!anyChecked) {
+            headerCheckbox.checked = false;
+            if (badge) {
+                badge.innerText = 'Net';
+                badge.style.background = '#e2e8f0';
+                badge.style.color = '#475569';
+            }
+        }
+    }
+
+    calculateAllTotals();
+}
+window.onRowTaxInclusiveChange = onRowTaxInclusiveChange;
+
+function syncHeaderTaxLabel() {
+    const lbl = document.getElementById('lblHeaderTaxInclusive');
+    if (!lbl) return;
+    const headerPajakSelect = document.getElementById('global_pajak_id');
+    if (!headerPajakSelect || headerPajakSelect.selectedIndex < 0) {
+        lbl.textContent = 'Harga Termasuk Pajak';
+        return;
+    }
+    const selectedOpt = headerPajakSelect.options[headerPajakSelect.selectedIndex];
+    if (!selectedOpt || !selectedOpt.value) {
+        lbl.textContent = 'Harga Termasuk Pajak';
+        return;
+    }
+    const sifat = (selectedOpt.dataset.sifat || '').toUpperCase();
+    const text = (selectedOpt.text || '').toUpperCase();
+    const tarif = parseFloat(selectedOpt.dataset.tarif) || 0;
+
+    if (tarif === 0) {
+        lbl.textContent = 'Harga Termasuk Pajak';
+    } else if (sifat === 'POTONG' || text.includes('PPH')) {
+        lbl.textContent = 'Harga Termasuk PPh';
+    } else if (sifat === 'TAMBAH' || text.includes('PPN')) {
+        lbl.textContent = 'Harga Termasuk PPN';
+    } else {
+        lbl.textContent = 'Harga Termasuk Pajak';
+    }
+}
+window.syncHeaderTaxLabel = syncHeaderTaxLabel;
 
 function onHeaderPajakChange(headerSelect) {
+    syncHeaderTaxLabel();
     calculateAllTotals();
 }
 window.onHeaderPajakChange = onHeaderPajakChange;
@@ -506,6 +571,11 @@ function initPreviousMonthProtection() {
 
 // Hitung total awal saat halaman dimuat
 document.addEventListener('DOMContentLoaded', function () {
+    syncHeaderTaxLabel();
+    const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
+    if (headerIncCheck && headerIncCheck.checked) {
+        onHeaderTaxInclusiveToggle(headerIncCheck);
+    }
     calculateAllTotals();
     initPoDateNumberSync();
     initPreviousMonthProtection();

@@ -418,7 +418,7 @@ class DatPoHdr extends Model
                 }
             }
 
-            $rowIsInc = (bool) $dtl->is_harga_termasuk_pajak;
+            $rowIsInc = (bool) ($dtl->is_harga_termasuk_pajak || $this->is_harga_termasuk_pajak);
 
             if ($isPotong) {
                 $shortName = self::formatShortPphName($code ?: 'PPh');
@@ -441,14 +441,19 @@ class DatPoHdr extends Model
             }
         }
 
-        // Fallback bila di level header is_harga_termasuk_pajak bernilai true
-        if ($this->is_harga_termasuk_pajak && !$hasPpnExc && !$hasPpnInc) {
-            $hasPpnInc = true;
-        } elseif (!$hasPpnInc && !$hasPpnExc && (float) $this->ppn_nominal > 0 && empty($pphMap)) {
-            if ($this->is_harga_termasuk_pajak) {
-                $hasPpnInc = true;
-            } else {
-                $hasPpnExc = true;
+        // Fallback untuk PO tanpa baris detail tersimpan tetapi memiliki data PPN pada header
+        // HANYA jika dokumen TIDAK memiliki PPh dan terbukti ada data PPN
+        if (!$hasPpnInc && !$hasPpnExc && empty($pphMap)) {
+            $hasHeaderPpn = (float) $this->ppn_nominal > 0
+                || (float) $this->ppn_persen > 0
+                || (!empty($this->ppn_tipe) && str_contains(strtoupper($this->ppn_tipe), 'PPN'));
+
+            if ($hasHeaderPpn) {
+                if ($this->is_harga_termasuk_pajak) {
+                    $hasPpnInc = true;
+                } else {
+                    $hasPpnExc = true;
+                }
             }
         }
 
@@ -480,14 +485,24 @@ class DatPoHdr extends Model
 
         // Susun badge PPh
         foreach ($pphMap as $shortName => $flags) {
-            if ($flags['inc']) {
+            if ($flags['inc'] && $flags['exc']) {
+                $badges[] = [
+                    'type'  => 'pph_inc',
+                    'label' => 'Inc ' . $shortName,
+                    'title' => 'Sebagian item ' . $shortName . ' sudah termasuk di dalam harga satuan',
+                ];
+                $badges[] = [
+                    'type'  => 'pph_exc',
+                    'label' => $shortName,
+                    'title' => 'Sebagian item ' . $shortName . ' memotong nilai tagihan',
+                ];
+            } elseif ($flags['inc']) {
                 $badges[] = [
                     'type'  => 'pph_inc',
                     'label' => 'Inc ' . $shortName,
                     'title' => 'Pajak Penghasilan (' . $shortName . ') sudah termasuk di dalam harga satuan',
                 ];
-            }
-            if ($flags['exc']) {
+            } elseif ($flags['exc']) {
                 $badges[] = [
                     'type'  => 'pph_exc',
                     'label' => $shortName,
@@ -504,9 +519,6 @@ class DatPoHdr extends Model
      */
     public function hasPpn(): bool
     {
-        if ($this->is_harga_termasuk_pajak) {
-            return true;
-        }
         return $this->details->contains(function ($dtl) {
             if ($dtl->pajak) {
                 return $dtl->pajak->sifat_pajak === 'TAMBAH'

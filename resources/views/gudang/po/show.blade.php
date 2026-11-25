@@ -3,1663 +3,1203 @@
 @section('title', 'Detail Purchase Order ' . $po->po_no . ' - ERP PT Mirasa')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/gudang/po/po-show.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/gudang/po/po-show.css') }}?v={{ file_exists(public_path('css/gudang/po/po-show.css')) ? filemtime(public_path('css/gudang/po/po-show.css')) : time() }}">
 @endpush
 
 @section('content')
-    {{-- TOP COMMAND HEADER --}}
-    <div class="no-print"
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            <a href="{{ route('gudang.po.index') }}"
-                style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Kembali ke Daftar PO
-            </a>
-            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">{{ $po->po_no }}</h1>
+<div class="po-show-wrapper">
+
+    {{-- 1. BREADCRUMB (PERSIS CREATE & KAS KELUAR) --}}
+    <nav class="po-breadcrumb no-print" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.po.index') }}">Pengadaan &amp; Logistik</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ route('gudang.po.index') }}">Purchase Order</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">{{ $po->po_no }}</span>
+    </nav>
+
+    {{-- 2. HEADER BAR (PERSIS CREATE & KAS KELUAR STANDARD) --}}
+    <div class="po-header-bar no-print">
+        <div class="po-header-info">
+            <div class="po-header-title">
+                <a href="{{ route('gudang.po.index') }}"
+                   class="po-back-link"
+                   aria-label="Kembali ke daftar purchase order"
+                   title="Kembali ke Indeks Pengadaan">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </a>
+
+                {{-- macOS Traffic Lights Accent --}}
+                <div class="mac-traffic-dots" aria-label="macOS Window Controls">
+                    <span class="mac-dot mac-dot-red" title="ERP PT Mirasa"></span>
+                    <span class="mac-dot mac-dot-yellow" title="Purchase Order Detail"></span>
+                    <span class="mac-dot mac-dot-green" title="Active Document"></span>
+                </div>
+
+                <h1>{{ $po->po_no }}</h1>
+
+                {{-- Status Document Badge --}}
                 @if ($po->status_cd == 'PENDING_APPROVAL')
-                    <span class="badge"
-                        style="background:#fef3c7; color:#b45309; border: 1px solid #fde68a; font-weight:700;">Menunggu Approval
-                        Atasan</span>
+                    <span class="po-badge po-badge-pending">Menunggu Approval Atasan</span>
                 @elseif ($po->status_cd == 'REVISION')
-                    <span class="badge"
-                        style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; font-weight:700;">🔄 Perlu Revisi
-                        Atasan</span>
+                    <span class="po-badge po-badge-revision">Perlu Revisi Atasan</span>
                 @elseif ($po->status_cd == 'REJECTED')
-                    <span class="badge"
-                        style="background:#fee2e2; color:#b91c1c; border: 1px solid #fecaca; font-weight:700;">Ditolak
-                        Atasan</span>
+                    <span class="po-badge po-badge-rejected">Ditolak Atasan</span>
                 @elseif ($po->status_cd == 'COMPLETED')
                     @if (!empty($po->closed_at))
-                        <span class="badge"
-                            style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;">Selesai (Batal
-                            Sisa {{ $po->persentase_terima }}%)</span>
+                        <span class="po-badge po-badge-completed">Selesai (Batal Sisa {{ $po->persentase_terima }}%)</span>
                     @else
-                        <span class="badge badge-success">Selesai (100%)</span>
+                        <span class="po-badge po-badge-completed">Selesai (100%)</span>
                     @endif
                 @elseif ($po->status_cd == 'PARTIAL')
-                    <span class="badge badge-info">Sebagian Diterima ({{ $po->persentase_terima }}%)</span>
+                    <span class="po-badge po-badge-partial">Sebagian Diterima ({{ $po->persentase_terima }}%)</span>
                 @elseif ($po->status_cd == 'CLOSED')
-                    <span class="badge"
-                        style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;">Selesai (Batal
-                        Sisa {{ $po->persentase_terima }}%)</span>
+                    <span class="po-badge po-badge-completed">Selesai (Batal Sisa {{ $po->persentase_terima }}%)</span>
                 @elseif ($po->status_cd == 'APPROVED')
-                    <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">Disetujui</span>
+                    <span class="po-badge po-badge-approved">Disetujui</span>
                 @elseif ($po->status_cd == 'DRAFT')
-                    <span class="badge" style="background:#f1f5f9; color:#475569;">Draft</span>
+                    <span class="po-badge po-badge-draft">Draft</span>
                 @else
-                    <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
+                    <span class="po-badge po-badge-cancelled">Dibatalkan</span>
                 @endif
 
-                @if ($po->isSentToSupplier())
-                    <span class="badge"
-                        style="background:#dbeafe; color:#1e40af; border: 1px solid #bfdbfe; font-weight:700; display: inline-flex; align-items: center; gap: 4px;">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        Terkirim ke Supplier
+                {{-- Tax Status Badges (Unified with DatPoHdr & Index Table) --}}
+                @foreach ($po->getTaxBadges() as $tb)
+                    <span class="po-badge po-badge-tax {{ str_contains($tb['type'], 'inc') ? 'po-badge-tax-inc' : '' }}" title="{{ $tb['title'] }}">
+                        {{ $tb['label'] }}
                     </span>
-                @endif
+                @endforeach
 
-                {{-- BADGE HASIL INSPEKSI MUTU QC INBOUND --}}
+                {{-- QC Inspection Badge --}}
                 @php $qcInfo = $po->qc_status_info; @endphp
-                <span class="badge"
-                    style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }}; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; font-size: 0.8125rem; padding: 3px 10px;"
-                    title="{{ $qcInfo['summary'] }}">
-                    <span>{{ $qcInfo['icon'] }}</span>
+                <span class="po-badge" style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }};" title="{{ $qcInfo['summary'] }}">
                     <span>{{ $qcInfo['label'] }}</span>
                     @if ($qcInfo['tested'])
-                        <span style="background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 9999px; font-size: 0.725rem;">{{ $qcInfo['count'] }} Tiket QC</span>
+                        <span style="background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 9999px; font-size: 0.7rem;">{{ $qcInfo['count'] }} QC</span>
                     @endif
                 </span>
 
-                @php
-                    $firstTaxItem = $po->details->first(fn($d) => !empty($d->pajak) || !empty($d->ppn_tipe));
-                    $taxSifatGlobal = $firstTaxItem?->pajak?->sifat_pajak ?? 'TAMBAH';
-                    $isPotongGlobal = ($taxSifatGlobal === 'POTONG');
-                    $taxCdGlobal = $firstTaxItem?->pajak?->pajak_cd ?? ($firstTaxItem?->ppn_tipe ?? 'Pajak');
-                    if ($isPotongGlobal || str_contains(strtoupper($taxCdGlobal), 'PPH')) {
-                        $taxCdGlobal = \App\Models\Gudang\DatPoHdr::formatShortPphName($taxCdGlobal);
-                    }
-                @endphp
-
-                @if($isPotongGlobal)
-                    @if($firstTaxItem?->is_harga_termasuk_pajak)
-                        <span class="badge"
-                            style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; font-weight:700;">Inc {{ $taxCdGlobal }}</span>
-                    @else
-                        <span class="badge"
-                            style="background:#fef2f2; color:#dc2626; border: 1px solid #fecaca; font-weight:700;">Potongan Pajak ({{ $taxCdGlobal }})</span>
-                    @endif
-                @elseif($po->is_harga_termasuk_pajak)
-                    <span class="badge"
-                        style="background:#dcfce7; color:#15803d; border: 1px solid #86efac; font-weight:700;">Harga Termasuk
-                        PPN (Gross)</span>
-                @else
-                    <span class="badge" style="background:#f1f5f9; color:#475569; border: 1px solid #cbd5e1;">Belum Termasuk PPN
-                        (Net)</span>
+                @if ($po->isSentToSupplier())
+                    <span class="po-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;" title="Terkirim resmi ke email mitra supplier">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>Terkirim Supplier</span>
+                    </span>
                 @endif
 
                 @if ($po->is_ada_revisi)
-                    <span class="badge"
-                        style="background:#fffbeb; color:#b45309; border: 1px solid #fde68a; font-weight:700; display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; padding: 3px 10px;"
-                        title="Dokumen PO ini telah mengalami {{ $po->total_revisi_count }}x pengubahan data. Terakhir oleh {{ $po->terakhir_direvisi_by }} pada {{ $po->terakhir_direvisi_at ? \Carbon\Carbon::parse($po->terakhir_direvisi_at)->format('d/m/Y H:i') : '' }}">
-                        <span>🔄</span>
-                        <span>Diedit {{ $po->total_revisi_count }}x (Audit Trail)</span>
+                    <span class="po-badge" style="background: #f8fafc; color: #475569; border: 1px solid #cbd5e1;" title="Telah diedit {{ $po->total_revisi_count }}x (Audit Trail)">
+                        Rev {{ $po->total_revisi_count }}
                     </span>
                 @endif
             </div>
         </div>
 
-        @php
-            $sendSupplierPayload = [
-                'po_id' => $po->po_id,
-                'po_no' => $po->po_no,
-                'supplier_nm' => $po->supplier?->supplier_nm ?? '-',
-                'supplier_email' => $po->supplier?->email ?? ($po->supplier_email_sent ?? ''),
-                'default_cc' => '',
-                'default_notes' => $po->supplier_email_notes ?? '',
-            ];
-        @endphp
+        {{-- Right: Smart Action Dropdown & Quick Export --}}
+        <div class="po-header-actions">
+            <a href="{{ route('gudang.po.index') }}" class="btn-pill-outline" title="Kembali ke Daftar PO">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                <span>Daftar PO</span>
+            </a>
 
-        {{-- SINGLE UNIFIED ACTION DROPDOWN --}}
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="btn-pill-outline" title="Cetak Dokumen PDF Resmi HACCP">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Cetak PDF</span>
+            </a>
+
+            @php
+                $sendSupplierPayload = [
+                    'po_id' => $po->po_id,
+                    'po_no' => $po->po_no,
+                    'supplier_nm' => $po->supplier?->supplier_nm ?? '-',
+                    'supplier_email' => $po->supplier?->email ?? ($po->supplier_email_sent ?? ''),
+                    'default_cc' => '',
+                    'default_notes' => $po->supplier_email_notes ?? '',
+                ];
+            @endphp
+
             <div style="position: relative; display: inline-block;">
-                <button type="button" class="btn btn-secondary show-dropdown-trigger" onclick="toggleShowActionMenu(event)"
-                    style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #1e293b; font-weight: 700; font-size: 0.85rem; padding: 0.5rem 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                <button type="button" class="btn-action-trigger" onclick="toggleShowActionMenu(event)">
                     <span>Menu Aksi PO</span>
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
 
-                {{-- DROPDOWN MENU ITEMS --}}
                 <div id="showActionMenuDropdown" class="show-action-menu-dropdown" style="display: none;">
+                        @if ($po->status_cd == 'PENDING_APPROVAL')
+                            <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <button type="submit" class="action-dropdown-item" title="Kirim surat permohonan persetujuan ke email Atasan">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    <span style="font-weight: 700; color: #b45309;">Kirim Email Approval</span>
+                                </button>
+                            </form>
+                            <div class="action-dropdown-divider"></div>
+                        @endif
 
-                    {{-- AKSI JIKA MENUNGGU VERIFIKASI: KIRIM EMAIL --}}
-                    @if ($po->status_cd == 'PENDING_APPROVAL')
-                        <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
-                            @csrf
-                            <button type="submit" class="action-dropdown-item"
-                                title="Kirim surat permohonan persetujuan ke email Atasan">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                                <span style="font-weight: 700; color: #b45309;">Kirim Email Approval</span>
+                        @if ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
+                            <button type="button" class="action-dropdown-item" onclick="toggleShowActionMenu(event); openKirimSupplierModal({{ json_encode($sendSupplierPayload) }})">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                <span style="font-weight: 700; color: #0284c7;">
+                                    {{ $po->isSentToSupplier() ? 'Kirim Ulang ke Supplier' : 'Kirim ke Supplier via Email' }}
+                                </span>
                             </button>
-                        </form>
-                        <div class="action-dropdown-divider"></div>
-                    @endif
+                            <div class="action-dropdown-divider"></div>
+                        @endif
 
-                    {{-- AKSI KIRIM KE SUPPLIER (JIKA SUDAH APPROVED) --}}
-                    @if ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
-                        <button type="button" class="action-dropdown-item"
-                            onclick="toggleShowActionMenu(event); openKirimSupplierModal({{ json_encode($sendSupplierPayload) }})">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                            </svg>
-                            <span style="font-weight: 700; color: #0284c7;">
-                                {{ $po->isSentToSupplier() ? 'Kirim Ulang ke Supplier' : 'Kirim ke Supplier via Email' }}
-                            </span>
+                        @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
+                            <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" class="action-dropdown-item">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                <span>Catat Terima Barang</span>
+                            </a>
+                        @endif
+
+                        <button type="button" class="action-dropdown-item" onclick="openPoHaccpModal({{ $po->po_id }}); toggleShowActionMenu(event);">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Dokumen Form HACCP (Popup)</span>
                         </button>
-                        <div class="action-dropdown-divider"></div>
-                    @endif
 
-                    {{-- 1. TERIMA BARANG (JIKA STATUS MEMUNGKINKAN: ARAHKAN KE FORM INBOUND RESMI) --}}
-                    @if (in_array($po->status_cd, ['APPROVED', 'PARTIAL']) && $po->total_sisa_qty > 0)
-                        <a href="{{ route('gudang.terima.create', ['po_id' => $po->po_id]) }}" class="action-dropdown-item">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            <span>Catat Terima Barang</span>
+                        <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="action-dropdown-item">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <span>Cetak PDF Resmi (HACCP)</span>
                         </a>
-                    @endif
 
-                    {{-- 2. DOKUMEN FORM HACCP (POPUP) --}}
-                    <button type="button" class="action-dropdown-item"
-                        onclick="openPoHaccpModal({{ $po->po_id }}); toggleShowActionMenu(event);">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Dokumen Form HACCP (Popup)</span>
-                    </button>
+                        @if (!empty($po->closed_at))
+                            <a href="{{ route('gudang.po.berita_acara', $po->po_id) }}" target="_blank" class="action-dropdown-item">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span style="font-weight: 700; color: #dc2626;">Berita Acara Pembatalan Sisa</span>
+                            </a>
+                        @endif
 
-                    {{-- 3. CETAK PDF RESMI (HACCP) --}}
-                    <a href="{{ route('gudang.po.export-pdf', $po->po_id) }}" target="_blank" class="action-dropdown-item">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <span>Cetak PDF Resmi (HACCP)</span>
-                    </a>
+                        @php
+                            $canEdit = (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo()) && (!in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED']) || Auth::user()?->isSuperAdmin());
+                        @endphp
+                        @if ($canEdit)
+                            <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="action-dropdown-item">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>Edit Purchase Order</span>
+                            </a>
+                        @endif
 
-                    {{-- 3.1 CETAK BERITA ACARA PEMBATALAN SISA (JIKA ADA PEMBATALAN SISA) --}}
-                    @if (!empty($po->closed_at))
-                        <a href="{{ route('gudang.po.berita_acara', $po->po_id) }}" target="_blank"
-                            class="action-dropdown-item">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span style="font-weight: 700; color: #dc2626;">Berita Acara Pembatalan Sisa</span>
-                        </a>
-                    @endif
+                        @if ($po->status_cd == 'PARTIAL' && $po->total_sisa_qty > 0)
+                            <button type="button" class="action-dropdown-item danger-item" onclick="openBatalkanSisaModal({{ json_encode([
+                                'po_id' => $po->po_id,
+                                'po_no' => $po->po_no,
+                                'supplier_nm' => $po->supplier?->supplier_nm ?? '-',
+                                'total_pesan' => (float) $po->details->sum('pesan_qty'),
+                                'total_terima' => (float) $po->details->sum('terima_qty'),
+                                'total_sisa' => (float) $po->total_sisa_qty,
+                                'url' => route('gudang.po.force_close', $po->po_id),
+                            ]) }}); toggleShowActionMenu(event);">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span style="font-weight: 700; color: #dc2626;">Batalkan Sisa &amp; Selesaikan PO</span>
+                            </button>
+                        @endif
 
-                    {{-- 4. EDIT PO --}}
-                    @php
-                        $canEdit = (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo()) && (!in_array($po->status_cd, ['COMPLETED', 'CLOSED', 'CANCELLED']) || Auth::user()?->isSuperAdmin());
-                    @endphp
-                    @if ($canEdit)
-                        <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="action-dropdown-item">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            <span>Edit Purchase Order</span>
-                        </a>
-                    @endif
-
-                    {{-- 5. BATALKAN SISA & SELESAIKAN PO --}}
-                    @if ($po->status_cd == 'PARTIAL' && $po->total_sisa_qty > 0)
-                                    <button type="button" class="action-dropdown-item danger-item" onclick="openBatalkanSisaModal({{ json_encode([
-                            'po_id' => $po->po_id,
-                            'po_no' => $po->po_no,
-                            'supplier_nm' => $po->supplier?->supplier_nm ?? '-',
-                            'total_pesan' => (float) $po->details->sum('pesan_qty'),
-                            'total_terima' => (float) $po->details->sum('terima_qty'),
-                            'total_sisa' => (float) $po->total_sisa_qty,
-                            'url' => route('gudang.po.force_close', $po->po_id),
-                        ]) }}); toggleShowActionMenu(event);">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span style="font-weight: 700; color: #dc2626;">Batalkan Sisa &amp; Selesaikan PO</span>
-                                    </button>
-                    @endif
-
-                    {{-- 6. BATALKAN PO --}}
-                    @if (in_array($po->status_cd, ['DRAFT', 'APPROVED', 'PENDING_APPROVAL']) && $po->details->sum('terima_qty') == 0)
-                        <div class="action-dropdown-divider"></div>
-                        <form action="{{ route('gudang.po.cancel', $po->po_id) }}" method="POST"
-                            onsubmit="return confirm('Apakah Anda yakin ingin membatalkan Purchase Order ini?')"
-                            style="margin: 0;">
-                            @csrf
-                            <button type="submit" class="action-dropdown-item danger-item">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                </svg>
+                        @if (in_array($po->status_cd, ['DRAFT', 'APPROVED', 'PENDING_APPROVAL']) && $po->details->sum('terima_qty') == 0)
+                            <div class="action-dropdown-divider"></div>
+                            <button type="button" class="action-dropdown-item danger-item" onclick="toggleShowActionMenu(event); openCancelPoModal();">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                 <span>Batalkan PO</span>
                             </button>
-                        </form>
-                    @endif
+                        @endif
 
-                    {{-- 7. HAPUS PO --}}
-                    @php
-                        $canDelete = (Auth::user()?->isSuperAdmin() || Auth::user()?->canDeletePo()) && ($po->details->sum('terima_qty') == 0 || Auth::user()?->isSuperAdmin());
-                    @endphp
-                    @if ($canDelete)
-                        <div class="action-dropdown-divider"></div>
-                        <form action="{{ route('gudang.po.destroy', $po->po_id) }}" method="POST"
-                            onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS dokumen Purchase Order {{ $po->po_no }}? Tindakan ini tidak dapat dibatalkan.')"
-                            style="margin: 0;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="action-dropdown-item danger-item">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
+                        @php
+                            $canDelete = (Auth::user()?->isSuperAdmin() || Auth::user()?->canDeletePo()) && ($po->details->sum('terima_qty') == 0 || Auth::user()?->isSuperAdmin());
+                        @endphp
+                        @if ($canDelete)
+                            <div class="action-dropdown-divider"></div>
+                            <button type="button" class="action-dropdown-item danger-item" onclick="toggleShowActionMenu(event); openDeletePoModal();">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 <span>Hapus PO</span>
                             </button>
-                        </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {{-- =====================================================================
+         2. OPERATIONAL STATUS BANNERS (IF APPLICABLE)
+         ===================================================================== --}}
+    <div class="no-print">
+        @if ($po->status_cd == 'CLOSED' || (!empty($po->closed_at) && $po->status_cd == 'COMPLETED'))
+            <div class="po-alert-banner po-alert-success">
+                <div>
+                    <div style="font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.35rem;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Dokumen PO Telah Selesai (Sisa Kuota Dibatalkan Resmi)
+                    </div>
+                    <div style="font-size: 0.825rem; margin-top: 0.25rem;">
+                        Diselesaikan pada: <strong>{{ $po->closed_at ? \Carbon\Carbon::parse($po->closed_at)->format('d/m/Y H:i') : '-' }}</strong> &bull; Oleh: <strong>{{ $po->closed_by ?? '-' }}</strong>
+                    </div>
+                    @if ($po->closed_reason)
+                        <div style="margin-top: 0.35rem; font-size: 0.825rem; background: #ffffff; padding: 0.35rem 0.65rem; border-radius: 4px; border: 1px solid #bbf7d0;">
+                            <strong>Alasan:</strong> {{ $po->closed_reason }}
+                        </div>
+                    @endif
+                </div>
+                <div>
+                    <a href="{{ route('gudang.po.berita_acara', $po->po_id) }}" target="_blank" class="btn-pill-outline" style="color: #dc2626; border-color: #fca5a5;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Cetak Berita Acara</span>
+                    </a>
+                </div>
+            </div>
+        @elseif ($po->status_cd == 'PENDING_APPROVAL')
+            <div class="po-alert-banner po-alert-warning">
+                <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">Menunggu Persetujuan Atasan (Approver)</h4>
+                        <p style="margin: 0.25rem 0 0; font-size: 0.825rem; color: #78350f;">
+                            Dokumen PO ini telah dialamatkan kepada <strong>{{ $po->approver?->name ?? 'Atasan Penyetuju' }}</strong>
+                            @if ($po->approver?->email) ({{ $po->approver->email }}) @endif
+                            untuk diverifikasi via email resmi sebelum dapat diteruskan ke supplier.
+                        </p>
+                    </div>
+                </div>
+                <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="btn-pill-dark" style="background: #92400e; border-color: #92400e;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>Kirim Email Approval</span>
+                    </button>
+                </form>
+            </div>
+        @elseif ($po->status_cd == 'REVISION')
+            <div class="po-alert-banner po-alert-info">
+                <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #075985;">Permintaan Revisi dari Atasan</h4>
+                        <p style="margin: 0.25rem 0 0; font-size: 0.825rem; color: #0369a1;">
+                            Atasan meminta penyesuaian dokumen. Silakan periksa catatan revisi dan perbarui data PO.
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="btn-pill-dark" style="background: #0284c7; border-color: #0284c7;">
+                    <span>Edit PO Sekarang</span>
+                </a>
+            </div>
+        @elseif ($po->status_cd == 'REJECTED')
+            <div class="po-alert-banner po-alert-danger">
+                <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #991b1b;">Dokumen PO Ditolak</h4>
+                        <p style="margin: 0.25rem 0 0; font-size: 0.825rem; color: #b91c1c;">
+                            Permohonan Purchase Order ditolak oleh Atasan. Dokumen tidak dapat diproses lebih lanjut.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- =====================================================================
+             3. KPI METRICS CARDS (HARMONIZED 4 CARDS)
+             ===================================================================== --}}
+        @php
+            $totalPesan = (float) $po->details->sum('pesan_qty');
+            $totalTerima = (float) $po->details->sum('terima_qty');
+            $pct = $totalPesan > 0 ? round(($totalTerima / $totalPesan) * 100, 1) : 0;
+            $totalSisa = (float) $po->total_sisa_qty;
+
+            $totalSubtotalItems = (float) $po->details->sum(function ($d) {
+                $subTagihan = (float) ($d->subtotal_tagihan ?? 0);
+                $subNominal = (float) ($d->subtotal_nominal ?? 0);
+                $subNetto = (float) ($d->subtotal_netto ?? 0);
+                $calc = (float) $d->pesan_qty * (float) $d->harga_nominal;
+                return $subTagihan > 0 ? $subTagihan : ($subNominal > 0 ? $subNominal : ($subNetto > 0 ? $subNetto : $calc));
+            });
+
+            $totalTagihanHdr = (float) ($po->total_tagihan ?? 0);
+            $totalNominalHdr = (float) ($po->total_nominal ?? 0);
+            $displayTotalPO = $totalTagihanHdr > 0
+                ? $totalTagihanHdr
+                : ($totalNominalHdr > 0 ? $totalNominalHdr : $totalSubtotalItems);
+        @endphp
+
+        <div class="po-metrics-grid">
+            {{-- KPI 1: Total Nilai Tagihan --}}
+            <div class="po-metric-card">
+                <div class="po-metric-top">
+                    <div class="po-metric-header-left">
+                        <span class="po-metric-icon">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
+                        <span class="po-metric-label">Total Nilai Tagihan</span>
+                    </div>
+                    <span class="po-metric-dots">&bull;&bull;&bull;</span>
+                </div>
+                <div class="po-metric-value">Rp {{ number_format($displayTotalPO, 0, ',', '.') }}</div>
+                <div class="po-metric-footer">{{ $po->details->count() }} item bahan &bull; {{ number_format($totalPesan, 0) }} kuantitas</div>
+            </div>
+
+            {{-- KPI 2: Realisasi Penerimaan --}}
+            <div class="po-metric-card">
+                <div class="po-metric-top">
+                    <div class="po-metric-header-left">
+                        <span class="po-metric-icon">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
+                        <span class="po-metric-label">Realisasi Penerimaan</span>
+                    </div>
+                    <span class="badge" style="font-size: 0.725rem; font-weight: 700; background: {{ $pct >= 100 ? '#ecfdf5' : ($pct > 0 ? '#fffbeb' : '#f1f5f9') }}; color: {{ $pct >= 100 ? '#059669' : ($pct > 0 ? '#b45309' : '#64748b') }}; padding: 2px 7px; border-radius: 9999px;">{{ $pct }}%</span>
+                </div>
+                <div class="po-metric-value" style="color: {{ $pct >= 100 ? '#059669' : '#0f172a' }};">Rp {{ number_format((float) $po->realisasi_nominal, 0, ',', '.') }}</div>
+                <div class="po-metric-footer">
+                    <div class="po-progress-bar" style="margin-bottom: 4px;">
+                        <div class="po-progress-fill" style="width: {{ min(100, $pct) }}%; background: {{ $pct >= 100 ? '#10b981' : ($pct > 0 ? '#0f172a' : '#cbd5e1') }};"></div>
+                    </div>
+                    <span>Diterima fisik: {{ number_format($totalTerima, 0) }} unit</span>
+                </div>
+            </div>
+
+            {{-- KPI 3: Sisa Kuota Belum Tiba / Dibatalkan --}}
+            <div class="po-metric-card">
+                <div class="po-metric-top">
+                    <div class="po-metric-header-left">
+                        <span class="po-metric-icon">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zM4 17h1m4 0h6m4 0h1m-1-4V6a1 1 0 00-1-1H4a1 1 0 00-1 1v7m14 0h3l2 3v1a1 1 0 01-1 1h-1m-17 0H3a1 1 0 01-1-1v-1l2-3h12"/>
+                            </svg>
+                        </span>
+                        <span class="po-metric-label">{{ !empty($po->closed_at) ? 'Sisa Batal Resmi' : 'Sisa Belum Tiba' }}</span>
+                    </div>
+                    <span class="po-metric-dots">&bull;&bull;&bull;</span>
+                </div>
+                <div class="po-metric-value" style="color: {{ !empty($po->closed_at) ? '#dc2626' : ($totalSisa > 0 ? '#b45309' : '#059669') }};">{{ number_format($totalSisa, 2) }}</div>
+                <div class="po-metric-footer">
+                    @if (!empty($po->closed_at))
+                        <span style="color: #dc2626; font-weight: 600;">Arsip ditutup</span> &bull; Kuota dibatalkan
+                    @elseif ($totalSisa > 0)
+                        Menunggu pengiriman supplier
+                    @else
+                        Lengkap seluruhnya (100%)
+                    @endif
+                </div>
+            </div>
+
+            {{-- KPI 4: Tanggal PO & Estimasi Tiba --}}
+            <div class="po-metric-card">
+                <div class="po-metric-top">
+                    <div class="po-metric-header-left">
+                        <span class="po-metric-icon">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </span>
+                        <span class="po-metric-label">Jadwal &amp; ETA</span>
+                    </div>
+                    <span class="po-metric-dots">&bull;&bull;&bull;</span>
+                </div>
+                <div class="po-metric-value" style="font-size: 1.25rem;">{{ \Carbon\Carbon::parse($po->po_tgl)->format('d/m/Y') }}</div>
+                <div class="po-metric-footer">
+                    Estimasi tiba:
+                    @if ($po->tgl_estimasi_datang)
+                        <strong style="color: #0f172a;">{{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->format('d/m/Y') }}</strong>
+                    @else
+                        <span>-</span>
                     @endif
                 </div>
             </div>
         </div>
 
-        {{-- BUNGKUS KONTEN DASHBOARD WEB DENGAN NO-PRINT AGAR TIDAK MUNCUL SAAT CETAK BROWSER --}}
-        <div class="no-print">
+        {{-- =====================================================================
+             4. WORKSPACE GRID (2 COLUMNS: LEFT DETAILED CARDS, RIGHT SIDEBAR)
+             ===================================================================== --}}
+        <div class="po-workspace-grid">
 
-            {{-- ALERT JIKA PO SUDAH DITUTUP / SELESAI BATAL SISA --}}
-            @if ($po->status_cd == 'CLOSED' || (!empty($po->closed_at) && $po->status_cd == 'COMPLETED'))
-                <div class="alert"
-                    style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; color: #166534; margin-bottom: 1.25rem; padding: 0.875rem 1.25rem; border-radius: 6px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
-                        <div>
-                            <div
-                                style="font-weight: 700; color: #14532d; font-size: 0.95rem; display: flex; align-items: center; gap: 0.35rem;">
-                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Dokumen PO Telah Selesai (Sisa Kuota Dibatalkan Resmi)
+            {{-- LEFT MAIN COLUMN --}}
+            <div class="po-main-column">
+
+                {{-- CARD 1: RINCIAN ITEM BARANG YANG DIPESAN --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <h3 class="po-card-title">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <span>Rincian Barang yang Dipesan</span>
+                            <span class="po-card-subtitle">({{ $po->details->count() }} Item Bahan)</span>
+                        </h3>
+                    </div>
+
+                    <div class="po-table-responsive">
+                        <table class="po-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 36px; text-align: center;">No</th>
+                                    <th>Nama Komoditas / Bahan Baku</th>
+                                    <th>Satuan</th>
+                                    <th style="text-align: right;">Pesan</th>
+                                    <th style="text-align: right;">Diterima</th>
+                                    <th style="text-align: right;">{{ !empty($po->closed_at) ? 'Sisa Dibatalkan' : 'Sisa' }}</th>
+                                    <th style="text-align: right;">Harga Satuan</th>
+                                    <th style="text-align: right;">Diskon</th>
+                                    <th style="text-align: right;">Potongan</th>
+                                    <th style="text-align: center;">Pajak</th>
+                                    <th style="text-align: right;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($po->details as $index => $item)
+                                    @php
+                                        $diskonPct = (float) ($item->diskon_persen ?? 0);
+                                        $potNom = (float) ($item->potongan_nominal ?? 0);
+                                        $isPpn = ($item->ppn_tipe ?? '') === 'PPN_11';
+
+                                        $subTagihan = (float) ($item->subtotal_tagihan ?? 0);
+                                        $subNominal = (float) ($item->subtotal_nominal ?? 0);
+                                        $subNetto = (float) ($item->subtotal_netto ?? 0);
+                                        $calcManual = (float) $item->pesan_qty * (float) $item->harga_nominal;
+
+                                        $subtotalRow = $subTagihan > 0 ? $subTagihan : ($subNominal > 0 ? $subNominal : ($subNetto > 0 ? $subNetto : $calcManual));
+
+                                        $taxLabel = $item->pajak?->pajak_nm ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak');
+                                        $taxCode = $item->pajak?->pajak_cd ?? ($item->ppn_tipe ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak'));
+                                        if ($item->pajak?->sifat_pajak === 'POTONG' || str_contains(strtoupper($taxCode), 'PPH')) {
+                                            $taxCode = \App\Models\Gudang\DatPoHdr::formatShortPphName($taxCode);
+                                        } elseif (strlen($taxCode) > 12) {
+                                            $taxCode = substr($taxCode, 0, 12);
+                                        }
+                                        $taxTarif = $item->pajak ? (float) $item->pajak->tarif_persen : ($isPpn ? 11 : 0);
+                                        $taxInc = (bool) ($item->is_harga_termasuk_pajak ?? $po->is_harga_termasuk_pajak);
+                                    @endphp
+                                    <tr>
+                                        <td style="text-align: center; color: var(--po-slate-400);">{{ $index + 1 }}</td>
+                                        <td>
+                                            <strong style="color: var(--po-slate-900); display: block;">{{ $item->barang?->barang_nm }}</strong>
+                                            <span style="font-size: 0.725rem; color: var(--po-slate-500); font-family: var(--po-font-mono);">{{ $item->barang?->barang_cd }}</span>
+                                        </td>
+                                        <td style="color: var(--po-slate-600);">
+                                            {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
+                                        </td>
+                                        <td style="text-align: right; font-weight: 700;">
+                                            {{ number_format((float) $item->pesan_qty, 2) }}
+                                        </td>
+                                        <td style="text-align: right; font-weight: 700; color: var(--po-emerald);">
+                                            {{ number_format((float) $item->terima_qty, 2) }}
+                                        </td>
+                                        <td style="text-align: right; font-weight: 700;">
+                                            @if (!empty($po->closed_at) && (float) $item->sisa_qty > 0)
+                                                <span style="color: var(--po-rose);">{{ number_format((float) $item->sisa_qty, 2) }}</span>
+                                                <span class="po-badge po-badge-rejected" style="display: block; margin-top: 2px;">Batal</span>
+                                            @else
+                                                <span style="color: {{ (float) $item->sisa_qty > 0 ? '#b45309' : '#64748b' }};">
+                                                    {{ number_format((float) $item->sisa_qty, 2) }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td style="text-align: right;" class="text-mono">
+                                            Rp {{ number_format((float) $item->harga_nominal, 0, ',', '.') }}
+                                        </td>
+                                        <td style="text-align: right; color: {{ $diskonPct > 0 ? '#d97706' : '#94a3b8' }};" class="text-mono">
+                                            {{ $diskonPct > 0 ? number_format($diskonPct, 1, ',', '.') . '%' : '-' }}
+                                        </td>
+                                        <td style="text-align: right; color: {{ $potNom > 0 ? '#dc2626' : '#94a3b8' }};" class="text-mono">
+                                            {{ $potNom > 0 ? 'Rp ' . number_format($potNom, 0, ',', '.') : '-' }}
+                                        </td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            @if ($taxTarif > 0)
+                                                @php $isPotongRow = ($item->pajak?->sifat_pajak === 'POTONG'); @endphp
+                                                <span class="po-badge po-badge-tax {{ $taxInc ? 'po-badge-tax-inc' : '' }}" title="{{ $item->pajak?->pajak_nm }}">
+                                                    {{ $taxCode }}
+                                                </span>
+                                                <div style="font-size: 0.675rem; color: {{ $isPotongRow ? '#dc2626' : ($taxInc ? '#15803d' : '#64748b') }}; font-weight: 600; margin-top: 1px;">
+                                                    {{ $isPotongRow ? "-{$taxTarif}% (Potong)" : "{$taxTarif}% (" . ($taxInc ? 'Inc' : 'Exc') . ")" }}
+                                                </div>
+                                            @else
+                                                <span class="po-badge po-badge-draft">Non-Pajak</span>
+                                            @endif
+                                        </td>
+                                        <td style="text-align: right; font-weight: 700; color: var(--po-slate-900);" class="text-mono">
+                                            Rp {{ number_format($subtotalRow, 0, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; color: var(--po-slate-600);">
+                                        Total:
+                                    </td>
+                                    <td style="text-align: right;">{{ number_format($totalPesan, 2) }}</td>
+                                    <td style="text-align: right; color: var(--po-emerald);">{{ number_format($totalTerima, 2) }}</td>
+                                    <td style="text-align: right; color: {{ !empty($po->closed_at) ? '#dc2626' : ($totalSisa > 0 ? '#b45309' : '#64748b') }};">
+                                        {{ number_format($totalSisa, 2) }}
+                                    </td>
+                                    <td colspan="4"></td>
+                                    <td style="text-align: right; font-size: 0.95rem;" class="text-mono">
+                                        Rp {{ number_format($displayTotalPO, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {{-- FINANCIAL BREAKDOWN SUMMARY --}}
+                    @php
+                        $firstTaxItem = $po->details->first(fn($d) => !empty($d->pajak) || !empty($d->ppn_tipe));
+                        $taxSifatGlobal = $firstTaxItem?->pajak?->sifat_pajak ?? 'TAMBAH';
+                        $isPotongGlobal = ($taxSifatGlobal === 'POTONG');
+                        $taxCdGlobal = $firstTaxItem?->pajak?->pajak_cd ?? ($firstTaxItem?->ppn_tipe ?? 'Pajak');
+                        if ($isPotongGlobal || str_contains(strtoupper($taxCdGlobal), 'PPH')) {
+                            $taxCdGlobal = \App\Models\Gudang\DatPoHdr::formatShortPphName($taxCdGlobal);
+                        }
+
+                        $calcSubtotalBruto = (float) ($po->subtotal_bruto ?? 0) > 0
+                            ? (float) $po->subtotal_bruto
+                            : (float) $po->details->sum(fn($d) => (float) $d->pesan_qty * (float) $d->harga_nominal);
+
+                        if ($calcSubtotalBruto <= 0 && $displayTotalPO > 0) {
+                            $calcSubtotalBruto = $displayTotalPO;
+                        }
+
+                        $calcDiskonItem = (float) ($po->diskon_total ?? 0) > 0
+                            ? (float) $po->diskon_total
+                            : (float) $po->details->sum(fn($d) => (float) $d->pesan_qty * (float) ($d->diskon_nominal ?? 0));
+
+                        $calcPotongan = (float) ($po->potongan_nominal ?? 0) > 0
+                            ? (float) $po->potongan_nominal
+                            : (float) $po->details->sum(fn($d) => (float) ($d->potongan_nominal ?? 0));
+
+                        $calcDpp = (float) ($po->dpp_nominal ?? 0) > 0
+                            ? (float) $po->dpp_nominal
+                            : max(0, $calcSubtotalBruto - $calcDiskonItem - $calcPotongan);
+
+                        $calcPpn = (float) ($po->ppn_nominal ?? 0) > 0
+                            ? (float) $po->ppn_nominal
+                            : (float) $po->details->sum(fn($d) => (float) ($d->ppn_nominal ?? 0));
+
+                        $grandTotalTagihan = $totalTagihanHdr > 0
+                            ? $totalTagihanHdr
+                            : ($totalNominalHdr > 0 ? $totalNominalHdr : ($isPotongGlobal ? max(0, $calcDpp - $calcPpn) : ($calcDpp + $calcPpn)));
+
+                        if ($grandTotalTagihan <= 0 && $displayTotalPO > 0) {
+                            $grandTotalTagihan = $displayTotalPO;
+                        }
+                    @endphp
+
+                    <div class="po-financial-breakdown">
+                        <div class="po-breakdown-box">
+                            <div class="po-breakdown-row">
+                                <span>Subtotal Nilai Bruto:</span>
+                                <strong>Rp {{ number_format($calcSubtotalBruto, 0, ',', '.') }}</strong>
                             </div>
-                            <div style="font-size: 0.85rem; color: #166534; margin-top: 0.25rem;">
-                                Diselesaikan pada:
-                                <strong>{{ $po->closed_at ? \Carbon\Carbon::parse($po->closed_at)->format('d/m/Y H:i') : '-' }}</strong>
-                                &bull; Oleh: <strong>{{ $po->closed_by ?? '-' }}</strong>
-                            </div>
-                            @if ($po->closed_reason)
-                                <div
-                                    style="margin-top: 0.35rem; font-size: 0.85rem; color: #166534; background: #ffffff; padding: 0.4rem 0.65rem; border-radius: 4px; border: 1px solid #bbf7d0;">
-                                    <strong>Alasan Pembatalan Sisa:</strong> {{ $po->closed_reason }}
+
+                            @if ($calcDiskonItem > 0)
+                                <div class="po-breakdown-row" style="color: #d97706;">
+                                    <span>Akumulasi Diskon Item:</span>
+                                    <strong>- Rp {{ number_format($calcDiskonItem, 0, ',', '.') }}</strong>
                                 </div>
                             @endif
-                        </div>
-                        <div>
-                            <a href="{{ route('gudang.po.berita_acara', $po->po_id) }}" target="_blank" class="btn btn-sm"
-                                style="background: #ffffff; color: #dc2626; border: 1.5px solid #fca5a5; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-decoration: none;">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <span>Cetak Berita Acara (A4)</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            @endif
 
-            {{-- KARTU STATUS APPROVAL & DISPATCH SUPPLIER --}}
-            @if ($po->status_cd == 'PENDING_APPROVAL')
-                <div
-                    style="background: #fffbeb; border: 1.5px solid #fef3c7; border-left: 5px solid #f59e0b; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                            <div
-                                style="width: 40px; height: 40px; border-radius: 8px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #92400e;">Menunggu Persetujuan
-                                    Atasan (Approver)</h3>
-                                <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #78350f;">
-                                    Dokumen PO ini telah dialamatkan kepada
-                                    <strong>{{ $po->approver?->name ?? 'Atasan Penyetuju' }}</strong>
-                                    @if ($po->approver?->email)
-                                        ({{ $po->approver->email }})
-                                    @endif
-                                    untuk diverifikasi via email resmi sebelum dapat diteruskan ke supplier.
-                                </p>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                            <form action="{{ route('gudang.po.resend_approval', $po->po_id) }}" method="POST"
-                                style="margin: 0;">
-                                @csrf
-                                <button type="submit" class="btn btn-secondary btn-sm"
-                                    style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem;">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                    <span>Kirim Email Approval</span>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            @elseif ($po->status_cd == 'REVISION')
-                <div
-                    style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                            <div
-                                style="width: 40px; height: 40px; border-radius: 8px; background: #dbeafe; color: #1d4ed8; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #1e40af;">Dokumen PO
-                                        Memerlukan Revisi dari Atasan</h3>
-                                    <span class="badge"
-                                        style="background: #2563eb; color: #ffffff; font-size: 0.7rem; font-weight: 700;">PERLU
-                                        PENYESUAIAN</span>
+                            @if ($calcPotongan > 0)
+                                <div class="po-breakdown-row" style="color: #dc2626;">
+                                    <span>Potongan Harga Langsung:</span>
+                                    <strong>- Rp {{ number_format($calcPotongan, 0, ',', '.') }}</strong>
                                 </div>
-                                <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #1d4ed8;">
-                                    Instruksi dari:
-                                    <strong>{{ $po->rejected_by ?? ($po->approver?->name ?? 'Atasan Peninjau') }}</strong>
-                                    pada
-                                    {{ $po->rejected_at ? \Carbon\Carbon::parse($po->rejected_at)->translatedFormat('d F Y H:i') : '-' }}.
-                                </p>
-                                <div
-                                    style="margin-top: 0.5rem; font-size: 0.875rem; background: #ffffff; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #bfdbfe; color: #1e3a8a;">
-                                    <strong>Catatan / Poin Koreksi Atasan:</strong><br>
-                                    <span
-                                        style="font-weight: 600; display: inline-block; margin-top: 2px;">&ldquo;{{ $po->reject_reason ?? 'Mohon periksa kembali kuantitas dan harga satuan barang yang diajukan.' }}&rdquo;</span>
-                                </div>
-                            </div>
-                        </div>
-                        @if (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo())
-                            <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="btn btn-primary"
-                                style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem; font-size: 0.85rem; background: #2563eb; border-color: #1d4ed8; box-shadow: 0 1px 3px rgba(37,99,235,0.3);">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                <span>Perbaiki &amp; Edit PO Sekarang</span>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            @elseif ($po->status_cd == 'REJECTED')
-                <div
-                    style="background: #fef2f2; border: 1.5px solid #fee2e2; border-left: 5px solid #ef4444; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                            <div
-                                style="width: 40px; height: 40px; border-radius: 8px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #991b1b;">Dokumen PO Ditolak
-                                    oleh Atasan</h3>
-                                <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #7f1d1d;">
-                                    Ditolak oleh: <strong>{{ $po->rejected_by ?? ($po->approver?->name ?? 'Atasan') }}</strong>
-                                    pada
-                                    {{ $po->rejected_at ? \Carbon\Carbon::parse($po->rejected_at)->format('d F Y H:i') : '-' }}.
-                                </p>
-                                <div
-                                    style="margin-top: 0.4rem; font-size: 0.85rem; background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #fecaca; color: #991b1b;">
-                                    <strong>Catatan Alasan:</strong>
-                                    {{ $po->reject_reason ?? 'Tidak ada keterangan tambahan.' }}
-                                </div>
-                            </div>
-                        </div>
-                        @if (Auth::user()?->isSuperAdmin() || Auth::user()?->canEditPo())
-                            <a href="{{ route('gudang.po.edit', $po->po_id) }}" class="btn btn-primary btn-sm"
-                                style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem;">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                <span>Revisi &amp; Edit Dokumen PO</span>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            @elseif ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
-                <div
-                    style="background: #f0fdf4; border: 1.5px solid #dcfce7; border-left: 5px solid #10b981; border-radius: 8px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                        <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                            <div
-                                style="width: 40px; height: 40px; border-radius: 8px; background: #d1fae5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #065f46;">Dokumen PO Telah
-                                        Disetujui Resmi (APPROVED)</h3>
-                                    <span class="badge"
-                                        style="background: #10b981; color: #ffffff; font-size: 0.7rem; font-weight: 700;">SAH
-                                        DIVERIFIKASI</span>
-                                </div>
-                                <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #047857;">
-                                    Disetujui oleh:
-                                    <strong>{{ $po->approved_by ?? ($po->approver?->name ?? 'Atasan Penyetuju') }}</strong>
-                                    pada
-                                    {{ $po->approved_at ? \Carbon\Carbon::parse($po->approved_at)->format('d F Y H:i') : '-' }}.
-                                    @if ($po->approval_notes)
-                                        &bull; <em>"{{ $po->approval_notes }}"</em>
-                                    @endif
-                                </p>
-
-                                {{-- STATUS EMAIL KE SUPPLIER --}}
-                                <div style="margin-top: 0.5rem; font-size: 0.8125rem;">
-                                    @if ($po->isSentToSupplier())
-                                        <span
-                                            style="color: #1e40af; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: #dbeafe; padding: 2px 8px; border-radius: 4px;">
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                            Surat PO telah dikirim ke supplier ({{ $po->supplier_email_sent }}) pada
-                                            {{ \Carbon\Carbon::parse($po->sent_to_supplier_at)->format('d/m/Y H:i') }}
-                                        </span>
-                                    @else
-                                        <span style="color: #64748b; display: inline-flex; align-items: center; gap: 0.35rem;">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            PO siap dikirimkan ke mitra supplier via email.
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                            @if ($po->approval_token)
-                                <a href="{{ route('po.verify.qr', $po->approval_token) }}" target="_blank"
-                                    class="btn btn-secondary btn-sm"
-                                    style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem;">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                    </svg>
-                                    <span>Sertifikat Verifikasi QR</span>
-                                </a>
                             @endif
-                            <button type="button" onclick="openKirimSupplierModal({{ json_encode($sendSupplierPayload) }})"
-                                class="btn btn-primary btn-sm"
-                                style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; font-size: 0.825rem; background: #0284c7; border-color: #0284c7;">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                                <span>{{ $po->isSentToSupplier() ? 'Kirim Ulang ke Supplier' : 'Kirim ke Supplier via Email' }}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            @endif
 
-            {{-- 4 KARTU METRIK OPERASIONAL PO --}}
-            @php
-                $pct = $po->persentase_terima;
-                $totalPesan = (float) $po->details->sum('pesan_qty');
-                $totalTerima = (float) $po->details->sum('terima_qty');
-                $totalSisa = (float) $po->total_sisa_qty;
+                            <div class="po-breakdown-divider"></div>
 
-                $totalSubtotalItems = (float) $po->details->sum(function ($d) {
-                    $subTagihan = (float) ($d->subtotal_tagihan ?? 0);
-                    $subNominal = (float) ($d->subtotal_nominal ?? 0);
-                    $subNetto = (float) ($d->subtotal_netto ?? 0);
-                    $calc = (float) $d->pesan_qty * (float) $d->harga_nominal;
-                    if ($subTagihan > 0)
-                        return $subTagihan;
-                    if ($subNominal > 0)
-                        return $subNominal;
-                    if ($subNetto > 0)
-                        return $subNetto;
-                    return $calc;
-                });
+                            <div class="po-breakdown-row">
+                                <span>Dasar Pengenaan Pajak (DPP):</span>
+                                <strong>Rp {{ number_format($calcDpp, 0, ',', '.') }}</strong>
+                            </div>
 
-                $totalTagihanHdr = (float) ($po->total_tagihan ?? 0);
-                $totalNominalHdr = (float) ($po->total_nominal ?? 0);
-                $displayTotalPO = $totalTagihanHdr > 0
-                    ? $totalTagihanHdr
-                    : ($totalNominalHdr > 0 ? $totalNominalHdr : $totalSubtotalItems);
-            @endphp
-            <div
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                {{-- TOTAL NOMINAL PO --}}
-                <div class="card"
-                    style="padding: 1rem 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <span
-                        style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                        Total Nilai Pesanan
-                    </span>
-                    <div style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                        Rp {{ number_format($displayTotalPO, 0, ',', '.') }}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
-                        {{ $po->details->count() }} item bahan baku &bull; {{ number_format($totalPesan, 0) }} total
-                        kuantitas
-                    </div>
-                </div>
+                            @if ($calcPpn > 0)
+                                @if ($isPotongGlobal)
+                                    <div class="po-breakdown-row" style="color: #dc2626;">
+                                        <span>Pemotongan Pajak ({{ $taxCdGlobal }}):</span>
+                                        <strong>- Rp {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                                    </div>
+                                @elseif ($po->is_harga_termasuk_pajak)
+                                    <div class="po-breakdown-row" style="color: #15803d;">
+                                        <span>Pajak (Termasuk Gross):</span>
+                                        <strong>Rp {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                                    </div>
+                                @else
+                                    <div class="po-breakdown-row" style="color: #0284c7;">
+                                        <span>Pajak Tambahan:</span>
+                                        <strong>+ Rp {{ number_format($calcPpn, 0, ',', '.') }}</strong>
+                                    </div>
+                                @endif
+                            @endif
 
-                {{-- REALISASI NOMINAL DITERIMA --}}
-                <div class="card"
-                    style="padding: 1rem 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                        <span
-                            style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                            Realisasi Penerimaan Barang
-                        </span>
-                        <span
-                            style="font-size: 0.8rem; font-weight: 700; color: {{ $pct >= 100 ? '#059669' : ($pct > 0 ? '#d97706' : '#64748b') }};">
-                            {{ $pct }}%
-                        </span>
-                    </div>
-                    <div
-                        style="font-size: 1.35rem; font-weight: 700; color: {{ $pct >= 100 ? '#059669' : '#0f172a' }}; margin-top: 0.25rem;">
-                        Rp {{ number_format((float) $po->realisasi_nominal, 0, ',', '.') }}
-                    </div>
-                    {{-- Progress Bar --}}
-                    <div
-                        style="width: 100%; height: 5px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-top: 0.45rem;">
-                        <div
-                            style="width: {{ min(100, $pct) }}%; height: 100%; background: {{ $pct >= 100 ? '#10b981' : ($pct > 0 ? '#f59e0b' : '#cbd5e1') }};">
-                        </div>
-                    </div>
-                </div>
-
-                {{-- TOTAL SISA FISIK BELUM DATANG / DIBATALKAN --}}
-                <div class="card"
-                    style="padding: 1rem 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <span
-                        style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                        @if (!empty($po->closed_at))
-                            Sisa Kuota Dibatalkan
-                        @else
-                            Sisa Fisik Belum Tiba
-                        @endif
-                    </span>
-                    <div
-                        style="font-size: 1.35rem; font-weight: 700; color: {{ !empty($po->closed_at) ? '#dc2626' : ($totalSisa > 0 ? '#b45309' : '#059669') }}; margin-top: 0.25rem;">
-                        {{ number_format($totalSisa, 2) }}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
-                        @if (!empty($po->closed_at))
-                            <strong style="color: #dc2626;">Dibatalkan resmi</strong> &bull; Sisa kuota tidak dapat dikirim lagi
-                        @elseif ($totalSisa > 0)
-                            Menunggu kiriman supplier berikutnya
-                        @else
-                            Seluruh barang telah diterima lengkap
-                        @endif
-                    </div>
-                </div>
-
-                {{-- JADWAL PO & ESTIMASI TIBA --}}
-                <div class="card"
-                    style="padding: 1rem 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <span
-                        style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                        Jadwal &amp; Estimasi Tiba
-                    </span>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem;">
-                        {{ \Carbon\Carbon::parse($po->po_tgl)->format('d/m/Y') }}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
-                        Estimasi Tiba:
-                        @if ($po->tgl_estimasi_datang)
-                            <strong
-                                style="color: #0284c7;">{{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->format('d/m/Y') }}</strong>
-                        @else
-                            <span>-</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            {{-- MASTER-DETAIL WORKSPACE: 2 KOLOM (KIRI: RINCIAN & HISTORI, KANAN: SIDEBAR INFO MITRA) --}}
-            <div
-                style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 1.5rem; align-items: start; margin-bottom: 2rem;">
-                {{-- KOLOM KIRI (KONTEN UTAMA) --}}
-                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-
-                    {{-- KARTU 1: RINCIAN ITEM BARANG YANG DIPESAN --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong style="color: #0f172a; font-size: 0.95rem;">Rincian Barang yang Dipesan</strong>
-                                <span
-                                    style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;">({{ $po->details->count() }}
-                                    Item Bahan)</span>
+                            <div class="po-breakdown-grand-total">
+                                <span>Total Tagihan PO:</span>
+                                <strong>Rp {{ number_format($grandTotalTagihan, 0, ',', '.') }}</strong>
                             </div>
                         </div>
-                        <div style="overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse;">
+                    </div>
+                </div>
+
+                {{-- CARD 2: RIWAYAT KEDATANGAN BARANG (SURAT JALAN / GRN) --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <h3 class="po-card-title">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            <span>Riwayat Kedatangan Barang Fisik</span>
+                            <span class="po-card-subtitle">({{ $po->penerimaan->count() }} Surat Jalan / Termin)</span>
+                        </h3>
+                    </div>
+
+                    @if ($po->penerimaan->isNotEmpty())
+                        <div class="po-table-responsive">
+                            <table class="po-table">
                                 <thead>
-                                    <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                                        <th style="width: 40px; text-align: center;">No</th>
-                                        <th>Nama Komoditas / Bahan Baku</th>
-                                        <th>Satuan</th>
-                                        <th style="text-align: right;">Pesan</th>
-                                        <th style="text-align: right;">Diterima</th>
-                                        <th style="text-align: right;">
-                                            {{ !empty($po->closed_at) ? 'Sisa Dibatalkan' : 'Sisa' }}</th>
-                                        <th style="text-align: right;">Harga Satuan</th>
-                                        <th style="text-align: right;">Diskon</th>
-                                        <th style="text-align: right;">Potongan</th>
-                                        <th style="text-align: center;">Pajak (PPN)</th>
-                                        <th style="text-align: right;">Subtotal</th>
+                                    <tr>
+                                        <th>No Penerimaan</th>
+                                        <th>Tanggal Tiba</th>
+                                        <th>Ketepatan Jadwal</th>
+                                        <th>Gudang Masuk</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right; width: 110px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($po->details as $index => $item)
+                                    @foreach ($po->penerimaan as $terima)
                                         @php
-                                            $diskonPct = (float) ($item->diskon_persen ?? 0);
-                                            $potNom = (float) ($item->potongan_nominal ?? 0);
-                                            $isPpn = ($item->ppn_tipe ?? '') === 'PPN_11';
-
-                                            $subTagihan = (float) ($item->subtotal_tagihan ?? 0);
-                                            $subNominal = (float) ($item->subtotal_nominal ?? 0);
-                                            $subNetto = (float) ($item->subtotal_netto ?? 0);
-                                            $calcManual = (float) $item->pesan_qty * (float) $item->harga_nominal;
-
-                                            if ($subTagihan > 0) {
-                                                $subtotalRow = $subTagihan;
-                                            } elseif ($subNominal > 0) {
-                                                $subtotalRow = $subNominal;
-                                            } elseif ($subNetto > 0) {
-                                                $subtotalRow = $subNetto;
-                                            } else {
-                                                $subtotalRow = $calcManual;
-                                            }
-
-                                            $taxLabel = $item->pajak?->pajak_nm ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak');
-                                            $taxCode = $item->pajak?->pajak_cd ?? ($item->ppn_tipe ?? ($isPpn ? 'PPN 11%' : 'Non-Pajak'));
-                                            if ($item->pajak?->sifat_pajak === 'POTONG' || str_contains(strtoupper($taxCode), 'PPH')) {
-                                                $taxCode = \App\Models\Gudang\DatPoHdr::formatShortPphName($taxCode);
-                                            } elseif (strlen($taxCode) > 12) {
-                                                $taxCode = substr($taxCode, 0, 12);
-                                            }
-                                            $taxTarif = $item->pajak ? (float) $item->pajak->tarif_persen : ($isPpn ? 11 : 0);
-                                            $taxInc = (bool) ($item->is_harga_termasuk_pajak ?? $po->is_harga_termasuk_pajak);
+                                            $tglTerima = \Carbon\Carbon::parse($terima->terima_tgl);
+                                            $eta = $po->tgl_estimasi_datang ? \Carbon\Carbon::parse($po->tgl_estimasi_datang) : null;
                                         @endphp
-                                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                                            <td style="text-align: center; color: #64748b; font-size: 0.85rem;">{{ $index + 1 }}
-                                            </td>
+                                        <tr>
                                             <td>
-                                                <strong
-                                                    style="color: #0f172a; font-size: 0.875rem;">{{ $item->barang?->barang_nm }}</strong>
-                                                <span
-                                                    style="display: block; font-size: 0.725rem; color: #64748b; font-family: monospace;">{{ $item->barang?->barang_cd }}</span>
+                                                <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none;" class="text-mono">
+                                                    {{ $terima->terima_no }}
+                                                </a>
                                             </td>
-                                            <td style="color: #475569; font-size: 0.85rem;">
-                                                {{ $item->barang?->satuanDasar?->satuan_nm ?? ($item->barang?->satuanDasar?->satuan_cd ?? '-') }}
-                                            </td>
-                                            <td style="text-align: right; font-weight: 600; font-size: 0.875rem;">
-                                                {{ number_format((float) $item->pesan_qty, 2) }}
-                                            </td>
-                                            <td
-                                                style="text-align: right; font-weight: 600; color: #059669; font-size: 0.875rem;">
-                                                {{ number_format((float) $item->terima_qty, 2) }}
-                                            </td>
-                                            <td style="text-align: right; font-weight: 600; font-size: 0.875rem;">
-                                                @if (!empty($po->closed_at) && (float) $item->sisa_qty > 0)
-                                                    <span
-                                                        style="color: #dc2626; font-weight: 700;">{{ number_format((float) $item->sisa_qty, 2) }}</span>
-                                                    <span class="badge"
-                                                        style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.65rem; display: block; margin-top: 2px;">Batal
-                                                        Sisa</span>
-                                                @else
-                                                    <span style="color: {{ (float) $item->sisa_qty > 0 ? '#b45309' : '#64748b' }};">
-                                                        {{ number_format((float) $item->sisa_qty, 2) }}
-                                                    </span>
-                                                @endif
-                                            </td>
-                                            <td
-                                                style="text-align: right; font-size: 0.85rem; color: #475569; font-family: monospace;">
-                                                Rp {{ number_format((float) $item->harga_nominal, 0, ',', '.') }}
-                                            </td>
-                                            <td
-                                                style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $diskonPct > 0 ? '#d97706' : '#94a3b8' }};">
-                                                {{ $diskonPct > 0 ? number_format($diskonPct, 1, ',', '.') . '%' : '-' }}
-                                            </td>
-                                            <td
-                                                style="text-align: right; font-family: monospace; font-size: 0.85rem; color: {{ $potNom > 0 ? '#dc2626' : '#94a3b8' }};">
-                                                {{ $potNom > 0 ? 'Rp ' . number_format($potNom, 0, ',', '.') : '-' }}
-                                            </td>
-                                            <td style="text-align: center; white-space: nowrap;">
-                                                @if ($taxTarif > 0)
-                                                    @php
-                                                        $isPotongRow = ($item->pajak?->sifat_pajak === 'POTONG');
-                                                    @endphp
-                                                    <span class="badge"
-                                                        style="background: {{ $isPotongRow ? '#fef2f2' : '#eff6ff' }}; color: {{ $isPotongRow ? '#dc2626' : '#0284c7' }}; border: 1px solid {{ $isPotongRow ? '#fecaca' : '#bfdbfe' }}; font-size:0.75rem; font-weight:800; font-family: monospace;"
-                                                        title="{{ $item->pajak?->pajak_nm }}">
-                                                        {{ $taxCode }}
-                                                    </span>
-                                                    <div style="font-size: 0.675rem; color: {{ $isPotongRow ? '#dc2626' : ($taxInc ? '#1e40af' : '#15803d') }}; font-weight: 600; margin-top: 1px;">
-                                                        {{ $isPotongRow ? "-{$taxTarif}% (Potong)" : "{$taxTarif}% (" . ($taxInc ? 'Inc' : 'Exc') . ")" }}
-                                                    </div>
-                                                    @if ((float) ($item->ppn_nominal ?? 0) > 0)
-                                                        <div
-                                                            style="font-size: 0.7rem; color: {{ $isPotongRow ? '#dc2626' : '#64748b' }}; font-family: monospace; margin-top: 2px;">
-                                                            {{ $isPotongRow ? '- ' : '' }}Rp {{ number_format((float) $item->ppn_nominal, 0, ',', '.') }}
-                                                        </div>
+                                            <td>{{ $tglTerima->format('d/m/Y') }}</td>
+                                            <td>
+                                                @if ($eta)
+                                                    @if ($tglTerima->lt($eta))
+                                                        <span class="po-badge po-badge-completed">Lebih Cepat</span>
+                                                    @elseif ($tglTerima->equalTo($eta))
+                                                        <span class="po-badge po-badge-approved">Tepat Waktu</span>
+                                                    @else
+                                                        <span class="po-badge po-badge-rejected">Terlambat</span>
                                                     @endif
                                                 @else
-                                                    <span class="badge"
-                                                        style="background:#f1f5f9; color:#64748b; font-size:0.7rem;">Non-Pajak</span>
+                                                    <span style="color: #94a3b8;">-</span>
                                                 @endif
                                             </td>
-                                            <td
-                                                style="text-align: right; font-weight: 700; color: #0f172a; font-size: 0.875rem; font-family: monospace;">
-                                                Rp {{ number_format($subtotalRow, 0, ',', '.') }}
+                                            <td>{{ $terima->gudang?->gudang_nm ?? '-' }}</td>
+                                            <td><span class="po-badge po-badge-completed">Diterima Fisik</span></td>
+                                            <td style="text-align: right;">
+                                                <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" class="btn-pill-outline" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;">
+                                                    Lihat SJ
+                                                </a>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
-                                <tfoot style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
-                                    <tr>
-                                        <td colspan="3"
-                                            style="text-align: right; padding: 0.75rem 1rem; color: #475569; font-size: 0.85rem;">
-                                            Total Kuantitas &amp; Subtotal Keseluruhan:
-                                        </td>
-                                        <td
-                                            style="text-align: right; padding: 0.75rem 0.5rem; color: #0f172a; font-size: 0.875rem;">
-                                            {{ number_format($totalPesan, 2) }}
-                                        </td>
-                                        <td
-                                            style="text-align: right; padding: 0.75rem 0.5rem; color: #059669; font-size: 0.875rem;">
-                                            {{ number_format($totalTerima, 2) }}
-                                        </td>
-                                        <td
-                                            style="text-align: right; padding: 0.75rem 0.5rem; color: {{ !empty($po->closed_at) ? '#dc2626' : ($totalSisa > 0 ? '#b45309' : '#64748b') }}; font-size: 0.875rem;">
-                                            {{ number_format($totalSisa, 2) }}
-                                            @if (!empty($po->closed_at) && $totalSisa > 0)
-                                                <div style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">(Batal Sisa)
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td colspan="4"></td>
-                                        <td
-                                            style="text-align: right; padding: 0.75rem 1rem; color: #0f172a; font-size: 1rem; font-family: monospace;">
-                                            Rp {{ number_format($displayTotalPO, 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
-
-                        {{-- SUMMARY BREAKDOWN KEUANGAN PO: DISKON, POTONGAN, DPP & PPN --}}
-                        @php
-                            $calcSubtotalBruto = (float) ($po->subtotal_bruto ?? 0) > 0
-                                ? (float) $po->subtotal_bruto
-                                : (float) $po->details->sum(fn($d) => (float) $d->pesan_qty * (float) $d->harga_nominal);
-
-                            if ($calcSubtotalBruto <= 0 && $displayTotalPO > 0) {
-                                $calcSubtotalBruto = $displayTotalPO;
-                            }
-
-                            $calcDiskonItem = (float) ($po->diskon_total ?? 0) > 0
-                                ? (float) $po->diskon_total
-                                : (float) $po->details->sum(fn($d) => (float) $d->pesan_qty * (float) ($d->diskon_nominal ?? 0));
-
-                            $calcPotongan = (float) ($po->potongan_nominal ?? 0) > 0
-                                ? (float) $po->potongan_nominal
-                                : (float) $po->details->sum(fn($d) => (float) ($d->potongan_nominal ?? 0));
-
-                            $calcDpp = (float) ($po->dpp_nominal ?? 0) > 0
-                                ? (float) $po->dpp_nominal
-                                : max(0, $calcSubtotalBruto - $calcDiskonItem - $calcPotongan);
-
-                            $calcPpn = (float) ($po->ppn_nominal ?? 0) > 0
-                                ? (float) $po->ppn_nominal
-                                : (float) $po->details->sum(fn($d) => (float) ($d->ppn_nominal ?? 0));
-
-                            $grandTotalTagihan = $totalTagihanHdr > 0
-                                ? $totalTagihanHdr
-                                : ($totalNominalHdr > 0 ? $totalNominalHdr : ($isPotongGlobal ? max(0, $calcDpp - $calcPpn) : ($calcDpp + $calcPpn)));
-
-                            if ($grandTotalTagihan <= 0 && $displayTotalPO > 0) {
-                                $grandTotalTagihan = $displayTotalPO;
-                            }
-                        @endphp
-
-                        <div
-                            style="border-top: 1px solid #e2e8f0; background: #f8fafc; padding: 1.25rem; display: flex; justify-content: flex-end;">
-                            <div
-                                style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; color: #64748b;">
-                                    <span>Subtotal Nilai Bruto:</span>
-                                    <strong style="color: #0f172a; font-family: monospace;">Rp
-                                        {{ number_format($calcSubtotalBruto, 0, ',', '.') }}</strong>
-                                </div>
-
-                                @if ($calcDiskonItem > 0)
-                                    <div
-                                        style="display: flex; justify-content: space-between; align-items: center; color: #d97706;">
-                                        <span>Akumulasi Diskon Item:</span>
-                                        <strong style="font-family: monospace;">- Rp
-                                            {{ number_format($calcDiskonItem, 0, ',', '.') }}</strong>
-                                    </div>
-                                @endif
-
-                                @if ($calcPotongan > 0)
-                                    <div
-                                        style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
-                                        <span>Potongan Harga Langsung:</span>
-                                        <strong style="font-family: monospace;">- Rp
-                                            {{ number_format($calcPotongan, 0, ',', '.') }}</strong>
-                                    </div>
-                                @endif
-
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; color: #475569; padding-top: 0.35rem; border-top: 1px dashed #cbd5e1;">
-                                    <span>Dasar Pengenaan Pajak (DPP):</span>
-                                    <strong style="color: #0f172a; font-family: monospace;">Rp
-                                        {{ number_format($calcDpp, 0, ',', '.') }}</strong>
-                                </div>
-
-                                @if ($calcPpn > 0)
-                                    @if ($isPotongGlobal)
-                                        <div
-                                            style="display: flex; justify-content: space-between; align-items: center; color: #dc2626;">
-                                            <span>Pemotongan Pajak ({{ $taxCdGlobal }}):</span>
-                                            <strong style="font-family: monospace;">- Rp
-                                                {{ number_format($calcPpn, 0, ',', '.') }}</strong>
-                                        </div>
-                                    @elseif ($po->is_harga_termasuk_pajak)
-                                        <div
-                                            style="display: flex; justify-content: space-between; align-items: center; color: #15803d;">
-                                            <span>Pajak PPN (Sudah Termasuk Gross):</span>
-                                            <strong style="font-family: monospace;">Rp
-                                                {{ number_format($calcPpn, 0, ',', '.') }}</strong>
-                                        </div>
-                                    @else
-                                        <div
-                                            style="display: flex; justify-content: space-between; align-items: center; color: #0284c7;">
-                                            <span>Pajak (PPN):</span>
-                                            <strong style="font-family: monospace;">+ Rp
-                                                {{ number_format($calcPpn, 0, ',', '.') }}</strong>
-                                        </div>
-                                    @endif
-                                @endif
-
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.65rem; border-top: 2px solid #0f172a; font-size: 1.05rem;">
-                                    <span style="font-weight: 700; color: #0f172a;">Total Nilai PO Resmi:</span>
-                                    <strong style="color: #0284c7; font-size: 1.2rem; font-family: monospace;">Rp
-                                        {{ number_format($grandTotalTagihan, 0, ',', '.') }}</strong>
-                                </div>
+                    @else
+                        <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
+                            <div style="width: 38px; height: 38px; margin: 0 auto 0.65rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
                             </div>
+                            <strong style="color: #64748b; font-size: 0.875rem; display: block;">Belum ada riwayat kedatangan barang</strong>
+                            <p style="font-size: 0.775rem; margin-top: 0.2rem; margin-bottom: 0;">
+                                Barang belum pernah dicatat masuk. Saat armada supplier tiba di pabrik, catat penerimaan melalui menu Aksi.
+                            </p>
                         </div>
+                    @endif
+                </div>
+
+                {{-- CARD 3: RIWAYAT INSPEKSI MUTU QC INBOUND --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <h3 class="po-card-title">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                <span>Hasil Uji Mutu &amp; Inspeksi QC Inbound</span>
+                                <span class="po-card-subtitle">({{ $po->qcInbound->count() }} Tiket QC)</span>
+                            </h3>
+                        </div>
+                        <a href="{{ route('qc.inbound.index') }}" class="btn-pill-outline" style="padding: 0.25rem 0.65rem; font-size: 0.725rem;">
+                            Antrean QC &rarr;
+                        </a>
                     </div>
 
-                    {{-- KARTU: RIWAYAT HASIL UJI MUTU & INSPEKSI QC INBOUND --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 1.5rem;">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div style="width: 28px; height: 28px; border-radius: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
-                                    🔬
-                                </div>
-                                <div>
-                                    <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Hasil Uji Mutu &amp; Inspeksi QC Inbound</strong>
-                                    <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;">({{ $po->qcInbound->count() }} Tiket Pengujian Truk)</span>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                @if ($po->qcInbound->isNotEmpty())
-                                    <span class="badge" style="background: {{ $qcInfo['bg'] }}; color: {{ $qcInfo['color'] }}; border: 1px solid {{ $qcInfo['border'] }}; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
-                                        {{ $qcInfo['icon'] }} {{ $qcInfo['label'] }}
-                                    </span>
-                                @endif
-                                <a href="{{ route('qc.inbound.index') }}" class="btn btn-secondary btn-sm no-print" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;">
-                                    Buka Antrean QC &rarr;
-                                </a>
-                            </div>
-                        </div>
-
-                        @if ($po->qcInbound->isNotEmpty())
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">No. Tiket QC &amp; Tgl</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">Armada &amp; Supir</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">Komoditas / Petugas</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: right; font-size: 0.8rem; font-weight: 700; color: #475569;">Hasil Timbang &amp; Uji Mutu</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: center; font-size: 0.8rem; font-weight: 700; color: #475569;">Keputusan Mutu</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: center; font-size: 0.8rem; font-weight: 700; color: #475569;">Status Gudang (GRN)</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: right; font-size: 0.8rem; font-weight: 700; color: #475569; width: 140px;">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($po->qcInbound as $qc)
-                                            @php
-                                                $firstDtl = $qc->details->first();
-                                                $tglPeriksa = $qc->tgl_periksa ? \Carbon\Carbon::parse($qc->tgl_periksa) : null;
-                                                $grossTotal = (float) $qc->details->sum('qty_timbang_gross');
-                                                $nettoTotal = (float) $qc->details->sum('qty_netto_lolos');
-                                                $refraksiTotal = (float) $qc->details->sum('qty_refraksi');
-                                                $rejectTotal = (float) $qc->details->sum('qty_reject');
-                                                $satuanNm = $firstDtl?->barang?->satuanDasar?->satuan_nm ?? 'kg';
-                                                $gradeCd = $firstDtl?->grade_cd ?? 'A';
-                                                $terimaLinked = $qc->terima;
-                                            @endphp
-                                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}"
-                                                        style="font-weight: 800; color: #0284c7; text-decoration: none; font-size: 0.85rem; font-family: monospace;">
-                                                        {{ $qc->qc_no }}
+                    @if ($po->qcInbound->isNotEmpty())
+                        <div class="po-table-responsive">
+                            <table class="po-table">
+                                <thead>
+                                    <tr>
+                                        <th>No. Tiket QC &amp; Tgl</th>
+                                        <th>Armada &amp; Supir</th>
+                                        <th>Komoditas</th>
+                                        <th style="text-align: right;">Netto Lolos</th>
+                                        <th style="text-align: center;">Keputusan Mutu</th>
+                                        <th style="text-align: center;">Status GRN</th>
+                                        <th style="text-align: right; width: 130px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($po->qcInbound as $qc)
+                                        @php
+                                            $firstDtl = $qc->details->first();
+                                            $tglPeriksa = $qc->tgl_periksa ? \Carbon\Carbon::parse($qc->tgl_periksa) : null;
+                                            $nettoTotal = (float) $qc->details->sum('qty_netto_lolos');
+                                            $satuanNm = $firstDtl?->barang?->satuanDasar?->satuan_nm ?? 'kg';
+                                            $terimaLinked = $qc->terima;
+                                        @endphp
+                                        <tr>
+                                            <td>
+                                                <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none;" class="text-mono">
+                                                    {{ $qc->qc_no }}
+                                                </a>
+                                                <div style="font-size: 0.7rem; color: #64748b; margin-top: 1px;">
+                                                    {{ $tglPeriksa ? $tglPeriksa->format('d/m/Y H:i') : '-' }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong style="color: var(--po-slate-900);">{{ $qc->plat_nomor_truk ?: '-' }}</strong>
+                                                <div style="font-size: 0.725rem; color: #64748b;">{{ $qc->sopir_nama ?: 'Sopir -' }}</div>
+                                            </td>
+                                            <td>
+                                                <strong style="color: var(--po-slate-800);">{{ $firstDtl?->barang?->barang_nm ?: ($qc->nama_jenis ?: '-') }}</strong>
+                                            </td>
+                                            <td style="text-align: right; font-weight: 700; color: var(--po-emerald);" class="text-mono">
+                                                {{ number_format($nettoTotal, 2, ',', '.') }} {{ $satuanNm }}
+                                            </td>
+                                            <td style="text-align: center;">
+                                                @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->status_qc === 'DITOLAK')
+                                                    <span class="po-badge po-badge-rejected">Ditolak QC</span>
+                                                @elseif ($qc->status_qc === 'DITERIMA_PARSIAL')
+                                                    <span class="po-badge po-badge-pending">Lolos Bersyarat</span>
+                                                @else
+                                                    <span class="po-badge po-badge-completed">Lulus Uji Mutu</span>
+                                                @endif
+                                            </td>
+                                            <td style="text-align: center;">
+                                                @if ($terimaLinked)
+                                                    <span class="po-badge po-badge-approved">Sudah GRN</span>
+                                                @else
+                                                    <span class="po-badge po-badge-draft">Menunggu GRN</span>
+                                                @endif
+                                            </td>
+                                            <td style="text-align: right;">
+                                                <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
+                                                    <a href="{{ route('qc.inbound.show', $qc->qc_id) }}" class="btn-pill-outline" style="padding: 0.2rem 0.5rem; font-size: 0.725rem;">
+                                                        Detail
                                                     </a>
-                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                                                        📅 {{ $tglPeriksa ? $tglPeriksa->format('d/m/Y H:i') : '-' }}
-                                                    </div>
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
-                                                        🚛 {{ $qc->plat_nomor_truk ?: '-' }}
-                                                    </div>
-                                                    <div style="font-size: 0.75rem; color: #475569; margin-top: 1px;">
-                                                        Sopir: {{ $qc->sopir_nama ?: '-' }}
-                                                    </div>
-                                                    @if ($qc->surat_jalan_supplier)
-                                                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 1px;">
-                                                            SJ: {{ $qc->surat_jalan_supplier }}
-                                                        </div>
-                                                    @endif
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    <div style="font-weight: 700; color: #0f172a; font-size: 0.825rem;">
-                                                        {{ $firstDtl?->barang?->barang_nm ?: ($qc->nama_jenis ?: $qc->kategori_barang) }}
-                                                    </div>
-                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 1px;">
-                                                        Petugas: <strong style="color: #334155;">{{ $qc->petugas_qc_nama ?: '-' }}</strong>
-                                                    </div>
-                                                    @if ($qc->tahap_uji)
-                                                        <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.65rem; padding: 1px 5px; margin-top: 2px;">
-                                                            {{ str_replace('_', ' ', $qc->tahap_uji) }}
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem; text-align: right;">
-                                                    <div style="font-size: 0.85rem; font-weight: 800; color: #047857;">
-                                                        Netto: {{ number_format($nettoTotal, 2, ',', '.') }} {{ $satuanNm }}
-                                                    </div>
-                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
-                                                        Gross: {{ number_format($grossTotal, 2, ',', '.') }} {{ $satuanNm }}
-                                                    </div>
-                                                    @if ($refraksiTotal > 0 || ($firstDtl && $firstDtl->refraksi_persen > 0))
-                                                        <div style="font-size: 0.725rem; color: #b45309; font-weight: 600;">
-                                                            Refraksi: -{{ number_format($refraksiTotal, 2, ',', '.') }} {{ $satuanNm }} ({{ (float)($firstDtl->refraksi_persen ?? 0) }}%)
-                                                        </div>
-                                                    @endif
-                                                    @if ($rejectTotal > 0)
-                                                        <div style="font-size: 0.725rem; color: #dc2626; font-weight: 700;">
-                                                            Reject: -{{ number_format($rejectTotal, 2, ',', '.') }} {{ $satuanNm }}
-                                                        </div>
-                                                    @endif
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem; text-align: center;">
-                                                    @if ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->status_qc === 'DITOLAK')
-                                                        <span class="badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 800; font-size: 0.75rem; padding: 3px 8px;">
-                                                            🔴 Ditolak QC (Reject)
-                                                        </span>
-                                                    @elseif ($qc->status_qc === 'DITERIMA_PARSIAL' || $rejectTotal > 0 || $refraksiTotal > 0)
-                                                        <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 0.75rem; padding: 3px 8px;">
-                                                            🟡 Lolos Bersyarat
-                                                        </span>
-                                                        <div style="font-size: 0.675rem; color: #92400e; margin-top: 2px;">Grade: <strong>{{ $gradeCd }}</strong></div>
-                                                    @elseif ($qc->status_qc === 'DRAFT')
-                                                        <span class="badge" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
-                                                            ⏳ Sedang Diuji
-                                                        </span>
-                                                    @else
-                                                        <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 800; font-size: 0.75rem; padding: 3px 8px;">
-                                                            🟢 Lulus Uji Mutu
-                                                        </span>
-                                                        <div style="font-size: 0.675rem; color: #065f46; margin-top: 2px;">Grade: <strong>{{ $gradeCd }}</strong></div>
-                                                    @endif
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem; text-align: center;">
-                                                    @if ($terimaLinked)
-                                                        <a href="{{ route('gudang.terima.show', $terimaLinked->terima_id) }}" style="font-size: 0.8rem; font-weight: 700; color: #0284c7; text-decoration: none;" title="Buka Dokumen Terima Gudang">
-                                                            {{ $terimaLinked->terima_no }}
-                                                        </a>
-                                                        <span class="badge badge-success" style="font-size: 0.65rem; display: block; margin-top: 2px; width: fit-content; margin-left: auto; margin-right: auto;">
-                                                            Sudah Terbit GRN
-                                                        </span>
-                                                    @elseif ($qc->status_qc === 'DITOLAK_TOTAL' || $qc->status_qc === 'DITOLAK')
-                                                        <span style="font-size: 0.75rem; color: #991b1b; font-weight: 600;">Muatan Ditolak</span>
-                                                    @else
-                                                        <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.675rem; font-weight: 700;">
-                                                            Menunggu GRN Fisik
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem; text-align: right;">
-                                                    <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
-                                                        <a href="{{ route('qc.inbound.show', $qc->qc_id) }}"
-                                                            class="btn btn-secondary btn-sm no-print"
-                                                            style="padding: 0.25rem 0.5rem; font-size: 0.725rem;"
-                                                            title="Buka Lembar Hasil Uji QC">
-                                                            Detail QC
-                                                        </a>
-                                                        <a href="{{ route('gudang.qc.haccp_cetak', $qc->qc_id) }}"
-                                                            target="_blank"
-                                                            class="btn btn-secondary btn-sm no-print"
-                                                            style="padding: 0.25rem 0.5rem; font-size: 0.725rem; color: #0284c7; border-color: #bae6fd;"
-                                                            title="Cetak Dokumen Pemeriksaan Mutu (HACCP)">
-                                                            HACCP
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                                                    <a href="{{ route('gudang.qc.haccp_cetak', $qc->qc_id) }}" target="_blank" class="btn-pill-outline" style="padding: 0.2rem 0.5rem; font-size: 0.725rem; color: #0284c7; border-color: #bae6fd;">
+                                                        HACCP
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
+                            <div style="width: 38px; height: 38px; margin: 0 auto 0.65rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                             </div>
-                        @else
-                            <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
-                                <div style="width: 42px; height: 42px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                                    🔬
-                                </div>
-                                <strong style="color: #64748b; font-size: 0.9rem; display: block;">Belum ada riwayat inspeksi mutu (QC Inbound)</strong>
-                                <p style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.4;">
-                                    Bahan baku pesanan PO ini belum diinspeksi oleh tim QC Lapangan. Saat armada truk tiba di pabrik dan diperiksa oleh petugas QC, rekaman mutu, kadar air, dan persentase refraksi akan otomatis tersaji di sini.
-                                </p>
-                            </div>
-                        @endif
+                            <strong style="color: #64748b; font-size: 0.875rem; display: block;">Belum ada inspeksi mutu QC</strong>
+                            <p style="font-size: 0.775rem; margin-top: 0.2rem; margin-bottom: 0;">
+                                Rekaman uji mutu dan refraksi kadar air akan otomatis muncul saat truk tiba dan diuji di lapangan.
+                            </p>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- CARD 4: RIWAYAT PERUBAHAN & AUDIT TRAIL PO --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <h3 class="po-card-title">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Riwayat Perubahan &amp; Audit Trail</span>
+                            <span class="po-card-subtitle">({{ $po->revisiLog->count() }} Catatan Revisi)</span>
+                        </h3>
                     </div>
 
-                    {{-- KARTU 2: RIWAYAT KEDATANGAN BARANG (SURAT JALAN / GOOD RECEIPTS) --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Kedatangan Barang Fisik</strong>
-                                <span
-                                    style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;">({{ $po->penerimaan->count() }}
-                                    Surat Jalan / Termin)</span>
-                            </div>
-                        </div>
-
-                        @if ($po->penerimaan->isNotEmpty())
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                                            <th>No Penerimaan</th>
-                                            <th>Tanggal Tiba</th>
-                                            <th>Ketepatan Jadwal</th>
-                                            <th>Gudang Masuk</th>
-                                            <th>Status</th>
-                                            <th style="text-align: right; width: 100px;">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($po->penerimaan as $terima)
-                                            @php
-                                                $tglTerima = \Carbon\Carbon::parse($terima->terima_tgl);
-                                                $eta = $po->tgl_estimasi_datang ? \Carbon\Carbon::parse($po->tgl_estimasi_datang) : null;
-                                            @endphp
-                                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                                <td>
-                                                    <a href="{{ route('gudang.terima.show', $terima->terima_id) }}"
-                                                        style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.85rem;">
-                                                        {{ $terima->terima_no }}
-                                                    </a>
-                                                </td>
-                                                <td style="font-size: 0.85rem; color: #334155;">{{ $tglTerima->format('d/m/Y') }}
-                                                </td>
-                                                <td>
-                                                    @if ($eta)
-                                                        @if ($tglTerima->lt($eta))
-                                                            <span class="badge"
-                                                                style="background:#f0fdf4; color:#166534; font-size:0.75rem;">
-                                                                Lebih Cepat
-                                                            </span>
-                                                        @elseif ($tglTerima->equalTo($eta))
-                                                            <span class="badge"
-                                                                style="background:#f0f9ff; color:#0369a1; font-size:0.75rem;">
-                                                                Tepat Waktu
-                                                            </span>
-                                                        @else
-                                                            <span class="badge"
-                                                                style="background:#fef2f2; color:#991b1b; font-size:0.75rem;">
-                                                                Terlambat
-                                                            </span>
+                    @if ($po->revisiLog->isNotEmpty())
+                        <div class="po-table-responsive">
+                            <table class="po-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 120px;">Versi &amp; Waktu</th>
+                                        <th style="width: 160px;">Diedit Oleh</th>
+                                        <th style="width: 140px;">Kategori</th>
+                                        <th>Poin Perubahan (Diffs)</th>
+                                        <th style="text-align: right; width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($po->revisiLog as $log)
+                                        @php
+                                            $tglRev = $log->revisi_tgl ? \Carbon\Carbon::parse($log->revisi_tgl) : null;
+                                            $diffs = $log->perubahan_json ?? [];
+                                        @endphp
+                                        <tr>
+                                            <td>
+                                                <span class="po-badge po-badge-approved text-mono">{{ $log->revisi_no ?: 'REV' }}</span>
+                                                <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
+                                                    {{ $tglRev ? $tglRev->format('d/m/Y H:i') : '-' }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong style="color: var(--po-slate-900);">{{ $log->user_nama ?: 'SYSTEM' }}</strong>
+                                                <div style="font-size: 0.7rem; color: #64748b;">{{ $log->user_role ?: 'Operator' }}</div>
+                                            </td>
+                                            <td>
+                                                <span class="po-badge po-badge-draft" style="font-size: 0.68rem;">
+                                                    {{ str_replace('_', ' ', $log->kategori_perubahan ?: 'KOMPREHENSIF') }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (!empty($diffs) && is_array($diffs))
+                                                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                                                        @foreach (array_slice($diffs, 0, 2) as $df)
+                                                            <div style="font-size: 0.75rem; color: #334155;">
+                                                                <strong>{{ $df['label'] ?? ($df['field'] ?? '') }}:</strong>
+                                                                <span style="color: #dc2626; text-decoration: line-through;">{{ $df['sebelum'] ?? '-' }}</span>
+                                                                &rarr;
+                                                                <span style="color: #166534; font-weight: 700;">{{ $df['sesudah'] ?? '-' }}</span>
+                                                            </div>
+                                                        @endforeach
+                                                        @if (count($diffs) > 2)
+                                                            <small style="color: #0284c7; font-weight: 600;">+ {{ count($diffs) - 2 }} perubahan lainnya...</small>
                                                         @endif
-                                                    @else
-                                                        <span style="color:#94a3b8; font-size:0.8rem;">-</span>
-                                                    @endif
-                                                </td>
-                                                <td style="font-size: 0.85rem; color: #475569;">{{ $terima->gudang?->gudang_nm }}
-                                                </td>
-                                                <td><span class="badge badge-success">Diterima Fisik</span></td>
-                                                <td style="text-align: right;">
-                                                    <a href="{{ route('gudang.terima.show', $terima->terima_id) }}"
-                                                        class="btn btn-secondary btn-sm no-print"
-                                                        style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
-                                                        Lihat Surat Jalan
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @else
-                            <div style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
-                                <div
-                                    style="width: 42px; height: 42px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                    </svg>
-                                </div>
-                                <strong style="color: #64748b; font-size: 0.9rem; display: block;">Belum ada riwayat kedatangan
-                                    barang</strong>
-                                <p style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0;">
-                                    Barang belum pernah dicatat masuk. Saat armada supplier tiba di pabrik, gunakan tombol hijau
-                                    <strong>"Terima Barang"</strong> di bagian atas.
-                                </p>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- KARTU 3: RIWAYAT PERUBAHAN & AUDIT TRAIL PO --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-top: 1.5rem;">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div style="width: 28px; height: 28px; border-radius: 6px; background: #eff6ff; border: 1px solid #bfdbfe; display: flex; align-items: center; justify-content: center; color: #1d4ed8; font-size: 0.9rem;">
-                                    📝
-                                </div>
-                                <div>
-                                    <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Perubahan &amp; Audit Trail Dokumen PO</strong>
-                                    <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;">({{ $po->revisiLog->count() }} Catatan Revisi)</span>
-                                </div>
-                            </div>
-                            <div>
-                                @if ($po->revisiLog->isNotEmpty())
-                                    <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
-                                        🔄 Telah Direvisi {{ $po->revisiLog->count() }}x
-                                    </span>
-                                @else
-                                    <span class="badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 700; font-size: 0.75rem; padding: 3px 8px;">
-                                        ✓ Dokumen Orisinal (Versi 1)
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        @if ($po->revisiLog->isNotEmpty())
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569; width: 140px;">Versi &amp; Waktu</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569; width: 170px;">Diedit Oleh</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569; width: 160px;">Kategori &amp; Alasan</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; color: #475569;">Poin Perubahan (Diffs)</th>
-                                            <th style="padding: 0.65rem 1rem; text-align: right; font-size: 0.8rem; font-weight: 700; color: #475569; width: 110px;">Aksi</th>
+                                                    </div>
+                                                @else
+                                                    <span style="font-size: 0.775rem; color: #64748b;">{{ $log->ringkasan_perubahan ?: '-' }}</span>
+                                                @endif
+                                            </td>
+                                            <td style="text-align: right;">
+                                                <button type="button" class="btn-pill-outline" onclick='openPoRevisiModal(@json($log))' style="padding: 0.2rem 0.55rem; font-size: 0.725rem;">
+                                                    Rincian
+                                                </button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($po->revisiLog as $log)
-                                            @php
-                                                $tglRev = $log->revisi_tgl ? \Carbon\Carbon::parse($log->revisi_tgl) : null;
-                                                $diffs = $log->perubahan_json ?? [];
-                                            @endphp
-                                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; font-family: monospace;">
-                                                        {{ $log->revisi_no ?: 'REV' }}
-                                                    </span>
-                                                    <div style="font-size: 0.725rem; color: #64748b; margin-top: 4px;">
-                                                        📅 {{ $tglRev ? $tglRev->format('d/m/Y H:i') : '-' }} WIB
-                                                    </div>
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    <strong style="color: #0f172a; font-size: 0.85rem; display: block;">
-                                                        {{ $log->user_nama ?: 'SYSTEM' }}
-                                                    </strong>
-                                                    <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.675rem; padding: 1px 5px; margin-top: 2px;">
-                                                        {{ $log->user_role ?: 'Operator' }}
-                                                    </span>
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.68rem; font-weight: 700; padding: 2px 6px;">
-                                                        {{ str_replace('_', ' ', $log->kategori_perubahan ?: 'KOMPREHENSIF') }}
-                                                    </span>
-                                                    <div style="font-size: 0.75rem; color: #475569; margin-top: 3px; font-style: italic;">
-                                                        &ldquo;{{ \Illuminate\Support\Str::limit($log->alasan_edit ?: 'Pembaruan Dokumen PO', 60) }}&rdquo;
-                                                    </div>
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem;">
-                                                    @if (!empty($diffs) && is_array($diffs))
-                                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                                            @foreach (array_slice($diffs, 0, 3) as $df)
-                                                                <div style="font-size: 0.775rem; color: #334155; line-height: 1.35;">
-                                                                    <strong style="color: #0f172a;">{{ $df['label'] ?? ($df['field'] ?? '') }}:</strong>
-                                                                    <span style="color: #dc2626; text-decoration: line-through; background: #fff1f2; padding: 0 3px; border-radius: 2px;">{{ $df['sebelum'] ?? '-' }}</span>
-                                                                    <span style="color: #64748b; font-weight: 700; margin: 0 2px;">➔</span>
-                                                                    <span style="color: #166534; font-weight: 700; background: #f0fdf4; padding: 0 4px; border-radius: 2px;">{{ $df['sesudah'] ?? '-' }}</span>
-                                                                </div>
-                                                            @endforeach
-                                                            @if (count($diffs) > 3)
-                                                                <small style="color: #0284c7; font-weight: 700;">+ {{ count($diffs) - 3 }} perubahan lainnya...</small>
-                                                            @endif
-                                                        </div>
-                                                    @elseif ($log->ringkasan_perubahan)
-                                                        <div style="font-size: 0.775rem; color: #475569;">
-                                                            {{ $log->ringkasan_perubahan }}
-                                                        </div>
-                                                    @else
-                                                        <span style="color: #94a3b8; font-size: 0.75rem;">-</span>
-                                                    @endif
-                                                </td>
-                                                <td style="padding: 0.75rem 1rem; text-align: right;">
-                                                    <button type="button"
-                                                        class="btn btn-secondary btn-sm no-print"
-                                                        onclick='openPoRevisiModal(@json($log))'
-                                                        style="padding: 0.25rem 0.6rem; font-size: 0.75rem; color: #0284c7; border-color: #bae6fd; background: #f0f9ff; font-weight: 700;">
-                                                        Lihat Detail
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
+                            <div style="width: 38px; height: 38px; margin: 0 auto 0.65rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             </div>
-                        @else
-                            <div style="text-align: center; padding: 2.25rem 1rem; color: #94a3b8;">
-                                <div style="width: 42px; height: 42px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                                    📋
-                                </div>
-                                <strong style="color: #64748b; font-size: 0.9rem; display: block;">Dokumen Masih Versi Asli (Belum Pernah Diedit)</strong>
-                                <p style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.4;">
-                                    Purchase Order ini belum pernah mengalami pengubahan sejak diterbitkan pertama kali. Setiap perubahan kuantitas, harga satuan, supplier, tanggal tiba, atau penambahan item baru akan tercatat secara akurat di audit trail ini.
-                                </p>
-                            </div>
-                        @endif
-                    </div>
+                            <strong style="color: #64748b; font-size: 0.875rem; display: block;">Dokumen Masih Versi Orisinal</strong>
+                            <p style="font-size: 0.775rem; margin-top: 0.2rem; margin-bottom: 0;">
+                                PO ini belum pernah mengalami pengubahan data sejak pertama kali diterbitkan.
+                            </p>
+                        </div>
+                    @endif
                 </div>
 
-                {{-- KOLOM KANAN (SIDEBAR RINGKAS STICKY) --}}
-                <div style="display: flex; flex-direction: column; gap: 1.25rem; position: sticky; top: 1rem;">
-
-                    {{-- PANEL 1: MITRA SUPPLIER --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                            <strong style="color: #0f172a; font-size: 0.9rem;">Mitra Supplier</strong>
-                        </div>
-                        <div style="padding: 1rem 1.25rem;">
-                            <strong
-                                style="font-size: 1rem; color: #0f172a; display: block;">{{ $po->supplier?->supplier_nm ?? '-' }}</strong>
-                            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.15rem;">Kode:
-                                {{ $po->supplier?->supplier_cd }}</span>
-
-                            <div style="margin-top: 0.75rem; font-size: 0.825rem; color: #475569; line-height: 1.4;">
-                                <div style="margin-bottom: 0.35rem;">
-                                    <span style="color: #64748b; display: block; font-size: 0.75rem;">Alamat:</span>
-                                    {{ $po->supplier?->alamat_txt ?? '-' }}
-                                </div>
-                                <div>
-                                    <span style="color: #64748b; display: block; font-size: 0.75rem;">Telepon /
-                                        Kontak:</span>
-                                    <strong>{{ $po->supplier?->kontak_no ?? '-' }}</strong>
-                                </div>
-                                <div style="margin-top: 0.35rem;">
-                                    <span style="color: #64748b; display: block; font-size: 0.75rem;">Term of Payment
-                                        (Syarat Bayar):</span>
-                                    <strong style="color: #0284c7;">
-                                        {{ $po->term_of_payment ?: ($po->supplier?->top_hari ? 'Tempo ' . $po->supplier->top_hari . ' Hari (Transfer)' : 'Transfer') }}
-                                    </strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- PANEL 2: GUDANG TUJUAN PENERIMAAN --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                            <strong style="color: #0f172a; font-size: 0.9rem;">Gudang Tujuan Masuk</strong>
-                        </div>
-                        <div style="padding: 1rem 1.25rem;">
-                            <strong
-                                style="font-size: 1rem; color: #0f172a; display: block;">{{ $po->gudang?->gudang_nm ?? '-' }}</strong>
-                            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.15rem;">Kode:
-                                {{ $po->gudang?->gudang_cd }}</span>
-
-                            <div style="margin-top: 0.75rem; font-size: 0.825rem; color: #475569;">
-                                <span style="color: #64748b; display: block; font-size: 0.75rem;">Lokasi Pabrik:</span>
-                                {{ $po->gudang?->alamat_txt ?? '-' }}
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- PANEL 3: CATATAN DOKUMEN (NOTE) & REMARK --}}
-                    <div class="card" style="border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div class="card-header"
-                            style="background: #ffffff; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e2e8f0;">
-                            <strong style="color: #0f172a; font-size: 0.9rem;">Instruksi &amp; Catatan PO</strong>
-                        </div>
-                        <div
-                            style="padding: 1rem 1.25rem; font-size: 0.85rem; color: #334155; line-height: 1.4; display: flex; flex-direction: column; gap: 0.75rem;">
-                            <div>
-                                <span
-                                    style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">
-                                    📌 Catatan Dokumen (NOTE)
-                                </span>
-                                @if ($po->catatan_txt)
-                                    <p style="margin: 0; white-space: pre-line; color: #0f172a; font-weight: 600;">
-                                        {{ $po->catatan_txt }}</p>
-                                @elseif ($po->tgl_estimasi_datang)
-                                    <p style="margin: 0; color: #0f172a;">*Mohon dikirim tanggal
-                                        {{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->locale('id')->translatedFormat('d F Y') }}
-                                    </p>
-                                @else
-                                    <span style="color: #94a3b8; font-style: italic;">Tidak ada catatan khusus.</span>
-                                @endif
-                            </div>
-
-                            <div style="border-top: 1px dashed #e2e8f0; padding-top: 0.5rem;">
-                                <span
-                                    style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">
-                                    📝 Catatan Tambahan (REMARK)
-                                </span>
-                                @if ($po->remark_txt)
-                                    <p style="margin: 0; white-space: pre-line; color: #0f172a;">{{ $po->remark_txt }}</p>
-                                @else
-                                    <span style="color: #94a3b8; font-style: italic;">-</span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
             </div>
-        </div> {{-- AKHIR DARI .no-print --}}
 
-        {{-- DOKUMEN CETAK RESMI FORMAT ASLI HACCP (HANYA MUNCUL SAAT PRINT BROWSER) --}}
-        <div class="print-only">
-            {{-- KOP TABEL STANDAR HACCP --}}
-            <table style="width: 100%; border: 2px solid #000000; border-collapse: collapse; margin-bottom: 25px;">
-                <tr>
-                    <td
-                        style="width: 110px; text-align: center; padding: 6px 4px; border: 1px solid #000000; vertical-align: middle;">
-                        <img src="{{ asset('images/logo.png') }}" style="width: 58px; height: auto; display: inline-block; margin: 0 auto;" alt="Logo Cap Payung">
-                        <div
-                            style="font-size: 6.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.04em; text-align: center; white-space: nowrap;">
-                            ENAK - GURIH - LEZAT
-                        </div>
-                    </td>
-                    <td style="text-align: center; padding: 8px 10px; border: 1px solid #000000; vertical-align: middle;">
-                        <div style="font-size: 11pt; font-weight: 800; color: #000000; letter-spacing: 0.03em;">PT. MIRASA
-                            FOOD INDUSTRY</div>
-                        <div style="font-size: 10pt; font-weight: 600; margin-top: 6px;">Form</div>
-                        <div style="font-size: 12pt; font-weight: 800; margin-top: 1px;">Permintaan Barang</div>
-                    </td>
-                    <td style="width: 250px; padding: 0; border: 1px solid #000000; vertical-align: middle;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
-                            <tr>
-                                <td
-                                    style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">
-                                    Nomor dokumen</td>
-                                <td
-                                    style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">
-                                    :</td>
-                                <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">
-                                    MFI/HACCP-04/FRM-03/050/VIII/2021</td>
-                            </tr>
-                            <tr>
-                                <td
-                                    style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">
-                                    Terbitan/Tgl</td>
-                                <td
-                                    style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">
-                                    :</td>
-                                <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">19-08-2021
-                                </td>
-                            </tr>
-                            <tr>
-                                <td
-                                    style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">
-                                    Revisi</td>
-                                <td
-                                    style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">
-                                    :</td>
-                                <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">00</td>
-                            </tr>
-                            <tr>
-                                <td
-                                    style="width: 100px; border-right: 1px solid #000000; font-weight: 600; padding: 4px 6px;">
-                                    Halaman</td>
-                                <td style="width: 8px; text-align: center; padding: 4px 0;">:</td>
-                                <td style="font-weight: 700; padding: 4px 6px;">1 dari 1</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
+            {{-- RIGHT STICKY SIDEBAR --}}
+            <div class="po-side-column">
 
-            {{-- NO PO & KEPADA YTH --}}
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
-                <tr>
-                    <td style="width: 50%; vertical-align: top; padding: 0;">
-                        <table style="border-collapse: collapse; font-size: 10pt;">
-                            <tr>
-                                <td style="width: 32px; font-weight: 700; vertical-align: top;">No.</td>
-                                <td style="width: 8px; vertical-align: top;"></td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td style="font-weight: 700; vertical-align: top;">PO</td>
-                                <td style="font-weight: 700; vertical-align: top;">:</td>
-                                <td style="font-weight: 800; font-family: monospace; font-size: 10.5pt; padding-left: 4px;">
-                                    {{ $po->po_no }}</td>
-                            </tr>
-                        </table>
-                    </td>
-                    <td style="width: 50%; padding-left: 20px; vertical-align: top;">
-                        <div style="font-size: 10pt; font-weight: 700; margin-bottom: 2px;">
-                            Kepada Yth:
-                        </div>
-                        <div style="font-size: 10.5pt; font-weight: 800;">
+                {{-- PANEL 1: MITRA SUPPLIER --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <h4 class="po-card-title" style="font-size: 0.85rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            <span>Mitra Supplier</span>
+                        </h4>
+                    </div>
+                    <div class="po-card-body" style="font-size: 0.825rem; line-height: 1.45;">
+                        <strong style="font-size: 0.95rem; color: var(--po-slate-900); display: block;">
                             {{ $po->supplier?->supplier_nm ?? '-' }}
-                        </div>
-                        @if ($po->supplier?->alamat_txt)
-                            <div style="font-size: 9pt; color: #334155; margin-top: 2px;">
-                                {{ $po->supplier->alamat_txt }}
-                            </div>
-                        @endif
-                        @if ($po->supplier?->telepon_no && $po->supplier?->telepon_no !== '-')
-                            <div style="font-size: 9pt; color: #334155;">
-                                Telp: {{ $po->supplier->telepon_no }}
-                            </div>
-                        @endif
-                    </td>
-                </tr>
-            </table>
+                        </strong>
+                        <span style="font-size: 0.725rem; color: var(--po-slate-500); display: block; margin-top: 2px;">
+                            Kode: {{ $po->supplier?->supplier_cd }}
+                        </span>
 
-            {{-- JUDUL DOKUMEN --}}
-            <div style="text-align: center; margin-bottom: 22px;">
-                <div style="font-size: 12.5pt; font-weight: 800; text-decoration: underline; letter-spacing: 0.05em;">SURAT
-                    PERMINTAAN BARANG</div>
-                <div style="font-size: 11pt; font-weight: 800; letter-spacing: 0.05em; margin-top: 3px;">PURCHASE ORDER
+                        <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.45rem;">
+                            <div>
+                                <span style="font-size: 0.725rem; color: var(--po-slate-500); display: block;">Alamat:</span>
+                                <span>{{ $po->supplier?->alamat_txt ?? '-' }}</span>
+                            </div>
+                            <div>
+                                <span style="font-size: 0.725rem; color: var(--po-slate-500); display: block;">Kontak:</span>
+                                <strong>{{ $po->supplier?->kontak_no ?? '-' }}</strong>
+                            </div>
+                            <div>
+                                <span style="font-size: 0.725rem; color: var(--po-slate-500); display: block;">Term of Payment (TOP):</span>
+                                <strong style="color: #0f172a;">
+                                    {{ $po->term_of_payment ?: ($po->supplier?->top_hari ? 'Tempo ' . $po->supplier->top_hari . ' Hari (Transfer)' : 'Transfer') }}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                {{-- PANEL 2: GUDANG TUJUAN MASUK --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <h4 class="po-card-title" style="font-size: 0.85rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+                            <span>Gudang Tujuan Masuk</span>
+                        </h4>
+                    </div>
+                    <div class="po-card-body" style="font-size: 0.825rem; line-height: 1.45;">
+                        <strong style="font-size: 0.95rem; color: var(--po-slate-900); display: block;">
+                            {{ $po->gudang?->gudang_nm ?? '-' }}
+                        </strong>
+                        <span style="font-size: 0.725rem; color: var(--po-slate-500); display: block; margin-top: 2px;">
+                            Kode: {{ $po->gudang?->gudang_cd }}
+                        </span>
+                        <div style="margin-top: 0.5rem;">
+                            <span style="font-size: 0.725rem; color: var(--po-slate-500); display: block;">Lokasi Pabrik:</span>
+                            <span>{{ $po->gudang?->alamat_txt ?? '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- PANEL 3: INSTRUKSI & CATATAN PO --}}
+                <div class="po-card">
+                    <div class="po-card-header">
+                        <h4 class="po-card-title" style="font-size: 0.85rem;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                            <span>Instruksi &amp; Catatan PO</span>
+                        </h4>
+                    </div>
+                    <div class="po-card-body" style="font-size: 0.825rem; line-height: 1.45; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div>
+                            <span style="font-size: 0.725rem; font-weight: 700; color: var(--po-slate-500); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">
+                                Catatan Dokumen (Note)
+                            </span>
+                            @if ($po->catatan_txt)
+                                <p style="margin: 0; white-space: pre-line; color: var(--po-slate-900); font-weight: 600;">
+                                    {{ $po->catatan_txt }}
+                                </p>
+                            @elseif ($po->tgl_estimasi_datang)
+                                <p style="margin: 0; color: var(--po-slate-900);">
+                                    *Mohon dikirim tanggal {{ \Carbon\Carbon::parse($po->tgl_estimasi_datang)->locale('id')->translatedFormat('d F Y') }}
+                                </p>
+                            @else
+                                <span style="color: #94a3b8; font-style: italic;">Tidak ada catatan khusus.</span>
+                            @endif
+                        </div>
+
+                        <div style="border-top: 1px dashed var(--po-slate-200); padding-top: 0.5rem;">
+                            <span style="font-size: 0.725rem; font-weight: 700; color: var(--po-slate-500); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">
+                                Catatan Tambahan (Remark)
+                            </span>
+                            @if ($po->remark_txt)
+                                <p style="margin: 0; white-space: pre-line; color: var(--po-slate-700);">
+                                    {{ $po->remark_txt }}
+                                </p>
+                            @else
+                                <span style="color: #94a3b8; font-style: italic;">-</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            {{-- TABEL BARANG --}}
-            <table style="width: 100%; border-collapse: collapse; border: 2px solid #000000; margin-bottom: 30px;">
-                <thead>
-                    <tr>
-                        <th
-                            style="width: 45px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">
-                            NO</th>
-                        <th
-                            style="border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: left; padding-left: 10px; background: #ffffff;">
-                            NAMA BARANG</th>
-                        <th
-                            style="width: 140px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">
-                            JUMLAH</th>
-                        <th
-                            style="width: 180px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">
-                            KETERANGAN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($po->details as $idx => $d)
-                        <tr>
-                            <td
-                                style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; text-align: center; font-weight: 700;">
-                                {{ $idx + 1 }}.</td>
-                            <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; padding-left: 10px;">
-                                <strong style="color: #000000;">{{ $d->barang?->barang_nm ?? '-' }}</strong>
-                            </td>
-                            <td
-                                style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; text-align: center; font-weight: 800;">
-                                {{ number_format((float) $d->pesan_qty, 0, ',', '.') }}
-                                {{ $d->barang?->satuanDasar?->satuan_cd ?? 'KG' }}
-                            </td>
-                            <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9pt; padding-left: 8px;">
-                                {{ $d->catatan_txt ?: '-' }}
-                            </td>
-                        </tr>
-                    @endforeach
-
-                    @php $emptyRows = max(0, 3 - count($po->details)); @endphp
-                    @for ($i = 0; $i < $emptyRows; $i++)
-                        <tr>
-                            <td style="border: 1px solid #000000; padding: 7px 8px; text-align: center; color: transparent;">
-                                &nbsp;</td>
-                            <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
-                            <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
-                            <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
-                        </tr>
-                    @endfor
-                </tbody>
-            </table>
-
-            {{-- TANDA TANGAN & CATATAN PENGIRIMAN --}}
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <tr>
-                    <td style="width: 60%; vertical-align: top; padding: 0;">
-                        <div style="font-size: 8.5pt; line-height: 1.35; color: #000000; margin-top: 5px;">
-                            <div style="font-weight: 800; font-size: 9pt; margin-bottom: 2px;">NB.</div>
-                            <div>Barang di kirim ke alamat:</div>
-                            <div style="font-weight: 800; font-size: 9pt;">PT. MIRASA FOOD INDUSTRY</div>
-                            <div>Magelang</div>
-                            <div style="margin-top: 5px; font-size: 8pt; color: #334155; line-height: 1.35;">
-                                Faktur Pajak a.n. <strong>PT. MIRASA FOOD INDUSTRY</strong> (NPWP 07.635.700.4-152.000)<br>
-                                Pembayaran via BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
-                            </div>
-                        </div>
-                    </td>
-                    <td style="width: 45%; text-align: center; vertical-align: top; padding: 0;">
-                        <div style="font-size: 10pt;">
-                            Magelang,
-                            {{ $po->approved_at ? \Carbon\Carbon::parse($po->approved_at)->translatedFormat('d F Y') : ($po->po_tgl ? \Carbon\Carbon::parse($po->po_tgl)->translatedFormat('d F Y') : now()->translatedFormat('d F Y')) }}<br>
-                            <strong>Mengetahui / Hormat Kami,</strong>
-                        </div>
-
-                        @if ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
-                            @php
-                                $approverUser = $po->approver;
-                                if (!$approverUser && !empty($po->approved_by)) {
-                                    $approverUser = \App\Models\User::where('name', $po->approved_by)->first();
-                                }
-                                $sigFilename = $approverUser?->signature_path ?: 'ttd_stempel_1.png';
-                                $sigUrl = file_exists(public_path('images/signatures/' . $sigFilename))
-                                    ? asset('images/signatures/' . $sigFilename)
-                                    : asset('images/signatures/ttd_stempel_1.png');
-                            @endphp
-                            <div style="margin: 4px auto; text-align: center; height: 80px;">
-                                <img src="{{ $sigUrl }}" alt="Tanda Tangan & Stempel"
-                                    style="height: 78px; max-width: 145px; object-fit: contain; display: inline-block;">
-                            </div>
-                            <div style="font-size: 10pt; font-weight: 800; text-decoration: underline;">
-                                {{ $po->approved_by ?? $po->approver?->name ?? 'Habieb Soleh Yoenanto' }}
-                            </div>
-                            <div style="font-size: 8pt; color: #475569;">
-                                PT Mirasa Food Industry
-                            </div>
-                        @else
-                            <div style="height: 80px;"></div>
-                            <div style="font-size: 10pt; color: #94a3b8;">
-                                (Menunggu Persetujuan Atasan)
-                            </div>
-                        @endif
-                    </td>
-                </tr>
-            </table>
         </div>
 
-        {{-- MODALS PARTIALS --}}
-        @include('gudang.po.partials.modal-force-close')
-        @include('gudang.po.partials.modal-haccp-po')
-        @include('gudang.po.partials.modal-kirim-supplier')
-        @include('gudang.po.partials.modal-revisi-po')
+    </div> {{-- End .no-print --}}
 
+    {{-- =====================================================================
+         5. PRINT-ONLY FORMAT ASLI HACCP (UNTUK CETAK BROWSER RESMI)
+         ===================================================================== --}}
+    <div class="print-only">
+        <table style="width: 100%; border: 2px solid #000000; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+                <td style="width: 110px; text-align: center; padding: 6px 4px; border: 1px solid #000000; vertical-align: middle;">
+                    <img src="{{ asset('images/logo.png') }}" style="width: 58px; height: auto; display: inline-block; margin: 0 auto;" alt="Logo Cap Payung">
+                    <div style="font-size: 6.5pt; font-weight: 800; color: #dc2626; margin-top: 2px; letter-spacing: 0.04em; text-align: center; white-space: nowrap;">
+                        ENAK - GURIH - LEZAT
+                    </div>
+                </td>
+                <td style="text-align: center; padding: 8px 10px; border: 1px solid #000000; vertical-align: middle;">
+                    <div style="font-size: 11pt; font-weight: 800; color: #000000; letter-spacing: 0.03em;">PT. MIRASA FOOD INDUSTRY</div>
+                    <div style="font-size: 10pt; font-weight: 600; margin-top: 6px;">Form</div>
+                    <div style="font-size: 12pt; font-weight: 800; margin-top: 1px;">Permintaan Barang</div>
+                </td>
+                <td style="width: 250px; padding: 0; border: 1px solid #000000; vertical-align: middle;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                        <tr>
+                            <td style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Nomor dokumen</td>
+                            <td style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">:</td>
+                            <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">MFI/HACCP-04/FRM-03/050/VIII/2021</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Terbitan/Tgl</td>
+                            <td style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">:</td>
+                            <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">19-08-2021</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 100px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Revisi</td>
+                            <td style="width: 8px; text-align: center; border-bottom: 1px solid #000000; padding: 4px 0;">:</td>
+                            <td style="font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #000000;">00</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 100px; border-right: 1px solid #000000; font-weight: 600; padding: 4px 6px;">Halaman</td>
+                            <td style="width: 8px; text-align: center; padding: 4px 0;">:</td>
+                            <td style="font-weight: 700; padding: 4px 6px;">1 dari 1</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+                <td style="width: 50%; vertical-align: top; padding: 0;">
+                    <table style="border-collapse: collapse; font-size: 10pt;">
+                        <tr>
+                            <td style="width: 32px; font-weight: 700; vertical-align: top;">No.</td>
+                            <td style="width: 8px; vertical-align: top;"></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700; vertical-align: top;">PO</td>
+                            <td style="font-weight: 700; vertical-align: top;">:</td>
+                            <td style="font-weight: 800; font-family: monospace; font-size: 10.5pt; padding-left: 4px;">{{ $po->po_no }}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width: 50%; padding-left: 20px; vertical-align: top;">
+                    <div style="font-size: 10pt; font-weight: 700; margin-bottom: 2px;">Kepada Yth:</div>
+                    <div style="font-size: 10.5pt; font-weight: 800;">{{ $po->supplier?->supplier_nm ?? '-' }}</div>
+                    @if ($po->supplier?->alamat_txt)
+                        <div style="font-size: 9pt; color: #334155; margin-top: 2px;">{{ $po->supplier->alamat_txt }}</div>
+                    @endif
+                    @if ($po->supplier?->telepon_no && $po->supplier?->telepon_no !== '-')
+                        <div style="font-size: 9pt; color: #334155;">Telp: {{ $po->supplier->telepon_no }}</div>
+                    @endif
+                </td>
+            </tr>
+        </table>
+
+        <div style="text-align: center; margin-bottom: 22px;">
+            <div style="font-size: 12.5pt; font-weight: 800; text-decoration: underline; letter-spacing: 0.05em;">SURAT PERMINTAAN BARANG</div>
+            <div style="font-size: 11pt; font-weight: 800; letter-spacing: 0.05em; margin-top: 3px;">PURCHASE ORDER</div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #000000; margin-bottom: 30px;">
+            <thead>
+                <tr>
+                    <th style="width: 45px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">NO</th>
+                    <th style="border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: left; padding-left: 10px; background: #ffffff;">NAMA BARANG</th>
+                    <th style="width: 140px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">JUMLAH</th>
+                    <th style="width: 180px; border: 1px solid #000000; border-bottom: 2px solid #000000; padding: 6px 6px; font-weight: 800; font-size: 9.5pt; text-align: center; background: #ffffff;">KETERANGAN</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($po->details as $idx => $d)
+                    <tr>
+                        <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; text-align: center; font-weight: 700;">{{ $idx + 1 }}.</td>
+                        <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; padding-left: 10px;">
+                            <strong style="color: #000000;">{{ $d->barang?->barang_nm ?? '-' }}</strong>
+                        </td>
+                        <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9.5pt; text-align: center; font-weight: 800;">
+                            {{ number_format((float) $d->pesan_qty, 0, ',', '.') }} {{ $d->barang?->satuanDasar?->satuan_cd ?? 'KG' }}
+                        </td>
+                        <td style="border: 1px solid #000000; padding: 7px 8px; font-size: 9pt; padding-left: 8px;">
+                            {{ $d->catatan_txt ?: '-' }}
+                        </td>
+                    </tr>
+                @endforeach
+
+                @php $emptyRows = max(0, 3 - count($po->details)); @endphp
+                @for ($i = 0; $i < $emptyRows; $i++)
+                    <tr>
+                        <td style="border: 1px solid #000000; padding: 7px 8px; text-align: center; color: transparent;">&nbsp;</td>
+                        <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
+                        <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
+                        <td style="border: 1px solid #000000; padding: 7px 8px;">&nbsp;</td>
+                    </tr>
+                @endfor
+            </tbody>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr>
+                <td style="width: 60%; vertical-align: top; padding: 0;">
+                    <div style="font-size: 8.5pt; line-height: 1.35; color: #000000; margin-top: 5px;">
+                        <div style="font-weight: 800; font-size: 9pt; margin-bottom: 2px;">NB.</div>
+                        <div>Barang di kirim ke alamat:</div>
+                        <div style="font-weight: 800; font-size: 9pt;">PT. MIRASA FOOD INDUSTRY</div>
+                        <div>Magelang</div>
+                        <div style="margin-top: 5px; font-size: 8pt; color: #334155; line-height: 1.35;">
+                            Faktur Pajak a.n. <strong>PT. MIRASA FOOD INDUSTRY</strong> (NPWP 07.635.700.4-152.000)<br>
+                            Pembayaran via BCA <strong>104-9173332</strong> a.n. PT. MIRASA FOOD INDUSTRY
+                        </div>
+                    </div>
+                </td>
+                <td style="width: 45%; text-align: center; vertical-align: top; padding: 0;">
+                    <div style="font-size: 10pt;">
+                        Magelang, {{ $po->approved_at ? \Carbon\Carbon::parse($po->approved_at)->translatedFormat('d F Y') : ($po->po_tgl ? \Carbon\Carbon::parse($po->po_tgl)->translatedFormat('d F Y') : now()->translatedFormat('d F Y')) }}<br>
+                        <strong>Mengetahui / Hormat Kami,</strong>
+                    </div>
+
+                    @if ($po->isApproved() || in_array($po->status_cd, ['APPROVED', 'PARTIAL', 'COMPLETED']))
+                        @php
+                            $approverUser = $po->approver;
+                            if (!$approverUser && !empty($po->approved_by)) {
+                                $approverUser = \App\Models\User::where('name', $po->approved_by)->first();
+                            }
+                            $sigFilename = $approverUser?->signature_path ?: 'ttd_stempel_1.png';
+                            $sigUrl = file_exists(public_path('images/signatures/' . $sigFilename))
+                                ? asset('images/signatures/' . $sigFilename)
+                                : asset('images/signatures/ttd_stempel_1.png');
+                        @endphp
+                        <div style="margin: 4px auto; text-align: center; height: 80px;">
+                            <img src="{{ $sigUrl }}" alt="Tanda Tangan & Stempel" style="height: 78px; max-width: 145px; object-fit: contain; display: inline-block;">
+                        </div>
+                        <div style="font-size: 10pt; font-weight: 800; text-decoration: underline;">
+                            {{ $po->approved_by ?? $po->approver?->name ?? 'Habieb Soleh Yoenanto' }}
+                        </div>
+                        <div style="font-size: 8pt; color: #475569;">
+                            PT Mirasa Food Industry
+                        </div>
+                    @else
+                        <div style="height: 80px;"></div>
+                        <div style="font-size: 10pt; color: #94a3b8;">
+                            (Menunggu Persetujuan Atasan)
+                        </div>
+                    @endif
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {{-- =====================================================================
+         6. MODALS PARTIALS
+         ===================================================================== --}}
+    @include('gudang.po.partials.modal-force-close')
+    @include('gudang.po.partials.modal-haccp-po')
+    @include('gudang.po.partials.modal-kirim-supplier')
+    @include('gudang.po.partials.modal-revisi-po')
+    @include('gudang.po.partials.modal-cancel-delete')
+
+</div>
 @endsection
 
-    @push('scripts')
-        <script>
-            window.poConfig = {
-                baseUrl: "{{ url('gudang/po') }}"
-            };
-        </script>
-        <script
-            src="{{ asset('js/gudang/po/po-show.js') }}?v={{ file_exists(public_path('js/gudang/po/po-show.js')) ? filemtime(public_path('js/gudang/po/po-show.js')) : time() }}"></script>
-    @endpush
+@push('scripts')
+    <script>
+        window.poConfig = {
+            baseUrl: "{{ url('gudang/po') }}"
+        };
+    </script>
+    <script src="{{ asset('js/gudang/po/po-show.js') }}?v={{ file_exists(public_path('js/gudang/po/po-show.js')) ? filemtime(public_path('js/gudang/po/po-show.js')) : time() }}"></script>
+@endpush

@@ -153,7 +153,7 @@
                 <label style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer; margin-bottom: 0; user-select: none;">
                     <input type="hidden" name="is_harga_termasuk_pajak" value="0">
                     <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)" style="width: 15px; height: 15px; accent-color: #059669; cursor: pointer;">
-                    <span style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk PPN</span>
+                    <span id="lblHeaderTaxInclusive" style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk Pajak</span>
                     <span class="badge" id="badgeTaxMode" style="{{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'background:#dcfce7; color:#15803d;' : 'background:#e2e8f0; color:#475569;' }} font-size: 0.65rem; font-weight: 700; margin-left: 0.2rem;">
                         {{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'Gross' : 'Net' }}
                     </span>
@@ -342,9 +342,9 @@
                                     title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
                                     <input type="hidden" name="items[{{ $idx }}][is_harga_termasuk_pajak]" value="0">
                                     <input type="checkbox" name="items[{{ $idx }}][is_harga_termasuk_pajak]" value="1"
-                                        class="item-include-tax" onchange="calculateRow(this)"
+                                        class="item-include-tax" onchange="onRowTaxInclusiveChange(this)"
                                         style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;"
-                                        {{ ($dtl->is_harga_termasuk_pajak ?? $po->is_harga_termasuk_pajak) ? 'checked' : '' }}>
+                                        {{ ($dtl->is_harga_termasuk_pajak || $po->is_harga_termasuk_pajak) ? 'checked' : '' }}>
                                     <span style="font-weight: 600;">Termasuk (Inc)</span>
                                 </label>
                             </td>
@@ -557,7 +557,7 @@
             <input type="number" step="any" min="0" name="items[__INDEX__][harga_nominal]" class="form-control input-harga" value="0" required style="text-align: right; font-weight: 600;" oninput="calculateRow(this)">
             <label style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 0.7rem; color: #475569; margin-top: 3px; cursor: pointer; user-select: none;" title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
                 <input type="hidden" name="items[__INDEX__][is_harga_termasuk_pajak]" value="0">
-                <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="calculateRow(this)" style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;">
+                <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="onRowTaxInclusiveChange(this)" style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;">
                 <span style="font-weight: 600;">Termasuk (Inc)</span>
             </label>
         </td>

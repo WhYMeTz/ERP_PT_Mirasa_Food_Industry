@@ -1,3 +1,25 @@
+@php
+    $targetCust = $faktur?->customer ?? ($order->customer ?? null);
+    $custNmUpper = strtoupper($targetCust?->customer_nm ?? '');
+    $custCdUpper = strtoupper($targetCust?->customer_cd ?? '');
+    $custKlasifikasi = strtoupper($targetCust?->klasifikasi ?? '');
+
+    $isModernMarket = ($isModern ?? false)
+        || in_array($custKlasifikasi, ['MIDI_ALFA', 'IDM_ALFA', 'IDM', 'ALFA', 'MIDI'])
+        || str_contains($custNmUpper, 'ALFAMART')
+        || str_contains($custNmUpper, 'ALFAMIDI')
+        || str_contains($custNmUpper, 'SUMBER ALFARIA')
+        || str_contains($custNmUpper, 'MIDI UTAMA')
+        || str_contains($custNmUpper, 'INDOMARET')
+        || str_contains($custNmUpper, 'INDOMARCO')
+        || str_contains($custNmUpper, 'DC YOGYA')
+        || str_contains($custCdUpper, 'ALFA')
+        || str_contains($custCdUpper, 'MIDI')
+        || str_contains($custCdUpper, 'IDM');
+@endphp
+@if($isModernMarket)
+    @include('penjualan.so.pdf_faktur_ppn_modern')
+@else
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -567,3 +589,4 @@
 
 </body>
 </html>
+@endif

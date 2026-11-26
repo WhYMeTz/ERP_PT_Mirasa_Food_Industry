@@ -61,7 +61,6 @@
                 {{-- Invisible helper nodes for JS sync --}}
                 <span id="topLiveGrandTotal" style="display: none;">Rp 0</span>
                 <span id="topLiveItemCount" style="display: none;">1 Item</span>
-                <span id="draftSaveIndicator" style="display: none;"></span>
             </div>
         </div>
 
@@ -91,8 +90,34 @@
         </div>
     @endif
 
-    <form action="{{ route('gudang.po.store') }}" method="POST" id="formPo">
+    <form action="{{ route('gudang.po.store') }}" method="POST" id="formPo" novalidate>
         @csrf
+
+        {{-- Container Alert Validasi Interaktif JS --}}
+        <div id="poValidationBanner" class="po-validation-banner" style="display: none;"></div>
+
+        {{-- Banner Pemulihan Draf Otomatis (Enterprise WaveDash UX - Bebas Emoji) --}}
+        <div id="poDraftRestoreBanner" class="po-draft-restore-banner" style="display: none;">
+            <div class="po-draft-banner-content">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="poDraftRestoreText">Draf penginputan Purchase Order dipulihkan otomatis.</span>
+            </div>
+            <div class="po-draft-banner-actions">
+                <button type="button" class="btn-draft-discard" onclick="discardPoCreateDraft()" title="Hapus draf dan kosongkan formulir kembali">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <span>Buang Draf</span>
+                </button>
+                <button type="button" class="btn-draft-dismiss" onclick="dismissPoDraftBanner()" title="Tutup pemberitahuan ini">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
         {{-- 3. TOOLBAR CARD: PARAMETER DOKUMEN PO (WAVEDASH CARD) --}}
         <div class="po-toolbar-card">
@@ -214,7 +239,7 @@
                     </div>
 
                     {{-- Hidden select yang disinkronkan untuk form POST --}}
-                    <select id="supplier_id" name="supplier_id" style="display: none;" required>
+                    <select id="supplier_id" name="supplier_id" style="display: none;">
                         <option value="">-- Pilih Supplier Mitra --</option>
                         @foreach ($supplierList as $sup)
                             <option value="{{ $sup->supplier_id }}" {{ old('supplier_id') == $sup->supplier_id ? 'selected' : '' }}>

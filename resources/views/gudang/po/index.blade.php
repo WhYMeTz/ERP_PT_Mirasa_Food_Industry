@@ -308,10 +308,22 @@
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <div>
                                     @if ($po->status_cd == 'COMPLETED')
-                                        <span class="po-status-indicator po-status-completed">
-                                            <span class="po-status-dot"></span>
-                                            <span>{{ !empty($po->closed_at) ? 'Selesai (Batal Sisa)' : 'Selesai (100%)' }}</span>
-                                        </span>
+                                        @if (!empty($po->closed_at))
+                                            <span class="po-status-indicator po-status-completed">
+                                                <span class="po-status-dot"></span>
+                                                <span>Selesai (Batal Sisa)</span>
+                                            </span>
+                                        @elseif ($po->isOverPo())
+                                            <span class="po-status-indicator" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;" title="Penerimaan melebihi pesanan sebesar +{{ number_format($po->over_po_diff_qty, 2, ',', '.') }} ({{ $pct }}%)">
+                                                <span class="po-status-dot" style="background: #f59e0b;"></span>
+                                                <span>Selesai (Over PO +{{ number_format($po->over_po_diff_qty, 0, ',', '.') }})</span>
+                                            </span>
+                                        @else
+                                            <span class="po-status-indicator po-status-completed">
+                                                <span class="po-status-dot"></span>
+                                                <span>Selesai (100%)</span>
+                                            </span>
+                                        @endif
                                     @elseif ($po->status_cd == 'CLOSED')
                                         <span class="po-status-indicator po-status-closed" title="Selesai dengan pembatalan sisa kuota: {{ $po->closed_reason }}">
                                             <span class="po-status-dot"></span>
@@ -378,6 +390,8 @@
                                     @elseif ($po->status_cd == 'COMPLETED')
                                         @if (!empty($po->closed_at))
                                             Realisasi {{ number_format($totalTerima, 0) }} / {{ number_format($totalPesan, 0) }} &bull; Sisa dibatalkan
+                                        @elseif ($po->isOverPo())
+                                            <span style="color: #b45309; font-weight: 700;">Realisasi {{ number_format($totalTerima, 0) }} / {{ number_format($totalPesan, 0) }} &bull; Lebih {{ number_format($po->over_po_diff_qty, 0) }}</span>
                                         @else
                                             Tuntas diterima
                                         @endif

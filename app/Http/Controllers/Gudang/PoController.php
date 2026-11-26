@@ -380,6 +380,22 @@ class PoController extends Controller
 
             $po = $this->poService->update($id, $data);
 
+            if (isset($po->was_recently_changed) && $po->was_recently_changed === false) {
+                $noChangeMsg = "Tidak ada perubahan data pada Purchase Order {$po->po_no}.";
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'status'      => 'info',
+                        'message'     => $noChangeMsg,
+                        'was_changed' => false,
+                        'data'        => $po,
+                    ]);
+                }
+
+                return redirect()
+                    ->route('gudang.po.show', $po->po_id)
+                    ->with('info', $noChangeMsg);
+            }
+
             $message = "Dokumen Purchase Order {$po->po_no} berhasil diperbarui.";
             if ($initialStatus === 'APPROVED' && $po->status_cd === 'PENDING_APPROVAL') {
                 $message = "Dokumen Purchase Order {$po->po_no} berhasil diperbarui dan diajukan ulang ke Atasan untuk persetujuan (Re-Approval) karena terdapat perubahan finansial/kuantitas.";

@@ -13,6 +13,29 @@
     $currentDiskonPersen = old('diskon_persen', (float) ($firstDetail?->diskon_persen ?? 0));
     $currentPotonganNominal = old('potongan_nominal', (float) ($po->potongan_nominal ?? 0));
     $currentPajakId = old('pajak_id', $firstDetail?->pajak_id);
+
+    $suppliersJson = $supplierList->map(function ($sup) {
+        $cat = 'RAW';
+        $catLabel = 'Bahan Baku';
+        if ($sup->kategori_supplier_cd == 'KEMASAN') {
+            $cat = 'PACKAGING';
+            $catLabel = 'Kemasan';
+        } elseif (in_array($sup->kategori_supplier_cd, ['BUMBU', 'PENOLONG'])) {
+            $cat = 'SEASONING';
+            $catLabel = 'Bumbu & Penolong';
+        }
+        return [
+            'id' => (int) $sup->supplier_id,
+            'code' => $sup->supplier_cd ?? '',
+            'name' => $sup->supplier_nm,
+            'category' => $cat,
+            'categoryName' => $catLabel,
+            'contact' => $sup->telepon ?? ($sup->pic_nama ?? ''),
+            'address' => $sup->alamat ?? '',
+            'topHari' => $sup->top_hari ? (int) $sup->top_hari : 0,
+            'top' => $sup->top_hari ? 'Tempo ' . $sup->top_hari . ' Hari (Transfer)' : 'Transfer',
+        ];
+    })->values();
 @endphp
 
 @section('content')
@@ -135,9 +158,12 @@
     </div>
 @endif
 
-<form action="{{ route('gudang.po.update', $po->po_id) }}" method="POST" id="formEditPo">
+<form action="{{ route('gudang.po.update', $po->po_id) }}" method="POST" id="formEditPo" novalidate>
     @csrf
     @method('PUT')
+
+    {{-- Container Alert Validasi Interaktif JS --}}
+    <div id="poValidationBanner" class="po-validation-banner" style="display: none;"></div>
 
     {{-- 2. TOOLBAR CARD RAMPING: SEMUA FIELD LANGSUNG TAMPIL 2 BARIS (NO ACCORDION, ZERO EMPTY SPACE) --}}
     <div class="po-toolbar-card">
@@ -180,26 +206,88 @@
                 <small id="po_no_help" style="display: none;">Nomor urut resmi pengadaan.</small>
             </div>
 
-            {{-- [R1-C3] Supplier Mitra --}}
+            {{-- [R1-C3] Supplier Mitra (Smart Autocomplete / Picker) --}}
             <div>
-                <label for="supplier_id" class="po-field-label">
-                    Supplier Mitra <span style="color:#ef4444;">*</span>
-                </label>
-                @if($hasAnyReceived)
-                    <input type="hidden" name="supplier_id" value="{{ $po->supplier_id }}">
-                    <select class="po-field-select" disabled style="background: #f1f5f9; color: #475569; cursor: not-allowed;">
-                        <option>{{ $po->supplier?->supplier_nm ?? 'Supplier' }} ({{ $po->supplier?->supplier_cd }}) - Terkunci</option>
-                    </select>
-                @else
-                    <select id="supplier_id" name="supplier_id" class="po-field-select" required>
-                        <option value="">-- Pilih Supplier Mitra --</option>
-                        @foreach ($supplierList as $sup)
-                            <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $po->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
-                                {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
-                            </option>
-                        @endforeach
-                    </select>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                    <label id="lblSupplierHeader" class="po-field-label" style="margin-bottom: 0;">
+                        Supplier Mitra <span id="reqSupplierHeader" style="color:#ef4444;">*</span>
+                    </label>
+                    @if(!$hasAnyReceived)
+                    <a href="javascript:void(0)" onclick="openSupplierModal()"
+                        style="font-size: 0.7rem; color: #0284c7; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 0.2rem;"
+                        title="Buka Daftar Master Supplier">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Daftar ({{ $supplierList->count() }})
+                    </a>
+                    @else
+                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border: 1px solid #fde68a;">
+                        Terkunci (Ada Penerimaan)
+                    </span>
+                    @endif
+                </div>
+
+                {{-- Card Supplier Terpilih --}}
+                <div id="selected_supplier_card"
+                    style="{{ old('supplier_id', $po->supplier_id) ? 'display: flex;' : 'display: none;' }} background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.25rem 0.65rem; justify-content: space-between; align-items: center; gap: 0.4rem; height: 36px; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 0;">
+                        <span
+                            style="background: #22c55e; color: #fff; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0;">✓</span>
+                        <div style="min-width: 0; display: flex; align-items: center; gap: 0.3rem;">
+                            <strong id="disp_sup_name"
+                                style="color: #14532d; font-size: 0.775rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $po->supplier?->supplier_nm }}</strong>
+                            <span id="disp_sup_code" class="badge"
+                                style="background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 700; font-family: monospace;">{{ $po->supplier?->supplier_cd }}</span>
+                            <span id="disp_sup_cat_badge" style="display: none;"></span>
+                            <span id="disp_sup_contact" style="display: none;"></span>
+                        </div>
+                    </div>
+                    @if(!$hasAnyReceived)
+                    <button type="button" onclick="clearSelectedSupplier()" class="btn btn-sm"
+                        style="background: #ffffff; border: 1px solid #86efac; color: #15803d; font-size: 0.675rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 3px; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
+                        Ganti
+                    </button>
+                    @endif
+                </div>
+
+                @if(!$hasAnyReceived)
+                {{-- Search Box Autocomplete Supplier --}}
+                <div id="supplier_search_wrapper" style="{{ old('supplier_id', $po->supplier_id) ? 'display: none;' : 'display: block;' }} position: relative;">
+                    <div style="position: relative; width: 100%;">
+                        <input type="text" id="supplier_search_input" class="po-field-input"
+                            placeholder="Cari nama / kode supplier mitra..." autocomplete="off"
+                            style="padding-left: 1.85rem !important; padding-right: 1.5rem !important;">
+                        <span
+                            style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <span
+                            style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 0.6rem;">
+                            ▼
+                        </span>
+                    </div>
+
+                    {{-- Dropdown Container Autocomplete --}}
+                    <div id="supplier_dropdown_list"
+                        style="display: none; position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.06); max-height: 280px; overflow-y: auto; z-index: 1050;">
+                    </div>
+                </div>
                 @endif
+
+                {{-- Hidden select yang disinkronkan untuk form POST --}}
+                <select id="supplier_id" name="supplier_id" style="display: none;">
+                    <option value="">-- Pilih Supplier Mitra --</option>
+                    @foreach ($supplierList as $sup)
+                        <option value="{{ $sup->supplier_id }}" {{ old('supplier_id', $po->supplier_id) == $sup->supplier_id ? 'selected' : '' }}>
+                            {{ $sup->supplier_nm }} ({{ $sup->supplier_cd }})
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             {{-- [R1-C4] Gudang Tujuan Masuk --}}
@@ -577,6 +665,7 @@
 
 {{-- MODAL PERINGATAN KONFIRMASI BULAN SEBELUMNYA --}}
 @include('gudang.po.partials.modal-confirm-previous-month')
+@include('gudang.po.partials.modal-supplier-picker')
 </div>
 
 @push('scripts')
@@ -586,6 +675,9 @@
     window.originalPoNo = @json($po->po_no);
     window.currentServerYearMonth = '{{ date('Y-m') }}';
     window.editRowIndex = {{ $po->details->count() }};
+    window.suppliersData = @json($suppliersJson);
+    window.activeSupplierId = {{ (int) old('supplier_id', $po->supplier_id) }};
+    window.poShowUrl = '{{ route('gudang.po.show', $po->po_id) }}';
 </script>
 <script src="{{ asset('js/gudang/po/po-edit.js') }}?v={{ filemtime(public_path('js/gudang/po/po-edit.js')) }}"></script>
 @endpush

@@ -162,4 +162,20 @@ class DatPoDtl extends Model
     {
         return max(0, (float) $this->pesan_qty - (float) $this->terima_qty);
     }
+
+    /**
+     * Cek apakah penerimaan fisik baris ini melebihi kuota pesan (Over PO)
+     */
+    public function isOverPo(): bool
+    {
+        return (float) $this->pesan_qty > 0 && ((float) $this->terima_qty > (float) $this->pesan_qty);
+    }
+
+    /**
+     * Selisih kuantitas kelebihan terima (Over PO)
+     */
+    public function getOverQtyAttribute(): float
+    {
+        return max(0, (float) $this->terima_qty - (float) $this->pesan_qty);
+    }
 }

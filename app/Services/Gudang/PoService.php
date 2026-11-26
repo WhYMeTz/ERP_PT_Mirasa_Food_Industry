@@ -9,6 +9,7 @@ use App\Models\Gudang\DatPoRevisiLog;
 use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstPajak;
+use App\Models\MasterData\MstSupplier;
 use App\Models\User;
 use App\Services\Common\CodeGeneratorService;
 use Exception;
@@ -357,12 +358,163 @@ class PoService
     }
 
     /**
+     * Memeriksa apakah payload data edit memiliki perubahan nyata terhadap data PO yang tersimpan.
+     * Mencegah eksekusi update database dan pencatatan revisi log jika tidak ada data yang berubah.
+     */
+    public function hasPoChanges(DatPoHdr $po, array $data): bool
+    {
+        // 1. Cek Header Fields
+        if (!empty($data['po_no']) && trim($data['po_no']) !== trim($po->po_no)) {
+            return true;
+        }
+
+        if (!empty($data['po_tgl'])) {
+            $existingDate = $po->po_tgl ? $po->po_tgl->format('Y-m-d') : null;
+            $newDate = date('Y-m-d', strtotime($data['po_tgl']));
+            if ($existingDate !== $newDate) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('tgl_estimasi_datang', $data)) {
+            $existingEta = $po->tgl_estimasi_datang ? $po->tgl_estimasi_datang->format('Y-m-d') : null;
+            $newEta = !empty($data['tgl_estimasi_datang']) ? date('Y-m-d', strtotime($data['tgl_estimasi_datang'])) : null;
+            if ($existingEta !== $newEta) {
+                return true;
+            }
+        }
+
+        // Cek Supplier: jika ID berbeda, periksa apakah nama supplier sama (misal memilih rekanan dengan nama identik)
+        if (!empty($data['supplier_id']) && (int) $data['supplier_id'] !== (int) $po->supplier_id) {
+            $newSup = MstSupplier::find($data['supplier_id']);
+            $oldSup = $po->supplier;
+            if (!$newSup || !$oldSup || trim(strtolower($newSup->supplier_nm)) !== trim(strtolower($oldSup->supplier_nm))) {
+                return true;
+            }
+        }
+
+        if (!empty($data['gudang_id']) && (int) $data['gudang_id'] !== (int) $po->gudang_id) {
+            return true;
+        }
+
+        if (!empty($data['approver_id']) && (int) $data['approver_id'] !== (int) $po->approver_id) {
+            return true;
+        }
+
+        if (array_key_exists('term_of_payment', $data)) {
+            if (trim((string) $data['term_of_payment']) !== trim((string) $po->term_of_payment)) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('remark_txt', $data)) {
+            if (trim((string) $data['remark_txt']) !== trim((string) $po->remark_txt)) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('catatan_txt', $data)) {
+            if (trim((string) $data['catatan_txt']) !== trim((string) $po->catatan_txt)) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('is_harga_termasuk_pajak', $data)) {
+            $newTaxInc = filter_var($data['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN);
+            if ($newTaxInc !== (bool) $po->is_harga_termasuk_pajak) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('potongan_nominal', $data)) {
+            if (abs((float) $data['potongan_nominal'] - (float) $po->potongan_nominal) > 0.01) {
+                return true;
+            }
+        }
+
+        $firstDetail = $po->details->first();
+        if (array_key_exists('diskon_persen', $data)) {
+            $oldDiskon = (float) ($firstDetail?->diskon_persen ?? 0);
+            if (abs((float) $data['diskon_persen'] - $oldDiskon) > 0.0001) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('pajak_id', $data)) {
+            $oldPajakId = $firstDetail ? (int) $firstDetail->pajak_id : 0;
+            $newPajakId = (int) ($data['pajak_id'] ?? 0);
+            if ($newPajakId !== $oldPajakId) {
+                return true;
+            }
+        }
+
+        // 2. Cek Item Rows
+        $items = $data['items'] ?? [];
+        if (count($items) !== $po->details->count()) {
+            return true;
+        }
+
+        $existingDetailsById = $po->details->keyBy('podtl_id');
+        foreach ($items as $item) {
+            $podtlId = !empty($item['podtl_id']) ? (int) $item['podtl_id'] : null;
+            if (!$podtlId || !$existingDetailsById->has($podtlId)) {
+                return true;
+            }
+
+            $oldDtl = $existingDetailsById->get($podtlId);
+            if ((int) $item['barang_id'] !== (int) $oldDtl->barang_id) {
+                return true;
+            }
+
+            if (abs((float) $item['pesan_qty'] - (float) $oldDtl->pesan_qty) > 0.0001) {
+                return true;
+            }
+
+            if (abs((float) $item['harga_nominal'] - (float) $oldDtl->harga_nominal) > 0.01) {
+                return true;
+            }
+
+            if (array_key_exists('diskon_persen', $item) && abs((float) $item['diskon_persen'] - (float) $oldDtl->diskon_persen) > 0.0001) {
+                return true;
+            }
+
+            if (array_key_exists('potongan_nominal', $item) && abs((float) $item['potongan_nominal'] - (float) $oldDtl->potongan_nominal) > 0.01) {
+                return true;
+            }
+
+            if (array_key_exists('pajak_id', $item) && (int) ($item['pajak_id'] ?? 0) !== (int) ($oldDtl->pajak_id ?? 0)) {
+                return true;
+            }
+
+            if (array_key_exists('is_harga_termasuk_pajak', $item)) {
+                $itemTaxInc = filter_var($item['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN);
+                if ($itemTaxInc !== (bool) $oldDtl->is_harga_termasuk_pajak) {
+                    return true;
+                }
+            }
+
+            if (array_key_exists('catatan_txt', $item) && trim((string) $item['catatan_txt']) !== trim((string) $oldDtl->catatan_txt)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Memperbarui dokumen PO (termasuk status PARTIAL / penerimaan bertahap).
      */
     public function update(int $id, array $data): DatPoHdr
     {
-        return DB::transaction(function () use ($id, $data) {
-            $po = DatPoHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar'])->findOrFail($id);
+        $po = DatPoHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar'])->findOrFail($id);
+
+        // Proteksi: Jika tidak ada perubahan data nyata sama sekali, jangan ubah database & jangan catat revisi log
+        if (!$this->hasPoChanges($po, $data)) {
+            $po->was_recently_changed = false;
+            return $po;
+        }
+
+        return DB::transaction(function () use ($po, $id, $data) {
             $initialStatusCd = $po->status_cd;
 
             // 1. Ambil Snapshot SEBELUM pengubahan dokumen untuk Audit Trail (Riwayat Edit)
@@ -555,39 +707,43 @@ class PoService
                 }
             }
 
-            // 2. Ambil Snapshot SESUDAH pengubahan & hitung selisih perubahannya (Diffs)
-            $poAfterForDiff = $po->fresh(['supplier', 'gudang', 'details.barang.satuanDasar']);
-            $afterSnapshot = $this->buildPoSnapshot($poAfterForDiff);
-            // Tambahkan nilai grandTotal kalkulasi baru ke snapshot untuk komparasi akurat
-            $afterSnapshot['total_tagihan'] = (float) $grandTotal;
-            $diffResult = $this->computePoDiff($beforeSnapshot, $afterSnapshot);
+            // Hitung total kuantitas pesan sebelum diedit untuk mendeteksi penambahan kuota/anggaran
+            $oldTotalPesanQty = (float) $po->details->sum('pesan_qty');
+            $oldTotalTagihan = (float) ($beforeSnapshot['total_tagihan'] ?? $po->total_tagihan);
 
-            // Deteksi apakah terdapat perubahan finansial, kuantitas, harga, item, atau rekanan
-            $hasFinancialOrQtyChanges = false;
-            foreach ($diffResult['diffs'] as $diff) {
-                $t = $diff['tipe'] ?? '';
-                $f = $diff['field'] ?? '';
-                if (in_array($t, ['FINANSIAL', 'ITEM_QTY', 'ITEM_HARGA', 'ITEM_TAMBAH', 'ITEM_HAPUS', 'ITEM_DISKON', 'ITEM_POTONGAN', 'ITEM_PAJAK', 'ITEM_PAJAK_INC'])) {
-                    $hasFinancialOrQtyChanges = true;
-                    break;
-                }
-                if ($t === 'HEADER' && in_array($f, ['supplier_id', 'gudang_id', 'is_harga_termasuk_pajak', 'potongan_nominal', 'diskon_total', 'ppn_nominal', 'term_of_payment', 'total_tagihan'])) {
-                    $hasFinancialOrQtyChanges = true;
-                    break;
-                }
-            }
-            if (!$hasFinancialOrQtyChanges && abs((float) ($beforeSnapshot['total_tagihan'] ?? 0) - (float) $grandTotal) > 0.01) {
-                $hasFinancialOrQtyChanges = true;
-            }
+            $isItemAdded = count($processedDtlIds) > count($existingDetailsById);
+            $isItemDeleted = count($processedDtlIds) < count($existingDetailsById);
+            $isQtyOrPriceIncreased = ($totalPesanQtyAll > ($oldTotalPesanQty + 0.0001))
+                || ($grandTotal > ($oldTotalTagihan + 0.01))
+                || $isItemAdded;
+
+            $hasFinancialOrQtyChanges = $isQtyOrPriceIncreased
+                || $isItemDeleted
+                || (abs($totalPesanQtyAll - $oldTotalPesanQty) > 0.0001)
+                || (abs($grandTotal - $oldTotalTagihan) > 0.01)
+                || (abs($diskonTotal - (float)($beforeSnapshot['diskon_total'] ?? $po->diskon_total)) > 0.01)
+                || (abs($totalPotongan - (float)($beforeSnapshot['potongan_nominal'] ?? $po->potongan_nominal)) > 0.01)
+                || (abs($totalPpn - (float)($beforeSnapshot['ppn_nominal'] ?? $po->ppn_nominal)) > 0.01)
+                || ((bool) $headerTaxInclusive !== (bool) $po->is_harga_termasuk_pajak)
+                || ((int) ($data['supplier_id'] ?? $po->supplier_id) !== (int) $po->supplier_id)
+                || ((int) ($data['gudang_id'] ?? $po->gudang_id) !== (int) $po->gudang_id)
+                || (isset($data['term_of_payment']) && trim((string)$data['term_of_payment']) !== trim((string)$po->term_of_payment));
 
             // Evaluasi status_cd dokumen PO dengan mekanisme Re-Approval otomatis
             $isReapprovalTriggered = false;
             $newStatusCd = $po->status_cd;
+
             if ($totalTerimaQtyAll > 0) {
                 if ($totalTerimaQtyAll >= $totalPesanQtyAll) {
                     $newStatusCd = 'COMPLETED';
                 } else {
-                    $newStatusCd = 'PARTIAL';
+                    // Kasus 2A: Jika PO yang sudah PARTIAL ditambah kuantitas/harga/itemnya, WAJIB minta persetujuan ulang (Re-Approval)!
+                    if ($isQtyOrPriceIncreased) {
+                        $newStatusCd = 'PENDING_APPROVAL';
+                        $isReapprovalTriggered = true;
+                    } else {
+                        $newStatusCd = 'PARTIAL';
+                    }
                 }
             } elseif ($initialStatusCd === 'DRAFT') {
                 $newStatusCd = 'DRAFT';
@@ -635,7 +791,26 @@ class PoService
                 $poUpdateData['approval_token'] = Str::random(40);
             }
 
+            // 2. Simpan Pembaruan Header ke Database TERLEBIH DAHULU agar Snapshot SESUDAH Akurat
             $po->update($poUpdateData);
+
+            // 3. Ambil Snapshot SESUDAH pengubahan & hitung selisih perubahannya (Diffs)
+            $poAfterForDiff = $po->fresh(['supplier', 'gudang', 'details.barang.satuanDasar', 'details.pajak', 'approver']);
+            $afterSnapshot = $this->buildPoSnapshot($poAfterForDiff);
+            $afterSnapshot['total_tagihan'] = (float) $grandTotal;
+            $diffResult = $this->computePoDiff($beforeSnapshot, $afterSnapshot);
+
+            // Jaminan diffs: jika diff kosong padahal ada perubahan, tambahkan entri fallback ringkas
+            if (empty($diffResult['diffs'])) {
+                $diffResult['diffs'][] = [
+                    'field'   => 'po_update',
+                    'label'   => 'Pembaruan Data PO',
+                    'sebelum' => 'Versi Sebelumnya',
+                    'sesudah' => 'Diperbarui',
+                    'tipe'    => 'HEADER',
+                ];
+                $diffResult['summaryParts'][] = 'Pembaruan data PO berhasil disimpan';
+            }
 
             if (!empty($diffResult['diffs'])) {
                 $user = auth()->user();
@@ -689,7 +864,9 @@ class PoService
                 ]);
             }
 
-            return $po->fresh(['supplier', 'details.barang', 'details.pajak', 'revisiLog']);
+            $poFresh = $po->fresh(['supplier', 'details.barang', 'details.pajak', 'revisiLog']);
+            $poFresh->was_recently_changed = true;
+            return $poFresh;
         });
     }
 
@@ -715,6 +892,9 @@ class PoService
             'ppn_nominal'             => (float) $po->ppn_nominal,
             'total_tagihan'           => (float) $po->total_tagihan,
             'catatan_txt'             => $po->catatan_txt,
+            'remark_txt'              => $po->remark_txt,
+            'approver_id'             => $po->approver_id ? (int) $po->approver_id : null,
+            'approver_nm'             => $po->approver?->name,
             'items'                   => $po->details->map(function ($d) {
                 return [
                     'podtl_id'                => $d->podtl_id,
@@ -758,6 +938,8 @@ class PoService
             'diskon_total'            => 'Diskon Total',
             'ppn_nominal'             => 'PPN / Pajak Total',
             'catatan_txt'             => 'Catatan PO',
+            'remark_txt'              => 'Catatan Khusus (Remark)',
+            'approver_id'             => 'Penyetuju (Approver)',
             'total_tagihan'           => 'Total Nilai PO',
         ];
 
@@ -765,7 +947,18 @@ class PoService
             $oldVal = $before[$field] ?? null;
             $newVal = $after[$field] ?? null;
 
-            if ($field === 'supplier_id' && $oldVal != $newVal) {
+            if ($field === 'approver_id' && (int)$oldVal !== (int)$newVal) {
+                $oldName = $before['approver_nm'] ?? ($oldVal ? "ID {$oldVal}" : '-');
+                $newName = $after['approver_nm'] ?? ($newVal ? "ID {$newVal}" : '-');
+                $diffs[] = [
+                    'field'   => $field,
+                    'label'   => $label,
+                    'sebelum' => $oldName,
+                    'sesudah' => $newName,
+                    'tipe'    => 'HEADER',
+                ];
+                $summaryParts[] = "Penyetuju PO diubah dari '{$oldName}' menjadi '{$newName}'";
+            } elseif ($field === 'supplier_id' && $oldVal != $newVal) {
                 $oldName = $before['supplier_nm'] ?? "ID {$oldVal}";
                 $newName = $after['supplier_nm'] ?? "ID {$newVal}";
                 $diffs[] = [
@@ -809,7 +1002,7 @@ class PoService
                     'tipe'    => 'FINANSIAL',
                 ];
                 $summaryParts[] = "Perlakuan Pajak diubah: {$oldTxt} ➔ {$newTxt}";
-            } elseif (!in_array($field, ['supplier_id', 'gudang_id', 'total_tagihan', 'potongan_nominal', 'diskon_total', 'ppn_nominal', 'is_harga_termasuk_pajak']) && $oldVal != $newVal) {
+            } elseif (!in_array($field, ['supplier_id', 'gudang_id', 'approver_id', 'total_tagihan', 'potongan_nominal', 'diskon_total', 'ppn_nominal', 'is_harga_termasuk_pajak']) && $oldVal != $newVal) {
                 $diffs[] = [
                     'field'   => $field,
                     'label'   => $label,

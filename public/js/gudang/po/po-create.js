@@ -1429,9 +1429,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     updateRowNumbers();
     calculateGrandTotal();
-    if (typeof savePoCreateDraft === 'function') {
-        savePoCreateDraft();
-    }
 
     initCreatePoDateNumberSync();
     initCreatePreviousMonthProtection();
@@ -1482,6 +1479,9 @@ function openPreviousMonthModal(options) {
 function closePreviousMonthModal() {
     const modal = document.getElementById('modalConfirmPreviousMonth');
     if (modal) modal.style.display = 'none';
+    if (typeof setPoSubmitButtonLoading === 'function') {
+        setPoSubmitButtonLoading(false);
+    }
 }
 
 function parsePoNoParts(val) {
@@ -1610,6 +1610,176 @@ function initCreatePoDateNumberSync() {
     });
 }
 
+/* =========================================================================
+ * VALIDASI INTERAKTIF & ANTI DOUBLE-SUBMIT (ENTERPRISE STANDARD)
+ * ========================================================================= */
+let isPoFormSubmitting = false;
+
+function clearAllPoValidationErrors() {
+    const banner = document.getElementById('poValidationBanner');
+    if (banner) {
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+    }
+    document.querySelectorAll('.po-input-error').forEach(el => {
+        el.classList.remove('po-input-error');
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+    });
+}
+
+function showPoValidationErrorBanner(errors) {
+    const banner = document.getElementById('poValidationBanner');
+    if (!banner) return;
+
+    let listHtml = '';
+    errors.forEach(err => {
+        listHtml += `<li>${err}</li>`;
+    });
+
+    banner.innerHTML = `
+        <div class="po-validation-banner-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span>Terdapat ${errors.length} data yang belum lengkap atau perlu diperiksa:</span>
+        </div>
+        <ul class="po-validation-banner-list">
+            ${listHtml}
+        </ul>
+    `;
+    banner.style.display = 'block';
+    banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function validatePoCreateForm() {
+    clearAllPoValidationErrors();
+
+    const errors = [];
+    let firstErrorElement = null;
+
+    function markError(element, message) {
+        if (!element) return;
+        element.classList.add('po-input-error');
+
+        const clearHandler = function () {
+            element.classList.remove('po-input-error');
+            element.removeEventListener('input', clearHandler);
+            element.removeEventListener('change', clearHandler);
+            element.removeEventListener('click', clearHandler);
+        };
+        element.addEventListener('input', clearHandler);
+        element.addEventListener('change', clearHandler);
+        element.addEventListener('click', clearHandler);
+
+        errors.push(message);
+        if (!firstErrorElement) {
+            firstErrorElement = element;
+        }
+    }
+
+    // 1. Validasi Supplier
+    if (currentPoMode === 'multi') {
+        const rows = document.querySelectorAll('#poItemsTable tbody .item-row');
+        rows.forEach((row, idx) => {
+            const rowNum = idx + 1;
+            const supSelect = row.querySelector('.item-supplier');
+            if (supSelect && !supSelect.value) {
+                markError(supSelect, `Baris #${rowNum}: Supplier mitra wajib dipilih pada mode multi-supplier.`);
+            }
+        });
+    } else {
+        const supInput = document.getElementById('supplier_id');
+        const supSearch = document.getElementById('supplier_search_input');
+        if (!supInput || !supInput.value) {
+            markError(supSearch || supInput, 'Supplier Mitra wajib dipilih.');
+        }
+    }
+
+    // 2. Validasi Tanggal PO
+    const tglInput = document.getElementById('po_tgl');
+    if (!tglInput || !tglInput.value) {
+        markError(tglInput, 'Tanggal PO wajib diisi.');
+    }
+
+    // 3. Validasi Nomor PO
+    const noInput = document.getElementById('po_no');
+    if (!noInput || !noInput.value.trim()) {
+        markError(noInput, 'Nomor PO Resmi wajib diisi.');
+    }
+
+    // 4. Validasi Penyetuju (Approver)
+    const approverSelect = document.getElementById('approver_id');
+    if (!approverSelect || !approverSelect.value) {
+        markError(approverSelect, 'Atasan Penyetuju (Approver) wajib dipilih.');
+    }
+
+    // 5. Validasi Gudang Tujuan
+    const gudangSelect = document.getElementById('gudang_id');
+    if (!gudangSelect || !gudangSelect.value) {
+        markError(gudangSelect, 'Gudang Tujuan Masuk wajib dipilih.');
+    }
+
+    // 6. Validasi Baris Barang
+    const itemRows = document.querySelectorAll('#poItemsTable tbody .item-row');
+    if (itemRows.length === 0) {
+        errors.push('Minimal harus ada 1 baris item barang dalam Purchase Order.');
+    } else {
+        itemRows.forEach((row, idx) => {
+            const rowNum = idx + 1;
+            const barangSelect = row.querySelector('.item-barang');
+            const qtyInput = row.querySelector('.item-qty');
+            const hargaInput = row.querySelector('.item-harga');
+
+            if (!barangSelect || !barangSelect.value) {
+                markError(barangSelect, `Baris #${rowNum}: Komoditas / Barang wajib dipilih.`);
+            }
+
+            const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+            if (!qtyInput || qty <= 0 || isNaN(qty)) {
+                markError(qtyInput, `Baris #${rowNum}: Kuantitas pesan harus lebih besar dari 0.`);
+            }
+
+            const harga = parseFloat(hargaInput ? hargaInput.value : 0);
+            if (!hargaInput || harga < 0 || isNaN(harga)) {
+                markError(hargaInput, `Baris #${rowNum}: Harga satuan tidak boleh bernilai negatif.`);
+            }
+        });
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors,
+        firstErrorElement: firstErrorElement
+    };
+}
+
+function setPoSubmitButtonLoading(isLoading) {
+    const btn = document.getElementById('btnSubmitPo');
+    if (!btn) return;
+
+    if (isLoading) {
+        isPoFormSubmitting = true;
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+        if (!btn.dataset.originalHtml) {
+            btn.dataset.originalHtml = btn.innerHTML;
+        }
+        btn.innerHTML = `
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" style="animation: spin 1s linear infinite; display: inline-block;">
+                <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Menyimpan Dokumen PO...</span>
+        `;
+    } else {
+        isPoFormSubmitting = false;
+        btn.disabled = false;
+        btn.classList.remove('is-loading');
+        if (btn.dataset.originalHtml) {
+            btn.innerHTML = btn.dataset.originalHtml;
+        }
+    }
+}
+
 function initCreatePreviousMonthProtection() {
     const formPo = document.getElementById('formPo');
     if (!formPo) return;
@@ -1617,7 +1787,28 @@ function initCreatePreviousMonthProtection() {
     let previousMonthConfirmed = false;
 
     formPo.addEventListener('submit', function (e) {
-        if (previousMonthConfirmed) return;
+        // Proteksi 1: Cegah klik ganda / double submit
+        if (isPoFormSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Proteksi 2: Jalankan validasi komprehensif form
+        const validation = validatePoCreateForm();
+        if (!validation.isValid) {
+            e.preventDefault();
+            showPoValidationErrorBanner(validation.errors);
+            if (validation.firstErrorElement) {
+                validation.firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                try { validation.firstErrorElement.focus(); } catch (err) {}
+            }
+            return false;
+        }
+
+        if (previousMonthConfirmed) {
+            setPoSubmitButtonLoading(true);
+            return true;
+        }
 
         const poTglInput = document.getElementById('po_tgl');
         const poNoInput = document.getElementById('po_no');
@@ -1674,7 +1865,12 @@ function initCreatePreviousMonthProtection() {
                 contentHtml: alerts.join(''),
                 question: 'Apakah Anda yakin data ini sudah benar dan tetap ingin menyimpan dokumen PO ini?'
             });
+            return false;
         }
+
+        // Lolos seluruh validasi: kunci tombol simpan dan tampilkan loading state (Anti Double-Submit)
+        setPoSubmitButtonLoading(true);
+        clearPoCreateDraft();
     });
 
     const btnConfirm = document.getElementById('btnConfirmSubmitPreviousMonth');
@@ -1683,6 +1879,7 @@ function initCreatePreviousMonthProtection() {
             previousMonthConfirmed = true;
             clearPoCreateDraft();
             closePreviousMonthModal();
+            setPoSubmitButtonLoading(true);
             formPo.submit();
         });
     }
@@ -1691,32 +1888,62 @@ function initCreatePreviousMonthProtection() {
 /**
  * =========================================================================
  * FITUR DRAFT PERSISTENCE (AUTO-SAVE & RESTORE DATA PADA REFRESH HALAMAN)
- * & MODAL KONFIRMASI HAPUS SEMUA BARIS (ENTERPRISE UX)
+ * DENGAN BATAS KEDALUWARSA (MAX 2 JAM) & BEBAS EMOJI (ENTERPRISE UX)
  * =========================================================================
  */
 const DRAFT_STORAGE_KEY = 'erp_mirasa_po_create_draft';
+const DRAFT_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 Jam (120 Menit)
 let draftSaveDebounceTimer = null;
+let isRestoringPoDraft = false;
 
-function showDraftIndicator(text) {
-    const ind = document.getElementById('draftSaveIndicator');
-    if (ind) {
-        ind.textContent = text;
-        ind.style.display = 'inline-flex';
+function showDraftRestoreBanner(timestamp) {
+    const banner = document.getElementById('poDraftRestoreBanner');
+    const textEl = document.getElementById('poDraftRestoreText');
+    if (!banner || !textEl) return;
+
+    let timeText = '';
+    if (timestamp) {
+        const d = new Date(timestamp);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const diffMins = Math.max(1, Math.round((Date.now() - timestamp) / 60000));
+        timeText = ` (tersimpan pukul ${hours}:${mins} WIB - sekitar ${diffMins} menit lalu)`;
+    }
+
+    textEl.textContent = `Draf formulir Purchase Order dipulihkan otomatis${timeText}. Draf otomatis kedaluwarsa jika tidak ada aktivitas selama 2 jam.`;
+    banner.style.display = 'flex';
+}
+
+function dismissPoDraftBanner() {
+    const banner = document.getElementById('poDraftRestoreBanner');
+    if (banner) {
+        banner.style.display = 'none';
     }
 }
+window.dismissPoDraftBanner = dismissPoDraftBanner;
 
 function clearPoCreateDraft() {
     try {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
-        const ind = document.getElementById('draftSaveIndicator');
-        if (ind) ind.style.display = 'none';
+        const banner = document.getElementById('poDraftRestoreBanner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
     } catch (e) {
         console.warn('Gagal menghapus draft PO:', e);
     }
 }
 window.clearPoCreateDraft = clearPoCreateDraft;
 
+function discardPoCreateDraft() {
+    clearPoCreateDraft();
+    window.location.reload();
+}
+window.discardPoCreateDraft = discardPoCreateDraft;
+
 function savePoCreateDraft() {
+    if (isRestoringPoDraft) return;
+
     clearTimeout(draftSaveDebounceTimer);
     draftSaveDebounceTimer = setTimeout(() => {
         try {
@@ -1727,6 +1954,7 @@ function savePoCreateDraft() {
             const poTgl = document.getElementById('po_tgl')?.value || '';
             const poNo = document.getElementById('po_no')?.value || '';
             const gudangId = document.getElementById('gudang_id')?.value || '';
+            const approverId = document.getElementById('approver_id')?.value || '';
             const tglEta = document.getElementById('tgl_estimasi_datang')?.value || '';
             const top = document.getElementById('term_of_payment')?.value || '';
             const catatan = document.getElementById('catatan_txt')?.value || '';
@@ -1764,7 +1992,7 @@ function savePoCreateDraft() {
             });
 
             // Hanya simpan jika pengguna sudah mulai menginputkan sesuatu
-            if (!supplierId && !catatan && !remark && items.length === 0) {
+            if (!supplierId && !catatan && !remark && !approverId && !tglEta && items.length === 0) {
                 return;
             }
 
@@ -1776,6 +2004,7 @@ function savePoCreateDraft() {
                     po_tgl: poTgl,
                     po_no: poNo,
                     gudang_id: gudangId,
+                    approver_id: approverId,
                     tgl_estimasi_datang: tglEta,
                     term_of_payment: top,
                     catatan_txt: catatan,
@@ -1789,11 +2018,10 @@ function savePoCreateDraft() {
             };
 
             localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
-            showDraftIndicator('💾 Draft Tersimpan');
         } catch (e) {
             console.warn('Gagal menyimpan draft PO:', e);
         }
-    }, 300);
+    }, 400);
 }
 window.savePoCreateDraft = savePoCreateDraft;
 
@@ -1803,12 +2031,24 @@ function restorePoCreateDraft() {
         if (!raw) return false;
 
         const draft = JSON.parse(raw);
-        if (!draft || !draft.header) return false;
+        if (!draft || !draft.header || !draft.timestamp) {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            return false;
+        }
+
+        // Cek apakah draft sudah kedaluwarsa (> 2 Jam)
+        const ageMs = Date.now() - draft.timestamp;
+        if (ageMs > DRAFT_MAX_AGE_MS) {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            return false;
+        }
 
         // Jika halaman dibuka kembali setelah submit/error form server, prioritaskan server
         if (window.oldSupplierId || (window.oldHasMultiSupplier && window.oldHasMultiSupplier !== '0')) {
             return false;
         }
+
+        isRestoringPoDraft = true;
 
         const h = draft.header;
 
@@ -1825,9 +2065,17 @@ function restorePoCreateDraft() {
         }
 
         // 3. Header Fields
+        if (h.po_tgl) {
+            const el = document.getElementById('po_tgl');
+            if (el) el.value = h.po_tgl;
+        }
         if (h.gudang_id) {
             const el = document.getElementById('gudang_id');
-            if (el) el.value = h.gudang_id;
+            if (el && !el.disabled) el.value = h.gudang_id;
+        }
+        if (h.approver_id) {
+            const el = document.getElementById('approver_id');
+            if (el) el.value = h.approver_id;
         }
         if (h.tgl_estimasi_datang) {
             const el = document.getElementById('tgl_estimasi_datang');
@@ -1835,7 +2083,10 @@ function restorePoCreateDraft() {
         }
         if (h.term_of_payment) {
             const el = document.getElementById('term_of_payment');
-            if (el) el.value = h.term_of_payment;
+            if (el) {
+                el.value = h.term_of_payment;
+                el.dataset.autoFilled = 'false';
+            }
         }
         if (h.catatan_txt) {
             const el = document.getElementById('catatan_txt');
@@ -1925,11 +2176,13 @@ function restorePoCreateDraft() {
             }
         }
 
-        showDraftIndicator('💾 Draft Dipulihkan dari Sesi Terakhir');
+        showDraftRestoreBanner(draft.timestamp);
         return true;
     } catch (e) {
         console.warn('Gagal me-restore draft PO:', e);
         return false;
+    } finally {
+        isRestoringPoDraft = false;
     }
 }
 window.restorePoCreateDraft = restorePoCreateDraft;
@@ -1938,7 +2191,7 @@ function initPoDraftAutoSave() {
     const formPo = document.getElementById('formPo');
     if (!formPo) return;
 
-    // Restore jika ada data tersimpan
+    // Restore jika ada data tersimpan yang masih valid
     restorePoCreateDraft();
 
     // Listener auto-save pada input & change

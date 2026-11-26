@@ -44,7 +44,8 @@ class QcInboundController extends Controller
             'allowed_gudang_ids' => $allowedGudangIds,
         ];
 
-        $inspeksiList = $this->qcService->getAllPaginated($filters, 15);
+        $perPage = (int) $request->input('per_page', 15);
+        $inspeksiList = $this->qcService->getAllPaginated($filters, $perPage);
         $suppliers = MstSupplier::where('deleted_st', false)->where('active_st', true)->orderBy('supplier_nm')->get();
 
         $isMobileReq = $request->input('view') === 'mobile';
@@ -55,7 +56,7 @@ class QcInboundController extends Controller
                 return redirect()->route($user->getDashboardRoute())
                     ->with('error', "Akses Ditolak: Peran akun Anda saat ini belum memiliki izin untuk membuka modul QC Mobile Lapangan.");
             }
-            return view('gudang.qc.mobile.index', compact('inspeksiList', 'suppliers', 'filters'));
+            return view('gudang.qc.mobile.index', compact('inspeksiList', 'suppliers', 'filters', 'perPage'));
         }
 
         // Web Admin Desktop
@@ -102,7 +103,7 @@ class QcInboundController extends Controller
                    ->orWhereDoesntHave('pengujian2List', fn($pq) => $pq->whereIn('status_qc', ['DITERIMA_GUDANG', 'SIAP_GUDANG']));
             })->count();
 
-        return view('gudang.qc.web.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countParsial', 'countReject'));
+        return view('gudang.qc.web.index', compact('inspeksiList', 'suppliers', 'filters', 'countSiap', 'countMenungguUji2', 'countSelesai', 'countParsial', 'countReject', 'perPage'));
     }
 
     /**

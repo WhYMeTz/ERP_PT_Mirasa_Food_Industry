@@ -298,6 +298,26 @@ class DatPoHdr extends Model
     }
 
     /**
+     * Cek apakah total penerimaan fisik melebihi kuantitas pesanan (Over PO)
+     */
+    public function isOverPo(): bool
+    {
+        $totalPesan = (float) $this->details->sum('pesan_qty');
+        $totalTerima = (float) $this->details->sum('terima_qty');
+        return $totalPesan > 0 && ($totalTerima > $totalPesan);
+    }
+
+    /**
+     * Total selisih kuantitas kelebihan terima (Over PO)
+     */
+    public function getOverPoDiffQtyAttribute(): float
+    {
+        $totalPesan = (float) $this->details->sum('pesan_qty');
+        $totalTerima = (float) $this->details->sum('terima_qty');
+        return max(0, $totalTerima - $totalPesan);
+    }
+
+    /**
      * Relasi ke detail item pesanan (PO Detail)
      */
     public function details(): HasMany

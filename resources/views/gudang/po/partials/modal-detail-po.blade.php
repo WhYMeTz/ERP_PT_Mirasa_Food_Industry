@@ -336,12 +336,26 @@
                 </div>
 
                 {{-- 6. RIWAYAT PENERIMAAN FISIK DI GERBANG (GRN) --}}
-                <div id="poDetailGrnSection">
+                <div id="poDetailGrnSection" style="margin-bottom: 1.15rem;">
                     <div class="mac-po-card-label" style="margin-bottom: 0.5rem;">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                         <span>Riwayat Penerimaan Barang Fisik (GRN)</span>
                     </div>
                     <div id="poDetailGrnList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {{-- Diisi dinamis via JS --}}
+                    </div>
+                </div>
+
+                {{-- 7. RIWAYAT PERUBAHAN & AUDIT TRAIL PO --}}
+                <div id="poDetailRevisiSection">
+                    <div class="mac-po-card-label" style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Riwayat Perubahan &amp; Audit Trail</span>
+                        </span>
+                        <span id="poDetailRevisiSummaryBadge" class="mac-badge-pill">-</span>
+                    </div>
+                    <div id="poDetailRevisiList" style="display: flex; flex-direction: column; gap: 0.5rem;">
                         {{-- Diisi dinamis via JS --}}
                     </div>
                 </div>

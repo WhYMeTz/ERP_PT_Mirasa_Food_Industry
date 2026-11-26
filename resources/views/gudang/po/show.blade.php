@@ -50,6 +50,10 @@
                 @elseif ($po->status_cd == 'COMPLETED')
                     @if (!empty($po->closed_at))
                         <span class="po-badge po-badge-completed">Selesai (Batal Sisa {{ $po->persentase_terima }}%)</span>
+                    @elseif ($po->isOverPo())
+                        <span class="po-badge" style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-weight: 800;" title="Penerimaan melebihi pesanan sebesar +{{ number_format($po->over_po_diff_qty, 2, ',', '.') }} ({{ $po->persentase_terima }}%)">
+                            Selesai (Over PO +{{ number_format($po->over_po_diff_qty, 2, ',', '.') }} / {{ $po->persentase_terima }}%)
+                        </span>
                     @else
                         <span class="po-badge po-badge-completed">Selesai (100%)</span>
                     @endif
@@ -491,6 +495,11 @@
                                         </td>
                                         <td style="text-align: right; font-weight: 700; color: var(--po-emerald);">
                                             {{ number_format((float) $item->terima_qty, 2) }}
+                                            @if ($item->isOverPo())
+                                                <span class="po-badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.65rem; font-weight: 700; display: block; margin-top: 2px;">
+                                                    Over (+{{ number_format($item->over_qty, 2) }})
+                                                </span>
+                                            @endif
                                         </td>
                                         <td style="text-align: right; font-weight: 700;">
                                             @if (!empty($po->closed_at) && (float) $item->sisa_qty > 0)
@@ -837,11 +846,10 @@
                             <table class="po-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 120px;">Versi &amp; Waktu</th>
-                                        <th style="width: 160px;">Diedit Oleh</th>
-                                        <th style="width: 140px;">Kategori</th>
-                                        <th>Poin Perubahan (Diffs)</th>
-                                        <th style="text-align: right; width: 100px;">Aksi</th>
+                                        <th style="width: 130px;">Versi &amp; Waktu</th>
+                                        <th style="width: 170px;">Diedit Oleh</th>
+                                        <th style="width: 150px;">Kategori</th>
+                                        <th>Rincian Perubahan (Sebelum &rarr; Sesudah)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -851,44 +859,44 @@
                                             $diffs = $log->perubahan_json ?? [];
                                         @endphp
                                         <tr>
-                                            <td>
+                                            <td style="vertical-align: top;">
                                                 <span class="po-badge po-badge-approved text-mono">{{ $log->revisi_no ?: 'REV' }}</span>
-                                                <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
-                                                    {{ $tglRev ? $tglRev->format('d/m/Y H:i') : '-' }}
+                                                <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
+                                                    {{ $tglRev ? $tglRev->format('d/m/Y H:i') : '-' }} WIB
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td style="vertical-align: top;">
                                                 <strong style="color: var(--po-slate-900);">{{ $log->user_nama ?: 'SYSTEM' }}</strong>
                                                 <div style="font-size: 0.7rem; color: #64748b;">{{ $log->user_role ?: 'Operator' }}</div>
                                             </td>
-                                            <td>
+                                            <td style="vertical-align: top;">
                                                 <span class="po-badge po-badge-draft" style="font-size: 0.68rem;">
                                                     {{ str_replace('_', ' ', $log->kategori_perubahan ?: 'KOMPREHENSIF') }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td style="vertical-align: top;">
+                                                @if (!empty($log->alasan_edit))
+                                                    <div style="font-size: 0.75rem; color: #64748b; font-style: italic; margin-bottom: 6px;">
+                                                        Alasan: &ldquo;{{ $log->alasan_edit }}&rdquo;
+                                                    </div>
+                                                @endif
+
                                                 @if (!empty($diffs) && is_array($diffs))
-                                                    <div style="display: flex; flex-direction: column; gap: 3px;">
-                                                        @foreach (array_slice($diffs, 0, 2) as $df)
-                                                            <div style="font-size: 0.75rem; color: #334155;">
-                                                                <strong>{{ $df['label'] ?? ($df['field'] ?? '') }}:</strong>
-                                                                <span style="color: #dc2626; text-decoration: line-through;">{{ $df['sebelum'] ?? '-' }}</span>
-                                                                &rarr;
-                                                                <span style="color: #166534; font-weight: 700;">{{ $df['sesudah'] ?? '-' }}</span>
+                                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                        @foreach ($diffs as $df)
+                                                            <div style="font-size: 0.775rem; color: #1e293b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                                                                <strong style="color: #475569;">{{ $df['label'] ?? ($df['field'] ?? 'Field') }}:</strong>
+                                                                <div style="font-family: monospace; font-size: 0.75rem;">
+                                                                    <span style="color: #dc2626; text-decoration: line-through; background: #fef2f2; padding: 1px 4px; border-radius: 4px;">{{ $df['sebelum'] ?? '-' }}</span>
+                                                                    <span style="color: #64748b; margin: 0 4px;">&rarr;</span>
+                                                                    <span style="color: #15803d; font-weight: 700; background: #f0fdf4; padding: 1px 4px; border-radius: 4px;">{{ $df['sesudah'] ?? '-' }}</span>
+                                                                </div>
                                                             </div>
                                                         @endforeach
-                                                        @if (count($diffs) > 2)
-                                                            <small style="color: #0284c7; font-weight: 600;">+ {{ count($diffs) - 2 }} perubahan lainnya...</small>
-                                                        @endif
                                                     </div>
                                                 @else
                                                     <span style="font-size: 0.775rem; color: #64748b;">{{ $log->ringkasan_perubahan ?: '-' }}</span>
                                                 @endif
-                                            </td>
-                                            <td style="text-align: right;">
-                                                <button type="button" class="btn-pill-outline" onclick='openPoRevisiModal(@json($log))' style="padding: 0.2rem 0.55rem; font-size: 0.725rem;">
-                                                    Rincian
-                                                </button>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -1189,7 +1197,6 @@
     @include('gudang.po.partials.modal-force-close')
     @include('gudang.po.partials.modal-haccp-po')
     @include('gudang.po.partials.modal-kirim-supplier')
-    @include('gudang.po.partials.modal-revisi-po')
     @include('gudang.po.partials.modal-cancel-delete')
 
 </div>

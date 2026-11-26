@@ -683,6 +683,81 @@ function renderPoDetail(po) {
         grnList.innerHTML = '<div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.85rem; text-align: center; color: #94a3b8; font-size: 0.8rem;">Belum ada riwayat penerimaan barang fisik (GRN) untuk Purchase Order ini.</div>';
     }
 
+    // Riwayat Perubahan & Audit Trail PO
+    const revisiLogs = po.revisi_log || po.revisiLog || [];
+    const revisiListEl = document.getElementById('poDetailRevisiList');
+    const revisiSummaryBadge = document.getElementById('poDetailRevisiSummaryBadge');
+
+    if (revisiSummaryBadge) {
+        if (revisiLogs.length > 0) {
+            revisiSummaryBadge.textContent = `${revisiLogs.length} Catatan Revisi`;
+            revisiSummaryBadge.style.background = '#f0fdf4';
+            revisiSummaryBadge.style.color = '#15803d';
+            revisiSummaryBadge.style.borderColor = '#bbf7d0';
+        } else {
+            revisiSummaryBadge.textContent = 'Versi Orisinal';
+            revisiSummaryBadge.style.background = '#f8fafc';
+            revisiSummaryBadge.style.color = '#64748b';
+            revisiSummaryBadge.style.borderColor = '#e2e8f0';
+        }
+    }
+
+    if (revisiListEl) {
+        revisiListEl.innerHTML = '';
+        if (revisiLogs.length > 0) {
+            revisiLogs.forEach(log => {
+                const diffs = log.perubahan_json || [];
+                let diffSummaryHtml = '';
+
+                if (Array.isArray(diffs) && diffs.length > 0) {
+                    const diffLines = diffs.map(df => `
+                        <div style="font-size: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                            <span style="color: #475569; font-weight: 600;">${df.label || df.field || 'Perubahan'}:</span>
+                            <div style="font-family: monospace; font-size: 0.725rem;">
+                                <span style="color: #dc2626; text-decoration: line-through; background: #fef2f2; padding: 1px 4px; border-radius: 3px;">${df.sebelum || '-'}</span>
+                                <span style="color: #64748b; margin: 0 4px;">&rarr;</span>
+                                <span style="color: #15803d; font-weight: 700; background: #f0fdf4; padding: 1px 4px; border-radius: 3px;">${df.sesudah || '-'}</span>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    diffSummaryHtml = `<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">${diffLines}</div>`;
+                } else {
+                    diffSummaryHtml = `<div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">${log.ringkasan_perubahan || 'Pembaruan data PO'}</div>`;
+                }
+
+                const card = document.createElement('div');
+                card.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 0.85rem; font-size: 0.8rem;';
+                card.innerHTML = `
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.35rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                <span class="mac-badge-pill text-mono" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0; font-weight: 800; font-size: 0.7rem;">${log.revisi_no || 'REV'}</span>
+                                <span style="color: #0f172a; font-weight: 700; font-size: 0.8rem;">${log.user_nama || 'SYSTEM'}</span>
+                                <span style="color: #64748b; font-size: 0.725rem;">(${log.user_role || 'Staf'})</span>
+                                <span style="color: #94a3b8; font-size: 0.725rem;">• ${formatDate(log.revisi_tgl)}</span>
+                            </div>
+                            <span class="mac-badge-pill" style="background: #f8fafc; color: #475569; border-color: #e2e8f0; font-size: 0.675rem;">
+                                ${(log.kategori_perubahan || 'KOMPREHENSIF').replace(/_/g, ' ')}
+                            </span>
+                        </div>
+                        ${log.alasan_edit ? `<div style="font-size: 0.725rem; color: #64748b; font-style: italic; margin-bottom: 0.35rem;">Alasan: &ldquo;${log.alasan_edit}&rdquo;</div>` : ''}
+                        ${diffSummaryHtml}
+                    </div>
+                `;
+
+                revisiListEl.appendChild(card);
+            });
+        } else {
+            revisiListEl.innerHTML = `
+                <div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem; text-align: center; color: #94a3b8;">
+                    <strong style="color: #64748b; font-size: 0.8125rem; display: block;">Dokumen Masih Versi Orisinal</strong>
+                    <span style="font-size: 0.75rem; color: #94a3b8;">PO ini belum pernah mengalami pengubahan data sejak pertama kali diterbitkan.</span>
+                </div>
+            `;
+        }
+    }
+
     // Link Tombol Footer & Header
     const baseUrl = (window.poConfig && window.poConfig.baseUrl) ? window.poConfig.baseUrl : '/gudang/po';
     window.currentActivePoId = po.po_id;
@@ -1116,6 +1191,7 @@ function changePoPerPage(size) {
     window.location.href = url.toString();
 }
 window.changePoPerPage = changePoPerPage;
+
 
 
 

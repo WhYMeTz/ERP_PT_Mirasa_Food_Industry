@@ -20,8 +20,9 @@ class FingerprintController extends Controller
 {
     public function index(Request $request)
     {
-        $dari   = $request->input('dari', TrxAbsensiHarian::min('tanggal') ?? now()->startOfMonth()->toDateString());
-        $sampai = $request->input('sampai', TrxAbsensiHarian::max('tanggal') ?? now()->toDateString());
+        // default: periode berjalan (bulan ini)
+        $dari   = $request->input('dari') ?: now()->startOfMonth()->toDateString();
+        $sampai = $request->input('sampai') ?: now()->endOfMonth()->toDateString();
 
        $query = TrxAbsensiHarian::query()
             ->whereBetween('tanggal', [$dari, $sampai])
@@ -47,10 +48,16 @@ class FingerprintController extends Controller
                     'rata_operasional' => $perHari->count() ? round($perHari->avg(), 1) : 0,
                 ];
 
+        // Filter "Belum Finger Pulang" (klik kartu). Ringkasan di atas tetap dihitung dari seluruh periode.
+        $belumPulang = $request->boolean('belum_pulang');
+        if ($belumPulang) {
+            $query->whereNull('jam_pulang');
+        }
+
         $rows = $query->orderByDesc('tanggal')->orderBy('nama')
             ->paginate(50)->withQueryString();
 
-        return view('manajemen.fingerprint.index', compact('rows', 'dari', 'sampai', 'stat'))
+        return view('manajemen.fingerprint.index', compact('rows', 'dari', 'sampai', 'stat', 'belumPulang'))
         ->with('karyawanList', MstKaryawan::whereNotNull('id_absensi')
             ->orderBy('karyawan_nm')->get(['id_absensi', 'karyawan_nm', 'nik']));
     }
@@ -62,14 +69,17 @@ class FingerprintController extends Controller
             'dari'   => 'nullable|date',
             'sampai' => 'nullable|date',
             'q'      => 'nullable|string|max:100',
+            'belum_pulang' => 'nullable|boolean',
         ]);
 
-        $dari   = $request->input('dari', TrxAbsensiHarian::min('tanggal') ?? now()->startOfMonth()->toDateString());
-        $sampai = $request->input('sampai', TrxAbsensiHarian::max('tanggal') ?? now()->toDateString());
+        // default: periode berjalan (bulan ini)
+        $dari   = $request->input('dari') ?: now()->startOfMonth()->toDateString();
+        $sampai = $request->input('sampai') ?: now()->endOfMonth()->toDateString();
 
         $rows = TrxAbsensiHarian::query()
             ->whereBetween('tanggal', [$dari, $sampai])
             ->when($request->q, fn ($q, $s) => CariKaryawan::terapkan($q, $s, 'nama', 'id_absen'))
+            ->when($request->boolean('belum_pulang'), fn ($q) => $q->whereNull('jam_pulang'))
             ->orderBy('tanggal')->orderBy('nama')
             ->get();
 

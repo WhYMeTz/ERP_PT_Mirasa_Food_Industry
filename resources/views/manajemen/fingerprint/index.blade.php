@@ -4,6 +4,17 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/manajemen/fingerprint/fingerprint-index.css') }}">
+    <style>
+        a.fp-stat-link { display:block; text-decoration:none; color:inherit; cursor:pointer; transition:box-shadow .15s, border-color .15s, transform .15s; }
+        a.fp-stat-link:hover { border-color:#fbbf24; box-shadow:0 4px 14px rgba(217,119,6,.15); transform:translateY(-1px); }
+        a.fp-stat-link.on { border-color:#d97706; box-shadow:0 0 0 2px rgba(217,119,6,.25); background:#fffbeb; }
+        .fp-stat-cta { margin-top:4px; font-size:.72rem; font-weight:700; color:#b45309; }
+        .fp-chip-filter { display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .45rem .3rem .75rem; border-radius:999px; background:#fef3c7; color:#92400e; font-size:.78rem; font-weight:700; }
+        .fp-chip-filter a { display:inline-flex; width:18px; height:18px; align-items:center; justify-content:center; border-radius:50%; background:#fde68a; color:#92400e; text-decoration:none; line-height:1; }
+        .fp-chip-filter a:hover { background:#fbbf24; }
+        .fp-row-act { display:inline-flex; gap:6px; }
+        .fp-row-act .fp-btn { padding:.25rem .65rem; font-size:.75rem; }
+    </style>
 @endpush
 
 @section('content')
@@ -25,7 +36,7 @@
 
     <div class="fp-head-actions">
         <a class="fp-btn fp-btn-soft"
-           href="{{ route('manajemen.fingerprint.export', ['q' => request('q'), 'dari' => $dari, 'sampai' => $sampai]) }}"
+           href="{{ route('manajemen.fingerprint.export', ['q' => request('q'), 'dari' => $dari, 'sampai' => $sampai, 'belum_pulang' => $belumPulang ? 1 : null]) }}"
            title="Unduh data yang sedang tampil (sesuai filter), semua halaman">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4 4m0 0l4-4m-4 4V4"/></svg>
             Export Excel</a>
@@ -58,11 +69,14 @@
         <div class="fp-stat-value">{{ number_format($stat['hari_data']) }}</div>
         <div class="fp-stat-note">Baris karyawan per tanggal</div>
     </div>
-    <div class="fp-stat">
+    <a class="fp-stat fp-stat-link {{ $belumPulang ? 'on' : '' }}"
+       href="{{ route('manajemen.fingerprint.index', ['q' => request('q'), 'dari' => $dari, 'sampai' => $sampai, 'belum_pulang' => $belumPulang ? null : 1]) }}"
+       title="{{ $belumPulang ? 'Klik untuk menampilkan semua data' : 'Klik untuk melihat daftar nama yang belum finger pulang' }}">
         <div class="fp-stat-label" style="color:#d97706">Belum Finger Pulang</div>
         <div class="fp-stat-value">{{ number_format($stat['belum_pulang']) }}</div>
         <div class="fp-stat-note">Perlu dicek ke karyawan terkait</div>
-    </div>
+        <div class="fp-stat-cta">{{ $belumPulang ? '✓ Sedang ditampilkan · klik untuk tutup' : 'Klik untuk lihat daftar nama →' }}</div>
+    </a>
     <div class="fp-stat">
         <div class="fp-stat-label" style="color:#7c3aed">Jam Operasional</div>
         <div class="fp-stat-value">{{ number_format($stat['jam_operasional'], 1, ',', '.') }} Jam</div>
@@ -86,12 +100,18 @@
 {{-- FILTER --}}
 <div class="fp-card">
     <form method="GET" class="fp-filter">
+        @if ($belumPulang) <input type="hidden" name="belum_pulang" value="1"> @endif
         <input type="text" name="q" value="{{ request('q') }}" class="fp-input fp-input-search" placeholder="Cari nama (awalan) / ID Absen / ID Karyawan">
         <input type="date" name="dari" value="{{ $dari }}" class="fp-input">
         <span class="fp-muted">s/d</span>
         <input type="date" name="sampai" value="{{ $sampai }}" class="fp-input">
         <button type="submit" class="fp-btn fp-btn-primary">Filter</button>
-            @if (request()->hasAny(['q', 'dari', 'sampai']))
+            @if ($belumPulang)
+                <span class="fp-chip-filter">Hanya yang belum finger pulang
+                    <a href="{{ route('manajemen.fingerprint.index', ['q' => request('q'), 'dari' => $dari, 'sampai' => $sampai]) }}" title="Hapus filter">&times;</a>
+                </span>
+            @endif
+            @if (request()->hasAny(['q', 'dari', 'sampai', 'belum_pulang']))
                 <a href="{{ route('manajemen.fingerprint.index') }}" class="fp-btn fp-btn-soft">Reset</a>
             @endif
         <span class="fp-total">Total data: <b>{{ number_format($rows->total()) }}</b> baris</span>
@@ -114,6 +134,7 @@
                     <th>Scan Terakhir</th>
                     <th>Jam Pulang</th>
                     <th style="text-align:center">Total Jam Kerja</th>
+                    <th style="text-align:center;width:130px">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -149,9 +170,27 @@
                                 <span class="fp-muted">-</span>
                             @endif
                         </td>
+                        <td style="text-align:center">
+                            <span class="fp-row-act">
+                                <button type="button" class="fp-btn fp-btn-primary"
+                                    data-id="{{ $r->id }}"
+                                    data-nama="{{ $r->nama }}"
+                                    data-tgl="{{ $r->tanggal->translatedFormat('d M Y') }}"
+                                    data-masuk="{{ $r->jam_masuk?->format('H:i') }}"
+                                    data-pulang="{{ $r->jam_pulang?->format('H:i') }}"
+                                    data-besok="{{ $r->jam_pulang && $r->jam_pulang->toDateString() !== $r->tanggal->toDateString() ? 1 : 0 }}"
+                                    data-catatan="{{ $r->catatan }}"
+                                    onclick="fpEditRow(this)">Edit</button>
+                                <button type="button" class="fp-btn fp-btn-danger"
+                                    data-id="{{ $r->id }}"
+                                    data-nama="{{ $r->nama }}"
+                                    data-tgl="{{ $r->tanggal->translatedFormat('d M Y') }}"
+                                    onclick="fpDeleteRow(this)">Hapus</button>
+                            </span>
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="fp-empty">Belum ada data. Klik <b>Impor Data Finger Print</b> untuk memulai.</td></tr>
+                    <tr><td colspan="11" class="fp-empty">Belum ada data. Klik <b>Impor Data Finger Print</b> untuk memulai.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -211,7 +250,8 @@
                 <button type="button" class="fp-modal-x" onclick="fpCloseEdit()">&times;</button>
             </div>
             <div class="fp-modal-body">
-                <div class="fp-info">Kolom yang dikosongkan <b>tidak diubah</b>. Jam yang diisi berlaku untuk semua baris terpilih.</div>
+                <div class="fp-info" id="fpEditWho" style="display:none"></div>
+                <div class="fp-info" id="fpEditHint">Kolom yang dikosongkan <b>tidak diubah</b>. Jam yang diisi berlaku untuk semua baris terpilih.</div>
 
                 <div class="fp-field">
                     <label class="fp-label">Jam Masuk</label>
@@ -367,22 +407,78 @@
     document.addEventListener('change', e => { if (e.target.classList.contains('fp-row-chk')) fpRefreshSel(); });
     function fpClearSel() { fpRowChecks().forEach(c => c.checked = false); fpRefreshSel(); }
 
+    // Mode satu baris: diisi saat tombol Edit/Hapus di baris diklik (tanpa perlu centang)
+    let fpSingleId = null;
+    let fpEditAsal = null;
+
     function fpFillIds(form) {
         form.querySelectorAll('input[name="ids[]"]').forEach(i => i.remove());
-        fpSelected().forEach(c => {
+        const ids = fpSingleId ? [fpSingleId] : fpSelected().map(c => c.value);
+        ids.forEach(id => {
             const i = document.createElement('input');
-            i.type = 'hidden'; i.name = 'ids[]'; i.value = c.value;
+            i.type = 'hidden'; i.name = 'ids[]'; i.value = id;
             form.appendChild(i);
         });
     }
 
+    function fpResetEditForm() {
+        const f = document.getElementById('fpEditForm');
+        f.reset();
+        f.querySelectorAll('input, select').forEach(el => el.disabled = false);
+        document.getElementById('fpEditWho').style.display = 'none';
+        document.getElementById('fpEditHint').style.display = '';
+    }
+
     function fpOpenEdit() {
+        fpSingleId = null; fpEditAsal = null;
+        fpResetEditForm();
         document.getElementById('fpEditCount').textContent = fpSelected().length;
         document.getElementById('fpEditModal').classList.add('open');
     }
-    function fpCloseEdit() { document.getElementById('fpEditModal').classList.remove('open'); }
 
-    document.getElementById('fpEditForm').addEventListener('submit', function () { fpFillIds(this); });
+    function fpEditRow(btn) {
+        const d = btn.dataset, f = document.getElementById('fpEditForm');
+        fpSingleId = d.id;
+        fpEditAsal = { masuk: d.masuk || '', pulang: d.pulang || '', besok: d.besok === '1' };
+        fpResetEditForm();
+        f.jam_masuk.value  = fpEditAsal.masuk;
+        f.jam_pulang.value = fpEditAsal.pulang;
+        f.pulang_besok.checked = fpEditAsal.besok;
+        f.catatan.value = d.catatan || '';
+        const who = document.getElementById('fpEditWho');
+        who.textContent = d.nama + ' — ' + d.tgl;
+        who.style.display = 'block';
+        document.getElementById('fpEditHint').style.display = 'none';
+        document.getElementById('fpEditCount').textContent = 1;
+        document.getElementById('fpEditModal').classList.add('open');
+    }
+
+    function fpCloseEdit() {
+        document.getElementById('fpEditModal').classList.remove('open');
+        fpSingleId = null; fpEditAsal = null;
+    }
+
+    function fpDeleteRow(btn) {
+        const d = btn.dataset;
+        if (!confirm('Hapus data absensi ' + d.nama + ' tanggal ' + d.tgl + '?\n\nScan mentah karyawan pada tanggal tersebut ikut dihapus. Tindakan ini tidak bisa dibatalkan.')) return;
+        fpSingleId = d.id;
+        const f = document.getElementById('fpDeleteForm');
+        fpFillIds(f);
+        f.submit();
+    }
+
+    document.getElementById('fpEditForm').addEventListener('submit', function () {
+        fpFillIds(this);
+        // Mode satu baris: jam yang tidak diubah tidak dikirim, supaya baris scan asli
+        // tidak ikut ditandai "Manual" hanya karena catatan diubah.
+        if (fpSingleId && fpEditAsal) {
+            if (this.jam_masuk.value === fpEditAsal.masuk) this.jam_masuk.disabled = true;
+            if (this.jam_pulang.value === fpEditAsal.pulang) {
+                this.jam_pulang.disabled = true;
+                this.pulang_besok.disabled = true;
+            }
+        }
+    });
 
     function fpBulkDelete() {
         const n = fpSelected().length;

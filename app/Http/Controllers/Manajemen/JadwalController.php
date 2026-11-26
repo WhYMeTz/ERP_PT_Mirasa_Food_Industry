@@ -22,8 +22,9 @@ class JadwalController extends Controller
 {
     public function index(Request $request)
     {
-        $dari   = $request->input('dari', TrxJadwalKaryawan::min('tanggal') ?? now()->startOfMonth()->toDateString());
-        $sampai = $request->input('sampai', TrxJadwalKaryawan::max('tanggal') ?? now()->toDateString());
+        // default: periode berjalan (bulan ini)
+        $dari   = $request->input('dari') ?: now()->startOfMonth()->toDateString();
+        $sampai = $request->input('sampai') ?: now()->endOfMonth()->toDateString();
 
         $query = TrxJadwalKaryawan::query()
             ->whereBetween('tanggal', [$dari, $sampai])
@@ -58,7 +59,11 @@ class JadwalController extends Controller
             'stat'      => $stat,
             'dari'      => $dari,
             'sampai'    => $sampai,
-            'shiftMap'  => MstKodeShift::all()->keyBy('kode'),
+            // urut dari jam masuk paling pagi; kode tanpa jam (L, M, OFF) di paling bawah
+            'shiftMap'  => MstKodeShift::all()
+                ->sort(fn ($a, $b) => [$a->jam_masuk === null ? 1 : 0, $a->jam_masuk, $a->jam_pulang, $a->kode]
+                                  <=> [$b->jam_masuk === null ? 1 : 0, $b->jam_masuk, $b->jam_pulang, $b->kode])
+                ->keyBy('kode'),
             'kelompoks' => $kelompoks = TrxJadwalKaryawan::whereNotNull('kelompok_kerja')->distinct()->orderBy('kelompok_kerja')->pluck('kelompok_kerja'),
             'kelompokOpsi' => collect(MstKaryawan::KELOMPOK)->values()->merge($kelompoks)->unique()->sort()->values(),
             'karyawanOpsi' => MstKaryawan::whereNotNull('id_absensi')->orderBy('karyawan_nm')->get()->map(fn ($k) => [

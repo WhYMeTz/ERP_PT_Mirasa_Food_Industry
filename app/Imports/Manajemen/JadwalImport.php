@@ -7,14 +7,25 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-class JadwalImport implements ToCollection, WithStartRow
+class JadwalImport implements ToCollection, WithStartRow, WithMultipleSheets
 {
     public array $rows = [];    // baris valid
     public array $errors = [];  // pesan baris yang dilewati
 
     public function __construct(private array $kodeValid) {}
+
+    /**
+     * Template punya 3 sheet (Jadwal, Daftar, Petunjuk). Tanpa ini, Laravel Excel menjalankan
+     * collection() untuk SETIAP sheet, sehingga sheet Daftar/Petunjuk ikut dibaca sebagai jadwal.
+     * Hanya sheet pertama (Jadwal) yang diimpor.
+     */
+    public function sheets(): array
+    {
+        return [0 => $this];
+    }
 
     public function startRow(): int
     {

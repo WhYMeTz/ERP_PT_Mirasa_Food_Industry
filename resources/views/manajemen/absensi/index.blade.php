@@ -129,10 +129,6 @@
 <div id="kBar" class="fp-bulkbar">
     <span><b id="kCount">0</b> karyawan dipilih</span>
     <button type="button" class="fp-btn fp-btn-primary" onclick="kCetak()">Cetak Kartu Amano Terpilih</button>
-    @if ($stat['ragu'] > 0)
-        <button type="button" class="fp-btn fp-btn-emerald" onclick="kLembur(1)" title="Hitung lembur 30 menit yang belum dikonfirmasi milik karyawan terpilih">Hitung lembur terpilih</button>
-        <button type="button" class="fp-btn fp-btn-soft" onclick="kLembur(0)" title="Tidak hitung lembur 30 menit yang belum dikonfirmasi milik karyawan terpilih">Tidak dihitung terpilih</button>
-    @endif
     <button type="button" class="fp-btn fp-btn-soft" onclick="kClear()">Batal pilih</button>
 </div>
 
@@ -144,10 +140,17 @@
         <input type="hidden" name="sampai" value="{{ $sampai }}">
         @foreach (request()->only(['q', 'kelompok', 'shift']) as $k => $v) <input type="hidden" name="{{ $k }}" value="{{ $v }}"> @endforeach
         <b>{{ number_format($stat['ragu']) }} lembur belum dikonfirmasi</b>
-        <span class="fp-muted" style="font-size:13px">Semua yang belum dikonfirmasi pada filter ini (atau centang nama di tabel, lalu pilih di bar biru):</span>
+        <span class="fp-muted" style="font-size:13px">Semua yang belum dikonfirmasi pada filter ini. Untuk memilih sebagian, centang baris di kolom Status Lembur.</span>
         <button type="submit" name="hitung" value="1" class="fp-btn fp-btn-emerald" onclick="return confirm('Hitung SEMUA lembur yang belum dikonfirmasi pada filter ini?')">Hitung semua</button>
         <button type="submit" name="hitung" value="0" class="fp-btn fp-btn-soft" onclick="return confirm('Tidak hitung SEMUA lembur yang belum dikonfirmasi pada filter ini?')">Tidak dihitung semua</button>
     </form>
+    {{-- pilihan per baris (tanggal + karyawan), terpisah dari pilihan Kartu Amano --}}
+    <div id="lBar" class="fp-filter" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0">
+        <span><b id="lCount">0</b> baris lembur dipilih</span>
+        <button type="button" class="fp-btn fp-btn-emerald" onclick="lAksi(1)">Hitung terpilih</button>
+        <button type="button" class="fp-btn fp-btn-soft" onclick="lAksi(0)">Tidak dihitung terpilih</button>
+        <button type="button" class="fp-btn fp-btn-soft" onclick="lClear()">Batal pilih</button>
+    </div>
 </div>
 @endif
 
@@ -162,7 +165,7 @@
                     <th>Bagian / Divisi</th><th>Kelompok</th><th>Shift</th>
                     <th>Masuk Finger</th><th>Masuk Bulat</th><th>Pulang Finger</th><th>Pulang Bulat</th>
                     <th class="fp-num">Istirahat</th><th class="fp-num">Potongan</th><th class="fp-num">Total Jam</th>
-                    <th class="fp-num">Lembur</th><th>Status Lembur</th><th class="fp-num">Kehadiran</th><th>Status</th>
+                    <th class="fp-num">Lembur</th><th>@if ($stat['ragu'] > 0)<input type="checkbox" class="fp-chk" id="lCheckAll" title="Pilih semua lembur belum dikonfirmasi di halaman ini" style="margin-right:6px">@endif Status Lembur</th><th class="fp-num">Kehadiran</th><th>Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -231,10 +234,15 @@
                         <td>
                             @if ($r->lembur_ragu > 0)
                                 @php $stLb = is_null($r->lembur_konfirmasi) ? null : (int) $r->lembur_konfirmasi; @endphp
-                                @if ($stLb === 1) <span class="fp-badge fp-badge-ok">Dihitung</span>
-                                @elseif ($stLb === 0) <span class="fp-badge fp-badge-err">Tidak dihitung</span>
-                                @else <span class="fp-badge fp-badge-warn">Belum dikonfirmasi</span>
-                                @endif
+                                <div style="display:flex;align-items:center;gap:6px">
+                                    @if ($stLb === null)
+                                        <input type="checkbox" class="fp-chk l-chk" value="{{ $r->tanggal->toDateString() }}|{{ $r->id_absen }}" title="Pilih baris ini untuk konfirmasi lembur">
+                                    @endif
+                                    @if ($stLb === 1) <span class="fp-badge fp-badge-ok">Dihitung</span>
+                                    @elseif ($stLb === 0) <span class="fp-badge fp-badge-err">Tidak dihitung</span>
+                                    @else <span class="fp-badge fp-badge-warn">Belum dikonfirmasi</span>
+                                    @endif
+                                </div>
                             @else
                                 <span class="fp-muted">-</span>
                             @endif
@@ -287,7 +295,7 @@
     <input type="hidden" name="dari" value="{{ $dari }}">
     <input type="hidden" name="sampai" value="{{ $sampai }}">
     @foreach (request()->only(['q', 'kelompok', 'shift']) as $k => $v) <input type="hidden" name="{{ $k }}" value="{{ $v }}"> @endforeach
-    <input type="hidden" name="ids" id="kLemburIds">
+    <input type="hidden" name="baris" id="kLemburBaris">
     <input type="hidden" name="hitung" id="kLemburHitung">
 </form>
 <script>
@@ -314,12 +322,29 @@
     all?.addEventListener('change', () => { baris().forEach(c => c.checked = all.checked); refresh(); });
 
     window.kClear = () => { baris().forEach(c => c.checked = false); refresh(); };
-    window.kLembur = (hitung) => {
-        const pilih = ids();
+
+    // ===== Konfirmasi lembur: pilihan per BARIS (tanggal + karyawan), terpisah dari Kartu Amano =====
+    const lAll  = document.getElementById('lCheckAll');
+    const lBar  = document.getElementById('lBar');
+    const lBaris = () => [...document.querySelectorAll('.l-chk')];
+    const lPilih = () => lBaris().filter(c => c.checked).map(c => c.value);
+
+    function lRefresh() {
+        const n = lPilih().length;
+        document.getElementById('lCount').textContent = n;
+        if (lBar) lBar.style.display = n > 0 ? 'flex' : 'none';
+        if (lAll) lAll.checked = lBaris().length > 0 && lBaris().every(c => c.checked);
+    }
+    document.addEventListener('change', e => { if (e.target.classList.contains('l-chk')) lRefresh(); });
+    lAll?.addEventListener('change', () => { lBaris().forEach(c => c.checked = lAll.checked); lRefresh(); });
+
+    window.lClear = () => { lBaris().forEach(c => c.checked = false); lRefresh(); };
+    window.lAksi = (hitung) => {
+        const pilih = lPilih();
         if (!pilih.length) return;
         const aksi = hitung ? 'HITUNG' : 'TIDAK hitung';
-        if (!confirm(aksi + ' semua lembur 30 menit yang belum dikonfirmasi untuk ' + pilih.length + ' karyawan terpilih (pada periode dan filter ini)?')) return;
-        document.getElementById('kLemburIds').value = pilih.join(',');
+        if (!confirm(aksi + ' lembur untuk ' + pilih.length + ' baris yang dicentang?')) return;
+        document.getElementById('kLemburBaris').value = pilih.join(',');
         document.getElementById('kLemburHitung').value = hitung ? 1 : 0;
         document.getElementById('kLemburForm').submit();
     };

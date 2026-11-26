@@ -81,18 +81,38 @@ class AbsensiController extends Controller
         return back()->with('success', 'Lembur ' . ($d['hitung'] ? 'dihitung.' : 'tidak dihitung.'));
     }
 
-    /** Konfirmasi massal untuk semua baris belum dikonfirmasi pada filter periode / cari / kelompok / shift. */
+    /**
+     * Konfirmasi massal lembur ragu yang belum dikonfirmasi.
+     * - baris (opsional) = baris yang dicentang, format "Y-m-d|id_absen" dipisah koma
+     * - ids   (opsional) = karyawan (semua barisnya pada filter)
+     * - keduanya kosong  = semua pada filter periode / cari / kelompok / shift
+     */
     public function konfirmasiLemburMassal(Request $request)
     {
-        $request->validate(['hitung' => 'required|in:0,1', 'ids' => 'nullable|string']);
+        $request->validate(['hitung' => 'required|in:0,1', 'ids' => 'nullable|string', 'baris' => 'nullable|string']);
         [$dari, $sampai] = $this->rentang($request);
 
-        // ids (opsional) = karyawan yang dicentang; kosong = semua pada filter
         $ids = collect(explode(',', (string) $request->ids))->map(fn ($v) => trim($v))->filter()->unique()->values();
+
+        $baris = collect(explode(',', (string) $request->baris))->map(fn ($v) => trim($v))->filter()->unique()
+            ->filter(fn ($v) => preg_match('/^\d{4}-\d{2}-\d{2}\|\w+$/', $v))->values();
+
+        // ada pilihan baris tetapi tidak ada yang valid: hentikan, jangan sampai berubah jadi "semua"
+        if ($request->filled('baris') && $baris->isEmpty()) {
+            return back()->with('error', 'Baris lembur yang dipilih tidak valid.');
+        }
 
         $rows = $this->kueriDasar($request, $dari, $sampai)
             ->where('lembur_ragu', '>', 0)->whereNull('lembur_konfirmasi')
             ->when($ids->isNotEmpty(), fn ($q) => $q->whereIn('id_absen', $ids->all()))
+            ->when($baris->isNotEmpty(), function ($q) use ($baris) {
+                $q->where(function ($w) use ($baris) {
+                    foreach ($baris as $b) {
+                        [$tgl, $id] = explode('|', $b, 2);
+                        $w->orWhere(fn ($x) => $x->whereDate('tanggal', $tgl)->where('id_absen', $id));
+                    }
+                });
+            })
             ->get();
 
         DB::transaction(fn () => $rows->each(

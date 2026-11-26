@@ -78,14 +78,18 @@ Route::get('qc/login', fn () => redirect()->route('mobile.login'))->name('qc.log
 // Root & Home Redirection
 Route::get('/', function () {
     if (Auth::check()) {
-        return redirect()->route(Auth::user()->getDashboardRoute());
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        return redirect()->route($user->getDashboardRoute());
     }
     return redirect()->route('login');
 });
 
 Route::get('/home', function () {
     if (Auth::check()) {
-        return redirect()->route(Auth::user()->getDashboardRoute());
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        return redirect()->route($user->getDashboardRoute());
     }
     return redirect()->route('login');
 })->name('home');

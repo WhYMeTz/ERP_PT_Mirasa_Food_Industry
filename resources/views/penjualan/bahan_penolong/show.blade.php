@@ -34,8 +34,9 @@
             <a href="{{ route('penjualan.bahan-penolong.cetak-nota', $order->so_id) }}" target="_blank" class="btn btn-secondary" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #1e293b; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;">
                 Cetak Nota / Struk
             </a>
-            <a href="{{ route('penjualan.bahan-penolong.create') }}" class="btn btn-primary" style="background: #059669; border-color: #059669; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 1rem; border-radius: 6px;">
-                + Transaksi Baru
+            <a href="{{ route('penjualan.bahan-penolong.create') }}" class="btn btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Transaksi Baru</span>
             </a>
         </div>
     </div>

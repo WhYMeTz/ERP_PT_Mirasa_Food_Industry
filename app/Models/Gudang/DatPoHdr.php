@@ -322,6 +322,214 @@ class DatPoHdr extends Model
     }
 
     /**
+     * Memeriksa apakah dokumen PO ini memiliki komponen pemotongan PPh
+     */
+    public function hasPph(): bool
+    {
+        return $this->details->contains(function ($dtl) {
+            if ($dtl->pajak) {
+                return $dtl->pajak->sifat_pajak === 'POTONG'
+                    || str_contains(strtoupper($dtl->pajak->pajak_cd), 'PPH')
+                    || str_contains(strtoupper($dtl->pajak->kategori_pajak ?? ''), 'PPH');
+            }
+            return !empty($dtl->ppn_tipe) && str_contains(strtoupper($dtl->ppn_tipe), 'PPH');
+        });
+    }
+
+    /**
+     * Memformat kode atau deskripsi PPh menjadi nama singkat standar & profesional
+     * Contoh: PPH-22-KOMODITAS -> PPh 22, PPH-23-JASA -> PPh 23, PPH-4-2 -> PPh 4(2)
+     */
+    public static function formatShortPphName(string $code): string
+    {
+        $clean = strtoupper(trim($code));
+        if (preg_match('/22/', $clean)) {
+            return 'PPh 22';
+        }
+        if (preg_match('/23/', $clean)) {
+            return 'PPh 23';
+        }
+        if (preg_match('/21/', $clean)) {
+            return 'PPh 21';
+        }
+        if (preg_match('/4[\-_(]?2\)?/', $clean)) {
+            return 'PPh 4(2)';
+        }
+        if (preg_match('/25/', $clean)) {
+            return 'PPh 25';
+        }
+
+        $clean = preg_replace('/^PPH[\-_ ]*/i', 'PPh ', $clean);
+        return !empty($clean) ? $clean : 'PPh';
+    }
+
+    /**
+     * Mengambil daftar kode PPh yang digunakan pada dokumen PO ini
+     */
+    public function getPphCodes(): array
+    {
+        $codes = [];
+        foreach ($this->details as $dtl) {
+            if ($dtl->pajak && ($dtl->pajak->sifat_pajak === 'POTONG' || str_contains(strtoupper($dtl->pajak->pajak_cd), 'PPH'))) {
+                $codes[] = self::formatShortPphName($dtl->pajak->pajak_cd);
+            } elseif (!empty($dtl->ppn_tipe) && str_contains(strtoupper($dtl->ppn_tipe), 'PPH')) {
+                $codes[] = self::formatShortPphName($dtl->ppn_tipe);
+            }
+        }
+        return array_values(array_unique($codes));
+    }
+
+    /**
+     * Mengambil daftar badge status pajak terpadu (PPN & PPh) untuk ditampilkan pada tabel indeks & header
+     * Mendeteksi status Include / Exclude per baris barang maupun pada level dokumen PO
+     *
+     * @return array<int, array{type: string, label: string, title: string}>
+     */
+    public function getTaxBadges(): array
+    {
+        $badges = [];
+        $details = $this->relationLoaded('details') ? $this->details : $this->details()->with('pajak')->get();
+
+        $hasPpnInc = false;
+        $hasPpnExc = false;
+        $pphMap = []; // [ shortName => ['inc' => bool, 'exc' => bool] ]
+
+        foreach ($details as $dtl) {
+            $pajak = $dtl->pajak;
+            $isPotong = false;
+            $isTambah = false;
+            $code = '';
+
+            if ($pajak) {
+                $code = $pajak->pajak_cd;
+                if ($pajak->sifat_pajak === 'POTONG' || str_contains(strtoupper($pajak->pajak_cd), 'PPH') || str_contains(strtoupper($pajak->kategori_pajak ?? ''), 'PPH')) {
+                    $isPotong = true;
+                } elseif ($pajak->sifat_pajak === 'TAMBAH' || str_contains(strtoupper($pajak->pajak_cd), 'PPN') || str_contains(strtoupper($pajak->kategori_pajak ?? ''), 'PPN')) {
+                    $isTambah = true;
+                }
+            } else {
+                $tipe = strtoupper($dtl->ppn_tipe ?? '');
+                if (str_contains($tipe, 'PPH')) {
+                    $isPotong = true;
+                    $code = $dtl->ppn_tipe;
+                } elseif ((float) $dtl->ppn_persen > 0 || (float) $dtl->ppn_nominal > 0 || str_contains($tipe, 'PPN')) {
+                    $isTambah = true;
+                    $code = $dtl->ppn_tipe ?: 'PPN';
+                }
+            }
+
+            $rowIsInc = (bool) ($dtl->is_harga_termasuk_pajak || $this->is_harga_termasuk_pajak);
+
+            if ($isPotong) {
+                $shortName = self::formatShortPphName($code ?: 'PPh');
+                if (!isset($pphMap[$shortName])) {
+                    $pphMap[$shortName] = ['inc' => false, 'exc' => false];
+                }
+                if ($rowIsInc) {
+                    $pphMap[$shortName]['inc'] = true;
+                } else {
+                    $pphMap[$shortName]['exc'] = true;
+                }
+            }
+
+            if ($isTambah) {
+                if ($rowIsInc) {
+                    $hasPpnInc = true;
+                } else {
+                    $hasPpnExc = true;
+                }
+            }
+        }
+
+        // Fallback untuk PO tanpa baris detail tersimpan tetapi memiliki data PPN pada header
+        // HANYA jika dokumen TIDAK memiliki PPh dan terbukti ada data PPN
+        if (!$hasPpnInc && !$hasPpnExc && empty($pphMap)) {
+            $hasHeaderPpn = (float) $this->ppn_nominal > 0
+                || (float) $this->ppn_persen > 0
+                || (!empty($this->ppn_tipe) && str_contains(strtoupper($this->ppn_tipe), 'PPN'));
+
+            if ($hasHeaderPpn) {
+                if ($this->is_harga_termasuk_pajak) {
+                    $hasPpnInc = true;
+                } else {
+                    $hasPpnExc = true;
+                }
+            }
+        }
+
+        // Susun badge PPN
+        if ($hasPpnInc && $hasPpnExc) {
+            $badges[] = [
+                'type'  => 'ppn_inc',
+                'label' => 'Inc PPN',
+                'title' => 'Sebagian item barang sudah termasuk PPN (Include)',
+            ];
+            $badges[] = [
+                'type'  => 'ppn_exc',
+                'label' => '+PPN',
+                'title' => 'Sebagian item barang PPN ditambahkan di atas DPP (Exclude)',
+            ];
+        } elseif ($hasPpnInc) {
+            $badges[] = [
+                'type'  => 'ppn_inc',
+                'label' => 'Inc PPN',
+                'title' => 'Harga barang sudah termasuk PPN (Include)',
+            ];
+        } elseif ($hasPpnExc) {
+            $badges[] = [
+                'type'  => 'ppn_exc',
+                'label' => '+PPN',
+                'title' => 'PPN ditambahkan di atas DPP (Exclude)',
+            ];
+        }
+
+        // Susun badge PPh
+        foreach ($pphMap as $shortName => $flags) {
+            if ($flags['inc'] && $flags['exc']) {
+                $badges[] = [
+                    'type'  => 'pph_inc',
+                    'label' => 'Inc ' . $shortName,
+                    'title' => 'Sebagian item ' . $shortName . ' sudah termasuk di dalam harga satuan',
+                ];
+                $badges[] = [
+                    'type'  => 'pph_exc',
+                    'label' => $shortName,
+                    'title' => 'Sebagian item ' . $shortName . ' memotong nilai tagihan',
+                ];
+            } elseif ($flags['inc']) {
+                $badges[] = [
+                    'type'  => 'pph_inc',
+                    'label' => 'Inc ' . $shortName,
+                    'title' => 'Pajak Penghasilan (' . $shortName . ') sudah termasuk di dalam harga satuan',
+                ];
+            } elseif ($flags['exc']) {
+                $badges[] = [
+                    'type'  => 'pph_exc',
+                    'label' => $shortName,
+                    'title' => 'Pajak Penghasilan (Memotong Nilai Tagihan: ' . $shortName . ')',
+                ];
+            }
+        }
+
+        return $badges;
+    }
+
+    /**
+     * Memeriksa apakah dokumen PO ini memiliki komponen PPN
+     */
+    public function hasPpn(): bool
+    {
+        return $this->details->contains(function ($dtl) {
+            if ($dtl->pajak) {
+                return $dtl->pajak->sifat_pajak === 'TAMBAH'
+                    && (float) $dtl->pajak->tarif_persen > 0
+                    && (str_contains(strtoupper($dtl->pajak->pajak_cd), 'PPN') || str_contains(strtoupper($dtl->pajak->kategori_pajak ?? ''), 'PPN'));
+            }
+            return (float) $dtl->ppn_persen > 0 && !str_contains(strtoupper($dtl->ppn_tipe ?? ''), 'PPH');
+        });
+    }
+
+    /**
      * Relasi ke riwayat audit trail / edit dokumen PO
      */
     public function revisiLog(): HasMany

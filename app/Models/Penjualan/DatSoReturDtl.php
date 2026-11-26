@@ -52,6 +52,30 @@ class DatSoReturDtl extends Model
         return $this->belongsTo(MstBarang::class, 'barang_id', 'barang_id');
     }
 
+    public function getProductionBatchNoAttribute(): ?string
+    {
+        if (!empty($this->batch_no) && !str_starts_with($this->batch_no, 'RET-')) {
+            return $this->batch_no;
+        }
+
+        $so = $this->header?->order;
+        if ($so) {
+            $shippedBatch = \App\Models\Penjualan\DatPengeluaranDtl::whereHas('header', function ($q) use ($so) {
+                $q->where('so_id', $so->so_id)->where('status_cd', '!=', 'BATAL');
+            })
+            ->where('barang_id', $this->barang_id)
+            ->whereNotNull('batch_no')
+            ->where('batch_no', '!=', '')
+            ->value('batch_no');
+
+            if ($shippedBatch) {
+                return $shippedBatch;
+            }
+        }
+
+        return !empty($this->batch_no) && !str_starts_with($this->batch_no, 'RET-') ? $this->batch_no : '-';
+    }
+
     public function getKondisiLabelAttribute(): string
     {
         return match ($this->kondisi_cd) {

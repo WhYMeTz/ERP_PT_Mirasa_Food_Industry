@@ -25,26 +25,11 @@
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                     </svg>
-                    <span>+ Terima Pembayaran Baru</span>
+                    <span>Terima Pembayaran Baru</span>
                 </a>
             @endif
         </div>
     </div>
-
-    {{-- Alert Flash Message --}}
-    @if (session('success'))
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; font-size: 0.825rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
-
-    @if (session('error'))
-        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; font-size: 0.825rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            <span>{{ session('error') }}</span>
-        </div>
-    @endif
 
     {{-- 2. METRICS CARDS (GAYA ENTERPRISE MINIMALIS 4 KOLOM) --}}
     <div class="ar-metrics-grid">

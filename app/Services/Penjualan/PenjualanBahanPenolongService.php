@@ -76,6 +76,53 @@ class PenjualanBahanPenolongService
     }
 
     /**
+     * Dapatkan daftar transaksi penjualan bahan penolong & bumbu untuk diexport ke Excel
+     */
+    public function getAllForExport(
+        ?string $search = null,
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): Collection {
+        $query = DatSoHdr::with(['customer', 'details.barang.satuanDasar', 'details.barang.jenisBarang', 'pengeluaran', 'faktur'])
+            ->where('deleted_st', false)
+            ->where(function ($q) {
+                $q->where('customer_po_no', 'like', 'PENJUALAN BAHAN PENOLONG%')
+                  ->orWhere('so_no', 'like', '%/JBP/%')
+                  ->orWhere('so_no', 'like', 'JBP-%')
+                  ->orWhere('so_no', 'like', 'BP-%');
+            });
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('so_no', 'ilike', "%{$search}%")
+                  ->orWhere('faktur_no', 'ilike', "%{$search}%")
+                  ->orWhere('surat_jalan_no', 'ilike', "%{$search}%")
+                  ->orWhere('supir_nm', 'ilike', "%{$search}%")
+                  ->orWhere('catatan_txt', 'ilike', "%{$search}%")
+                  ->orWhereHas('customer', function ($c) use ($search) {
+                      $c->where('customer_nm', 'ilike', "%{$search}%");
+                  })
+                  ->orWhereHas('details.barang', function ($b) use ($search) {
+                      $b->where('barang_nm', 'ilike', "%{$search}%")
+                        ->orWhere('barang_cd', 'ilike', "%{$search}%");
+                  });
+            });
+        }
+
+        if (!empty($startDate)) {
+            $query->whereDate('so_tgl', '>=', $startDate);
+        }
+
+        if (!empty($endDate)) {
+            $query->whereDate('so_tgl', '<=', $endDate);
+        }
+
+        return $query->orderBy('so_tgl', 'desc')
+            ->orderBy('so_id', 'desc')
+            ->get();
+    }
+
+    /**
      * KPI Ringkasan Metrik Penjualan Bahan Penolong & Bumbu
      */
     public function getMetrics(): array

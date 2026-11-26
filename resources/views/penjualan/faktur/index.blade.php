@@ -90,6 +90,7 @@
                     <option value="BELUM_LUNAS" {{ $status === 'BELUM_LUNAS' ? 'selected' : '' }}>Belum Lunas</option>
                     <option value="SEBAGIAN" {{ $status === 'SEBAGIAN' ? 'selected' : '' }}>Sebagian</option>
                     <option value="LUNAS" {{ $status === 'LUNAS' ? 'selected' : '' }}>Lunas</option>
+                    <option value="TAK_TERTAGIH" {{ $status === 'TAK_TERTAGIH' ? 'selected' : '' }}>Piutang Tak Tertagih</option>
                     <option value="BATAL" {{ $status === 'BATAL' ? 'selected' : '' }}>Dibatalkan (Void)</option>
                 </select>
             </div>
@@ -211,6 +212,11 @@
                                 @if ($faktur->status_pembayaran === 'LUNAS')
                                     <div class="fk-amount-sisa lunas">Rp 0</div>
                                     <div class="fk-subtext emerald">Lunas</div>
+                                @elseif ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+                                    <div class="fk-amount-sisa macet">
+                                        Rp {{ number_format($faktur->sisa_piutang, 0, ',', '.') }}
+                                    </div>
+                                    <div class="fk-subtext danger" style="font-weight: 700;">Tak Tertagih</div>
                                 @elseif ($faktur->status_pembayaran === 'SEBAGIAN')
                                     <div class="fk-amount-sisa sebagian">
                                         Rp {{ number_format($faktur->sisa_piutang, 0, ',', '.') }}
@@ -239,6 +245,14 @@
                                         Lunas
                                     </span>
                                     <div class="fk-subtext emerald">Lengkap</div>
+                                @elseif ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+                                    <span class="badge-status macet">
+                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                        Piutang Tak Tertagih
+                                    </span>
+                                    <div class="fk-subtext danger" title="{{ $faktur->alasan_macet }}" style="max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 auto;">
+                                        {{ $faktur->alasan_macet ?: 'Tak Tertagih' }}
+                                    </div>
                                 @elseif ($faktur->status_pembayaran === 'BATAL')
                                     <span class="badge-status batal">
                                         Batal (Void)
@@ -313,7 +327,7 @@
                                             <span>Lihat PO Penjualan</span>
                                         </a>
 
-                                        @if ($faktur->sisa_piutang > 0 && $faktur->status_pembayaran !== 'BATAL')
+                                        @if ($faktur->sisa_piutang > 0 && !in_array($faktur->status_pembayaran, ['BATAL', 'TAK_TERTAGIH']))
                                             <button type="button" 
                                                     class="action-dropdown-item" 
                                                     style="color: #0284c7; font-weight: 600;"
@@ -321,6 +335,26 @@
                                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                                 <span>Catat Pembayaran (BKM)</span>
                                             </button>
+
+                                            {{-- Opsi Tandai Tak Tertagih --}}
+                                            <button type="button" 
+                                                    class="action-dropdown-item" 
+                                                    style="color: #be123c;"
+                                                    onclick="openMacetModal('{{ $faktur->faktur_id }}', '{{ $faktur->faktur_no }}', '{{ addslashes($customer?->customer_nm ?? 'Pelanggan Umum') }}', {{ (float) $faktur->sisa_piutang }})">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                <span>Tandai Piutang Tak Tertagih</span>
+                                            </button>
+                                        @endif
+
+                                        {{-- Jika status Tak Tertagih, beri opsi pulihkan --}}
+                                        @if ($faktur->status_pembayaran === 'TAK_TERTAGIH')
+                                            <form method="POST" action="{{ route('penjualan.faktur.restore-macet', $faktur->faktur_id) }}" onsubmit="return confirm('Apakah Anda yakin ingin memulihkan Faktur {{ $faktur->faktur_no }} kembali ke daftar tagihan aktif?')" style="margin: 0;">
+                                                @csrf
+                                                <button type="submit" class="action-dropdown-item" style="color: #059669; width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                    <span>Pulihkan ke Tagihan Aktif</span>
+                                                </button>
+                                            </form>
                                         @endif
                                     @endif
 
@@ -367,9 +401,10 @@
 
 </div>
 
-{{-- MODAL VOID & PEMBAYARAN FAKTUR --}}
+{{-- MODAL VOID & PEMBAYARAN FAKTUR & PIUTANG MACET --}}
 @include('penjualan.faktur.partials.modal-void')
 @include('penjualan.faktur.partials.modal-record-payment')
+@include('penjualan.faktur.partials.modal-mark-macet')
 
 @endsection
 

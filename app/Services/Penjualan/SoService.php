@@ -115,6 +115,87 @@ class SoService
     }
 
     /**
+     * Mengambil seluruh data PO Penjualan untuk diexport ke Excel sesuai filter aktif.
+     */
+    public function getAllForExport(
+        ?string $search = null,
+        ?string $status = null,
+        array $filters = []
+    ): Collection {
+        $query = DatSoHdr::with([
+            'customer',
+            'details.barang.satuanDasar',
+            'details.barang.jenisBarang',
+            'payments.header.kasBank',
+            'pengeluaran.faktur',
+        ])->active();
+
+        if (!empty($status)) {
+            $query->where('status_cd', $status);
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('so_no', 'LIKE', "%{$search}%")
+                  ->orWhere('customer_po_no', 'LIKE', "%{$search}%")
+                  ->orWhereHas('customer', function ($cq) use ($search) {
+                      $cq->where('customer_nm', 'LIKE', "%{$search}%")
+                         ->orWhere('customer_cd', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('details.barang', function ($bq) use ($search) {
+                      $bq->where('barang_nm', 'LIKE', "%{$search}%")
+                         ->orWhere('barang_cd', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        if (!empty($filters['barang_cd'])) {
+            $query->whereHas('details.barang', function ($bq) use ($filters) {
+                $bq->where('barang_cd', 'LIKE', "%{$filters['barang_cd']}%");
+            });
+        }
+
+        if (!empty($filters['barang_nm'])) {
+            $query->whereHas('details.barang', function ($bq) use ($filters) {
+                $bq->where('barang_nm', 'LIKE', "%{$filters['barang_nm']}%");
+            });
+        }
+
+        if (!empty($filters['barang_id'])) {
+            $query->whereHas('details', function ($dq) use ($filters) {
+                $dq->where('barang_id', $filters['barang_id']);
+            });
+        }
+
+        if (!empty($filters['customer_cd'])) {
+            $query->whereHas('customer', function ($cq) use ($filters) {
+                $cq->where('customer_cd', 'LIKE', "%{$filters['customer_cd']}%");
+            });
+        }
+
+        if (!empty($filters['customer_nm'])) {
+            $query->whereHas('customer', function ($cq) use ($filters) {
+                $cq->where('customer_nm', 'LIKE', "%{$filters['customer_nm']}%");
+            });
+        }
+
+        if (!empty($filters['customer_id'])) {
+            $query->where('customer_id', $filters['customer_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('so_tgl', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('so_tgl', '<=', $filters['date_to']);
+        }
+
+        return $query->orderBy('so_tgl', 'desc')
+            ->orderBy('so_id', 'desc')
+            ->get();
+    }
+
+    /**
      * Mengambil detail 1 dokumen SO beserta relasi lengkap.
      */
     public function getById(int $id): DatSoHdr
@@ -184,6 +265,7 @@ class SoService
                 : $this->codeGenerator->generateSuratJalanNo($soTgl);
 
             $topTxt = !empty($data['top_txt']) ? $data['top_txt'] : ($cust?->top_txt ?? null);
+            $catatanTxt = $this->auditHppFloorPrice($calculated['items'], $data['catatan_txt'] ?? null);
 
             $header = DatSoHdr::create([
                 'so_no'              => $soNo,
@@ -197,7 +279,7 @@ class SoService
                 'supir_nm'           => $data['supir_nm'] ?? null,
                 'nopol_kendaraan'    => $data['nopol_kendaraan'] ?? null,
                 'status_cd'          => 'APPROVED',
-                'catatan_txt'        => $data['catatan_txt'] ?? null,
+                'catatan_txt'        => $catatanTxt,
                 'subtotal_bruto'     => $calculated['subtotal_bruto'],
                 'diskon_total'       => $calculated['diskon_total'],
                 'potongan_nominal'   => $calculated['potongan_nominal'],
@@ -249,6 +331,7 @@ class SoService
             }
 
             $calculated = $this->calculateOrderTotals($data['items'] ?? [], (float) ($data['potongan_nominal'] ?? 0));
+            $catatanTxt = $this->auditHppFloorPrice($calculated['items'], $data['catatan_txt'] ?? $header->catatan_txt);
 
             $header->update([
                 'so_tgl'             => $data['so_tgl'] ?? $header->so_tgl,
@@ -260,7 +343,7 @@ class SoService
                 'tgl_kirim_estimasi' => $data['tgl_kirim_estimasi'] ?? $header->tgl_kirim_estimasi,
                 'supir_nm'           => array_key_exists('supir_nm', $data) ? $data['supir_nm'] : $header->supir_nm,
                 'nopol_kendaraan'    => array_key_exists('nopol_kendaraan', $data) ? $data['nopol_kendaraan'] : $header->nopol_kendaraan,
-                'catatan_txt'        => $data['catatan_txt'] ?? $header->catatan_txt,
+                'catatan_txt'        => $catatanTxt,
                 'subtotal_bruto'     => $calculated['subtotal_bruto'],
                 'diskon_total'       => $calculated['diskon_total'],
                 'potongan_nominal'   => $calculated['potongan_nominal'],
@@ -298,6 +381,52 @@ class SoService
 
             return $header;
         });
+    }
+
+    /**
+     * Audit guardrail: Periksa apakah ada item yang dijual di bawah HPP terakhir
+     */
+    protected function auditHppFloorPrice(array $items, ?string $existingCatatan = null): ?string
+    {
+        if (empty($items)) {
+            return $existingCatatan;
+        }
+
+        $barangIds = array_filter(array_column($items, 'barang_id'));
+        if (empty($barangIds)) {
+            return $existingCatatan;
+        }
+
+        $barangs = \App\Models\MasterData\MstBarang::whereIn('barang_id', $barangIds)->get()->keyBy('barang_id');
+
+        $warnings = [];
+        foreach ($items as $item) {
+            $bId = $item['barang_id'] ?? null;
+            $hargaJual = (float) ($item['harga_satuan'] ?? 0);
+            if (!$bId || !isset($barangs[$bId])) {
+                continue;
+            }
+
+            $b = $barangs[$bId];
+            $hpp = (float) $b->latest_hpp;
+
+            if ($hpp > 0 && $hargaJual < $hpp) {
+                $selisih = $hpp - $hargaJual;
+                $warnings[] = "{$b->barang_nm} (Jual: Rp " . number_format($hargaJual, 0, ',', '.') . " < HPP: Rp " . number_format($hpp, 0, ',', '.') . ", Margin Rugi: -Rp " . number_format($selisih, 0, ',', '.') . "/ktn)";
+                \Illuminate\Support\Facades\Log::warning("SO Item dijual di bawah HPP: {$b->barang_nm} [ID: {$bId}], Jual: {$hargaJual}, HPP: {$hpp}");
+            }
+        }
+
+        if (!empty($warnings)) {
+            $tag = "[AUDIT HARGA DI BAWAH HPP]: " . implode('; ', $warnings);
+            if ($existingCatatan && !str_contains($existingCatatan, '[AUDIT HARGA DI BAWAH HPP]')) {
+                return trim($existingCatatan . "\n" . $tag);
+            } elseif (!$existingCatatan) {
+                return $tag;
+            }
+        }
+
+        return $existingCatatan;
     }
 
     /**
@@ -719,10 +848,12 @@ class SoService
                     );
                 }
 
+                $itemBatch = !empty($item['batch_no']) ? trim((string)$item['batch_no']) : $batchNo;
+
                 $detailsToSave[] = [
                     'sodtl_id'               => $sodtlId,
                     'barang_id'              => $dtl->barang_id,
-                    'batch_no'               => $batchNo,
+                    'batch_no'               => $itemBatch,
                     'qty_retur'              => $qtyRetur,
                     'qty_masuk_persediaan'   => $qtyMasuk,
                     'qty_dimusnahkan'        => $qtyMusnah,
@@ -881,6 +1012,60 @@ class SoService
         return $query->orderBy('retur_tgl', 'desc')
             ->orderBy('retur_id', 'desc')
             ->paginate($perPage);
+    }
+
+    /**
+     * Mengambil seluruh data retur penjualan sesuai filter untuk keperluan Export Excel.
+     */
+    public function getReturnsForExport(
+        ?string $search = null,
+        array $filters = []
+    ): \Illuminate\Database\Eloquent\Collection {
+        $query = DatSoReturHdr::with([
+            'order.pengeluaran.details',
+            'order.faktur',
+            'customer',
+            'gudang',
+            'details.barang.satuanDasar'
+        ])->active();
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('retur_no', 'LIKE', "%{$search}%")
+                  ->orWhere('alasan_txt', 'LIKE', "%{$search}%")
+                  ->orWhereHas('order', fn($oq) => $oq->where('so_no', 'LIKE', "%{$search}%"))
+                  ->orWhereHas('customer', fn($cq) => $cq->where('customer_nm', 'LIKE', "%{$search}%")->orWhere('customer_cd', 'LIKE', "%{$search}%"))
+                  ->orWhereHas('details.barang', fn($bq) => $bq->where('barang_nm', 'LIKE', "%{$search}%")->orWhere('barang_cd', 'LIKE', "%{$search}%"));
+            });
+        }
+
+        if (!empty($filters['customer_id'])) {
+            $query->where('customer_id', $filters['customer_id']);
+        }
+
+        if (!empty($filters['gudang_id'])) {
+            $query->where('gudang_id', $filters['gudang_id']);
+        }
+
+        if (!empty($filters['tindakan_cd'])) {
+            $query->where('tindakan_cd', $filters['tindakan_cd']);
+        }
+
+        if (!empty($filters['status_cd'])) {
+            $query->where('status_cd', $filters['status_cd']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('retur_tgl', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('retur_tgl', '<=', $filters['date_to']);
+        }
+
+        return $query->orderBy('retur_tgl', 'desc')
+            ->orderBy('retur_id', 'desc')
+            ->get();
     }
 
     /**
@@ -1074,12 +1259,34 @@ class SoService
             $topType = 'MODERN_TRADE';
         }
 
+        // 1.5 Cek Rekam Jejak Piutang Macet / Tak Tertagih (Bad Debt History)
+        $badDebtFakturs = DatFakturHdr::where('customer_id', $customerId)
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', 'TAK_TERTAGIH')
+            ->orderBy('tgl_macet', 'desc')
+            ->get();
+
+        $hasBadDebt = $badDebtFakturs->count() > 0;
+        $totalBadDebt = (float) $badDebtFakturs->sum('sisa_piutang');
+        $badDebtList = [];
+        foreach ($badDebtFakturs as $bdf) {
+            $badDebtList[] = [
+                'faktur_no'     => $bdf->faktur_no,
+                'faktur_tgl'    => $bdf->faktur_tgl?->format('d/m/Y') ?? '-',
+                'tgl_macet'     => $bdf->tgl_macet?->format('d/m/Y') ?? ($bdf->updated_at?->format('d/m/Y') ?? '-'),
+                'sisa_nominal'  => (float) $bdf->sisa_piutang,
+                'sisa_formatted'=> 'Rp ' . number_format((float) $bdf->sisa_piutang, 0, ',', '.'),
+                'alasan'        => $bdf->alasan_macet ?: 'Penghapusan piutang tidak tertagih',
+                'petugas'       => $bdf->macet_by ?: 'System',
+            ];
+        }
+
         // 2. Kumpulkan Seluruh Faktur Belum Lunas (dat_faktur_hdr)
         $unpaidFakturs = DatFakturHdr::where('customer_id', $customerId)
             ->where('deleted_st', false)
             ->where('active_st', true)
             ->where(function ($q) {
-                $q->where('status_pembayaran', '!=', 'LUNAS')
+                $q->whereNotIn('status_pembayaran', ['LUNAS', 'TAK_TERTAGIH', 'BATAL'])
                   ->orWhereNull('status_pembayaran');
             })
             ->where('sisa_piutang', '>', 0)
@@ -1187,10 +1394,39 @@ class SoService
         $dueSoonTotalFormatted = 'Rp ' . number_format($dueSoonTotal, 0, ',', '.');
 
         // 5. Analisis Berdasarkan Aturan Bisnis
+        // 5.0 PRIORITAS UTAMA: Deteksi Rekam Jejak Piutang Macet / Tak Tertagih
+        if ($hasBadDebt) {
+            $formattedBadDebt = 'Rp ' . number_format($totalBadDebt, 0, ',', '.');
+            $fakturNos = $badDebtFakturs->pluck('faktur_no')->filter()->implode(', ');
+            return [
+                'customer_id'       => $customerId,
+                'customer_nm'       => $customer->customer_nm,
+                'top_txt'           => $topRaw ?: ($topType === 'NOTA' ? 'Tinggal 1 Nota' : 'Tempo'),
+                'top_type'          => $topType,
+                'status'            => 'DANGER',
+                'badge_class'       => 'danger',
+                'badge_label'       => 'REKAM JEJAK: PIUTANG TAK TERTAGIH',
+                'title'             => 'Peringatan Risiko Kredit: Riwayat Piutang Tak Tertagih!',
+                'message'           => "Pelanggan ini memiliki riwayat piutang tak tertagih senilai {$formattedBadDebt} (Faktur: {$fakturNos}). Penjualan tempo/kredit diblokir demi keamanan kas perusahaan. Disarankan hanya melayani transaksi TUNAI di muka (Cash Before Delivery) atau konfirmasi khusus manajer.",
+                'can_proceed'       => false,
+                'needs_override'    => true,
+                'has_bad_debt'      => true,
+                'bad_debt_total'    => $totalBadDebt,
+                'bad_debt_formatted'=> $formattedBadDebt,
+                'bad_debt_invoices' => $badDebtList,
+                'total_piutang'     => $totalPiutang,
+                'total_formatted'   => $totalFormatted,
+                'unpaid_count'      => $unpaidCount,
+                'invoices'          => $invoiceList,
+            ];
+        }
+
+        $result = [];
+
         if ($topType === 'NOTA') {
             // ATURAN TINGGAL 1 NOTA
             if ($unpaidCount === 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
@@ -1209,7 +1445,7 @@ class SoService
                 ];
             } elseif ($unpaidCount === 1) {
                 $inv = $invoiceList[0];
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
@@ -1227,7 +1463,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } else {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'Tinggal 1 Nota',
@@ -1248,7 +1484,7 @@ class SoService
         } elseif ($topType === 'TUNAI') {
             // ATURAN PEMBAYARAN TUNAI
             if ($unpaidCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'TUNAI',
@@ -1266,7 +1502,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } else {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: 'TUNAI',
@@ -1287,7 +1523,7 @@ class SoService
         } else {
             // ATURAN BERBASIS HARI / MODERN TRADE
             if ($overdueCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1307,7 +1543,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } elseif ($dueSoonCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1326,7 +1562,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } elseif ($unpaidCount > 0) {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1344,7 +1580,7 @@ class SoService
                     'invoices'       => $invoiceList,
                 ];
             } else {
-                return [
+                $result = [
                     'customer_id'    => $customerId,
                     'customer_nm'    => $customer->customer_nm,
                     'top_txt'        => $topRaw ?: "{$topDays} Hari",
@@ -1363,5 +1599,10 @@ class SoService
                 ];
             }
         }
+
+        $result['has_bad_debt'] = $result['has_bad_debt'] ?? false;
+        $result['bad_debt_invoices'] = $result['bad_debt_invoices'] ?? [];
+
+        return $result;
     }
 }

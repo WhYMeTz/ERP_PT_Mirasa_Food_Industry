@@ -872,7 +872,7 @@ class HutangService
     }
 
     /**
-     * Hitung Rekapitulasi Pemakaian Gas Bulanan untuk Dasar Tagihan Utilitas
+     * Hitung Rekapitulasi Pemakaian Gas Bulanan untuk Dasar Tagihan Utilitas & Rekonsiliasi
      */
     public function getGasUsageSummary(string $periodeBulan): array
     {
@@ -882,12 +882,16 @@ class HutangService
 
         $produksiHeaders = DatProduksiHdr::where('deleted_st', false)
             ->whereBetween('produksi_tgl', [$start, $end])
+            ->orderBy('produksi_tgl', 'asc')
+            ->orderBy('shift_cd', 'asc')
+            ->orderBy('produksi_id', 'asc')
             ->get();
 
+        $totalCngNm3 = (float) $produksiHeaders->sum('cng_nm3');
         $totalCngMmbtu = (float) $produksiHeaders->sum('cng_mmbtu');
-        $totalGasKg = 0.0; // LPG cadangan jika ada
+        $totalCngNilai = (float) $produksiHeaders->sum('cng_nilai');
 
-        // Ambil standar tarif aktif
+        // Standar tarif fallback
         $tarifGas = MstTarifProduksi::where('deleted_st', false)
             ->where('active_st', true)
             ->whereIn('kode_tarif', ['TARIF_CNG', 'GAS_CNG_M3', 'GAS_CNG', 'GAS_LPG'])
@@ -897,26 +901,55 @@ class HutangService
             ?? $tarifGas->firstWhere('kode_tarif', 'GAS_CNG')?->nilai_tarif 
             ?? 226800);
 
-        $tarifKg = (float)($tarifGas->firstWhere('kode_tarif', 'GAS_LPG')?->nilai_tarif 
-            ?? 18000);
+        // Jika totalCngNilai di database masih 0 padahal ada MMBTU (misal data historis), estimasikan dengan tarif acuan
+        $estimasiBiaya = ($totalCngNilai > 0) ? $totalCngNilai : ($totalCngMmbtu * $tarifMmbtu);
 
-        $estimasiBiaya = ($totalCngMmbtu * $tarifMmbtu) + ($totalGasKg * $tarifKg);
+        // Rata-rata kurs & tarif USD jika tercatat
+        $headersWithKurs = $produksiHeaders->filter(fn($p) => (float)($p->cng_kurs_jisdor ?? 0) > 0);
+        $avgKursJisdor = $headersWithKurs->count() > 0 ? (float) $headersWithKurs->avg('cng_kurs_jisdor') : 0.0;
+
+        $headersWithTarifUsd = $produksiHeaders->filter(fn($p) => (float)($p->cng_tarif_usd ?? 0) > 0);
+        $avgTarifUsd = $headersWithTarifUsd->count() > 0 ? (float) $headersWithTarifUsd->avg('cng_tarif_usd') : 0.0;
+
+        // Rincian Harian & Shift Pemakaian Gas Pabrik
+        $dailyDetails = [];
+        foreach ($produksiHeaders as $p) {
+            $dailyDetails[] = [
+                'produksi_id'     => $p->produksi_id,
+                'produksi_no'     => $p->produksi_no,
+                'produksi_tgl'    => \Carbon\Carbon::parse($p->produksi_tgl)->toDateString(),
+                'tgl_formatted'   => \Carbon\Carbon::parse($p->produksi_tgl)->translatedFormat('d M Y'),
+                'hari_nm'         => $p->hari_nm ?? \Carbon\Carbon::parse($p->produksi_tgl)->translatedFormat('l'),
+                'shift_cd'        => $p->shift_cd ?? '-',
+                'lini_produksi'   => $p->lini_produksi ?? 'Lini Penggorengan',
+                'cng_nm3'         => (float) ($p->cng_nm3 ?? 0),
+                'cng_mmbtu'       => (float) ($p->cng_mmbtu ?? 0),
+                'cng_tarif_usd'   => (float) ($p->cng_tarif_usd ?? 0),
+                'cng_kurs_jisdor' => (float) ($p->cng_kurs_jisdor ?? 0),
+                'cng_tarif'       => (float) ($p->cng_tarif ?? 0),
+                'cng_nilai'       => (float) ($p->cng_nilai ?? 0),
+            ];
+        }
 
         return [
-            'periode_bulan'   => $periodeBulan,
-            'total_cng_mmbtu' => (float) $totalCngMmbtu,
-            'total_gas_m3'    => (float) $totalCngMmbtu, // backwards compatibility
-            'total_gas_kg'    => (float) $totalGasKg,
-            'tarif_mmbtu'     => $tarifMmbtu,
-            'tarif_m3'        => $tarifMmbtu,
-            'tarif_kg'        => $tarifKg,
-            'estimasi_biaya'  => (float) $estimasiBiaya,
-            'jumlah_batch'    => $produksiHeaders->count(),
+            'periode_bulan'     => $periodeBulan,
+            'total_cng_nm3'     => (float) $totalCngNm3,
+            'total_cng_mmbtu'   => (float) $totalCngMmbtu,
+            'total_gas_m3'      => (float) $totalCngNm3, // backwards compatibility
+            'total_gas_kg'      => 0.0,
+            'tarif_mmbtu'       => $tarifMmbtu,
+            'tarif_m3'          => $tarifMmbtu,
+            'tarif_kg'          => 18000,
+            'estimasi_biaya'    => (float) $estimasiBiaya,
+            'jumlah_batch'      => $produksiHeaders->count(),
+            'avg_kurs_jisdor'   => (float) $avgKursJisdor,
+            'avg_tarif_usd'     => (float) $avgTarifUsd,
+            'daily_details'     => $dailyDetails,
         ];
     }
 
     /**
-     * Buat Tagihan Khusus Gas / Utilitas Konsinyasi Bulanan
+     * Buat Tagihan Khusus Gas / Utilitas Konsinyasi Bulanan & Penjurnalan Rekonsiliasi
      */
     public function createTagihanGas(array $payload, User $user): DatHutangHdr
     {
@@ -926,20 +959,36 @@ class HutangService
             $periodeBulan = $payload['periode_bulan'] ?? date('Y-m');
             $tglTagihan = $payload['tgl_tagihan'] ?? now()->toDateString();
             $tglTempo = $payload['tgl_jatuh_tempo'] ?? now()->addDays(14)->toDateString();
-            $noFakturSupp = $payload['no_faktur_supplier'] ?? null;
-            $catatan = $payload['catatan'] ?? "Tagihan Konsinyasi Gas Utilitas Periode {$periodeBulan}";
+            $noFakturSupp = !empty($payload['no_faktur_supplier']) ? trim($payload['no_faktur_supplier']) : null;
+            $catatan = $payload['catatan'] ?? "Tagihan Utilitas Gas Periode {$periodeBulan}";
 
-            $qtyM3 = (float)($payload['qty_m3'] ?? 0);
-            $hargaM3 = (float)($payload['harga_m3'] ?? 0);
-            $subtotalM3 = $qtyM3 * $hargaM3;
+            // Data Pemakaian & Tagihan Resmi Vendor
+            $mmbtuVendor = (float) ($payload['cng_mmbtu_vendor'] ?? $payload['qty_m3'] ?? 0);
+            $nm3Vendor   = (float) ($payload['cng_nm3_vendor'] ?? 0);
+            $kursJisdor  = (float) ($payload['kurs_jisdor'] ?? 0);
+            $tarifUsd    = (float) ($payload['tarif_usd'] ?? 0);
 
-            $qtyKg = (float)($payload['qty_kg'] ?? 0);
-            $hargaKg = (float)($payload['harga_kg'] ?? 0);
-            $subtotalKg = $qtyKg * $hargaKg;
+            // DPP, PPN, dan Total Tagihan
+            $dppVendor = (float) ($payload['dpp_vendor'] ?? $payload['total_bruto'] ?? 0);
+            if ($dppVendor <= 0 && $mmbtuVendor > 0 && isset($payload['harga_m3'])) {
+                $dppVendor = $mmbtuVendor * (float) $payload['harga_m3'];
+            }
+            $ppnVendor = (float) ($payload['total_ppn'] ?? 0);
+            $totalTagihan = (float) ($payload['total_tagihan'] ?? ($dppVendor + $ppnVendor));
 
-            $totalBruto = $subtotalM3 + $subtotalKg;
-            $totalPpn = (float)($payload['total_ppn'] ?? 0);
-            $totalNetto = $totalBruto + $totalPpn;
+            if ($totalTagihan <= 0) {
+                $totalTagihan = $dppVendor + $ppnVendor;
+            }
+
+            // Ambil Ringkasan Pemakaian Gas Produksi untuk Komparasi & Jurnal Akrual
+            $gasSummary = $this->getGasUsageSummary($periodeBulan);
+            $totalEstimasiAkrual = (float) ($gasSummary['estimasi_biaya'] ?? 0);
+            $totalMmbtuPabrik    = (float) ($gasSummary['total_cng_mmbtu'] ?? 0);
+            $selisihMmbtu        = round($mmbtuVendor - $totalMmbtuPabrik, 4);
+            $selisihDpp          = round($dppVendor - $totalEstimasiAkrual, 2);
+
+            $supplier = MstSupplier::find($supplierId);
+            $suppName = $supplier?->supplier_nm ?? 'Vendor Gas';
 
             $hdr = DatHutangHdr::create([
                 'hutang_no'            => $hutangNo,
@@ -950,74 +999,120 @@ class HutangService
                 'tgl_jatuh_tempo'      => $tglTempo,
                 'tipe_hutang'          => 'GAS_UTILITAS',
                 'periode_bulan'        => $periodeBulan,
-                'total_bruto'          => $totalBruto,
+                'total_bruto'          => $dppVendor,
                 'total_diskon'         => 0,
+                'total_potongan_item'  => 0,
                 'total_potongan_retur' => 0,
-                'total_ppn'            => $totalPpn,
-                'total_tagihan'        => $totalNetto,
+                'total_ppn'            => $ppnVendor,
+                'total_tagihan'        => $totalTagihan,
                 'total_dibayar'        => 0,
-                'sisa_hutang'          => $totalNetto,
+                'sisa_hutang'          => $totalTagihan,
                 'status_pembayaran'    => 'BELUM_LUNAS',
                 'catatan'              => $catatan,
                 'created_by'           => $user->name ?? 'SYSTEM',
                 'updated_by'           => $user->name ?? 'SYSTEM',
             ]);
 
-            if ($qtyM3 > 0) {
+            // 1. Detail Baris Tagihan Utama
+            $hargaSatuan = $mmbtuVendor > 0 ? round($dppVendor / $mmbtuVendor, 4) : $dppVendor;
+            DatHutangDtl::create([
+                'hutang_id'        => $hdr->hutang_id,
+                'deskripsi'        => "Pemakaian Gas Utilitas CNG ({$periodeBulan}) - " . ($mmbtuVendor > 0 ? number_format($mmbtuVendor, 2) . " MMBTU" : "Invoice Vendor"),
+                'qty'              => $mmbtuVendor > 0 ? $mmbtuVendor : 1,
+                'satuan'           => $mmbtuVendor > 0 ? 'MMBTU' : 'LOT',
+                'harga_satuan'     => $hargaSatuan,
+                'subtotal'         => $dppVendor,
+                'dpp_nominal'      => $dppVendor,
+                'ppn_nominal'      => $ppnVendor,
+                'total_netto'      => $totalTagihan,
+                'catatan'          => "No Faktur: " . ($noFakturSupp ?: '-') . " | Kurs: Rp " . number_format($kursJisdor, 0, ',', '.') . " | Selisih vs Pabrik: " . ($selisihMmbtu >= 0 ? "+{$selisihMmbtu}" : "{$selisihMmbtu}") . " MMBTU",
+                'created_by'       => $user->name ?? 'SYSTEM',
+                'updated_by'       => $user->name ?? 'SYSTEM',
+            ]);
+
+            // 2. Detail Snapshot Rekonsiliasi (Varians/Audit Trail)
+            if ($totalEstimasiAkrual > 0 || abs($selisihDpp) > 0) {
                 DatHutangDtl::create([
-                    'hutang_id'    => $hdr->hutang_id,
-                    'deskripsi'    => "Pemakaian Gas CNG Pipa/Skid Tank ({$periodeBulan})",
-                    'qty'          => $qtyM3,
-                    'satuan'       => 'M3',
-                    'harga_satuan' => $hargaM3,
-                    'subtotal'     => $subtotalM3,
-                    'total_netto'  => $subtotalM3,
-                    'catatan'      => "Rekap meteran pemakaian dapur fryer pabrik",
-                    'created_by'   => $user->name ?? 'SYSTEM',
-                    'updated_by'   => $user->name ?? 'SYSTEM',
+                    'hutang_id'        => $hdr->hutang_id,
+                    'deskripsi'        => "[REKONSILIASI] Snapshot Akrual Pabrik vs Tagihan Vendor ({$periodeBulan})",
+                    'qty'              => 1,
+                    'satuan'           => 'REKAP',
+                    'harga_satuan'     => 0,
+                    'subtotal'         => 0,
+                    'dpp_nominal'      => 0,
+                    'ppn_nominal'      => 0,
+                    'total_netto'      => 0,
+                    'catatan'          => "Akrual Produksi: Rp " . number_format($totalEstimasiAkrual, 0, ',', '.') . " ({$totalMmbtuPabrik} MMBTU) | Invoice DPP: Rp " . number_format($dppVendor, 0, ',', '.') . " | Varians: Rp " . number_format($selisihDpp, 0, ',', '.'),
+                    'created_by'       => $user->name ?? 'SYSTEM',
+                    'updated_by'       => $user->name ?? 'SYSTEM',
                 ]);
             }
 
-            if ($qtyKg > 0) {
-                DatHutangDtl::create([
-                    'hutang_id'    => $hdr->hutang_id,
-                    'deskripsi'    => "Pemakaian Gas LPG Industri ({$periodeBulan})",
-                    'qty'          => $qtyKg,
-                    'satuan'       => 'KG',
-                    'harga_satuan' => $hargaKg,
-                    'subtotal'     => $subtotalKg,
-                    'total_netto'  => $subtotalKg,
-                    'catatan'      => "Tabung gas operasional pabrik",
-                    'created_by'   => $user->name ?? 'SYSTEM',
-                    'updated_by'   => $user->name ?? 'SYSTEM',
-                ]);
-            }
+            // 3. Otomasi Penjurnalan Rekonsiliasi Tagihan Gas
+            // COA Mapping dari MstPengaturanJurnal
+            $akunAkrual = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_AKRUAL_GAS', 
+                $this->pengaturanJurnalService->getCoaKode('HPP_WIP_AKUN_GAS', '2100'));
+            $akunHutang = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_HUTANG', '2100');
+            $akunPpn    = $this->pengaturanJurnalService->getCoaKode('PEMBELIAN_AKUN_PPN_MASUKAN', '1130');
+            $akunSelisih = $this->pengaturanJurnalService->getCoaKode('UTILITAS_AKUN_SELISIH_GAS', '5102');
 
-            // Otomasi Jurnal Pengakuan Beban Utilitas Gas Pabrik
             $jurnalEntries = [];
-            $ketGas = "Tagihan Gas Pabrik Periode {$periodeBulan} - {$suppName} ({$hdr->hutang_no})";
-            if ($totalBruto > 0) {
+
+            // Skenario A: Jika ada estimasi akrual produksi yang sudah dicatat selama sebulan
+            if ($totalEstimasiAkrual > 0) {
+                // Debet: Reversal Akun Akrual Gas senilai estimasi yang sudah dicatat
                 $jurnalEntries[] = [
-                    'kode_akun'  => '6102', // Beban air & Listrik (dan Gas)
-                    'debet'      => $totalBruto,
+                    'kode_akun'  => $akunAkrual,
+                    'debet'      => round($totalEstimasiAkrual, 2),
                     'kredit'     => 0,
-                    'keterangan' => $ketGas,
+                    'keterangan' => "Penyelesaian Akrual Biaya Gas Produksi {$periodeBulan} - {$suppName}",
+                ];
+
+                // Selisih / Varians (Beban Utilitas Tambahan jika DPP > Akrual, atau Pengurang jika DPP < Akrual)
+                if ($selisihDpp > 0) {
+                    $jurnalEntries[] = [
+                        'kode_akun'  => $akunSelisih,
+                        'debet'      => round(abs($selisihDpp), 2),
+                        'kredit'     => 0,
+                        'keterangan' => "Varians Selisih Tarif/Volume Gas {$periodeBulan} - {$suppName}",
+                    ];
+                } elseif ($selisihDpp < 0) {
+                    $jurnalEntries[] = [
+                        'kode_akun'  => $akunSelisih,
+                        'debet'      => 0,
+                        'kredit'     => round(abs($selisihDpp), 2),
+                        'keterangan' => "Koreksi Selisih Efisiensi Biaya Gas {$periodeBulan} - {$suppName}",
+                    ];
+                }
+            } else {
+                // Skenario B: Belum pernah ada akrual produksi di bulan ini, langsung bebankan ke beban utilitas/pemakaian CNG
+                if ($dppVendor > 0) {
+                    $jurnalEntries[] = [
+                        'kode_akun'  => $akunSelisih,
+                        'debet'      => round($dppVendor, 2),
+                        'kredit'     => 0,
+                        'keterangan' => "Beban Pemakaian Gas Utilitas Pabrik {$periodeBulan} - {$suppName}",
+                    ];
+                }
+            }
+
+            // Debet: PPN Masukan (jika ada)
+            if ($ppnVendor > 0) {
+                $jurnalEntries[] = [
+                    'kode_akun'  => $akunPpn,
+                    'debet'      => round($ppnVendor, 2),
+                    'kredit'     => 0,
+                    'keterangan' => "PPN Masukan Faktur Gas {$noFakturSupp} - {$suppName}",
                 ];
             }
-            if ($totalPpn > 0) {
+
+            // Kredit: Hutang Usaha Vendor Gas (sebesar Total Tagihan Invoice Vendor)
+            if ($totalTagihan > 0) {
                 $jurnalEntries[] = [
-                    'kode_akun'  => '1130', // PPN Masukan
-                    'debet'      => $totalPpn,
-                    'kredit'     => 0,
-                    'keterangan' => $ketGas,
-                ];
-            }
-            if ($totalNetto > 0) {
-                $jurnalEntries[] = [
-                    'kode_akun'  => '2100', // Hutang usaha
+                    'kode_akun'  => $akunHutang,
                     'debet'      => 0,
-                    'kredit'     => $totalNetto,
-                    'keterangan' => $ketGas,
+                    'kredit'     => round($totalTagihan, 2),
+                    'keterangan' => "Hutang Usaha {$suppName} Faktur " . ($noFakturSupp ?: $hdr->hutang_no),
                 ];
             }
 
@@ -1027,7 +1122,7 @@ class HutangService
                     tglJurnal: $hdr->tgl_tagihan,
                     refNo: $hdr->hutang_no,
                     refId: $hdr->hutang_id,
-                    keterangan: "Pencatatan Tagihan Gas Utilitas {$hdr->hutang_no} Periode {$periodeBulan}",
+                    keterangan: "Pencatatan Tagihan Gas Utilitas {$hdr->hutang_no} Periode {$periodeBulan} - {$suppName}",
                     entries: $jurnalEntries,
                     user: $user
                 );

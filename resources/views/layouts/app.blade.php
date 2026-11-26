@@ -1320,6 +1320,8 @@
         header .pill-item:hover, header .pill-dropdown-btn:hover { background: #f1f5f9; }
         /* grup yang sedang terbuka */
         header .pill-dropdown.active .pill-dropdown-btn { background: #f1f5f9 !important; color: #0f172a; box-shadow: none !important; }
+        header .pill-dropdown.active .pill-dropdown-btn .nav-parent-badge,
+        .pill-dropdown.active .pill-dropdown-btn .nav-parent-badge { display: none !important; }
         header .pill-dropdown-btn.active::after { display: none; }
         /* halaman yang sedang dibuka */
         header .pill-dropdown .pill-dropdown-btn.active,
@@ -1923,7 +1925,7 @@
                                 <span class="nav-text-full">Penjualan</span>
                                 <span class="nav-text-short">Penjualan</span>
                                 @if($pendingShipCount > 0)
-                                    <span
+                                    <span class="nav-parent-badge"
                                         style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 9999px; line-height: 1.2;">{{ $pendingShipCount }}</span>
                                 @endif
                                 <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -1998,8 +2000,15 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                             </svg>
-                                            <div style="display: flex; flex-direction: column;">
-                                                <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
+                                            <div style="display: flex; flex-direction: column; flex: 1;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                                    <span style="font-weight: 600;">Pengeluaran Barang (Surat Jalan/DO)</span>
+                                                    @if($pendingShipCount > 0)
+                                                        <span style="background: #f59e0b; color: #ffffff; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 9999px; line-height: 1.2; white-space: nowrap; flex-shrink: 0;" title="{{ $pendingShipCount }} antrean PO menunggu pengeluaran barang">
+                                                            {{ $pendingShipCount }}
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <span style="font-size: 0.6875rem; color: #64748b;">Fisik keluar Gudang FG &amp;
                                                     muat armada</span>
                                             </div>
@@ -2205,7 +2214,7 @@
                                         <div class="mega-col-title" style="color: #0369a1;">Pembukuan &amp; Verifikasi</div>
                                         @if (Auth::user()->canAccessHutang())
                                             <a href="{{ route('keuangan.hutang.index') }}"
-                                                class="mega-item {{ request()->routeIs('keuangan.hutang.*') ? 'active' : '' }}">
+                                                class="mega-item {{ request()->routeIs('keuangan.hutang.index') || request()->routeIs('keuangan.hutang.show') || request()->routeIs('keuangan.hutang.create') ? 'active' : '' }}">
                                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                                     style="color: #b91c1c;">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -2213,7 +2222,7 @@
                                                 </svg>
                                                 <div style="display: flex; flex-direction: column; flex: 1;">
                                                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
-                                                        <span style="font-weight: 700; color: #0f172a;">Tagihan Pembelian (GRN &amp; Gas)</span>
+                                                        <span style="font-weight: 700; color: #0f172a;">Tagihan Pembelian (GRN)</span>
                                                         @if ($unbilledGrnBadge > 0)
                                                             <span style="background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
                                                                 {{ $unbilledGrnBadge }} GRN Baru
@@ -2221,6 +2230,24 @@
                                                         @endif
                                                     </div>
                                                     <span style="font-size: 0.6875rem; color: #475569;">Buat tagihan barang masuk &amp; jurnal hutang</span>
+                                                </div>
+                                            </a>
+
+                                            <a href="{{ route('keuangan.hutang.create_gas') }}"
+                                                class="mega-item {{ request()->routeIs('keuangan.hutang.create_gas') ? 'active' : '' }}">
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    style="color: #ea580c;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                <div style="display: flex; flex-direction: column; flex: 1;">
+                                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+                                                        <span style="font-weight: 700; color: #0f172a;">Tagihan Gas Bulanan</span>
+                                                        <span style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
+                                                            Utilitas
+                                                        </span>
+                                                    </div>
+                                                    <span style="font-size: 0.6875rem; color: #475569;">Rekonsiliasi meteran fryer &amp; invoice vendor</span>
                                                 </div>
                                             </a>
                                         @endif
@@ -2536,30 +2563,7 @@
                                                 <span>Formula Resep (BOM)</span>
                                             </a>
                                         @endif
-                                        @if (Auth::user()->canAccessMesin())
-                                            <a href="{{ route('master.mesin.index') }}"
-                                                class="mega-item {{ request()->routeIs('master.mesin.*') ? 'active' : '' }}">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #d97706;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                <span>Mesin &amp; Fasilitas Pabrik</span>
-                                            </a>
-                                        @endif
-                                        @if (Auth::user()->canAccessTarifProduksi())
-                                            <a href="{{ route('master.tarif_produksi.index') }}"
-                                                class="mega-item {{ request()->routeIs('master.tarif_produksi.*') ? 'active' : '' }}">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                                    style="color: #10b981;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Standar Biaya FOH</span>
-                                            </a>
-                                        @endif
+                                        {{-- Catatan: Menu Mesin & Fasilitas Pabrik serta Standar Biaya FOH di-hidden dari navigasi atas arahan bisnis/mentor. Backend kalkulasi HPP tetap aman. --}}
                                     </div>
 
                                     {{-- Kolom 2: Relasi & Sistem Admin --}}

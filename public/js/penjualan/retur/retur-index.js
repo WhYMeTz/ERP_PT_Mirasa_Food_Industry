@@ -175,6 +175,15 @@ async function onSelectSoForRetur(soId) {
                                 <strong style="color: #0f172a; display: block; font-size: 0.825rem;">${item.barang_nm}</strong>
                                 <span style="font-family: monospace; font-size: 0.7rem; color: #64748b;">${item.barang_cd}</span>
                                 ${alreadyReturText}
+                                <div style="margin-top: 3px;">
+                                    <input type="text" 
+                                           name="items[${idx}][batch_no]" 
+                                           value="${item.batch_no || ''}"
+                                           placeholder="No. Batch" 
+                                           title="Nomor Batch / Kode Produksi pada kemasan"
+                                           class="form-control" 
+                                           style="font-size: 0.675rem; font-family: monospace; height: 22px; padding: 1px 5px; border: 1px solid #cbd5e1; border-radius: 3px; width: 100%; max-width: 130px;">
+                                </div>
                             </td>
                             <td style="padding: 0.6rem 0.65rem; text-align: right; font-family: monospace; color: #475569;">
                                 ${item.kirim_qty.toLocaleString('id-ID')}

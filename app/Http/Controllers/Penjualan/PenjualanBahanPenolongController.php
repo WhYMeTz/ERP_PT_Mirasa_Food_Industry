@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Penjualan;
 
+use App\Exports\Penjualan\PenjualanBahanPenolongExport;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstCustomer;
 use App\Models\MasterData\MstGudang;
@@ -12,6 +13,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PenjualanBahanPenolongController extends Controller
 {
@@ -39,6 +41,37 @@ class PenjualanBahanPenolongController extends Controller
         $metrics = $this->service->getMetrics();
 
         return view('penjualan.bahan_penolong.index', compact('sales', 'metrics', 'search', 'startDate', 'endDate'));
+    }
+
+    /**
+     * Export data Penjualan Bahan Penolong & Bumbu ke format Excel (.xlsx)
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $search = $request->input('search');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $orders = $this->service->getAllForExport(
+            search: $search,
+            startDate: $startDate,
+            endDate: $endDate
+        );
+
+        $printedBy = auth()->user()?->nama_lengkap ?? 'Administrator ERP';
+        $printedAt = now()->translatedFormat('d F Y H:i');
+        $filename = 'Rekap_Penjualan_Bahan_Penolong_' . date('Ymd_His') . '.xlsx';
+
+        $export = new PenjualanBahanPenolongExport(
+            orders: $orders,
+            search: $search,
+            startDate: $startDate,
+            endDate: $endDate,
+            printedBy: $printedBy,
+            printedAt: $printedAt
+        );
+
+        return $export->download($filename);
     }
 
     /**

@@ -16,62 +16,61 @@
 @endphp
 
 @section('content')
-{{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
-    <nav class="erp-chevron-bar" aria-label="Breadcrumb">
-        <a href="{{ route('gudang.po.index') }}" class="erp-chevron-item">
-            <span>Pembelian</span>
-        </a>
-        <span class="erp-chevron-sep">
-            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </span>
-        <a href="{{ route('gudang.po.index') }}" class="erp-chevron-item">
-            <span>Purchase Order</span>
-        </a>
-        <span class="erp-chevron-sep">
-            <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </span>
-        <span class="erp-chevron-item active">
-            <span>Edit PO: {{ $po->po_no }}</span>
-        </span>
-        <span class="erp-chevron-end">
-            <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5"/></svg>
-        </span>
+<div class="po-full-container">
+    {{-- 1. BREADCRUMB (PERSIS KAS KELUAR) --}}
+    <nav class="po-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.po.index') }}">Gudang &amp; Logistik</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ route('gudang.po.index') }}">Purchase Order</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Edit: {{ $po->po_no }}</span>
     </nav>
 
-    {{-- Live KPI Header Widget di Siku Kanan Atas --}}
-    <div class="po-live-kpi-widget">
-        <div>
-            <div class="po-live-kpi-title">ESTIMASI GRAND TOTAL:</div>
-            <div class="po-live-kpi-val" id="topLiveGrandTotal">Rp 0</div>
+    {{-- 2. HEADER BAR (PERSIS KAS KELUAR) --}}
+    <div class="po-header-bar">
+        <div class="po-header-info">
+            <div class="po-header-title">
+                <a href="{{ route('gudang.po.index') }}"
+                   class="po-back-link"
+                   aria-label="Kembali ke daftar purchase order">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </a>
+                <h1>Edit Purchase Order</h1>
+                <span class="po-pill-badge po-pill-code">{{ $po->po_no }}</span>
+                @if ($po->status_cd == 'REVISION')
+                    <span class="po-pill-badge" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">
+                        Perlu Revisi Atasan
+                    </span>
+                @elseif ($po->status_cd == 'REJECTED')
+                    <span class="po-pill-badge" style="background:#fee2e2; color:#b91c1c; border-color:#fecaca;">
+                        Ditolak Atasan
+                    </span>
+                @else
+                    <span class="po-pill-badge">{{ $po->status_cd }}</span>
+                @endif
+                {{-- Invisible helper nodes for JS sync --}}
+                <span id="topLiveGrandTotal" style="display: none;">Rp 0</span>
+                <span id="topLiveItemCount" style="display: none;">{{ $po->details->count() }} Item</span>
+            </div>
         </div>
-        <div style="height: 28px; width: 1.5px; background: #e2e8f0;"></div>
-        <div style="font-size: 0.775rem; line-height: 1.35; color: #475569;">
-            <div>Baris: <strong id="topLiveItemCount" style="color: #0f172a; font-family: monospace;">{{ $po->details->count() }} Item</strong></div>
-            <div style="font-size: 0.7rem; color: #0284c7; font-weight: 700;">Mode Edit</div>
+
+        <div class="po-header-actions">
+            <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn-header-secondary">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <span>Lihat Dokumen</span>
+            </a>
+            <a href="{{ route('gudang.po.index') }}" class="btn-header-secondary">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                <span>Daftar PO</span>
+            </a>
         </div>
     </div>
-</div>
-
-{{-- TITLE ROW RAMPING --}}
-<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; flex-wrap: wrap;">
-    <h1 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
-        Edit Purchase Order: {{ $po->po_no }}
-    </h1>
-    @if ($po->status_cd == 'REVISION')
-        <span class="badge" style="background:#eff6ff; color:#1d4ed8; border: 1.5px solid #bfdbfe; font-weight: 700; font-size: 0.725rem; padding: 0.25rem 0.6rem; border-radius: 4px;">
-            🔄 Status: Perlu Revisi Atasan
-        </span>
-    @elseif ($po->status_cd == 'REJECTED')
-        <span class="badge" style="background:#fee2e2; color:#b91c1c; border: 1.5px solid #fecaca; font-weight: 700; font-size: 0.725rem; padding: 0.25rem 0.6rem; border-radius: 4px;">
-            ✕ Status: Ditolak Atasan
-        </span>
-    @else
-        <span class="badge" style="background:#e0f2fe; color:#0369a1; border: 1.5px solid #bae6fd; font-weight: 700; font-size: 0.7rem; padding: 0.2rem 0.55rem; border-radius: 4px;">
-            Status: {{ $po->status_cd }}
-        </span>
-    @endif
-</div>
 
 {{-- BANNER ARAHAN REVISI ATASAN --}}
 @if ($po->status_cd == 'REVISION')
@@ -154,7 +153,7 @@
                 <label style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer; margin-bottom: 0; user-select: none;">
                     <input type="hidden" name="is_harga_termasuk_pajak" value="0">
                     <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)" style="width: 15px; height: 15px; accent-color: #059669; cursor: pointer;">
-                    <span style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk PPN</span>
+                    <span id="lblHeaderTaxInclusive" style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk Pajak</span>
                     <span class="badge" id="badgeTaxMode" style="{{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'background:#dcfce7; color:#15803d;' : 'background:#e2e8f0; color:#475569;' }} font-size: 0.65rem; font-weight: 700; margin-left: 0.2rem;">
                         {{ old('is_harga_termasuk_pajak', $po->is_harga_termasuk_pajak) ? 'Gross' : 'Net' }}
                     </span>
@@ -228,7 +227,7 @@
             {{-- [R2-C1] Penyetuju PO --}}
             <div>
                 <label for="approver_id" class="po-field-label">
-                    👔 Penyetuju (Approver)
+                    Penyetuju (Approver)
                 </label>
                 <select id="approver_id" name="approver_id" class="po-field-select">
                     <option value="">-- Belum Ditentukan --</option>
@@ -275,7 +274,7 @@
                 <span style="font-size: 0.725rem; color: #64748b;" id="badgeItemCount">({{ $po->details->count() }} item)</span>
             </div>
             <div style="font-size: 0.725rem; color: #64748b;">
-                💡 Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
+                Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
             </div>
         </div>
 
@@ -343,9 +342,9 @@
                                     title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
                                     <input type="hidden" name="items[{{ $idx }}][is_harga_termasuk_pajak]" value="0">
                                     <input type="checkbox" name="items[{{ $idx }}][is_harga_termasuk_pajak]" value="1"
-                                        class="item-include-tax" onchange="calculateRow(this)"
+                                        class="item-include-tax" onchange="onRowTaxInclusiveChange(this)"
                                         style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;"
-                                        {{ ($dtl->is_harga_termasuk_pajak ?? $po->is_harga_termasuk_pajak) ? 'checked' : '' }}>
+                                        {{ ($dtl->is_harga_termasuk_pajak || $po->is_harga_termasuk_pajak) ? 'checked' : '' }}>
                                     <span style="font-weight: 600;">Termasuk (Inc)</span>
                                 </label>
                             </td>
@@ -409,19 +408,19 @@
             </div>
 
             {{-- Input Alasan / Catatan Perubahan untuk Audit Trail --}}
-            <div class="po-notes-card" style="border-left: 4px solid #0284c7; background: #f0f9ff;">
-                <label for="alasan_edit" class="po-field-label" style="display: flex; align-items: center; justify-content: space-between; color: #0369a1;">
-                    <span style="font-weight: 800;">📝 Alasan / Catatan Revisi PO (Audit Trail)</span>
-                    <small style="color: #0284c7; font-weight: 600;">Tercatat pada riwayat edit</small>
+            <div class="po-notes-card" style="border-left: 4px solid #0f172a; background: #f8fafc;">
+                <label for="alasan_edit" class="po-field-label" style="display: flex; align-items: center; justify-content: space-between; color: #0f172a;">
+                    <span style="font-weight: 800;">Alasan / Catatan Revisi PO (Audit Trail)</span>
+                    <small style="color: #64748b; font-weight: 600;">Tercatat pada riwayat edit</small>
                 </label>
                 <input type="text" id="alasan_edit" name="alasan_edit" class="form-control"
                     placeholder="Contoh: Penyesuaian kuantitas pesanan, perubahan harga negosiasi supplier, dll..."
-                    style="border: 1.5px solid #bae6fd; border-radius: 5px; font-size: 0.825rem; padding: 0.5rem; background: #ffffff;"
+                    style="border: 1.5px solid #cbd5e1; border-radius: 5px; font-size: 0.825rem; padding: 0.5rem; background: #ffffff;"
                     value="{{ old('alasan_edit') }}">
             </div>
 
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.85rem; font-size: 0.725rem; color: #64748b; line-height: 1.4;">
-                <strong style="color: #334155;">💡 Tips Pengubahan PO:</strong> Tekan <kbd style="background:#e2e8f0; padding:1px 3px; border-radius:3px; font-weight:700;">Enter</kbd> pada kuantitas/harga untuk langsung membuat baris baru. Item yang sudah diterima terkunci nama komoditasnya.
+                <strong style="color: #334155;">Panduan Pengubahan PO:</strong> Tekan <kbd style="background:#e2e8f0; padding:1px 3px; border-radius:3px; font-weight:700;">Enter</kbd> pada kuantitas/harga untuk langsung membuat baris baru. Item yang sudah diterima terkunci nama komoditasnya.
             </div>
         </div>
 
@@ -480,20 +479,24 @@
                 </span>
             </div>
 
-            {{-- 6. Pajak (PPN) Selector & Nilai --}}
+            {{-- 6. Pajak (PPN / PPh) Selector & Nilai --}}
             <div class="po-financial-row" style="align-items: center;">
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span style="color: #64748b; font-weight: 600;">Pajak (PPN):</span>
-                    <select id="global_pajak_id" name="pajak_id" class="form-control" style="width: 130px; height: 28px; padding: 2px 6px; font-size: 0.775rem; font-weight: 700;" onchange="onHeaderPajakChange(this)">
-                        <option value="" data-tarif="0" data-sifat="TAMBAH">Non-PPN (0%)</option>
+                    <span style="color: #64748b; font-weight: 600;">Pajak (PPN / PPh):</span>
+                    <select id="global_pajak_id" name="pajak_id" class="form-control" style="width: 140px; height: 28px; padding: 2px 6px; font-size: 0.775rem; font-weight: 700;" onchange="onHeaderPajakChange(this)">
+                        <option value="" data-tarif="0" data-sifat="TAMBAH">Tanpa Pajak (0%)</option>
                         @foreach ($pajakList as $pjk)
+                            @php
+                                $isPotong = ($pjk->sifat_pajak === 'POTONG');
+                                $prefix = $isPotong ? 'Potong ' : '+';
+                            @endphp
                             <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float)$pjk->tarif_persen }}" data-sifat="{{ $pjk->sifat_pajak }}" {{ ($currentPajakId == $pjk->pajak_id || (empty($currentPajakId) && $po->ppn_tipe == 'PPN_11' && (float)$pjk->tarif_persen == 11)) ? 'selected' : '' }}>
-                                {{ $pjk->pajak_cd }} ({{ (float)$pjk->tarif_persen }}%)
+                                {{ $pjk->pajak_cd }} ({{ $prefix }}{{ (float)$pjk->tarif_persen }}%)
                             </option>
                         @endforeach
                     </select>
                 </div>
-                <span id="summaryPpn" style="font-weight: 700; font-family: monospace; color: #0284c7;">
+                <span id="summaryPpn" style="font-weight: 700; font-family: monospace; color: #0f172a;">
                     Rp {{ number_format((float)$po->ppn_nominal, 0, ',', '.') }}
                 </span>
             </div>
@@ -501,10 +504,10 @@
             {{-- 7. Grand Total Emphasized Box --}}
             <div class="po-grand-total-box">
                 <div>
-                    <span style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #065f46; display: block;">
+                    <span style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; display: block;">
                         Total Kesepakatan Tagihan:
                     </span>
-                    <span style="font-size: 0.7rem; color: #059669;">Termasuk Pajak &amp; Diskon</span>
+                    <span style="font-size: 0.7rem; color: #64748b;">Termasuk Pajak &amp; Diskon</span>
                 </div>
                 <div class="po-grand-total-val" id="summaryGrandTotal">
                     Rp {{ number_format((float)$po->total_tagihan, 0, ',', '.') }}
@@ -513,10 +516,10 @@
 
             {{-- Action Buttons --}}
             <div class="po-action-bar">
-                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 700; border-radius: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; color: #475569; text-decoration: none;">
+                <a href="{{ route('gudang.po.show', $po->po_id) }}" class="btn-dock-cancel">
                     Batal
                 </a>
-                <button type="submit" id="btnSubmitEditPo" class="btn btn-primary" style="padding: 0.55rem 1.35rem; font-size: 0.875rem; font-weight: 800; background: {{ $po->status_cd == 'REVISION' ? '#2563eb' : '#059669' }}; border: none; border-radius: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15); display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                <button type="submit" id="btnSubmitEditPo" class="btn-dock-submit">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     <span>{{ $po->status_cd == 'REVISION' ? 'Simpan & Ajukan Ulang ke Atasan' : 'Simpan Perubahan PO' }}</span>
                 </button>
@@ -554,7 +557,7 @@
             <input type="number" step="any" min="0" name="items[__INDEX__][harga_nominal]" class="form-control input-harga" value="0" required style="text-align: right; font-weight: 600;" oninput="calculateRow(this)">
             <label style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 0.7rem; color: #475569; margin-top: 3px; cursor: pointer; user-select: none;" title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
                 <input type="hidden" name="items[__INDEX__][is_harga_termasuk_pajak]" value="0">
-                <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="calculateRow(this)" style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;">
+                <input type="checkbox" name="items[__INDEX__][is_harga_termasuk_pajak]" value="1" class="item-include-tax" onchange="onRowTaxInclusiveChange(this)" style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;">
                 <span style="font-weight: 600;">Termasuk (Inc)</span>
             </label>
         </td>
@@ -574,6 +577,7 @@
 
 {{-- MODAL PERINGATAN KONFIRMASI BULAN SEBELUMNYA --}}
 @include('gudang.po.partials.modal-confirm-previous-month')
+</div>
 
 @push('scripts')
 <script>

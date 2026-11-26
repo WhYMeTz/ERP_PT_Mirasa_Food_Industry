@@ -15,14 +15,7 @@
         foreach ($jenisSupplierList as $js) {
             $subs = $supplierList->filter(fn($s) => $s->jenis_supplier_id == $js->jenis_supplier_id);
             if ($subs->count() > 0) {
-                $icon = match ($js->jenis_supplier_cd) {
-                    'RAW', 'BB' => '🌾 ',
-                    'BUMBU' => '🧂 ',
-                    'KEMASAN', 'PACK' => '📦 ',
-                    'BP' => '🏭 ',
-                    default => ''
-                };
-                $supplierOptionsHtml .= '<optgroup label="' . htmlspecialchars($icon . $js->jenis_supplier_nm) . '">';
+                $supplierOptionsHtml .= '<optgroup label="' . htmlspecialchars($js->jenis_supplier_nm) . '">';
                 foreach ($subs as $s) {
                     $supplierOptionsHtml .= '<option value="' . $s->supplier_id . '" data-category="' . ($js->jenis_supplier_cd ?? 'OTHER') . '">' . htmlspecialchars($s->supplier_nm . ' (' . $s->supplier_cd . ')') . '</option>';
                 }
@@ -41,58 +34,67 @@
 @endphp
 
 @section('content')
-    {{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) --}}
-    <div
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
-        <nav class="erp-chevron-bar" aria-label="Breadcrumb">
-            <a href="{{ route('gudang.po.index') }}" class="erp-chevron-item">
-                <span>Pembelian</span>
-            </a>
-            <span class="erp-chevron-sep">
-                <svg width="8" height="20" viewBox="0 0 8 20" fill="none">
-                    <path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-            </span>
-            <a href="{{ route('gudang.po.index') }}" class="erp-chevron-item">
-                <span>Purchase Order</span>
-            </a>
-            <span class="erp-chevron-sep">
-                <svg width="8" height="20" viewBox="0 0 8 20" fill="none">
-                    <path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-            </span>
-            <span class="erp-chevron-item active">
-                <span>Add Purchase Order</span>
-            </span>
-            <span class="erp-chevron-end">
-                <svg width="10" height="32" viewBox="0 0 10 32" fill="none">
-                    <path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5" />
-                </svg>
-            </span>
-        </nav>
+<div class="po-full-container">
+    {{-- 1. BREADCRUMB (PERSIS KAS KELUAR) --}}
+    <nav class="po-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.po.index') }}">Gudang &amp; Logistik</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ route('gudang.po.index') }}">Purchase Order</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Baru</span>
+    </nav>
 
-        {{-- Live KPI Widget Ramping di Siku Kanan Atas --}}
-        <div class="po-live-kpi-widget">
-            <div>
-                <div class="po-live-kpi-title">ESTIMASI GRAND TOTAL:</div>
-                <div class="po-live-kpi-val" id="topLiveGrandTotal">Rp 0</div>
-            </div>
-            <div style="height: 28px; width: 1.5px; background: #e2e8f0;"></div>
-            <div style="font-size: 0.775rem; line-height: 1.35; color: #475569;">
-                <div>Baris: <strong id="topLiveItemCount" style="color: #0f172a; font-family: monospace;">1 Item</strong>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 0.7rem; color: #059669; font-weight: 700;">🟢 Mode Aktif</span>
-                    <span id="draftSaveIndicator" style="display: none; font-size: 0.675rem; color: #0284c7; font-weight: 700; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1px 6px; border-radius: 10px;">💾 Draft Tersimpan</span>
-                </div>
+    {{-- 2. HEADER BAR (PERSIS KAS KELUAR) --}}
+    <div class="po-header-bar">
+        <div class="po-header-info">
+            <div class="po-header-title">
+                <a href="{{ route('gudang.po.index') }}"
+                   class="po-back-link"
+                   aria-label="Kembali ke daftar purchase order">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </a>
+                <h1>Input Purchase Order</h1>
+                <span class="po-pill-badge">Pengadaan Pabrik</span>
+                <span class="po-pill-badge po-pill-code" title="Nomor PO Terjadwal">{{ $nextPoNo ?? 'PO-NEW' }}</span>
+                {{-- Invisible helper nodes for JS sync --}}
+                <span id="topLiveGrandTotal" style="display: none;">Rp 0</span>
+                <span id="topLiveItemCount" style="display: none;">1 Item</span>
+                <span id="draftSaveIndicator" style="display: none;"></span>
             </div>
         </div>
+
+        <div class="po-header-actions">
+            <a href="{{ route('gudang.po.index') }}" class="btn-header-secondary">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                <span>Daftar PO</span>
+            </a>
+        </div>
     </div>
+
+    @if ($errors->any())
+        <div role="alert" class="po-alert-banner">
+            <div class="po-alert-heading">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span>Mohon periksa kembali formulir berikut:</span>
+            </div>
+            <ul class="po-alert-list">
+                @foreach ($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <form action="{{ route('gudang.po.store') }}" method="POST" id="formPo">
         @csrf
 
-        {{-- 2. TOOLBAR CARD RAMPING: SEMUA FIELD LANGSUNG TAMPIL 2 BARIS (NO ACCORDION, ZERO EMPTY SPACE) --}}
+        {{-- 3. TOOLBAR CARD: PARAMETER DOKUMEN PO (WAVEDASH CARD) --}}
         <div class="po-toolbar-card">
             {{-- Mode Switcher & Tax Setting di Bar Atas (Rapi, Seimbang & Tidak Memakan Grid) --}}
             <div class="po-mode-toolbar-wrap">
@@ -103,11 +105,11 @@
                     </span>
                     <div class="po-mode-pills">
                         <button type="button" id="btnModeSingle" onclick="setPoMode('single')" class="po-mode-btn active">
-                            🏢 Satu Supplier (Standar 1 PO)
+                            Satu Supplier (Standar 1 PO)
                         </button>
                         {{-- Tombol Multi-Supplier (Di-hide sementara, fungsi auto-split tetap utuh & siap ditampilkan kembali sewaktu-waktu) --}}
                         <button type="button" id="btnModeMulti" onclick="setPoMode('multi')" class="po-mode-btn" style="display: none;">
-                            ⚡ Multi-Supplier (Auto-Split PO)
+                            Multi-Supplier (Auto-Split PO)
                         </button>
                     </div>
                 </div>
@@ -120,7 +122,7 @@
                         <input type="hidden" name="is_harga_termasuk_pajak" value="0">
                         <input type="checkbox" id="is_harga_termasuk_pajak" name="is_harga_termasuk_pajak" value="1" {{ old('is_harga_termasuk_pajak') ? 'checked' : '' }} onchange="onHeaderTaxInclusiveToggle(this)"
                             style="width: 15px; height: 15px; accent-color: #059669; cursor: pointer;">
-                        <span style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk PPN</span>
+                        <span id="lblHeaderTaxInclusive" style="color: #0f172a; font-size: 0.775rem; font-weight: 700;">Harga Termasuk Pajak</span>
                         <span class="badge" id="badgeTaxMode"
                             style="background: #e2e8f0; color: #475569; font-size: 0.65rem; font-weight: 700; margin-left: 0.2rem;">Net</span>
                     </label>
@@ -256,7 +258,7 @@
                 {{-- [R2-C1] Penyetuju PO (Approver) --}}
                 <div>
                     <label for="approver_id" class="po-field-label">
-                        👔 Penyetuju (Approver) <span style="color:#ef4444;">*</span>
+                        Penyetuju (Approver) <span style="color:#ef4444;">*</span>
                     </label>
                     <select id="approver_id" name="approver_id" class="po-field-select" required>
                         <option value="">-- Pilih Atasan Penyetuju --</option>
@@ -355,7 +357,7 @@
                     @endif
 
                     <span style="font-size: 0.725rem; color: #64748b;">
-                        💡 Tekan <kbd
+                        Tekan <kbd
                             style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd>
                         untuk baris baru
                     </span>
@@ -452,7 +454,7 @@
                                     title="Centang jika harga satuan barang ini sudah termasuk PPN (Gross / Include)">
                                     <input type="hidden" name="items[0][is_harga_termasuk_pajak]" value="0">
                                     <input type="checkbox" name="items[0][is_harga_termasuk_pajak]" value="1"
-                                        class="item-include-tax" onchange="calculateGrandTotal()"
+                                        class="item-include-tax" onchange="onRowTaxInclusiveChange(this)"
                                         style="accent-color: #059669; width: 12px; height: 12px; cursor: pointer;"
                                         {{ old('items.0.is_harga_termasuk_pajak', old('is_harga_termasuk_pajak')) ? 'checked' : '' }}>
                                     <span style="font-weight: 600;">Termasuk (Inc)</span>
@@ -544,7 +546,7 @@
                 {{-- Panduan Ringkas Operasional --}}
                 <div
                     style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.85rem; font-size: 0.725rem; color: #64748b; line-height: 1.4;">
-                    <strong style="color: #334155;">💡 Tips Pengadaan:</strong> Tekan <kbd
+                    <strong style="color: #334155;">Panduan Input:</strong> Tekan <kbd
                         style="background:#e2e8f0; padding:1px 3px; border-radius:3px; font-weight:700;">Enter</kbd> pada
                     kuantitas/harga untuk langsung baris baru. Gunakan mode <em>Multi-Supplier</em> untuk pesanan banyak
                     supplier sekaligus.
@@ -609,33 +611,37 @@
                         style="font-weight: 700; font-family: monospace; color: #1e293b; font-size: 0.95rem;">Rp 0</span>
                 </div>
 
-                {{-- 6. Pajak (PPN) Selector & Nilai --}}
+                {{-- 6. Pajak (PPN / PPh) Selector & Nilai --}}
                 <div class="po-financial-row" style="align-items: center;">
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <span style="color: #64748b; font-weight: 600;">Pajak (PPN):</span>
+                        <span style="color: #64748b; font-weight: 600;">Pajak (PPN / PPh):</span>
                         <select id="global_pajak_id" name="pajak_id" class="form-control"
-                            style="width: 130px; height: 28px; padding: 2px 6px; font-size: 0.775rem; font-weight: 700;"
+                            style="width: 140px; height: 28px; padding: 2px 6px; font-size: 0.775rem; font-weight: 700;"
                             onchange="onHeaderPajakChange(this)">
-                            <option value="" data-tarif="0" data-sifat="TAMBAH">Non-PPN (0%)</option>
+                            <option value="" data-tarif="0" data-sifat="TAMBAH">Tanpa Pajak (0%)</option>
                             @foreach ($pajakList as $pjk)
+                                @php
+                                    $isPotong = ($pjk->sifat_pajak === 'POTONG');
+                                    $prefix = $isPotong ? 'Potong ' : '+';
+                                @endphp
                                 <option value="{{ $pjk->pajak_id }}" data-tarif="{{ (float) $pjk->tarif_persen }}"
                                     data-sifat="{{ $pjk->sifat_pajak }}" {{ (old('pajak_id') == $pjk->pajak_id || (empty(old('pajak_id')) && $pjk->is_default)) ? 'selected' : '' }}>
-                                    {{ $pjk->pajak_cd }} ({{ (float) $pjk->tarif_persen }}%)
+                                    {{ $pjk->pajak_cd }} ({{ $prefix }}{{ (float) $pjk->tarif_persen }}%)
                                 </option>
                             @endforeach
                         </select>
                     </div>
-                    <span id="sideTotalPpn" style="font-weight: 700; font-family: monospace; color: #0284c7;">Rp 0</span>
+                    <span id="sideTotalPpn" style="font-weight: 700; font-family: monospace; color: #0f172a;">Rp 0</span>
                 </div>
 
                 {{-- 7. Grand Total Emphasized Box --}}
                 <div class="po-grand-total-box">
                     <div>
                         <span
-                            style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #065f46; display: block;">
+                            style="font-size: 0.725rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; display: block;">
                             TOTAL ESTIMASI PO:
                         </span>
-                        <span style="font-size: 0.7rem; color: #059669;">Termasuk Pajak &amp; Diskon</span>
+                        <span style="font-size: 0.7rem; color: #64748b;">Termasuk Pajak &amp; Diskon</span>
                     </div>
                     <div class="po-grand-total-val" id="sideGrandTotal">
                         Rp 0
@@ -647,13 +653,11 @@
 
                 {{-- Action Buttons --}}
                 <div class="po-action-bar">
-                    <a href="{{ route('gudang.po.index') }}" class="btn btn-secondary"
-                        style="padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 700; border-radius: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; color: #475569; text-decoration: none;">
+                    <a href="{{ route('gudang.po.index') }}" class="btn-dock-cancel">
                         Batal
                     </a>
-                    <button type="submit" id="btnSubmitPo" class="btn btn-primary"
-                        style="padding: 0.55rem 1.35rem; font-size: 0.875rem; font-weight: 800; background: #059669; border: none; border-radius: 5px; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3); display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button type="submit" id="btnSubmitPo" class="btn-dock-submit">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                         </svg>
                         <span id="btnSubmitPoText">Simpan &amp; Terbitkan PO</span>
@@ -709,6 +713,7 @@
 
     @include('gudang.po.partials.modal-safety-stock')
     @include('gudang.po.partials.modal-confirm-clear-rows')
+</div>
 
     @push('scripts')
         <script>

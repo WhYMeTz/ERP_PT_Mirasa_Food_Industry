@@ -564,6 +564,7 @@ Route::middleware('auth')->group(function () {
         // Modul Penjualan Langsung Pabrik (Direct Sales - Non-PO & Potong Stok Instan)
         Route::prefix('langsung')->name('langsung.')->group(function () {
             Route::get('/', [DirectSalesController::class, 'index'])->name('index');
+            Route::get('/export-excel', [DirectSalesController::class, 'exportExcel'])->name('export-excel');
             Route::get('/create', [DirectSalesController::class, 'create'])->name('create');
             Route::post('/', [DirectSalesController::class, 'store'])->name('store');
             Route::get('/{id}', [DirectSalesController::class, 'show'])->name('show')->whereNumber('id');
@@ -573,6 +574,7 @@ Route::middleware('auth')->group(function () {
         // Modul Penjualan Bahan Penolong, Kemasan & Bumbu (Non-Core Sales)
         Route::prefix('bahan-penolong')->name('bahan-penolong.')->group(function () {
             Route::get('/', [PenjualanBahanPenolongController::class, 'index'])->name('index');
+            Route::get('/export-excel', [PenjualanBahanPenolongController::class, 'exportExcel'])->name('export-excel');
             Route::get('/create', [PenjualanBahanPenolongController::class, 'create'])->name('create');
             Route::post('/', [PenjualanBahanPenolongController::class, 'store'])->name('store');
             Route::get('/{id}', [PenjualanBahanPenolongController::class, 'show'])->name('show')->whereNumber('id');
@@ -591,6 +593,7 @@ Route::middleware('auth')->group(function () {
         Route::get('so/ajax/stock-check', [SoController::class, 'ajaxStockCheck'])->name('so.ajax.stock-check');
         Route::get('so/ajax/generate-faktur-no', [SoController::class, 'ajaxGenerateFakturNo'])->name('so.ajax.generate-faktur-no');
         Route::get('so/ajax/customer-top-check', [SoController::class, 'ajaxCustomerTopCheck'])->name('so.ajax.customer-top-check');
+        Route::get('so/export-excel', [SoController::class, 'exportExcel'])->name('so.export-excel');
         Route::resource('so', SoController::class);
 
         // Modul Pengeluaran Barang / Surat Jalan (Gudang FG - Outbound Delivery)
@@ -605,12 +608,15 @@ Route::middleware('auth')->group(function () {
         Route::get('faktur/ajax-surat-jalan-detail/{id}', [FakturPenjualanController::class, 'ajaxSuratJalanDetail'])->name('faktur.ajax-surat-jalan-detail');
         Route::get('faktur/{id}/export-pdf', [FakturPenjualanController::class, 'exportPdf'])->name('faktur.export-pdf');
         Route::post('faktur/{id}/record-payment', [FakturPenjualanController::class, 'recordPayment'])->name('faktur.record-payment');
+        Route::post('faktur/{id}/mark-macet', [FakturPenjualanController::class, 'markMacet'])->name('faktur.mark-macet');
+        Route::post('faktur/{id}/restore-macet', [FakturPenjualanController::class, 'restoreMacet'])->name('faktur.restore-macet');
         Route::post('faktur/{id}/void', [FakturPenjualanController::class, 'void'])->name('faktur.void');
         Route::resource('faktur', FakturPenjualanController::class)->except(['edit', 'update', 'destroy']);
 
         // Rekapitulasi Terpusat Retur Penjualan (Customer Returns)
         Route::get('retur', [SoReturController::class, 'index'])->name('retur.index');
         Route::get('retur/create', [SoReturController::class, 'create'])->name('retur.create');
+        Route::get('retur/export-excel', [SoReturController::class, 'exportExcel'])->name('retur.export-excel');
         Route::post('retur', [SoReturController::class, 'store'])->name('retur.store');
         Route::get('retur/so-data/{id}', [SoReturController::class, 'getSoData'])->name('retur.so-data');
         Route::get('retur/{id}', [SoReturController::class, 'show'])->name('retur.show');

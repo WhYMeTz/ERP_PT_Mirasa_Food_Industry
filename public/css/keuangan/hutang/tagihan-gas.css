@@ -1,0 +1,720 @@
+/* ==========================================================================
+   CSS Form Tagihan Gas Utilitas Bulanan - ERP PT Mirasa
+   Desain Terpadu: Standar Enterprise Kas Keluar (WaveDash Minimalist Dashboard)
+   Aesthetic: Clean Modern Web Form, Monokromatik Netral Slate & Emerald
+   Ergonomi Senior: Label 14px bold Slate-800, Input 42px teks 15px tebal
+   AGENTS.md Separation of Concerns: View HTML (Blade) terpisah dari CSS & JS
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Ergonomi Senior: Label & Kontrol Input Tebal & Nyaman Dibaca
+   -------------------------------------------------------------------------- */
+.form-label-senior {
+    font-size: 0.875rem !important; /* 14px */
+    font-weight: 700 !important;
+    color: #1e293b !important; /* Slate-800 */
+    margin-bottom: 0.35rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-control-senior {
+    height: 42px !important;
+    font-size: 0.9375rem !important; /* 15px */
+    font-weight: 600 !important;
+    color: #0f172a !important; /* Slate-900 */
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 0.85rem !important;
+    background: #ffffff !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control-senior:focus {
+    border-color: #0f172a !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+select.form-control-senior {
+    cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   2. Grid Layout Bersih & Responsif
+   -------------------------------------------------------------------------- */
+.gas-grid-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.gas-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (max-width: 992px) {
+    .gas-grid-3col {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .gas-grid-2col {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   3. Input Custom Wrappers (Suffix & Currency)
+   -------------------------------------------------------------------------- */
+.input-suffix-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.input-suffix-wrapper input {
+    padding-right: 68px !important;
+}
+
+.input-suffix-tag {
+    position: absolute;
+    right: 12px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #64748b;
+    pointer-events: none;
+    letter-spacing: 0.02em;
+}
+
+.input-money-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.money-prefix {
+    position: absolute;
+    left: 12px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.form-control-money {
+    padding-left: 38px !important;
+}
+
+/* Tombol Salin Nilai Pabrik (Inline di Label / Sub-row) */
+.btn-copy-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    color: #0f172a;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-copy-inline:hover {
+    background: #ffffff;
+    border-color: #059669;
+    color: #059669;
+}
+
+.btn-copy-dpp-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 5px;
+    color: #0369a1;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+    width: fit-content;
+    transition: all 0.15s ease;
+}
+
+.btn-copy-dpp-link:hover {
+    background: #f0f9ff;
+    border-color: #0284c7;
+    color: #0284c7;
+}
+
+/* Total Highlight Input */
+.gas-total-highlight-input {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    font-size: 1.125rem !important;
+    font-weight: 800 !important;
+}
+
+/* Sub Badge & COA Row di Bawah Input Form */
+.form-sub-badge-row {
+    margin-top: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 24px;
+}
+
+.badge-coa-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: #475569;
+    background: #f8fafc;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    width: fit-content;
+    line-height: 1.3;
+}
+
+.badge-coa-tag strong {
+    color: #0f172a;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.badge-coa-item {
+    font-size: 0.775rem;
+    color: #64748b;
+    line-height: 1.35;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.badge-coa-item strong {
+    color: #1e293b;
+}
+
+/* Status Rekonsiliasi Meteran Box (Sejajar Input 42px) */
+.gas-recon-status-box {
+    height: 42px;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    border: 1.5px solid #cbd5e1;
+    background: #f8fafc;
+}
+
+.gas-recon-status-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.gas-recon-status-box.recon-match {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.gas-recon-status-box.recon-over {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.gas-recon-status-box.recon-under {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+/* Strip Baris Jurnal Umum Otomatis (Gaya Kas Keluar) */
+.live-jurnal-badge-bar {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    margin-top: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.jurnal-badge-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.jurnal-badge-title svg {
+    color: #64748b;
+}
+
+.jurnal-badge-entries {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.jurnal-coa-pill {
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    font-size: 0.775rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.jurnal-coa-pill strong {
+    font-family: monospace;
+}
+
+.jurnal-coa-pill.pill-debet {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.jurnal-coa-pill.pill-kredit {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.jurnal-badge-sep {
+    color: #cbd5e1;
+    font-weight: 700;
+}
+
+/* Helper Notes di Bawah Input */
+.form-helper-note {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    line-height: 1.35;
+}
+
+.helper-diff-tag {
+    font-family: monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.status-match-text {
+    color: #166534;
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   4. Baris Info Meteran Pabrik (Bawah Formulir Kartu 2)
+   -------------------------------------------------------------------------- */
+.gas-meter-bottom-summary {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 0.85rem;
+    margin-top: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.gas-meter-summary-text {
+    font-size: 0.84rem;
+    color: #334155;
+    line-height: 1.4;
+}
+
+.gas-meter-summary-action {
+    flex-shrink: 0;
+}
+
+.btn-sm-rincian {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.8rem !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Bottom Action Bar (Simpan & Batal)
+   -------------------------------------------------------------------------- */
+.gas-bottom-action-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   6. Modal Dialogs (Rincian Harian Pabrik & Konfirmasi)
+   -------------------------------------------------------------------------- */
+.bkk-modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.gas-modal-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 580px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: gasModalSlideDown 0.2s ease-out;
+}
+
+.gas-modal-dialog-wide {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 960px;
+    width: 100%;
+    max-height: 88vh;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: gasModalSlideDown 0.2s ease-out;
+}
+
+@keyframes gasModalSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.gas-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.gas-modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.gas-modal-title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.gas-modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.gas-modal-subtitle {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin: 0.15rem 0 0 0;
+}
+
+.btn-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.btn-modal-close:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+.gas-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.gas-modal-body-p0 {
+    padding: 0;
+}
+
+.gas-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Modal Rincian Harian: Toolbar Filter & Search */
+.modal-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.gas-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 200px;
+}
+
+.gas-search-wrap svg {
+    position: absolute;
+    left: 10px;
+    color: #94a3b8;
+}
+
+.gas-search-field {
+    width: 100%;
+    height: 34px;
+    padding: 0.35rem 2rem 0.35rem 2rem;
+    font-size: 0.8125rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+}
+
+.gas-search-field:focus {
+    outline: none;
+    border-color: #0f172a;
+}
+
+.btn-search-clear {
+    display: none;
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    font-size: 1.1rem;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.gas-shift-pills {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.btn-shift-tag {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-shift-tag.active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+}
+
+.gas-table-rowcount {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+/* Modal Rincian Harian: Tabel Data & Scroll Internal */
+.gas-table-box-scroll {
+    max-height: 52vh;
+    overflow-y: auto;
+}
+
+.gas-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.gas-data-table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    padding: 0.6rem 0.85rem;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.gas-data-table td {
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.gas-data-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.gas-cell-num {
+    text-align: right;
+    font-family: monospace;
+}
+
+.table-spk-pill {
+    background: #f1f5f9;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.table-shift-badge {
+    background: #e2e8f0;
+    color: #334155;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.725rem;
+    font-weight: 600;
+}
+
+.cell-rp-highlight {
+    color: #047857;
+}
+
+.gas-table-empty {
+    text-align: center;
+    padding: 2.5rem 1rem !important;
+    color: #64748b;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+/* Modal Konfirmasi Rincian Tagihan */
+.modal-notice-text {
+    font-size: 0.875rem;
+    color: #475569;
+    margin: 0 0 1rem 0;
+    line-height: 1.45;
+}
+
+.gas-confirm-list {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.confirm-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.confirm-item:last-child {
+    border-bottom: none;
+}
+
+.confirm-label {
+    color: #64748b;
+}
+
+.confirm-val {
+    font-family: monospace;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.confirm-total-highlight {
+    background: #ffffff;
+    margin: 0.25rem -0.5rem 0 -0.5rem;
+    padding: 0.65rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+.confirm-total-highlight .confirm-label {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.confirm-total-highlight .confirm-val {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #047857;
+}
+
+.modal-footnote {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: 1rem 0 0 0;
+    line-height: 1.4;
+}

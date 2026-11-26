@@ -55,7 +55,17 @@ class FakturPenjualanService
         }
 
         if (!empty($status)) {
-            $query->where('status_pembayaran', strtoupper(trim($status)));
+            $statusUpper = strtoupper(trim($status));
+            if ($statusUpper === 'BELUM_LUNAS') {
+                $query->where(function ($q) {
+                    $q->whereIn('status_pembayaran', ['BELUM_LUNAS', 'SEBAGIAN'])
+                      ->orWhereNull('status_pembayaran');
+                });
+            } elseif ($statusUpper === 'TAK_TERTAGIH' || $statusUpper === 'MACET') {
+                $query->where('status_pembayaran', 'TAK_TERTAGIH');
+            } else {
+                $query->where('status_pembayaran', $statusUpper);
+            }
         }
 
         if (!empty($dateFrom)) {
@@ -93,6 +103,14 @@ class FakturPenjualanService
             ->where('status_pembayaran', 'LUNAS')
             ->count();
 
+        $countTakTertagih = (clone $base)
+            ->where('status_pembayaran', 'TAK_TERTAGIH')
+            ->count();
+
+        $totalPiutangMacet = (float) (clone $base)
+            ->where('status_pembayaran', 'TAK_TERTAGIH')
+            ->sum('sisa_piutang');
+
         // Jumlah Surat Jalan yang belum difakturkan
         $uninvoicedCount = DatPengeluaranHdr::where('deleted_st', false)
             ->where('status_cd', '!=', 'BATAL')
@@ -107,6 +125,8 @@ class FakturPenjualanService
             'total_piutang'             => $totalSisaPiutang,
             'count_belum_lunas'         => (clone $base)->whereIn('status_pembayaran', ['BELUM_LUNAS', 'SEBAGIAN'])->count(),
             'count_lunas'               => $fakturLunasCount,
+            'count_tak_tertagih'        => $countTakTertagih,
+            'total_piutang_macet'       => $totalPiutangMacet,
             'total_penjualan_bulan_ini' => $totalPenjualanBulanIni,
             'faktur_bulan_ini'          => $fakturBulanIni,
             'total_sisa_piutang'        => $totalSisaPiutang,
@@ -722,6 +742,72 @@ class FakturPenjualanService
             Log::info("Pembayaran Faktur ID {$faktur->faktur_id} ({$faktur->faktur_no}) sebesar Rp {$nominal} berhasil dicatat via BKM {$bkm->bkm_no}");
 
             return $bkm;
+        });
+    }
+
+    /**
+     * Tandai Faktur Penjualan sebagai Piutang Tak Tertagih (Bad Debt / Macet).
+     * Data faktur dan rincian transaksi tetap 100% tersimpan sebagai rekam jejak historis customer.
+     */
+    public function markAsMacet(int $fakturId, string $alasan, ?string $userName = null): DatFakturHdr
+    {
+        return DB::transaction(function () use ($fakturId, $alasan, $userName) {
+            $faktur = DatFakturHdr::with(['customer'])->lockForUpdate()->findOrFail($fakturId);
+
+            if ($faktur->status_pembayaran === 'LUNAS') {
+                throw new Exception("Faktur {$faktur->faktur_no} sudah lunas, tidak dapat ditandai sebagai piutang macet.");
+            }
+
+            if ($faktur->status_pembayaran === 'BATAL') {
+                throw new Exception("Faktur {$faktur->faktur_no} sudah dibatalkan (void).");
+            }
+
+            $currentNote = $faktur->catatan_txt ? trim($faktur->catatan_txt) . "\n" : '';
+            $auditLog = "[PIUTANG TAK TERTAGIH]: " . trim($alasan) . " (Ditandai oleh " . ($userName ?? 'System') . " tgl " . now()->format('d/m/Y H:i') . ")";
+
+            $faktur->update([
+                'status_pembayaran' => 'TAK_TERTAGIH',
+                'tgl_macet'         => now()->toDateString(),
+                'alasan_macet'      => trim($alasan),
+                'macet_by'          => $userName ?? 'System',
+                'catatan_txt'       => $currentNote . $auditLog,
+                'updated_by'        => $userName ?? 'System',
+            ]);
+
+            Log::warning("Faktur Penjualan {$faktur->faktur_no} (ID: {$faktur->faktur_id}, Customer: {$faktur->customer?->customer_nm}) ditandai sebagai PIUTANG TAK TERTAGIH senilai Rp " . number_format($faktur->sisa_piutang, 0, ',', '.') . " oleh " . ($userName ?? 'System') . ". Alasan: {$alasan}");
+
+            return $faktur;
+        });
+    }
+
+    /**
+     * Pulihkan status Faktur dari Tak Tertagih kembali ke status penagihan aktif (Belum Lunas / Sebagian).
+     */
+    public function restoreFromMacet(int $fakturId, ?string $userName = null): DatFakturHdr
+    {
+        return DB::transaction(function () use ($fakturId, $userName) {
+            $faktur = DatFakturHdr::lockForUpdate()->findOrFail($fakturId);
+
+            if ($faktur->status_pembayaran !== 'TAK_TERTAGIH') {
+                throw new Exception("Faktur {$faktur->faktur_no} tidak dalam status Tak Tertagih.");
+            }
+
+            $newStatus = ((float) $faktur->total_dibayar > 0) ? 'SEBAGIAN' : 'BELUM_LUNAS';
+            $currentNote = $faktur->catatan_txt ? trim($faktur->catatan_txt) . "\n" : '';
+            $auditLog = "[PULIHKAN DARI MACET]: Dikembalikan ke penagihan aktif ({$newStatus}) oleh " . ($userName ?? 'System') . " tgl " . now()->format('d/m/Y H:i');
+
+            $faktur->update([
+                'status_pembayaran' => $newStatus,
+                'tgl_macet'         => null,
+                'alasan_macet'      => null,
+                'macet_by'          => null,
+                'catatan_txt'       => $currentNote . $auditLog,
+                'updated_by'        => $userName ?? 'System',
+            ]);
+
+            Log::info("Faktur Penjualan {$faktur->faktur_no} dipulihkan dari Tak Tertagih ke {$newStatus} oleh " . ($userName ?? 'System'));
+
+            return $faktur;
         });
     }
 

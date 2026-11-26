@@ -623,6 +623,7 @@ function addRow(focusNew = false) {
         }
     }
 
+    syncHeaderTaxLabel();
     const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
     const rowIncCheck = tr.querySelector('.item-include-tax');
     if (rowIncCheck && headerIncCheck) {
@@ -657,7 +658,7 @@ function onHeaderTaxInclusiveToggle(headerCheckbox) {
         }
     }
 
-    // Sinkronisasi otomatis ke semua baris barang
+    // Sinkronisasi otomatis ke SEMUA baris barang (1 barang maupun lebih dari 1 barang)
     document.querySelectorAll('.item-include-tax').forEach(cb => {
         cb.checked = isInc;
     });
@@ -667,8 +668,76 @@ function onHeaderTaxInclusiveToggle(headerCheckbox) {
         savePoCreateDraft();
     }
 }
+window.onHeaderTaxInclusiveToggle = onHeaderTaxInclusiveToggle;
+
+function onRowTaxInclusiveChange(rowCheckbox) {
+    const rowCheckboxes = document.querySelectorAll('.item-include-tax');
+    const headerCheckbox = document.getElementById('is_harga_termasuk_pajak');
+    const badge = document.getElementById('badgeTaxMode');
+
+    if (rowCheckboxes.length > 0 && headerCheckbox) {
+        let allChecked = true;
+        let anyChecked = false;
+        rowCheckboxes.forEach(cb => {
+            if (cb.checked) anyChecked = true;
+            else allChecked = false;
+        });
+
+        if (allChecked) {
+            headerCheckbox.checked = true;
+            if (badge) {
+                badge.innerText = 'Gross';
+                badge.style.background = '#dcfce7';
+                badge.style.color = '#15803d';
+            }
+        } else if (!anyChecked) {
+            headerCheckbox.checked = false;
+            if (badge) {
+                badge.innerText = 'Net';
+                badge.style.background = '#e2e8f0';
+                badge.style.color = '#475569';
+            }
+        }
+    }
+
+    calculateGrandTotal();
+    if (typeof savePoCreateDraft === 'function') {
+        savePoCreateDraft();
+    }
+}
+window.onRowTaxInclusiveChange = onRowTaxInclusiveChange;
+
+function syncHeaderTaxLabel() {
+    const lbl = document.getElementById('lblHeaderTaxInclusive');
+    if (!lbl) return;
+    const headerPajakSelect = document.getElementById('global_pajak_id');
+    if (!headerPajakSelect || headerPajakSelect.selectedIndex < 0) {
+        lbl.textContent = 'Harga Termasuk Pajak';
+        return;
+    }
+    const selectedOpt = headerPajakSelect.options[headerPajakSelect.selectedIndex];
+    if (!selectedOpt || !selectedOpt.value) {
+        lbl.textContent = 'Harga Termasuk Pajak';
+        return;
+    }
+    const sifat = (selectedOpt.dataset.sifat || '').toUpperCase();
+    const text = (selectedOpt.text || '').toUpperCase();
+    const tarif = parseFloat(selectedOpt.dataset.tarif) || 0;
+
+    if (tarif === 0) {
+        lbl.textContent = 'Harga Termasuk Pajak';
+    } else if (sifat === 'POTONG' || text.includes('PPH')) {
+        lbl.textContent = 'Harga Termasuk PPh';
+    } else if (sifat === 'TAMBAH' || text.includes('PPN')) {
+        lbl.textContent = 'Harga Termasuk PPN';
+    } else {
+        lbl.textContent = 'Harga Termasuk Pajak';
+    }
+}
+window.syncHeaderTaxLabel = syncHeaderTaxLabel;
 
 function onHeaderPajakChange(headerSelect) {
+    syncHeaderTaxLabel();
     calculateGrandTotal();
     if (typeof savePoCreateDraft === 'function') {
         savePoCreateDraft();
@@ -807,11 +876,18 @@ function calculateGrandTotal() {
         let rowPpn = 0;
         let rowTagihan = 0;
 
-        if (rowIsInc && rowTarif > 0 && rowSifat !== 'POTONG') {
+        if (rowIsInc && rowTarif > 0) {
             hasIncTax = true;
-            rowDpp = Math.round((grossRowTotal / (1 + (rowTarif / 100))) * 10000) / 10000;
-            rowPpn = Math.round((grossRowTotal - rowDpp) * 10000) / 10000;
-            rowTagihan = grossRowTotal;
+            if (rowSifat === 'POTONG') {
+                hasPotongTax = true;
+                rowDpp = grossRowTotal;
+                rowPpn = Math.round((rowDpp * (rowTarif / 100)) * 10000) / 10000;
+                rowTagihan = grossRowTotal;
+            } else {
+                rowDpp = Math.round((grossRowTotal / (1 + (rowTarif / 100))) * 10000) / 10000;
+                rowPpn = Math.round((grossRowTotal - rowDpp) * 10000) / 10000;
+                rowTagihan = grossRowTotal;
+            }
         } else {
             rowDpp = grossRowTotal;
             rowPpn = Math.round((rowDpp * (rowTarif / 100)) * 10000) / 10000;
@@ -869,11 +945,11 @@ function calculateGrandTotal() {
     if (sidePpn) {
         if (totalPpn > 0) {
             if (hasPotongTax && !hasIncTax) {
-                sidePpn.innerHTML = `<span style="color: #dc2626;">-Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #ef4444; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
+                sidePpn.innerHTML = `<span style="color: #92400e;">-Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #b45309; font-size: 0.7rem; font-weight: 600;">(Potong)</small>`;
             } else if (hasIncTax) {
-                sidePpn.innerHTML = `<span style="color: #16a34a;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #15803d; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
+                sidePpn.innerHTML = `<span style="color: #334155;">Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span> <small style="color: #64748b; font-size: 0.7rem; font-weight: 600;">(Termasuk)</small>`;
             } else {
-                sidePpn.innerHTML = `<span style="color: #0284c7;">+Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
+                sidePpn.innerHTML = `<span style="color: #0f172a;">+Rp ${Math.round(totalPpn).toLocaleString('id-ID')}</span>`;
             }
         } else {
             sidePpn.innerHTML = '<span style="color: #64748b;">Rp 0</span>';
@@ -1346,6 +1422,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('.item-row').forEach(r => attachExcelKeyboardEvents(r));
+    syncHeaderTaxLabel();
     const headerIncCheck = document.getElementById('is_harga_termasuk_pajak');
     if (headerIncCheck && headerIncCheck.checked) {
         onHeaderTaxInclusiveToggle(headerIncCheck);
@@ -1785,7 +1862,10 @@ function restorePoCreateDraft() {
         }
         if (h.global_pajak_id) {
             const el = document.getElementById('global_pajak_id');
-            if (el) el.value = h.global_pajak_id;
+            if (el) {
+                el.value = h.global_pajak_id;
+                syncHeaderTaxLabel();
+            }
         }
 
         // 4. Baris Item Tabel PO

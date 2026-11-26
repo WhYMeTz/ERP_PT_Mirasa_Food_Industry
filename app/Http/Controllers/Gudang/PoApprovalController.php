@@ -219,7 +219,7 @@ class PoApprovalController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'status'  => 'success',
-                    'message' => "Email permohonan persetujuan PO {$po->po_no} berhasil dikirim ulang ke {$po->approver?->email}.",
+                    'message' => "Email permohonan persetujuan PO {$po->po_no} berhasil dikirim ke {$po->approver?->email}.",
                 ]);
             }
 

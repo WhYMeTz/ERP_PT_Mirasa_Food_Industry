@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Penjualan;
 
+use App\Exports\Penjualan\DirectSalesExport;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MstCustomer;
 use App\Models\MasterData\MstGudang;
@@ -13,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DirectSalesController extends Controller
 {
@@ -40,6 +42,37 @@ class DirectSalesController extends Controller
         $metrics = $this->directSalesService->getMetrics();
 
         return view('penjualan.langsung.index', compact('sales', 'metrics', 'search', 'startDate', 'endDate'));
+    }
+
+    /**
+     * Export data Penjualan Langsung ke format Excel (.xlsx) sesuai filter aktif
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $search = $request->input('search');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $orders = $this->directSalesService->getAllForExport(
+            search: $search,
+            startDate: $startDate,
+            endDate: $endDate
+        );
+
+        $printedBy = auth()->user()?->nama_lengkap ?? 'Administrator ERP';
+        $printedAt = now()->translatedFormat('d F Y H:i');
+        $filename = 'Rekap_Penjualan_Langsung_' . date('Ymd_His') . '.xlsx';
+
+        $export = new DirectSalesExport(
+            orders: $orders,
+            search: $search,
+            startDate: $startDate,
+            endDate: $endDate,
+            printedBy: $printedBy,
+            printedAt: $printedAt
+        );
+
+        return $export->download($filename);
     }
 
     /**

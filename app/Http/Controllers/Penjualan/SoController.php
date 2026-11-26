@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Penjualan;
 
+use App\Exports\Penjualan\SoPenjualanExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Penjualan\StoreSoRequest;
 use App\Models\MasterData\MstBarang;
@@ -16,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SoController extends Controller
 {
@@ -84,6 +86,46 @@ class SoController extends Controller
     }
 
     /**
+     * Export data PO Penjualan ke format Excel (.xlsx) sesuai filter aktif.
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        if (!auth()->user()?->canAccessSo()) {
+            abort(403, 'Akses ditolak: Dokumen PO Penjualan komersial hanya dapat diakses oleh Departemen Penjualan, Keuangan, atau Manajemen.');
+        }
+
+        $search = $request->query('search');
+        $status = $request->query('status');
+        $filters = [
+            'barang_id'   => $request->query('barang_id'),
+            'barang_cd'   => $request->query('barang_cd'),
+            'barang_nm'   => $request->query('barang_nm'),
+            'customer_id' => $request->query('customer_id'),
+            'customer_cd' => $request->query('customer_cd'),
+            'customer_nm' => $request->query('customer_nm'),
+            'date_from'   => $request->query('date_from'),
+            'date_to'     => $request->query('date_to'),
+        ];
+
+        $orders = $this->soService->getAllForExport($search, $status, $filters);
+
+        $printedBy = auth()->user()?->nama_lengkap ?? 'Administrator ERP';
+        $printedAt = now()->translatedFormat('d F Y H:i');
+        $filename = 'Rekap_PO_Penjualan_' . date('Ymd_His') . '.xlsx';
+
+        $export = new SoPenjualanExport(
+            orders: $orders,
+            search: $search,
+            status: $status,
+            filters: $filters,
+            printedBy: $printedBy,
+            printedAt: $printedAt
+        );
+
+        return $export->download($filename);
+    }
+
+    /**
      * Form tambah PO Penjualan baru.
      */
     public function create(): View
@@ -98,6 +140,19 @@ class SoController extends Controller
             ->active()
             ->orderBy('barang_nm')
             ->get();
+
+        $latestHpps = \App\Models\Produksi\DatPackagingHdr::whereIn('barang_jadi_id', $barangs->pluck('barang_id'))
+            ->where('status_cd', 'POSTED')
+            ->where('deleted_st', false)
+            ->where('hpp_per_karton', '>', 0)
+            ->orderBy('pack_tgl', 'desc')
+            ->get()
+            ->groupBy('barang_jadi_id')
+            ->map(fn($group) => (float) $group->first()->hpp_per_karton);
+
+        foreach ($barangs as $b) {
+            $b->latest_hpp = (float) ($latestHpps[$b->barang_id] ?? ($b->harga_beli_standar ?? 0));
+        }
 
         $stockMap = $this->soService->getStockAvailabilityMap($barangs->pluck('barang_id')->toArray());
 
@@ -158,6 +213,19 @@ class SoController extends Controller
             ->active()
             ->orderBy('barang_nm')
             ->get();
+
+        $latestHpps = \App\Models\Produksi\DatPackagingHdr::whereIn('barang_jadi_id', $barangs->pluck('barang_id'))
+            ->where('status_cd', 'POSTED')
+            ->where('deleted_st', false)
+            ->where('hpp_per_karton', '>', 0)
+            ->orderBy('pack_tgl', 'desc')
+            ->get()
+            ->groupBy('barang_jadi_id')
+            ->map(fn($group) => (float) $group->first()->hpp_per_karton);
+
+        foreach ($barangs as $b) {
+            $b->latest_hpp = (float) ($latestHpps[$b->barang_id] ?? ($b->harga_beli_standar ?? 0));
+        }
 
         $stockMap = $this->soService->getStockAvailabilityMap($barangs->pluck('barang_id')->toArray());
 
@@ -551,7 +619,12 @@ class SoController extends Controller
             'isPpn'      => $isPpn,
         ]);
 
-        $pdf->setPaper('a4', 'portrait');
+        if ($isPpn) {
+            // Ukuran Continuous Form 9.5 x 5.5 inch (bagi 2): 684pt x 396pt
+            $pdf->setPaper([0, 0, 684, 396]);
+        } else {
+            $pdf->setPaper('a4', 'portrait');
+        }
 
         $prefix = $isPpn ? 'FAKTUR_PPN-' : 'FAKTUR_NON_PPN-';
         $fileName = $prefix . preg_replace('/[^A-Za-z0-9\-]/', '', $order->so_no) . '.pdf';

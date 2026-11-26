@@ -63,7 +63,7 @@ class PoService
      */
     public function getAllPaginated(int $perPage = 15, ?string $search = null, ?string $status = null, int|array|null $gudangId = null): LengthAwarePaginator
     {
-        $query = DatPoHdr::with(['supplier', 'gudang', 'approver', 'details.barang.satuanDasar', 'qcInbound.details'])
+        $query = DatPoHdr::with(['supplier', 'gudang', 'approver', 'details.barang.satuanDasar', 'details.pajak', 'qcInbound.details'])
             ->where('deleted_st', false);
 
         if (is_array($gudangId)) {
@@ -213,10 +213,16 @@ class PoService
                         ? filter_var($item['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN)
                         : $headerTaxInclusive;
 
-                    if ($rowTaxInclusive && $tarifPersen > 0 && $sifatPajak !== 'POTONG') {
-                        $subtotalNetto = round($grossRowTotal / (1 + ($tarifPersen / 100)), 4);
-                        $ppnNominal = round($grossRowTotal - $subtotalNetto, 4);
-                        $subtotalTagihan = $grossRowTotal;
+                    if ($rowTaxInclusive && $tarifPersen > 0) {
+                        if ($sifatPajak === 'POTONG') {
+                            $subtotalNetto = $grossRowTotal;
+                            $ppnNominal = round($subtotalNetto * ($tarifPersen / 100), 4);
+                            $subtotalTagihan = $grossRowTotal;
+                        } else {
+                            $subtotalNetto = round($grossRowTotal / (1 + ($tarifPersen / 100)), 4);
+                            $ppnNominal = round($grossRowTotal - $subtotalNetto, 4);
+                            $subtotalTagihan = $grossRowTotal;
+                        }
                     } else {
                         $subtotalNetto = $grossRowTotal;
                         $ppnNominal = round($subtotalNetto * ($tarifPersen / 100), 4);
@@ -288,10 +294,16 @@ class PoService
                         ? filter_var($item['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN)
                         : $headerTaxInclusive;
 
-                    if ($rowTaxInclusive && $tarifPersen > 0 && $sifatPajak !== 'POTONG') {
-                        $subtotalNetto = round($grossRowTotal / (1 + ($tarifPersen / 100)), 4);
-                        $ppnNominal = round($grossRowTotal - $subtotalNetto, 4);
-                        $subtotalTagihan = $grossRowTotal;
+                    if ($rowTaxInclusive && $tarifPersen > 0) {
+                        if ($sifatPajak === 'POTONG') {
+                            $subtotalNetto = $grossRowTotal;
+                            $ppnNominal = round($subtotalNetto * ($tarifPersen / 100), 4);
+                            $subtotalTagihan = $grossRowTotal;
+                        } else {
+                            $subtotalNetto = round($grossRowTotal / (1 + ($tarifPersen / 100)), 4);
+                            $ppnNominal = round($grossRowTotal - $subtotalNetto, 4);
+                            $subtotalTagihan = $grossRowTotal;
+                        }
                     } else {
                         $subtotalNetto = $grossRowTotal;
                         $ppnNominal = round($subtotalNetto * ($tarifPersen / 100), 4);
@@ -337,14 +349,6 @@ class PoService
             return $createdPOs;
         });
 
-        // Kirim email notifikasi approval ke Atasan secara otomatis jika approver ditentukan
-        $pos = ($result instanceof SupportCollection) ? $result : collect([$result]);
-        foreach ($pos as $createdPo) {
-            if ($createdPo->approver_id && $createdPo->status_cd === 'PENDING_APPROVAL') {
-                $this->sendApprovalEmail($createdPo);
-            }
-        }
-
         if ($result instanceof SupportCollection && $result->count() === 1) {
             return $result->first();
         }
@@ -359,6 +363,7 @@ class PoService
     {
         return DB::transaction(function () use ($id, $data) {
             $po = DatPoHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar'])->findOrFail($id);
+            $initialStatusCd = $po->status_cd;
 
             // 1. Ambil Snapshot SEBELUM pengubahan dokumen untuk Audit Trail (Riwayat Edit)
             $beforeSnapshot = $this->buildPoSnapshot($po);
@@ -473,10 +478,16 @@ class PoService
                     ? filter_var($item['is_harga_termasuk_pajak'], FILTER_VALIDATE_BOOLEAN)
                     : $headerTaxInclusive;
 
-                if ($rowTaxInclusive && $tarifPersen > 0 && $sifatPajak !== 'POTONG') {
-                    $subtotalNetto = round($grossRowTotal / (1 + ($tarifPersen / 100)), 4);
-                    $ppnNominal = round($grossRowTotal - $subtotalNetto, 4);
-                    $subtotalTagihan = $grossRowTotal;
+                if ($rowTaxInclusive && $tarifPersen > 0) {
+                    if ($sifatPajak === 'POTONG') {
+                        $subtotalNetto = $grossRowTotal;
+                        $ppnNominal = round($subtotalNetto * ($tarifPersen / 100), 4);
+                        $subtotalTagihan = $grossRowTotal;
+                    } else {
+                        $subtotalNetto = round($grossRowTotal / (1 + ($tarifPersen / 100)), 4);
+                        $ppnNominal = round($grossRowTotal - $subtotalNetto, 4);
+                        $subtotalTagihan = $grossRowTotal;
+                    }
                 } else {
                     $subtotalNetto = $grossRowTotal;
                     $ppnNominal = round($subtotalNetto * ($tarifPersen / 100), 4);
@@ -544,7 +555,33 @@ class PoService
                 }
             }
 
-            // Evaluasi status_cd dokumen PO
+            // 2. Ambil Snapshot SESUDAH pengubahan & hitung selisih perubahannya (Diffs)
+            $poAfterForDiff = $po->fresh(['supplier', 'gudang', 'details.barang.satuanDasar']);
+            $afterSnapshot = $this->buildPoSnapshot($poAfterForDiff);
+            // Tambahkan nilai grandTotal kalkulasi baru ke snapshot untuk komparasi akurat
+            $afterSnapshot['total_tagihan'] = (float) $grandTotal;
+            $diffResult = $this->computePoDiff($beforeSnapshot, $afterSnapshot);
+
+            // Deteksi apakah terdapat perubahan finansial, kuantitas, harga, item, atau rekanan
+            $hasFinancialOrQtyChanges = false;
+            foreach ($diffResult['diffs'] as $diff) {
+                $t = $diff['tipe'] ?? '';
+                $f = $diff['field'] ?? '';
+                if (in_array($t, ['FINANSIAL', 'ITEM_QTY', 'ITEM_HARGA', 'ITEM_TAMBAH', 'ITEM_HAPUS', 'ITEM_DISKON', 'ITEM_POTONGAN', 'ITEM_PAJAK', 'ITEM_PAJAK_INC'])) {
+                    $hasFinancialOrQtyChanges = true;
+                    break;
+                }
+                if ($t === 'HEADER' && in_array($f, ['supplier_id', 'gudang_id', 'is_harga_termasuk_pajak', 'potongan_nominal', 'diskon_total', 'ppn_nominal', 'term_of_payment', 'total_tagihan'])) {
+                    $hasFinancialOrQtyChanges = true;
+                    break;
+                }
+            }
+            if (!$hasFinancialOrQtyChanges && abs((float) ($beforeSnapshot['total_tagihan'] ?? 0) - (float) $grandTotal) > 0.01) {
+                $hasFinancialOrQtyChanges = true;
+            }
+
+            // Evaluasi status_cd dokumen PO dengan mekanisme Re-Approval otomatis
+            $isReapprovalTriggered = false;
             $newStatusCd = $po->status_cd;
             if ($totalTerimaQtyAll > 0) {
                 if ($totalTerimaQtyAll >= $totalPesanQtyAll) {
@@ -552,19 +589,26 @@ class PoService
                 } else {
                     $newStatusCd = 'PARTIAL';
                 }
-            } elseif ($po->status_cd === 'DRAFT') {
+            } elseif ($initialStatusCd === 'DRAFT') {
                 $newStatusCd = 'DRAFT';
-            } elseif (in_array($po->status_cd, ['REJECTED', 'REVISION'])) {
+            } elseif (in_array($initialStatusCd, ['REJECTED', 'REVISION', 'PENDING_APPROVAL'])) {
                 $newStatusCd = 'PENDING_APPROVAL'; // Pengajuan ulang setelah direvisi
-            } elseif ($po->status_cd === 'PENDING_APPROVAL') {
-                $newStatusCd = 'PENDING_APPROVAL';
+            } elseif ($initialStatusCd === 'APPROVED') {
+                if ($hasFinancialOrQtyChanges) {
+                    // Dokumen yang sudah APPROVED jika diubah finansial/kuantitasnya WAJIB meminta persetujuan ulang
+                    $newStatusCd = 'PENDING_APPROVAL';
+                    $isReapprovalTriggered = true;
+                } else {
+                    // Perubahan administratif ringan (ETA, catatan, keterangan) tetap APPROVED tanpa membebani Atasan
+                    $newStatusCd = 'APPROVED';
+                }
             } else {
                 $newStatusCd = 'APPROVED';
             }
 
             $hasAnyReceived = $po->details->contains(fn($dtl) => (float) $dtl->terima_qty > 0);
 
-            $po->update([
+            $poUpdateData = [
                 'po_no'                   => !empty($data['po_no']) ? trim($data['po_no']) : $po->po_no,
                 'po_tgl'                  => $data['po_tgl'] ?? $po->po_tgl,
                 'tgl_estimasi_datang'     => $data['tgl_estimasi_datang'] ?? $po->tgl_estimasi_datang,
@@ -583,12 +627,15 @@ class PoService
                 'catatan_txt'             => array_key_exists('catatan_txt', $data) ? $data['catatan_txt'] : $po->catatan_txt,
                 'remark_txt'              => array_key_exists('remark_txt', $data) ? $data['remark_txt'] : $po->remark_txt,
                 'term_of_payment'         => array_key_exists('term_of_payment', $data) ? $data['term_of_payment'] : $po->term_of_payment,
-            ]);
+            ];
 
-            // 2. Ambil Snapshot SESUDAH pengubahan & hitung selisih perubahannya
-            $poAfter = $po->fresh(['supplier', 'gudang', 'details.barang.satuanDasar']);
-            $afterSnapshot = $this->buildPoSnapshot($poAfter);
-            $diffResult = $this->computePoDiff($beforeSnapshot, $afterSnapshot);
+            if ($isReapprovalTriggered) {
+                $poUpdateData['approved_by'] = null;
+                $poUpdateData['approved_at'] = null;
+                $poUpdateData['approval_token'] = Str::random(40);
+            }
+
+            $po->update($poUpdateData);
 
             if (!empty($diffResult['diffs'])) {
                 $user = auth()->user();
@@ -613,6 +660,11 @@ class PoService
 
                 $alasanEdit = !empty($data['alasan_edit']) ? trim($data['alasan_edit']) : 'Pembaruan Dokumen Purchase Order';
 
+                $ringkasanPerubahan = implode("; ", $diffResult['summaryParts']);
+                if ($isReapprovalTriggered) {
+                    $ringkasanPerubahan .= "; [Re-Approval Diperlukan: Perubahan finansial/kuantitas memicu pengajuan ulang persetujuan ke Atasan]";
+                }
+
                 DatPoRevisiLog::create([
                     'po_id'               => $po->po_id,
                     'revisi_no'           => $revisiNo,
@@ -622,7 +674,7 @@ class PoService
                     'user_role'           => $userRole,
                     'kategori_perubahan'  => $kategoriPerubahan,
                     'alasan_edit'         => $alasanEdit,
-                    'ringkasan_perubahan' => implode("; ", $diffResult['summaryParts']),
+                    'ringkasan_perubahan' => $ringkasanPerubahan,
                     'data_sebelum_json'   => $beforeSnapshot,
                     'data_sesudah_json'   => $afterSnapshot,
                     'perubahan_json'      => $diffResult['diffs'],
@@ -665,16 +717,21 @@ class PoService
             'catatan_txt'             => $po->catatan_txt,
             'items'                   => $po->details->map(function ($d) {
                 return [
-                    'podtl_id'         => $d->podtl_id,
-                    'barang_id'        => $d->barang_id,
-                    'barang_cd'        => $d->barang?->barang_cd,
-                    'barang_nm'        => $d->barang?->barang_nm,
-                    'satuan_nm'        => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'Unit'),
-                    'pesan_qty'        => (float) $d->pesan_qty,
-                    'harga_nominal'    => (float) $d->harga_nominal,
-                    'diskon_persen'    => (float) $d->diskon_persen,
-                    'potongan_nominal' => (float) $d->potongan_nominal,
-                    'subtotal_tagihan' => (float) $d->subtotal_tagihan,
+                    'podtl_id'                => $d->podtl_id,
+                    'barang_id'               => $d->barang_id,
+                    'barang_cd'               => $d->barang?->barang_cd,
+                    'barang_nm'               => $d->barang?->barang_nm,
+                    'satuan_nm'               => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'Unit'),
+                    'pesan_qty'               => (float) $d->pesan_qty,
+                    'harga_nominal'           => (float) $d->harga_nominal,
+                    'diskon_persen'           => (float) $d->diskon_persen,
+                    'potongan_nominal'        => (float) $d->potongan_nominal,
+                    'pajak_id'                => $d->pajak_id ? (int) $d->pajak_id : null,
+                    'is_harga_termasuk_pajak' => (bool) $d->is_harga_termasuk_pajak,
+                    'ppn_tipe'                => $d->ppn_tipe,
+                    'ppn_persen'              => (float) $d->ppn_persen,
+                    'ppn_nominal'             => (float) $d->ppn_nominal,
+                    'subtotal_tagihan'        => (float) $d->subtotal_tagihan,
                 ];
             })->values()->toArray(),
         ];
@@ -697,6 +754,9 @@ class PoService
             'gudang_id'               => 'Gudang Tujuan',
             'term_of_payment'         => 'Term of Payment (TOP)',
             'is_harga_termasuk_pajak' => 'Skema Pajak',
+            'potongan_nominal'        => 'Potongan Harga Header',
+            'diskon_total'            => 'Diskon Total',
+            'ppn_nominal'             => 'PPN / Pajak Total',
             'catatan_txt'             => 'Catatan PO',
             'total_tagihan'           => 'Total Nilai PO',
         ];
@@ -727,7 +787,7 @@ class PoService
                     'tipe'    => 'HEADER',
                 ];
                 $summaryParts[] = "Gudang diubah dari '{$oldName}' menjadi '{$newName}'";
-            } elseif ($field === 'total_tagihan' && abs((float)$oldVal - (float)$newVal) > 0.01) {
+            } elseif (in_array($field, ['total_tagihan', 'potongan_nominal', 'diskon_total', 'ppn_nominal']) && abs((float)$oldVal - (float)$newVal) > 0.01) {
                 $oldFmt = 'Rp ' . number_format((float)$oldVal, 0, ',', '.');
                 $newFmt = 'Rp ' . number_format((float)$newVal, 0, ',', '.');
                 $diffs[] = [
@@ -737,7 +797,7 @@ class PoService
                     'sesudah' => $newFmt,
                     'tipe'    => 'FINANSIAL',
                 ];
-                $summaryParts[] = "Total Nilai PO: {$oldFmt} ➔ {$newFmt}";
+                $summaryParts[] = "{$label}: {$oldFmt} ➔ {$newFmt}";
             } elseif ($field === 'is_harga_termasuk_pajak' && (bool)$oldVal !== (bool)$newVal) {
                 $oldTxt = $oldVal ? 'Termasuk PPN (Inclusive)' : 'Belum Termasuk PPN (Exclusive)';
                 $newTxt = $newVal ? 'Termasuk PPN (Inclusive)' : 'Belum Termasuk PPN (Exclusive)';
@@ -746,10 +806,10 @@ class PoService
                     'label'   => $label,
                     'sebelum' => $oldTxt,
                     'sesudah' => $newTxt,
-                    'tipe'    => 'HEADER',
+                    'tipe'    => 'FINANSIAL',
                 ];
                 $summaryParts[] = "Perlakuan Pajak diubah: {$oldTxt} ➔ {$newTxt}";
-            } elseif (!in_array($field, ['supplier_id', 'gudang_id', 'total_tagihan', 'is_harga_termasuk_pajak']) && $oldVal != $newVal) {
+            } elseif (!in_array($field, ['supplier_id', 'gudang_id', 'total_tagihan', 'potongan_nominal', 'diskon_total', 'ppn_nominal', 'is_harga_termasuk_pajak']) && $oldVal != $newVal) {
                 $diffs[] = [
                     'field'   => $field,
                     'label'   => $label,
@@ -847,6 +907,56 @@ class PoService
                         'tipe'    => 'ITEM_DISKON',
                     ];
                     $summaryParts[] = "Diskon '{$bNm}': {$oldDisc}% ➔ {$newDisc}%";
+                }
+
+                // Cek Potongan Harga Nominal Item
+                $oldPot = (float) ($bItem['potongan_nominal'] ?? 0);
+                $newPot = (float) ($aItem['potongan_nominal'] ?? 0);
+                if (abs($oldPot - $newPot) > 0.01) {
+                    $oldPotFmt = 'Rp ' . number_format($oldPot, 0, ',', '.');
+                    $newPotFmt = 'Rp ' . number_format($newPot, 0, ',', '.');
+                    $diffs[] = [
+                        'field'   => "item_{$bId}_potongan",
+                        'label'   => "Potongan Harga {$bNm}",
+                        'sebelum' => $oldPotFmt,
+                        'sesudah' => $newPotFmt,
+                        'tipe'    => 'ITEM_POTONGAN',
+                    ];
+                    $summaryParts[] = "Potongan '{$bNm}': {$oldPotFmt} ➔ {$newPotFmt}";
+                }
+
+                // Cek Skema Pajak Termasuk / Include Pajak Item
+                $oldInc = !empty($bItem['is_harga_termasuk_pajak']);
+                $newInc = !empty($aItem['is_harga_termasuk_pajak']);
+                if ($oldInc !== $newInc) {
+                    $oldIncTxt = $oldInc ? 'Harga Termasuk Pajak' : 'Harga Belum Termasuk Pajak';
+                    $newIncTxt = $newInc ? 'Harga Termasuk Pajak' : 'Harga Belum Termasuk Pajak';
+                    $diffs[] = [
+                        'field'   => "item_{$bId}_pajak_inc",
+                        'label'   => "Skema Pajak {$bNm}",
+                        'sebelum' => $oldIncTxt,
+                        'sesudah' => $newIncTxt,
+                        'tipe'    => 'ITEM_PAJAK_INC',
+                    ];
+                    $summaryParts[] = "Skema Pajak '{$bNm}': {$oldIncTxt} ➔ {$newIncTxt}";
+                }
+
+                // Cek Pajak ID / Jenis PPN / Tarif Item
+                $oldPajakId = !empty($bItem['pajak_id']) ? (int) $bItem['pajak_id'] : null;
+                $newPajakId = !empty($aItem['pajak_id']) ? (int) $aItem['pajak_id'] : null;
+                $oldPpnPersen = (float) ($bItem['ppn_persen'] ?? 0);
+                $newPpnPersen = (float) ($aItem['ppn_persen'] ?? 0);
+                if ($oldPajakId !== $newPajakId || abs($oldPpnPersen - $newPpnPersen) > 0.01) {
+                    $oldPajakTxt = ($bItem['ppn_tipe'] ?? 'NON_PPN') . " ({$oldPpnPersen}%)";
+                    $newPajakTxt = ($aItem['ppn_tipe'] ?? 'NON_PPN') . " ({$newPpnPersen}%)";
+                    $diffs[] = [
+                        'field'   => "item_{$bId}_pajak",
+                        'label'   => "Tarif Pajak {$bNm}",
+                        'sebelum' => $oldPajakTxt,
+                        'sesudah' => $newPajakTxt,
+                        'tipe'    => 'ITEM_PAJAK',
+                    ];
+                    $summaryParts[] = "Pajak '{$bNm}': {$oldPajakTxt} ➔ {$newPajakTxt}";
                 }
             }
         }
@@ -969,7 +1079,9 @@ class PoService
     }
 
     /**
-     * Kirim email permohonan persetujuan PO ke atasan
+     * Kirim email permohonan persetujuan PO ke atasan.
+     * Menggunakan dispatch afterResponse agar pengiriman email & rendering PDF DomPDF
+     * berjalan secara asinkronus setelah response HTTP dikirim ke browser pengguna (< 200 ms).
      */
     public function sendApprovalEmail(DatPoHdr $po): bool
     {
@@ -984,10 +1096,21 @@ class PoService
                 $po->saveQuietly();
             }
 
-            Mail::to($po->approver->email)->send(new PoApprovalRequestMail($po));
+            $poId = $po->po_id;
+            dispatch(function () use ($poId) {
+                try {
+                    $freshPo = DatPoHdr::with(['approver', 'supplier', 'gudang', 'details.barang.satuanDasar'])->find($poId);
+                    if ($freshPo && $freshPo->approver && !empty($freshPo->approver->email)) {
+                        Mail::to($freshPo->approver->email)->send(new PoApprovalRequestMail($freshPo));
+                    }
+                } catch (\Throwable $ex) {
+                    Log::warning("Background task gagal mengirim email approval PO ID {$poId}: " . $ex->getMessage());
+                }
+            })->afterResponse();
+
             return true;
         } catch (\Throwable $e) {
-            Log::warning("Gagal mengirim email approval PO {$po->po_no} ke {$po->approver?->email}: " . $e->getMessage());
+            Log::warning("Gagal menjadwalkan email approval PO {$po->po_no} ke {$po->approver?->email}: " . $e->getMessage());
             return false;
         }
     }

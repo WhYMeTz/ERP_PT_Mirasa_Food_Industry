@@ -8,47 +8,45 @@
 @endpush
 
 @section('content')
-    {{-- 1. CHEVRON BREADCRUMB NAVIGATION (GAYA AKUNTANSI ENTERPRISE) & LIVE KPI WIDGET --}}
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
-        <nav class="erp-chevron-bar" aria-label="Breadcrumb">
-            <a href="{{ route('gudang.terima.index') }}" class="erp-chevron-item">
-                <span>Pergudangan</span>
-            </a>
-            <span class="erp-chevron-sep">
-                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" /></svg>
-            </span>
-            <a href="{{ route('gudang.terima.index') }}" class="erp-chevron-item">
-                <span>Penerimaan Barang</span>
-            </a>
-            <span class="erp-chevron-sep">
-                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" /></svg>
-            </span>
-            <span class="erp-chevron-item active">
-                <span>Add Penerimaan (GRN)</span>
-            </span>
-            <span class="erp-chevron-end">
-                <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5" /></svg>
-            </span>
-        </nav>
+    {{-- 1. WORKSTATION BREADCRUMB & HEADER BAR SESUAI PO_DESIGN_SYSTEM.MD --}}
+    <nav class="terima-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.terima.index') }}">Pergudangan</a>
+        <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        <a href="{{ route('gudang.terima.index') }}">Penerimaan Barang</a>
+        <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        <span class="breadcrumb-current">Catat Penerimaan (GRN)</span>
+    </nav>
 
-        {{-- Live KPI Widget Ramping di Siku Kanan Atas --}}
-        <div class="po-live-kpi-widget">
-            <div>
-                <div class="po-live-kpi-title">TOTAL NETTO MASUK:</div>
-                <div class="po-live-kpi-val" id="topLiveGrandTotal">0,00 KG</div>
+    <div class="terima-header-bar">
+        <div class="terima-header-title">
+            <a href="{{ route('gudang.terima.index') }}" class="terima-back-link" aria-label="Kembali ke daftar penerimaan">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <h1>Catat Penerimaan Barang</h1>
+            <span class="terima-pill-badge terima-pill-code">{{ $nextTerimaNo ?? 'GRN-BARU' }}</span>
+            <span class="terima-pill-badge">Mode Fisik</span>
+            <span id="qcStatusPill" class="terima-pill-badge terima-pill-sky" style="display: none;">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                <span>QC Terhubung</span>
+            </span>
+            <span id="draftSaveIndicator" class="terima-pill-badge terima-pill-sky" style="display: none;" title="Data form otomatis disimpan ke memori browser">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                <span>Draft Tersimpan</span>
+                <a href="javascript:void(0)" onclick="clearTerimaCreateDraft(); location.reload();" class="draft-reset-link" title="Buang draft tersimpan dan mulai form baru">&times; Reset</a>
+            </span>
+        </div>
+
+        <div class="terima-header-meta">
+            <div class="terima-live-summary">
+                <span class="live-label">TOTAL NETTO MASUK:</span>
+                <span class="live-val" id="topLiveGrandTotal">0,00 KG</span>
+                <span class="live-divider">|</span>
+                <span class="live-count">Baris: <strong id="topLiveItemCount">1 Item</strong></span>
             </div>
-            <div style="height: 28px; width: 1.5px; background: #e2e8f0;"></div>
-            <div style="font-size: 0.775rem; line-height: 1.35; color: #475569;">
-                <div>Baris: <strong id="topLiveItemCount" style="color: #0f172a; font-family: monospace;">1 Item</strong></div>
-                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                    <span style="font-size: 0.7rem; color: #059669; font-weight: 700;">🟢 Mode Fisik</span>
-                    <span id="qcStatusPill" style="font-size: 0.675rem; color: #0284c7; font-weight: 700; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1px 6px; border-radius: 10px; display: none;">🔬 QC Terhubung</span>
-                    <span id="draftSaveIndicator" style="display: none; font-size: 0.675rem; color: #0284c7; font-weight: 700; background: #f0f9ff; border: 1px solid #bae6fd; padding: 1px 6px; border-radius: 10px;" title="Data form otomatis disimpan ke memori browser">
-                        💾 Draft Tersimpan
-                        <a href="javascript:void(0)" onclick="clearTerimaCreateDraft(); location.reload();" style="color: #ef4444; margin-left: 4px; text-decoration: underline; font-weight: 800;" title="Buang draft tersimpan dan mulai form baru">&times; Reset</a>
-                    </span>
-                </div>
-            </div>
+            <a href="{{ route('gudang.terima.index') }}" class="btn-header-secondary">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                <span>Daftar Penerimaan</span>
+            </a>
         </div>
     </div>
 
@@ -59,16 +57,38 @@
             <input type="hidden" name="redirect_to" value="po">
         @endif
 
+        {{-- 1.5. VALIDATION ERROR BANNER --}}
+        <div id="terimaValidationBanner" class="terima-validation-banner" style="display: none;"></div>
+
+        {{-- Banner Pemulihan Draf Otomatis (Enterprise WaveDash UX - Bebas Emoji) --}}
+        <div id="terimaDraftRestoreBanner" class="po-draft-restore-banner" style="display: none;">
+            <div class="po-draft-banner-content">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="terimaDraftRestoreText">Draf penginputan Penerimaan Barang dipulihkan otomatis.</span>
+            </div>
+            <div class="po-draft-banner-actions">
+                <button type="button" class="btn-draft-discard" onclick="discardTerimaCreateDraft()" title="Hapus draf dan kosongkan formulir kembali">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <span>Buang Draf</span>
+                </button>
+                <button type="button" class="btn-draft-dismiss" onclick="dismissTerimaDraftBanner()" title="Tutup pemberitahuan">&times;</button>
+            </div>
+        </div>
+
         {{-- 2. TOOLBAR CARD RAMPING: SEMUA FIELD LANGSUNG TAMPIL 2 BARIS (NO ACCORDION, ZERO EMPTY SPACE) --}}
         <div class="po-toolbar-card">
             {{-- Header Toolbar Bar: QC Synchronizer & Status --}}
-            <div class="po-mode-toolbar-wrap" style="align-items: center;">
+            <div class="po-mode-toolbar-wrap" style="align-items: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                 <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex-wrap: wrap;">
-                    <div style="width: 28px; height: 28px; border-radius: 6px; background: #0284c7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">
-                        🔬
+                    <div style="width: 28px; height: 28px; border-radius: 6px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                     </div>
                     <div style="min-width: 0;">
-                        <span style="font-size: 0.8rem; font-weight: 800; color: #0369a1;" id="qcBannerTitle">
+                        <span style="font-size: 0.8rem; font-weight: 800; color: #0f172a;" id="qcBannerTitle">
                             Sinkronisasi Inspeksi Mutu QC Lapangan
                         </span>
                         <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.35rem;" id="qcBannerSubtitle">
@@ -79,13 +99,15 @@
 
                 {{-- Action buttons for QC --}}
                 <div style="display: flex; align-items: center; gap: 0.45rem;">
-                    <button type="button" onclick="openQcModal()" class="btn btn-sm"
-                        style="background: #0284c7; color: #ffffff; border: none; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.75rem; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
-                        <span>⚡ Tarik Tiket QC</span>
+                    <button type="button" onclick="openQcModal()" class="btn-pill-dark"
+                        style="font-size: 0.75rem; padding: 0.35rem 0.85rem;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Tarik Tiket QC</span>
                     </button>
-                    <button type="button" id="btnDetachQc" onclick="detachQcTicket()"
-                        style="display: none; background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 0.3rem 0.65rem; border-radius: 5px; font-size: 0.725rem; font-weight: 700; cursor: pointer;">
-                        ✕ Lepas QC
+                    <button type="button" id="btnDetachQc" onclick="detachQcTicket()" class="btn-pill-outline"
+                        style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.35rem 0.75rem; font-size: 0.725rem;">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Lepas QC</span>
                     </button>
                 </div>
             </div>
@@ -129,7 +151,9 @@
                     <div id="selected_supplier_card"
                         style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.25rem 0.65rem; justify-content: space-between; align-items: center; gap: 0.4rem; height: 36px; box-sizing: border-box;">
                         <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 0;">
-                            <span style="background: #22c55e; color: #fff; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0;">✓</span>
+                            <span style="background: #22c55e; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </span>
                             <div style="min-width: 0; display: flex; align-items: center; gap: 0.3rem;">
                                 <strong id="disp_sup_name" style="color: #14532d; font-size: 0.775rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></strong>
                                 <span id="disp_sup_code" class="badge" style="background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 700; font-family: monospace;"></span>
@@ -152,8 +176,8 @@
                             <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             </span>
-                            <span style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 0.6rem;">
-                                ▼
+                            <span style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; display: flex; align-items: center;">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                             </span>
                         </div>
                         <div id="supplier_dropdown_list"
@@ -283,8 +307,8 @@
 
         {{-- BANNER PERINGATAN OVER PO TERPADU --}}
         <div id="bannerTerimaOverPo" style="display: none; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 0.85rem; align-items: flex-start; gap: 0.65rem; box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);">
-            <div style="width: 24px; height: 24px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; font-weight: 700;">
-                ⚠️
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </div>
             <div style="flex: 1; font-size: 0.8rem; color: #92400e;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -329,7 +353,7 @@
                 {{-- Sisi Kanan: Hint --}}
                 <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
                     <span style="font-size: 0.725rem; color: #64748b;">
-                        💡 Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
+                        Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
                     </span>
                 </div>
             </div>
@@ -346,9 +370,8 @@
                             <th style="width: 115px; text-align: center;">Grade</th>
                             <th style="width: 110px; text-align: right;">Qty (Bruto) <span style="color:#ef4444;">*</span></th>
                             <th style="width: 90px; text-align: right;">Afkir</th>
-                            <th style="width: 110px; text-align: right; background: #064e3b; color: #ffffff;">Netto</th>
+                            <th style="width: 110px; text-align: right;">Netto</th>
                             <th style="width: 70px; text-align: center;">Satuan</th>
-                            <th style="width: 130px; text-align: right;">Harga Satuan (Rp)</th>
                             <th style="width: 40px; text-align: center;">Aksi</th>
                         </tr>
                     </thead>
@@ -371,6 +394,10 @@
                                     <td>
                                         <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $pdtl->podtl_id }}">
                                         <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $pdtl->barang_id }}" class="item-barang-id">
+                                        <input type="hidden" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="item-harga">
+                                        <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="item-diskon">
+                                        <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="item-potongan">
+                                        <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
                                         <strong style="color: #0f172a; display: block; font-size: 0.825rem;" class="item-barang-name">{{ $pdtl->barang?->barang_nm }}</strong>
                                         <div style="font-size: 0.725rem; color: #64748b; margin-top: 2px;">
                                             Pesanan: <strong>{{ number_format($pesanQty, 2) }}</strong> | 
@@ -381,7 +408,7 @@
                                         </div>
                                         <div class="row-over-po-badge" style="display: none; margin-top: 3px;">
                                             <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
-                                                ⚠️ Over PO (<span class="over-diff-text">+0</span>)
+                                                Over PO (<span class="over-diff-text">+0</span>)
                                             </span>
                                         </div>
                                     </td>
@@ -407,21 +434,16 @@
                                     <td>
                                         <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="{{ old("items.{$idx}.reject_qty", 0) }}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                                     </td>
-                                    <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                    <td class="row-netto">
                                         {{ number_format(max(0, $defaultTerimaQty), 2, ',', '.') }}
                                     </td>
                                     <td style="text-align: center;">
                                         <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">{{ $pdtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
                                     </td>
-                                    <td>
-                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ (float) $pdtl->harga_nominal }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                        {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
-                                        <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float)($pdtl->diskon_persen ?? 0)) }}" class="item-diskon">
-                                        <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float)($pdtl->potongan_nominal ?? 0)) }}" class="item-potongan">
-                                        <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $pdtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
-                                    </td>
                                     <td style="text-align: center;">
-                                        <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                        <button type="button" onclick="removeTerimaRow(this)" class="btn-remove-row" title="Hapus Baris">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
@@ -475,6 +497,10 @@
                                             @endforeach
                                         </optgroup>
                                     </select>
+                                    <input type="hidden" name="items[0][harga_nominal]" value="0" class="item-harga">
+                                    <input type="hidden" name="items[0][diskon_persen]" value="0" class="item-diskon">
+                                    <input type="hidden" name="items[0][potongan_nominal]" value="0" class="item-potongan">
+                                    <input type="hidden" name="items[0][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
                                 </td>
                                 <td>
                                     <input type="text" name="items[0][batch_no]" id="batch_0" value="" placeholder="Contoh: BC-... (isi nomor batch)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
@@ -495,21 +521,16 @@
                                 <td>
                                     <input type="number" step="0.0001" min="0" name="items[0][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                                 </td>
-                                <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                <td class="row-netto">
                                     1,00
                                 </td>
                                 <td style="text-align: center;">
                                     <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">-</span>
                                 </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" name="items[0][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                    {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
-                                    <input type="hidden" name="items[0][diskon_persen]" value="0" class="item-diskon">
-                                    <input type="hidden" name="items[0][potongan_nominal]" value="0" class="item-potongan">
-                                    <input type="hidden" name="items[0][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
-                                </td>
                                 <td style="text-align: center;">
-                                    <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                    <button type="button" onclick="removeTerimaRow(this)" class="btn-remove-row" title="Hapus Baris">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 </td>
                             </tr>
                         @endif
@@ -519,11 +540,10 @@
                             <td colspan="5" style="padding: 0.55rem 0.75rem; text-align: right; color: #475569; font-size: 0.8rem; text-transform: uppercase;">
                                 Akumulasi Total Fisik:
                             </td>
-                            <td id="totalBrutoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.9rem; color: #0284c7; padding-right: 0.5rem;">0,00</td>
-                            <td id="totalRejectQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.9rem; color: #dc2626; padding-right: 0.5rem;">0,00</td>
-                            <td id="totalNettoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #047857; background: #dcfce7; padding-right: 0.5rem;">0,00</td>
+                            <td id="totalBrutoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #0284c7; padding-right: 0.5rem;">0,00</td>
+                            <td id="totalRejectQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #dc2626; padding-right: 0.5rem;">0,00</td>
+                            <td id="totalNettoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #0f172a; padding-right: 0.5rem;">0,00</td>
                             <td style="text-align: center; color: #64748b; font-size: 0.75rem;">Total</td>
-                            <td></td>
                             <td></td>
                             <td style="display: none;" id="totalTerimaNilaiDisplay">Rp 0</td>
                             <td style="display: none;" id="totalTerimaDiskonDisplay">-</td>
@@ -539,7 +559,7 @@
             <div style="padding: 0.55rem 0.85rem; background: #ffffff; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <button type="button" class="btn-add-row-wide" onclick="addTerimaRow(true)" style="max-width: 320px;">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
-                    <span>+ Tambah Baris Baru</span>
+                    <span>Tambah Baris Baru</span>
                 </button>
             </div>
         </div>
@@ -561,7 +581,7 @@
 
                 {{-- Panduan Ringkas Operasional --}}
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.85rem; font-size: 0.725rem; color: #64748b; line-height: 1.4;">
-                    <strong style="color: #334155;">💡 Tips Penerimaan Fisik:</strong>
+                    <strong style="color: #334155;">Tips Penerimaan Fisik:</strong>
                     Barang yang disimpan di formulir ini akan langsung menambah saldo fisik gudang, membuat nomor batch baru, dan dicatat pada Kartu Stok. Pastikan nomor batch fisik dan tanggal kedaluwarsa telah sesuai dengan surat jalan supplier.
                 </div>
             </div>
@@ -597,9 +617,7 @@
                     </strong>
                 </div>
 
-                <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; margin-top: 0.65rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.7rem;">
-                    💡 <em>Harga satuan di atas dapat disesuaikan jika terdapat perubahan pada surat jalan supplier. Perhitungan akumulasi nilai total faktur, diskon, dan perpajakan dikelola langsung oleh Departemen Keuangan.</em>
-                </div>
+
 
                 {{-- Hidden financial elements for backward compatibility --}}
                 <div id="sideGrandTotal" style="display: none;">Rp 0</div>
@@ -618,13 +636,11 @@
 
                 {{-- Action Bar --}}
                 <div class="po-action-bar">
-                    <a href="{{ route('gudang.terima.index') }}" class="btn btn-secondary"
-                        style="padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 700; border-radius: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; color: #475569; text-decoration: none;">
+                    <a href="{{ route('gudang.terima.index') }}" class="btn-pill-outline">
                         Batal
                     </a>
-                    <button type="submit" id="btnSubmitTerima" class="btn btn-primary"
-                        style="padding: 0.55rem 1.35rem; font-size: 0.875rem; font-weight: 800; background: #059669; border: none; border-radius: 5px; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3); display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                    <button type="submit" id="btnSubmitTerima" class="btn-pill-dark">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
                         <span id="btnSubmitTerimaText">Simpan Penerimaan Fisik</span>
                     </button>
                 </div>

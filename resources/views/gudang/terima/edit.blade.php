@@ -8,48 +8,45 @@
 @endpush
 
 @section('content')
-    {{-- 1. CHEVRON BREADCRUMB NAVIGATION & LIVE KPI WIDGET --}}
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
-        <nav class="erp-chevron-bar" aria-label="Breadcrumb">
-            <a href="{{ route('gudang.terima.index') }}" class="erp-chevron-item">
-                <span>Pergudangan</span>
-            </a>
-            <span class="erp-chevron-sep">
-                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" /></svg>
-            </span>
-            <a href="{{ route('gudang.terima.index') }}" class="erp-chevron-item">
-                <span>Penerimaan Barang</span>
-            </a>
-            <span class="erp-chevron-sep">
-                <svg width="8" height="20" viewBox="0 0 8 20" fill="none"><path d="M1 2L6 10L1 18" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" /></svg>
-            </span>
-            <span class="erp-chevron-item active">
-                <span>Edit GRN: {{ $terima->terima_no }}</span>
-            </span>
-            <span class="erp-chevron-end">
-                <svg width="10" height="32" viewBox="0 0 10 32" fill="none"><path d="M1 1L8 16L1 31" stroke="#dce4ec" stroke-width="1.5" /></svg>
-            </span>
-        </nav>
+    {{-- 1. WORKSTATION BREADCRUMB & HEADER BAR SESUAI PO_DESIGN_SYSTEM.MD --}}
+    <nav class="terima-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('gudang.terima.index') }}">Pergudangan</a>
+        <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        <a href="{{ route('gudang.terima.index') }}">Penerimaan Barang</a>
+        <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        <span class="breadcrumb-current">Edit GRN: {{ $terima->terima_no }}</span>
+    </nav>
 
-        {{-- Live KPI Widget Ramping di Siku Kanan Atas --}}
-        <div class="po-live-kpi-widget">
-            <div>
-                <div class="po-live-kpi-title">TOTAL NETTO MASUK:</div>
-                <div class="po-live-kpi-val" id="topLiveGrandTotal">0,00 KG</div>
+    <div class="terima-header-bar">
+        <div class="terima-header-title">
+            <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" class="terima-back-link" aria-label="Kembali ke detail penerimaan">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <h1>Edit Penerimaan Barang</h1>
+            <span class="terima-pill-badge terima-pill-code">{{ $terima->terima_no }}</span>
+            <span class="terima-pill-badge terima-pill-sky">Mode Edit</span>
+        </div>
+
+        <div class="terima-header-meta">
+            <div class="terima-live-summary">
+                <span class="live-label">TOTAL NETTO MASUK:</span>
+                <span class="live-val" id="topLiveGrandTotal">0,00 KG</span>
+                <span class="live-divider">|</span>
+                <span class="live-count">Baris: <strong id="topLiveItemCount">{{ $terima->details->count() }} Item</strong></span>
             </div>
-            <div style="height: 28px; width: 1.5px; background: #e2e8f0;"></div>
-            <div style="font-size: 0.775rem; line-height: 1.35; color: #475569;">
-                <div>Baris: <strong id="topLiveItemCount" style="color: #0f172a; font-family: monospace;">{{ $terima->details->count() }} Item</strong></div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span style="font-size: 0.7rem; color: #0284c7; font-weight: 700;">✏️ Mode Edit</span>
-                </div>
-            </div>
+            <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" class="btn-header-secondary">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Lihat Dokumen</span>
+            </a>
         </div>
     </div>
 
     @if (isset($errors) && $errors->any())
         <div class="alert alert-danger" style="margin-bottom: 0.85rem; background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; color: #991b1b; padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.825rem;">
-            <strong style="display: block; margin-bottom: 0.25rem;">⚠️ Terjadi kesalahan input:</strong>
+            <strong style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>Terjadi kesalahan input:</span>
+            </strong>
             <ul style="margin: 0; padding-left: 1.25rem;">
                 @foreach ($errors->all() as $err)
                     <li>{{ $err }}</li>
@@ -61,6 +58,37 @@
     <form action="{{ route('gudang.terima.update', $terima->terima_id) }}" method="POST" id="formTerima">
         @csrf
         @method('PUT')
+
+        {{-- 1.5. VALIDATION & NO-CHANGE BANNER --}}
+        @if (session('no_change_info'))
+            <div id="terimaValidationBanner" class="po-validation-banner" style="display: block; background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 4px solid #64748b; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: flex-start; gap: 0.65rem;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b; flex-shrink: 0; margin-top: 2px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <strong style="display: block; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.2rem;">
+                                Tidak Ada Perubahan Data
+                            </strong>
+                            <div style="font-size: 0.8rem; color: #475569; line-height: 1.4;">
+                                {{ session('no_change_info') }}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+                        <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" class="btn btn-sm" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">
+                            <span>Kembali ke Detail Penerimaan</span>
+                        </a>
+                        <button type="button" onclick="document.getElementById('terimaValidationBanner').style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.35rem;" title="Tutup">
+                            &times;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @else
+            <div id="terimaValidationBanner" class="po-validation-banner" style="display: none;"></div>
+        @endif
 
         {{-- 2. TOOLBAR CARD RAMPING: SEMUA FIELD LANGSUNG TAMPIL 2 BARIS --}}
         <div class="po-toolbar-card">
@@ -102,7 +130,9 @@
                     <div id="selected_supplier_card"
                         style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.25rem 0.65rem; justify-content: space-between; align-items: center; gap: 0.4rem; height: 36px; box-sizing: border-box;">
                         <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 0;">
-                            <span style="background: #22c55e; color: #fff; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0;">✓</span>
+                            <span style="background: #22c55e; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </span>
                             <div style="min-width: 0; display: flex; align-items: center; gap: 0.3rem;">
                                 <strong id="disp_sup_name" style="color: #14532d; font-size: 0.775rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></strong>
                                 <span id="disp_sup_code" class="badge" style="background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 700; font-family: monospace;"></span>
@@ -125,8 +155,8 @@
                             <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             </span>
-                            <span style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 0.6rem;">
-                                ▼
+                            <span style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; display: flex; align-items: center;">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                             </span>
                         </div>
                         <div id="supplier_dropdown_list"
@@ -239,7 +269,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
                     <span style="font-size: 0.725rem; color: #64748b;">
-                        💡 Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
+                        Tekan <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
                     </span>
                 </div>
             </div>
@@ -255,9 +285,8 @@
                             <th style="width: 115px; text-align: center;">Grade</th>
                             <th style="width: 110px; text-align: right;">Qty (Bruto) <span style="color:#ef4444;">*</span></th>
                             <th style="width: 90px; text-align: right;">Afkir</th>
-                            <th style="width: 110px; text-align: right; background: #064e3b; color: #ffffff;">Netto</th>
+                            <th style="width: 110px; text-align: right;">Netto</th>
                             <th style="width: 70px; text-align: center;">Satuan</th>
-                            <th style="width: 130px; text-align: right;">Harga Satuan (Rp)</th>
                             <th style="width: 40px; text-align: center;">Aksi</th>
                         </tr>
                     </thead>
@@ -265,25 +294,100 @@
                         @foreach ($terima->details as $idx => $dtl)
                             @php
                                 $nettoRow = max(0, (float)$dtl->terima_qty - (float)($dtl->reject_qty ?? 0));
-                                $subtotalRow = $nettoRow * (float)($dtl->harga_nominal ?? 0);
+                                $sisaQty = (float)($dtl->poDetail?->sisa_qty ?? 0);
+                                $pesanQty = (float)($dtl->poDetail?->pesan_qty ?? 0);
                             @endphp
-                            <tr class="terima-row" data-index="{{ $idx }}">
+                            <tr class="terima-row" data-index="{{ $idx }}" data-sisa="{{ $sisaQty }}" data-pesan="{{ $pesanQty }}" data-barang-nm="{{ $dtl->barang?->barang_nm }}">
                                 <td class="row-num" style="font-weight: 700; text-align: center; color: #475569; background: #f8fafc;">{{ $idx + 1 }}</td>
                                 <td>
-                                    <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $dtl->podtl_id }}">
-                                    <select name="items[{{ $idx }}][barang_id]" class="form-control item-barang-id" onchange="onBarangChanged(this, {{ $idx }})" required style="font-size: 0.825rem; font-weight: 600;">
-                                        <option value="">-- Pilih Bahan --</option>
-                                        @foreach ($barangList as $b)
-                                            <option value="{{ $b->barang_id }}" 
-                                                data-nama="{{ $b->barang_nm }}"
-                                                data-kode="{{ $b->barang_cd }}"
-                                                data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}"
-                                                data-harga="{{ $b->harga_beli_standar ?? 0 }}"
-                                                {{ (old("items.{$idx}.barang_id", $dtl->barang_id) == $b->barang_id) ? 'selected' : '' }}>
-                                                {{ $b->barang_nm }} ({{ $b->barang_cd }})
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    @if ($dtl->podtl_id)
+                                        <input type="hidden" name="items[{{ $idx }}][podtl_id]" value="{{ $dtl->podtl_id }}">
+                                        <input type="hidden" name="items[{{ $idx }}][barang_id]" value="{{ $dtl->barang_id }}" class="item-barang-id">
+                                        <input type="hidden" name="items[{{ $idx }}][harga_nominal]" value="{{ old("items.{$idx}.harga_nominal", (float) ($dtl->harga_nominal ?? 0)) }}" class="item-harga">
+                                        <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float) ($dtl->diskon_persen ?? 0)) }}" class="item-diskon">
+                                        <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float) ($dtl->potongan_nominal ?? 0)) }}" class="item-potongan">
+                                        <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $dtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
+                                        <strong style="color: #0f172a; display: block; font-size: 0.825rem;" class="item-barang-name">{{ $dtl->barang?->barang_nm }}</strong>
+                                        <span style="font-size: 0.725rem; color: #64748b; display: block; margin-top: 2px;">
+                                            Kode: <span style="font-family: monospace;">{{ $dtl->barang?->barang_cd }}</span> &bull; Satuan: {{ $dtl->barang?->satuanDasar?->satuan_nm ?? '-' }}
+                                            @if ($terima->po)
+                                                &bull; Ref PO: <span style="font-family: monospace; font-weight: 600; color: #0284c7;">{{ $terima->po->po_no }}</span>
+                                            @endif
+                                        </span>
+                                        <div class="row-po-status-badge" style="margin-top: 3px;">
+                                            @php
+                                                $diffInitial = $nettoRow - $pesanQty;
+                                            @endphp
+                                            @if ($pesanQty > 0)
+                                                @if ($diffInitial > 0.001)
+                                                    <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
+                                                        Over PO (+{{ number_format($diffInitial, 2, ',', '.') }})
+                                                    </span>
+                                                @elseif ($diffInitial < -0.001)
+                                                    <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
+                                                        Kurang / Parsial (-{{ number_format(abs($diffInitial), 2, ',', '.') }})
+                                                    </span>
+                                                @else
+                                                    <span class="badge" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
+                                                        Sesuai PO (100%)
+                                                    </span>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    @else
+                                        <select name="items[{{ $idx }}][barang_id]" class="form-control item-barang" onchange="updateTerimaSatuanAndBatch(this)" required style="font-size: 0.825rem; font-weight: 600;">
+                                            <option value="">-- Pilih Barang (Bahan Baku / Penolong) --</option>
+                                            
+                                            <optgroup label="BAHAN BAKU (RAW MATERIAL)" class="grp-bb">
+                                                @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['RAW', 'BB'])) as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-category="BB"
+                                                            data-cd="{{ $b->barang_cd }}" 
+                                                            data-nm="{{ $b->barang_nm }}"
+                                                            data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                            data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}"
+                                                            {{ (old("items.{$idx}.barang_id", $dtl->barang_id) == $b->barang_id) ? 'selected' : '' }}>
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+
+                                            <optgroup label="BUMBU &amp; BAHAN PENOLONG" class="grp-bumbu">
+                                                @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['SUPP', 'BUMBU', 'BP']) && !preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm)) as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-category="BUMBU"
+                                                            data-cd="{{ $b->barang_cd }}" 
+                                                            data-nm="{{ $b->barang_nm }}"
+                                                            data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                            data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}"
+                                                            {{ (old("items.{$idx}.barang_id", $dtl->barang_id) == $b->barang_id) ? 'selected' : '' }}>
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+
+                                            <optgroup label="BAHAN KEMASAN &amp; PACKAGING" class="grp-pack">
+                                                @foreach($barangList->filter(fn($b) => in_array($b->jenisBarang?->jenis_barang_cd, ['PACK']) || (in_array($b->jenisBarang?->jenis_barang_cd, ['BP']) && preg_match('/(PLASTIK|KARTON|ROLL|LAKBAN|SARUNG|RAFIA)/i', $b->barang_nm))) as $b)
+                                                    <option value="{{ $b->barang_id }}" 
+                                                            data-category="PACK"
+                                                            data-cd="{{ $b->barang_cd }}" 
+                                                            data-nm="{{ $b->barang_nm }}"
+                                                            data-acronym="{{ app(\App\Services\Common\CodeGeneratorService::class)->extractBarangAcronym($b->barang_nm, $b->barang_cd) }}"
+                                                            data-satuan="{{ $b->satuanDasar?->satuan_nm ?? '-' }}" 
+                                                            data-harga="{{ (float) ($b->harga_beli_standar ?? 0) }}"
+                                                            {{ (old("items.{$idx}.barang_id", $dtl->barang_id) == $b->barang_id) ? 'selected' : '' }}>
+                                                        {{ $b->barang_nm }} ({{ $b->barang_cd }}) - Std: Rp {{ number_format((float) ($b->harga_beli_standar ?? 0), 0, ',', '.') }}/{{ $b->satuanDasar?->satuan_cd }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        </select>
+                                        <input type="hidden" name="items[{{ $idx }}][harga_nominal]" value="{{ old("items.{$idx}.harga_nominal", (float) ($dtl->harga_nominal ?? 0)) }}" class="item-harga">
+                                        <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float) ($dtl->diskon_persen ?? 0)) }}" class="item-diskon">
+                                        <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float) ($dtl->potongan_nominal ?? 0)) }}" class="item-potongan">
+                                        <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $dtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
+                                    @endif
                                 </td>
                                 <td>
                                     <input type="text" name="items[{{ $idx }}][batch_no]" value="{{ old("items.{$idx}.batch_no", $dtl->batch_no) }}" placeholder="Nomor batch..." class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%; font-size: 0.8rem;" required>
@@ -307,20 +411,16 @@
                                 <td>
                                     <input type="number" step="0.0001" min="0" name="items[{{ $idx }}][reject_qty]" value="{{ old("items.{$idx}.reject_qty", (float) ($dtl->reject_qty ?? 0)) }}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                                 </td>
-                                <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                                <td class="row-netto">
                                     {{ number_format($nettoRow, 2, ',', '.') }}
                                 </td>
                                 <td style="text-align: center;">
                                     <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">{{ $dtl->barang?->satuanDasar?->satuan_nm ?? '-' }}</span>
                                 </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" name="items[{{ $idx }}][harga_nominal]" value="{{ old("items.{$idx}.harga_nominal", (float) ($dtl->harga_nominal ?? 0)) }}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                    <input type="hidden" name="items[{{ $idx }}][diskon_persen]" value="{{ old("items.{$idx}.diskon_persen", (float) ($dtl->diskon_persen ?? 0)) }}" class="item-diskon">
-                                    <input type="hidden" name="items[{{ $idx }}][potongan_nominal]" value="{{ old("items.{$idx}.potongan_nominal", (float) ($dtl->potongan_nominal ?? 0)) }}" class="item-potongan">
-                                    <input type="hidden" name="items[{{ $idx }}][ppn_tipe]" value="{{ old("items.{$idx}.ppn_tipe", $dtl->ppn_tipe ?? 'NON_PPN') }}" class="item-ppn-tipe">
-                                </td>
                                 <td style="text-align: center;">
-                                    <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                    <button type="button" onclick="removeTerimaRow(this)" class="btn-remove-row" title="Hapus Baris">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
@@ -330,11 +430,10 @@
                             <td colspan="5" style="padding: 0.55rem 0.75rem; text-align: right; color: #475569; font-size: 0.8rem; text-transform: uppercase;">
                                 Akumulasi Total Fisik:
                             </td>
-                            <td id="totalBrutoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.9rem; color: #0284c7; padding-right: 0.5rem;">0,00</td>
-                            <td id="totalRejectQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.9rem; color: #dc2626; padding-right: 0.5rem;">0,00</td>
-                            <td id="totalNettoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #047857; background: #dcfce7; padding-right: 0.5rem;">0,00</td>
+                            <td id="totalBrutoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #0284c7; padding-right: 0.5rem;">0,00</td>
+                            <td id="totalRejectQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #dc2626; padding-right: 0.5rem;">0,00</td>
+                            <td id="totalNettoQtyDisplay" style="text-align: right; font-family: monospace; font-size: 0.95rem; color: #0f172a; padding-right: 0.5rem;">0,00</td>
                             <td style="text-align: center; color: #64748b; font-size: 0.75rem;">Total</td>
-                            <td></td>
                             <td></td>
                             <td style="display: none;" id="totalTerimaNilaiDisplay">Rp 0</td>
                             <td style="display: none;" id="totalTerimaDiskonDisplay">-</td>
@@ -349,7 +448,7 @@
             <div style="padding: 0.55rem 0.85rem; background: #ffffff; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <button type="button" class="btn-add-row-wide" onclick="addTerimaRow(true)" style="max-width: 320px;">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
-                    <span>+ Tambah Baris Baru</span>
+                    <span>Tambah Baris Baru</span>
                 </button>
             </div>
         </div>
@@ -368,8 +467,18 @@
                         oninput="document.getElementById('catatan_txt').value = this.value">{{ old('catatan_txt', $terima->catatan_txt) }}</textarea>
                 </div>
 
+                <div class="po-notes-card" style="border-left: 3px solid #0f172a;">
+                    <label for="alasan_edit" class="po-field-label" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>Alasan Perubahan / Revisi Dokumen</span>
+                        <small style="font-weight: normal; color: #64748b;">Audit Trail Log</small>
+                    </label>
+                    <input type="text" id="alasan_edit" name="alasan_edit" value="{{ old('alasan_edit') }}"
+                        class="form-control" placeholder="Contoh: Koreksi selisih timbangan bruto, revisi nomor batch fisik supplier..."
+                        style="border: 1.5px solid #cbd5e1; border-radius: 5px; font-size: 0.8125rem; padding: 0.45rem 0.65rem;">
+                </div>
+
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.85rem; font-size: 0.725rem; color: #64748b; line-height: 1.4;">
-                    <strong style="color: #334155;">💡 Tips Pengeditan:</strong> Perubahan kuantitas fisik dan nomor batch akan otomatis menyesuaikan kembali saldo stok gudang dan mutasi kartu stok.
+                    <strong style="color: #334155;">Tips Pengeditan:</strong> Perubahan kuantitas fisik dan nomor batch akan otomatis menyesuaikan kembali saldo stok gudang dan mutasi kartu stok.
                 </div>
             </div>
 
@@ -400,9 +509,7 @@
                     </strong>
                 </div>
 
-                <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; margin-top: 0.65rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.7rem;">
-                    💡 <em>Harga satuan di atas dapat disesuaikan jika terdapat perubahan pada surat jalan supplier. Perhitungan akumulasi nilai total faktur, diskon, dan perpajakan dikelola langsung oleh Departemen Keuangan.</em>
-                </div>
+
 
                 {{-- Hidden financial elements for backward compatibility --}}
                 <div id="sideGrandTotal" style="display: none;">Rp 0</div>
@@ -419,13 +526,11 @@
                 <input type="hidden" name="potongan_nominal" id="global_potongan" value="{{ old('potongan_nominal', (float) $terima->potongan_nominal) }}">
 
                 <div class="po-action-bar">
-                    <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" class="btn btn-secondary"
-                        style="padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 700; border-radius: 5px; background: #f8fafc; border: 1.5px solid #cbd5e1; color: #475569; text-decoration: none;">
+                    <a href="{{ route('gudang.terima.show', $terima->terima_id) }}" class="btn-pill-outline">
                         Batal
                     </a>
-                    <button type="submit" id="btnSubmitTerima" class="btn btn-primary"
-                        style="padding: 0.55rem 1.35rem; font-size: 0.875rem; font-weight: 800; background: #059669; border: none; border-radius: 5px; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3); display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                    <button type="button" id="btnSubmitTerima" class="btn-pill-dark" onclick="submitTerimaEditForm(event)">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
                         <span id="btnSubmitTerimaText">Simpan Perubahan Penerimaan</span>
                     </button>
                 </div>
@@ -435,6 +540,8 @@
 
     @include('gudang.terima.partials.modal-supplier-picker')
     @include('gudang.terima.partials.modal-qc-picker')
+    @include('gudang.terima.partials.modal-confirm-previous-month')
+    @include('gudang.terima.partials.modal-confirm-po-discrepancy')
 
     @php
         $suppliersJson = $supplierList->map(function($sup) {
@@ -452,20 +559,15 @@
 
     @push('scripts')
     <script>
+        window.isEditMode = true;
+        window.terimaId = {{ $terima->terima_id }};
         window.suppliersData = @json($suppliersJson);
         window.qcSiapGudangUrl = "{{ route('qc.inbound.siap_gudang') }}";
         window.terimaCreateUrl = "{{ route('gudang.terima.create') }}";
+        window.terimaShowUrl = "{{ route('gudang.terima.show', $terima->terima_id) }}";
         window.oldSupplierId = {{ old('supplier_id', $terima->supplier_id) }};
         window.selectedPoDetailsCount = {{ $terima->details->count() }};
     </script>
-    <script src="{{ asset('js/gudang/terima/terima-create.js') }}?v={{ filemtime(public_path('js/gudang/terima/terima-create.js')) }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.oldSupplierId) {
-                selectSupplier(window.oldSupplierId);
-            }
-            calculateTotalTerima();
-        });
-    </script>
+    <script src="{{ asset('js/gudang/terima/terima-edit.js') }}?v={{ filemtime(public_path('js/gudang/terima/terima-edit.js')) }}"></script>
     @endpush
 @endsection

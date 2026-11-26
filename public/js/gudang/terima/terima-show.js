@@ -6,6 +6,7 @@
 
 let activeDropdownMenu = null;
 let activeTriggerButton = null;
+let lastHazardTriggerEl = null;
 
 function toggleSmartActionDropdown(button, event, menuId) {
     if (event) {
@@ -68,7 +69,8 @@ function closeAllActionDropdowns() {
 }
 
 // Handler Modal Delete Terima
-function openDeleteTerimaModal(terimaId, terimaNo, supplierNm) {
+function openDeleteTerimaModal(terimaId, terimaNo, supplierNm, triggerEl) {
+    lastHazardTriggerEl = triggerEl || activeTriggerButton || document.activeElement;
     closeAllActionDropdowns();
     const modal = document.getElementById('modal-delete-terima');
     const noEl = document.getElementById('delete-terima-no');
@@ -80,13 +82,42 @@ function openDeleteTerimaModal(terimaId, terimaNo, supplierNm) {
         if (supEl) supEl.textContent = supplierNm ? `Supplier: ${supplierNm}` : '';
         formEl.action = `/gudang/terima/${terimaId}`;
         modal.style.display = 'flex';
+        const cancelBtn = modal.querySelector('.hazard-modal-actions .btn-pill-outline');
+        if (cancelBtn) cancelBtn.focus();
     }
 }
 
 function closeDeleteTerimaModal() {
     const modal = document.getElementById('modal-delete-terima');
     if (modal) modal.style.display = 'none';
+    if (lastHazardTriggerEl && typeof lastHazardTriggerEl.focus === 'function') {
+        lastHazardTriggerEl.focus();
+        lastHazardTriggerEl = null;
+    }
 }
+
+// Handler Modal Dokumen Terkunci Pemakaian Stok
+function openStockLockedModal(actionType) {
+    closeAllActionDropdowns();
+    const modal = document.getElementById('modal-stock-locked');
+    if (modal) {
+        modal.style.display = 'flex';
+        const cancelBtn = modal.querySelector('.hazard-modal-actions .btn-pill-outline');
+        if (cancelBtn) cancelBtn.focus();
+    }
+}
+
+function closeStockLockedModal() {
+    const modal = document.getElementById('modal-stock-locked');
+    if (modal) modal.style.display = 'none';
+}
+
+// Auto-open modal jika URL berisi hash #locked
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash === '#locked') {
+        openStockLockedModal('edit');
+    }
+});
 
 document.addEventListener('click', function(e) {
     if (activeDropdownMenu && !activeDropdownMenu.contains(e.target)) {
@@ -110,6 +141,7 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeAllActionDropdowns();
         closeDeleteTerimaModal();
+        closeStockLockedModal();
         closeBeritaAcaraModal();
     }
 });
@@ -210,6 +242,10 @@ window.addEventListener('message', function(event) {
     }
 });
 
+window.openDeleteTerimaModal = openDeleteTerimaModal;
+window.closeDeleteTerimaModal = closeDeleteTerimaModal;
+window.openStockLockedModal = openStockLockedModal;
+window.closeStockLockedModal = closeStockLockedModal;
 window.openBeritaAcaraModal = openBeritaAcaraModal;
 window.closeBeritaAcaraModal = closeBeritaAcaraModal;
 window.onBeritaAcaraIframeLoaded = onBeritaAcaraIframeLoaded;

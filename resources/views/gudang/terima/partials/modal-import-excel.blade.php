@@ -18,24 +18,30 @@
 
             {{-- Notifikasi sukses/warning/error --}}
             @if(session('success'))
-                <div style="background:#dcfce7; border:1px solid #86efac; color:#14532d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
-                    ✅ {{ session('success') }}
+                <div style="background:#dcfce7; border:1px solid #86efac; color:#14532d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem; display:flex; align-items:center; gap:0.4rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span>{{ session('success') }}</span>
                 </div>
             @endif
             @if(session('warning'))
-                <div style="background:#fef9c3; border:1px solid #fde68a; color:#713f12; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
-                    ⚠️ {{ session('warning') }}
+                <div style="background:#fef9c3; border:1px solid #fde68a; color:#713f12; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem; display:flex; align-items:center; gap:0.4rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>{{ session('warning') }}</span>
                 </div>
             @endif
             @if(session('error'))
-                <div style="background:#fee2e2; border:1px solid #fca5a5; color:#7f1d1d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
-                    ❌ {{ session('error') }}
+                <div style="background:#fee2e2; border:1px solid #fca5a5; color:#7f1d1d; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem; display:flex; align-items:center; gap:0.4rem;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>{{ session('error') }}</span>
                 </div>
             @endif
 
             {{-- Langkah-langkah --}}
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.9rem 1rem; margin-bottom:1.25rem; font-size:0.83rem; color:#475569;">
-                <div style="font-weight:700; color:#0f172a; margin-bottom:0.4rem;">📋 Cara Import:</div>
+                <div style="font-weight:700; color:#0f172a; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.4rem;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    <span>Panduan Import Dokumen:</span>
+                </div>
                 <ol style="margin:0; padding-left:1.25rem; line-height:1.8;">
                     <li>Download template resmi terlebih dahulu</li>
                     <li>Isi data di sheet <strong>Barang Masuk</strong> mulai baris ke-7</li>
@@ -65,13 +71,13 @@
                     <div style="font-size:0.77rem; color:#94a3b8; margin-top:0.3rem;">Maksimal 5 MB. Hanya format .xlsx dan .xls yang diterima.</div>
                 </div>
 
-                <div style="display:flex; gap:0.75rem;">
-                    <button type="submit" id="btn-import-submit" style="flex:1; background:#134e5e; color:#fff; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:0.9rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Proses Import
-                    </button>
-                    <button type="button" onclick="document.getElementById('modal-import-excel').style.display='none'" style="background:#f1f5f9; color:#475569; border:1.5px solid #e2e8f0; border-radius:8px; padding:0.7rem 1rem; font-size:0.9rem; font-weight:600; cursor:pointer;">
+                <div style="display:flex; justify-content:flex-end; gap:0.65rem; align-items:center; margin-top:1.25rem;">
+                    <button type="button" onclick="document.getElementById('modal-import-excel').style.display='none'" class="btn-pill-outline" style="font-size:0.8125rem;">
                         Batal
+                    </button>
+                    <button type="submit" id="btn-import-submit" class="btn-pill-dark" style="font-size:0.8125rem;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span>Proses Import</span>
                     </button>
                 </div>
             </form>

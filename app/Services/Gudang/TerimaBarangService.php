@@ -6,6 +6,7 @@ use App\Models\Gudang\DatPoDtl;
 use App\Models\Gudang\DatPoHdr;
 use App\Models\Gudang\DatTerimaDtl;
 use App\Models\Gudang\DatTerimaHdr;
+use App\Models\Gudang\DatTerimaRevisiLog;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstSupplier;
 use App\Services\Common\CodeGeneratorService;
@@ -116,7 +117,9 @@ class TerimaBarangService
             'po',
             'qc.details',
             'details.barang.satuanDasar',
-            'hutangDetails.header'
+            'details.poDetail',
+            'hutangDetails.header',
+            'revisiLog',
         ])->where('terima_id', $id)->firstOrFail();
     }
 
@@ -403,20 +406,463 @@ class TerimaBarangService
     }
 
     /**
+     * Memeriksa status pemakaian stok fisik dari dokumen penerimaan barang:
+     * - Apakah batch barang penerimaan ini telah digunakan di SPK/Produksi/Mutasi Keluar?
+     * - Apakah sisa stok di gudang masih mencukupi untuk dilakukan rollback?
+     * - Apakah dokumen penerimaan aman untuk diedit / dibatalkan?
+     */
+    public function checkStockUsage(int|DatTerimaHdr $terima): array
+    {
+        if (is_numeric($terima)) {
+            $terima = DatTerimaHdr::with(['details.barang.satuanDasar', 'gudang'])->findOrFail($terima);
+        } elseif (!$terima->relationLoaded('details')) {
+            $terima->load(['details.barang.satuanDasar', 'gudang']);
+        }
+
+        $isUsed = false;
+        $canBeEdited = true;
+        $canBeDeleted = true;
+        $items = [];
+        $reasons = [];
+        $totalTerimaNetto = 0;
+        $totalSisaNetto = 0;
+        $totalUsedQty = 0;
+
+        foreach ($terima->details as $dtl) {
+            $nettoQty = max(0, (float) $dtl->terima_qty - (float) ($dtl->reject_qty ?? 0));
+            $totalTerimaNetto += $nettoQty;
+
+            if ($nettoQty <= 0) {
+                continue;
+            }
+
+            $batchNo = $dtl->batch_no;
+            $gradeCd = !empty($dtl->grade_cd) ? strtoupper(trim($dtl->grade_cd)) : null;
+
+            // 1. Ambil stok batch saat ini di gudang
+            $stokBatch = \App\Models\Gudang\DatStokBatch::where('gudang_id', $terima->gudang_id)
+                ->where('barang_id', $dtl->barang_id)
+                ->where('batch_no', $batchNo)
+                ->when(!empty($gradeCd), fn($q) => $q->where('grade_cd', $gradeCd))
+                ->first();
+
+            $sisaQty = $stokBatch ? (float) $stokBatch->sisa_qty : 0;
+            $totalSisaNetto += $sisaQty;
+
+            // 2. Ambil catatan mutasi OUT nyata dari kartu stok (BPPB Produksi, SPK, Packaging, Retur, Pengeluaran)
+            $outLedgers = \App\Models\Gudang\DatStokLedger::where('gudang_id', $terima->gudang_id)
+                ->where('barang_id', $dtl->barang_id)
+                ->where('batch_no', $batchNo)
+                ->when(!empty($gradeCd), fn($q) => $q->where('grade_cd', $gradeCd))
+                ->where('tipe_transaksi_cd', 'OUT')
+                ->where('keterangan_txt', 'NOT ILIKE', '%Rollback Edit%')
+                ->where('keterangan_txt', 'NOT ILIKE', '%Pembatalan%')
+                ->where('dokumen_no', 'NOT ILIKE', '%/GRN/%')
+                ->orderBy('transaksi_tgl', 'desc')
+                ->get();
+
+            $ledgerUsedQty = (float) $outLedgers->sum('qty');
+            $usedQty = $ledgerUsedQty;
+            if ($sisaQty < $nettoQty && $usedQty <= 0) {
+                $usedQty = round($nettoQty - $sisaQty, 4);
+            }
+            $totalUsedQty += $usedQty;
+
+            $barangNm = $dtl->barang?->barang_nm ?? "Barang #{$dtl->barang_id}";
+            $satuanNm = $dtl->barang?->satuanDasar?->satuan_nm ?? 'KG';
+
+            $itemLocked = false;
+            // Jika ada pemakaian pada batch ini (> 0) atau sisa batch fisik di bawah netto masuk
+            if ($usedQty > 0 || $sisaQty < $nettoQty) {
+                $itemLocked = true;
+                $isUsed = true;
+                $canBeEdited = false;
+                $canBeDeleted = false;
+
+                $docRefs = $outLedgers->pluck('dokumen_no')->filter()->unique()->take(3)->implode(', ');
+                $refInfo = $docRefs ? " (Ref: {$docRefs})" : "";
+                $formattedUsed = number_format($usedQty, 2, ',', '.');
+                $reasons[] = "Stok pada Batch '{$batchNo}' ({$barangNm}) sudah terpakai sebanyak {$formattedUsed} {$satuanNm}{$refInfo}. Dokumen penerimaan ini tidak dapat diubah.";
+            }
+
+            $items[] = [
+                'barang_id'     => $dtl->barang_id,
+                'barang_nm'     => $barangNm,
+                'satuan_nm'     => $satuanNm,
+                'batch_no'      => $batchNo,
+                'grade_cd'      => $gradeCd ?? 'NON-GRADE',
+                'terima_netto'  => $nettoQty,
+                'sisa_qty'      => $sisaQty,
+                'used_qty'      => $usedQty,
+                'is_locked'     => $itemLocked,
+                'usage_logs'    => $outLedgers->map(fn($l) => [
+                    'dokumen_no'     => $l->dokumen_no,
+                    'qty'            => (float) $l->qty,
+                    'transaksi_tgl'  => $l->transaksi_tgl ? $l->transaksi_tgl->format('d/m/Y H:i') : '-',
+                    'keterangan_txt' => $l->keterangan_txt,
+                ])->toArray(),
+            ];
+        }
+
+        // 3. Cek tagihan hutang (AP) terkait
+        $hasPaidHutang = false;
+        $hutangDtls = \App\Models\Keuangan\DatHutangDtl::where('deleted_st', false)
+            ->where('terima_id', $terima->terima_id)
+            ->get();
+
+        foreach ($hutangDtls as $hDtl) {
+            $hHdr = \App\Models\Keuangan\DatHutangHdr::find($hDtl->hutang_id);
+            if ($hHdr && (float) $hHdr->total_dibayar > 0) {
+                $hasPaidHutang = true;
+                $canBeDeleted = false;
+                $reasons[] = "Dokumen penerimaan terkait dengan Faktur Hutang {$hHdr->hutang_no} yang telah memiliki riwayat pembayaran di Keuangan.";
+            }
+        }
+
+        return [
+            'is_used'            => $isUsed,
+            'can_be_edited'      => $canBeEdited,
+            'can_be_deleted'     => $canBeDeleted,
+            'total_terima_netto' => $totalTerimaNetto,
+            'total_sisa_netto'   => $totalSisaNetto,
+            'total_used_qty'     => $totalUsedQty,
+            'has_paid_hutang'    => $hasPaidHutang,
+            'items'              => $items,
+            'reasons'            => $reasons,
+        ];
+    }
+
+    /**
+     * Memeriksa apakah payload edit memiliki perubahan nyata terhadap data penerimaan tersimpan.
+     * Mencegah pemrosesan ulang stok, mutasi kartu stok, dan pencatatan log revisi jika tidak ada data yang berubah.
+     */
+    public function hasTerimaChanges(DatTerimaHdr $terima, array $data): bool
+    {
+        // 1. Cek Header Fields
+        if (!empty($data['terima_tgl'])) {
+            $existingDate = $terima->terima_tgl ? $terima->terima_tgl->format('Y-m-d') : null;
+            $newDate = date('Y-m-d', strtotime($data['terima_tgl']));
+            if ($existingDate !== $newDate) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('suratjalan_no', $data)) {
+            if (trim((string) $data['suratjalan_no']) !== trim((string) $terima->suratjalan_no)) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('tgl_jatuh_tempo', $data)) {
+            $existingTempo = $terima->tgl_jatuh_tempo ? $terima->tgl_jatuh_tempo->format('Y-m-d') : null;
+            $newTempo = !empty($data['tgl_jatuh_tempo']) ? date('Y-m-d', strtotime($data['tgl_jatuh_tempo'])) : null;
+            if ($existingTempo !== $newTempo) {
+                return true;
+            }
+        }
+
+        if (!empty($data['supplier_id']) && (int) $data['supplier_id'] !== (int) $terima->supplier_id) {
+            $oldSupNm = $terima->supplier?->supplier_nm;
+            $newSupNm = \App\Models\Master\MstSupplier::find($data['supplier_id'])?->supplier_nm;
+            if (!$oldSupNm || !$newSupNm || trim(strtolower($oldSupNm)) !== trim(strtolower($newSupNm))) {
+                return true;
+            }
+        }
+
+        if (!empty($data['gudang_id']) && (int) $data['gudang_id'] !== (int) $terima->gudang_id) {
+            return true;
+        }
+
+        if (array_key_exists('catatan_txt', $data)) {
+            if (trim((string) $data['catatan_txt']) !== trim((string) $terima->catatan_txt)) {
+                return true;
+            }
+        }
+
+        // 2. Cek Item Rows
+        $items = $data['items'] ?? [];
+        if (count($items) !== $terima->details->count()) {
+            return true;
+        }
+
+        $existingDetails = $terima->details->values();
+        foreach ($items as $idx => $item) {
+            $oldDtl = $existingDetails->get($idx);
+            if (!$oldDtl) {
+                return true;
+            }
+
+            if ((int) $item['barang_id'] !== (int) $oldDtl->barang_id) {
+                return true;
+            }
+
+            $newTerimaQty = max(0, (float) ($item['terima_qty'] ?? 0));
+            if (abs($newTerimaQty - (float) $oldDtl->terima_qty) > 0.0001) {
+                return true;
+            }
+
+            $newRejectQty = max(0, (float) ($item['reject_qty'] ?? 0));
+            if (abs($newRejectQty - (float) ($oldDtl->reject_qty ?? 0)) > 0.0001) {
+                return true;
+            }
+
+            if (array_key_exists('batch_no', $item) && trim((string) $item['batch_no']) !== trim((string) $oldDtl->batch_no)) {
+                return true;
+            }
+
+            if (array_key_exists('grade_cd', $item) && trim((string) $item['grade_cd']) !== trim((string) $oldDtl->grade_cd)) {
+                return true;
+            }
+
+            if (array_key_exists('expired_tgl', $item)) {
+                $oldExp = $oldDtl->expired_tgl ? date('Y-m-d', strtotime($oldDtl->expired_tgl)) : null;
+                $newExp = !empty($item['expired_tgl']) ? date('Y-m-d', strtotime($item['expired_tgl'])) : null;
+                if ($oldExp !== $newExp) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Membuat snapshot array lengkap data penerimaan sebelum/sesudah perubahan.
+     */
+    protected function buildTerimaSnapshot(DatTerimaHdr $terima): array
+    {
+        return [
+            'terima_no'        => $terima->terima_no,
+            'terima_tgl'       => $terima->terima_tgl ? $terima->terima_tgl->format('Y-m-d') : null,
+            'suratjalan_no'    => $terima->suratjalan_no,
+            'tgl_jatuh_tempo'  => $terima->tgl_jatuh_tempo ? $terima->tgl_jatuh_tempo->format('Y-m-d') : null,
+            'supplier_id'      => $terima->supplier_id,
+            'supplier_nm'      => $terima->supplier?->supplier_nm,
+            'gudang_id'        => $terima->gudang_id,
+            'gudang_nm'        => $terima->gudang?->gudang_nm,
+            'catatan_txt'      => $terima->catatan_txt,
+            'items'            => $terima->details->map(function ($d) {
+                return [
+                    'terimadtl_id'  => $d->terimadtl_id,
+                    'barang_id'     => $d->barang_id,
+                    'barang_cd'     => $d->barang?->barang_cd,
+                    'barang_nm'     => $d->barang?->barang_nm,
+                    'satuan_nm'     => $d->barang?->satuanDasar?->satuan_nm ?? ($d->barang?->satuanDasar?->satuan_cd ?? 'Unit'),
+                    'batch_no'      => $d->batch_no,
+                    'grade_cd'      => $d->grade_cd,
+                    'expired_tgl'   => $d->expired_tgl ? date('Y-m-d', strtotime($d->expired_tgl)) : null,
+                    'terima_qty'    => (float) $d->terima_qty,
+                    'reject_qty'    => (float) ($d->reject_qty ?? 0),
+                    'netto_qty'     => max(0, (float) $d->terima_qty - (float) ($d->reject_qty ?? 0)),
+                    'harga_nominal' => (float) $d->harga_nominal,
+                ];
+            })->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Menghitung rincian komparasi sebelum vs sesudah (Diffs).
+     * Murni mencatat perubahan fisik operasional logistik (Bebas dari unsur finansial / tagihan).
+     */
+    protected function computeTerimaDiff(array $before, array $after): array
+    {
+        $diffs = [];
+        $summaryParts = [];
+
+        // 1. Header Fields
+        $headerFields = [
+            'terima_tgl'      => 'Tanggal Masuk Fisik',
+            'suratjalan_no'   => 'Nomor Surat Jalan (SJ)',
+            'tgl_jatuh_tempo' => 'Jatuh Tempo Tagihan',
+            'supplier_id'     => 'Supplier Pengirim',
+            'gudang_id'       => 'Gudang Masuk',
+            'catatan_txt'     => 'Keterangan Armada / Catatan',
+        ];
+
+        foreach ($headerFields as $field => $label) {
+            $oldVal = $before[$field] ?? null;
+            $newVal = $after[$field] ?? null;
+
+            if ($field === 'supplier_id' && (int)$oldVal !== (int)$newVal) {
+                $oldName = $before['supplier_nm'] ?? "ID {$oldVal}";
+                $newName = $after['supplier_nm'] ?? "ID {$newVal}";
+                $diffs[] = [
+                    'field'   => $field,
+                    'label'   => $label,
+                    'sebelum' => $oldName,
+                    'sesudah' => $newName,
+                    'tipe'    => 'HEADER',
+                ];
+                $summaryParts[] = "Supplier diubah dari '{$oldName}' menjadi '{$newName}'";
+            } elseif ($field === 'gudang_id' && (int)$oldVal !== (int)$newVal) {
+                $oldName = $before['gudang_nm'] ?? "ID {$oldVal}";
+                $newName = $after['gudang_nm'] ?? "ID {$newVal}";
+                $diffs[] = [
+                    'field'   => $field,
+                    'label'   => $label,
+                    'sebelum' => $oldName,
+                    'sesudah' => $newName,
+                    'tipe'    => 'HEADER',
+                ];
+                $summaryParts[] = "Gudang tujuan diubah dari '{$oldName}' menjadi '{$newName}'";
+            } elseif (!in_array($field, ['supplier_id', 'gudang_id']) && trim((string)$oldVal) !== trim((string)$newVal)) {
+                $diffs[] = [
+                    'field'   => $field,
+                    'label'   => $label,
+                    'sebelum' => (string) ($oldVal ?: '-'),
+                    'sesudah' => (string) ($newVal ?: '-'),
+                    'tipe'    => 'HEADER',
+                ];
+                $summaryParts[] = "{$label} diubah: '" . ($oldVal ?: '-') . "' ➔ '" . ($newVal ?: '-') . "'";
+            }
+        }
+
+        // 2. Item Rows
+        $beforeItems = collect($before['items'] ?? []);
+        $afterItems = collect($after['items'] ?? []);
+
+        $maxRows = max($beforeItems->count(), $afterItems->count());
+        for ($i = 0; $i < $maxRows; $i++) {
+            $b = $beforeItems->get($i);
+            $a = $afterItems->get($i);
+
+            if (!$b && $a) {
+                $bNm = $a['barang_nm'] ?? "Barang #{$a['barang_id']}";
+                $qtyFmt = number_format((float)$a['terima_qty'], 2, ',', '.') . ' ' . ($a['satuan_nm'] ?? 'KG');
+                $diffs[] = [
+                    'field'   => 'item_tambah',
+                    'label'   => "Tambah Item: {$bNm}",
+                    'sebelum' => '-',
+                    'sesudah' => "Qty: {$qtyFmt} (Batch: {$a['batch_no']})",
+                    'tipe'    => 'ITEM_TAMBAH',
+                ];
+                $summaryParts[] = "Menambahkan barang baru '{$bNm}' ({$qtyFmt})";
+            } elseif ($b && !$a) {
+                $bNm = $b['barang_nm'] ?? "Barang #{$b['barang_id']}";
+                $qtyFmt = number_format((float)$b['terima_qty'], 2, ',', '.') . ' ' . ($b['satuan_nm'] ?? 'KG');
+                $diffs[] = [
+                    'field'   => 'item_hapus',
+                    'label'   => "Hapus Item: {$bNm}",
+                    'sebelum' => "Qty: {$qtyFmt} (Batch: {$b['batch_no']})",
+                    'sesudah' => '-',
+                    'tipe'    => 'ITEM_HAPUS',
+                ];
+                $summaryParts[] = "Menghapus barang '{$bNm}'";
+            } elseif ($b && $a) {
+                $bNm = $a['barang_nm'] ?? ($b['barang_nm'] ?? "Barang #{$a['barang_id']}");
+                $satuan = $a['satuan_nm'] ?? ($b['satuan_nm'] ?? 'KG');
+
+                if ((int)$b['barang_id'] !== (int)$a['barang_id']) {
+                    $diffs[] = [
+                        'field'   => "item_{$i}_barang",
+                        'label'   => "Barang Baris #".($i+1),
+                        'sebelum' => $b['barang_nm'] ?? "ID #{$b['barang_id']}",
+                        'sesudah' => $a['barang_nm'] ?? "ID #{$a['barang_id']}",
+                        'tipe'    => 'ITEM_TAMBAH',
+                    ];
+                    $summaryParts[] = "Ganti barang baris #".($i+1)." menjadi '{$a['barang_nm']}'";
+                }
+
+                if (abs((float)$b['terima_qty'] - (float)$a['terima_qty']) > 0.0001) {
+                    $oldQty = number_format((float)$b['terima_qty'], 2, ',', '.') . " {$satuan}";
+                    $newQty = number_format((float)$a['terima_qty'], 2, ',', '.') . " {$satuan}";
+                    $diffs[] = [
+                        'field'   => "item_{$i}_terima_qty",
+                        'label'   => "Qty Terima: {$bNm}",
+                        'sebelum' => $oldQty,
+                        'sesudah' => $newQty,
+                        'tipe'    => 'ITEM_QTY',
+                    ];
+                    $summaryParts[] = "Qty terima {$bNm}: {$oldQty} ➔ {$newQty}";
+                }
+
+                if (abs((float)$b['reject_qty'] - (float)$a['reject_qty']) > 0.0001) {
+                    $oldRej = number_format((float)$b['reject_qty'], 2, ',', '.') . " {$satuan}";
+                    $newRej = number_format((float)$a['reject_qty'], 2, ',', '.') . " {$satuan}";
+                    $diffs[] = [
+                        'field'   => "item_{$i}_reject_qty",
+                        'label'   => "Qty Reject/Afkir: {$bNm}",
+                        'sebelum' => $oldRej,
+                        'sesudah' => $newRej,
+                        'tipe'    => 'ITEM_QTY',
+                    ];
+                    $summaryParts[] = "Qty reject {$bNm}: {$oldRej} ➔ {$newRej}";
+                }
+
+                if (trim((string)$b['batch_no']) !== trim((string)$a['batch_no'])) {
+                    $diffs[] = [
+                        'field'   => "item_{$i}_batch",
+                        'label'   => "Batch No: {$bNm}",
+                        'sebelum' => $b['batch_no'] ?: '-',
+                        'sesudah' => $a['batch_no'] ?: '-',
+                        'tipe'    => 'HEADER',
+                    ];
+                    $summaryParts[] = "Batch {$bNm}: '{$b['batch_no']}' ➔ '{$a['batch_no']}'";
+                }
+
+                if (trim((string)$b['grade_cd']) !== trim((string)$a['grade_cd'])) {
+                    $diffs[] = [
+                        'field'   => "item_{$i}_grade",
+                        'label'   => "Grade: {$bNm}",
+                        'sebelum' => $b['grade_cd'] ?: '-',
+                        'sesudah' => $a['grade_cd'] ?: '-',
+                        'tipe'    => 'HEADER',
+                    ];
+                    $summaryParts[] = "Grade {$bNm}: '{$b['grade_cd']}' ➔ '{$a['grade_cd']}'";
+                }
+            }
+        }
+
+        if (empty($diffs)) {
+            $diffs[] = [
+                'field'   => 'terima_update',
+                'label'   => 'Pembaruan Data Penerimaan',
+                'sebelum' => 'Versi Sebelumnya',
+                'sesudah' => 'Diperbarui',
+                'tipe'    => 'HEADER',
+            ];
+            $summaryParts[] = 'Pembaruan data penerimaan barang berhasil disimpan';
+        }
+
+        return [
+            'diffs'        => $diffs,
+            'summaryParts' => $summaryParts,
+        ];
+    }
+
+    /**
      * Memperbarui dokumen penerimaan barang:
-     * 1. Rollback stok lama & PO progress lama
-     * 2. Hapus detail lama
-     * 3. Update header & buat detail baru
-     * 4. Suntik stok baru & update PO progress baru
+     * 1. Validasi pemakaian stok (Smart Guard)
+     * 2. Rollback stok lama & PO progress lama
+     * 3. Hapus detail lama
+     * 4. Update header & buat detail baru
+     * 5. Suntik stok baru & update PO progress baru
      */
     public function update(int $id, array $data): DatTerimaHdr
     {
         return DB::transaction(function () use ($id, $data) {
-            $terima = DatTerimaHdr::with(['details', 'po.details'])->lockForUpdate()->findOrFail($id);
+            $terima = DatTerimaHdr::with(['supplier', 'gudang', 'details.barang.satuanDasar', 'po.details'])->lockForUpdate()->findOrFail($id);
 
             if ($terima->deleted_st) {
                 throw new Exception("Dokumen penerimaan {$terima->terima_no} sudah dihapus dan tidak dapat diubah.");
             }
+
+            // 0. Validasi status pemakaian stok (Smart Guard)
+            $usage = $this->checkStockUsage($terima);
+            if (!$usage['can_be_edited']) {
+                $reasonText = !empty($usage['reasons']) ? implode(' ', $usage['reasons']) : 'Bahan baku telah digunakan di lini produksi.';
+                throw new Exception("Dokumen penerimaan {$terima->terima_no} terkunci dan tidak dapat diubah: {$reasonText} Gunakan formulir Penyesuaian Stok (Stock Adjustment) untuk mengoreksi selisih fisik riil.");
+            }
+
+            // Proteksi: Jika tidak ada perubahan data nyata sama sekali, jangan ubah database & jangan catat revisi log
+            if (!$this->hasTerimaChanges($terima, $data)) {
+                $terimaFresh = $terima->fresh(['supplier', 'gudang', 'details.barang.satuanDasar', 'revisiLog']);
+                $terimaFresh->was_recently_changed = false;
+                return $terimaFresh;
+            }
+
+            // Ambil Snapshot SEBELUM pengubahan
+            $beforeSnapshot = $this->buildTerimaSnapshot($terima);
 
             // 1. Rollback stok lama untuk setiap item detail
             foreach ($terima->details as $dtl) {
@@ -685,8 +1131,69 @@ class TerimaBarangService
                 );
             }
 
-            return $terima->fresh(['details.barang']);
+            // 3. Ambil Snapshot SESUDAH pengubahan & catat riwayat revisi (Audit Trail)
+            $terimaFresh = $terima->fresh(['supplier', 'gudang', 'details.barang.satuanDasar']);
+            $afterSnapshot = $this->buildTerimaSnapshot($terimaFresh);
+            $diffResult = $this->computeTerimaDiff($beforeSnapshot, $afterSnapshot);
+
+            $user = auth()->user();
+            $userName = $user ? $user->name : ($data['editor_nama'] ?? 'SYSTEM');
+            $userRole = $user ? ($user->role?->role_nm ?? ($user->isSuperAdmin() ? 'Super Administrator' : 'Staff Gudang')) : 'Petugas Gudang';
+
+            $nextRevNumber = (int) ($terima->total_revisi_count ?? 0) + 1;
+            $revisiNo = "REV-{$nextRevNumber}";
+
+            $diffTypes = collect($diffResult['diffs'])->pluck('tipe')->unique()->toArray();
+            if (count($diffTypes) === 1 && in_array('HEADER', $diffTypes)) {
+                $kategoriPerubahan = 'PERUBAHAN_HEADER';
+            } elseif (count($diffTypes) === 1 && in_array('ITEM_QTY', $diffTypes)) {
+                $kategoriPerubahan = 'PERUBAHAN_QTY';
+            } elseif (count($diffTypes) === 1 && in_array('ITEM_HARGA', $diffTypes)) {
+                $kategoriPerubahan = 'PERUBAHAN_HARGA';
+            } elseif (in_array('ITEM_TAMBAH', $diffTypes) || in_array('ITEM_HAPUS', $diffTypes)) {
+                $kategoriPerubahan = 'PERUBAHAN_ITEM';
+            } else {
+                $kategoriPerubahan = 'KOMPREHENSIF';
+            }
+
+            $alasanEdit = !empty($data['alasan_edit']) ? trim($data['alasan_edit']) : 'Pembaruan Dokumen Penerimaan Barang';
+            $ringkasanPerubahan = implode("; ", $diffResult['summaryParts']);
+
+            DatTerimaRevisiLog::create([
+                'terima_id'           => $terima->terima_id,
+                'revisi_no'           => $revisiNo,
+                'revisi_tgl'          => now(),
+                'user_id'             => $user?->id,
+                'user_nama'           => $userName,
+                'user_role'           => $userRole,
+                'kategori_perubahan'  => $kategoriPerubahan,
+                'alasan_edit'         => $alasanEdit,
+                'ringkasan_perubahan' => $ringkasanPerubahan,
+                'data_sebelum_json'   => $beforeSnapshot,
+                'data_sesudah_json'   => $afterSnapshot,
+                'perubahan_json'      => $diffResult['diffs'],
+                'created_by'          => $userName,
+            ]);
+
+            $terima->update([
+                'is_ada_revisi'        => true,
+                'total_revisi_count'   => $nextRevNumber,
+                'terakhir_direvisi_at' => now(),
+                'terakhir_direvisi_by' => $userName,
+            ]);
+
+            $result = $terima->fresh(['supplier', 'gudang', 'details.barang.satuanDasar', 'revisiLog']);
+            $result->was_recently_changed = true;
+            return $result;
         });
+    }
+
+    /**
+     * Alias method untuk update dokumen penerimaan barang
+     */
+    public function updateTerima(int $id, array $data): DatTerimaHdr
+    {
+        return $this->update($id, $data);
     }
 
     /**
@@ -700,6 +1207,13 @@ class TerimaBarangService
 
             if ($terima->deleted_st) {
                 throw new \Exception("Dokumen penerimaan {$terima->terima_no} sudah pernah dihapus.");
+            }
+
+            // 0. Validasi status pemakaian stok & hutang sebelum pembatalan (Smart Guard)
+            $usage = $this->checkStockUsage($terima);
+            if (!$usage['can_be_deleted']) {
+                $reasonText = !empty($usage['reasons']) ? implode(' ', $usage['reasons']) : 'Bahan baku telah digunakan di lini produksi atau telah terbit pembayaran.';
+                throw new \Exception("Dokumen penerimaan {$terima->terima_no} terkunci dan tidak dapat dibatalkan: {$reasonText} Gunakan Berita Acara / formulir Penyesuaian Stok untuk koreksi persediaan.");
             }
 
             // 1. Kurangi kembali stok untuk setiap item detail (validasi ketersediaan batch otomatis oleh deductStock)

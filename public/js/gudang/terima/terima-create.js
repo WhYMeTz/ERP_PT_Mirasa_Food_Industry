@@ -7,6 +7,7 @@
 // =========================================================================
 // 1. DATA SUPPLIER & FILTER PENCARIAN
 // =========================================================================
+const isEditMode = Boolean(window.isEditMode);
 const suppliersData = window.suppliersData || [];
 
 let activeModalSupplierTab = 'ALL';
@@ -263,7 +264,7 @@ function selectSupplier(supplierId) {
     // Auto-set tanggal jatuh tempo berdasarkan TOP Master Supplier (tetap bisa diedit manual)
     const tempoInput = document.getElementById('tgl_jatuh_tempo');
     const terimaTglInput = document.getElementById('terima_tgl');
-    if (tempoInput) {
+    if (tempoInput && (!window.isEditMode || !tempoInput.value)) {
         const rawDate = (terimaTglInput && terimaTglInput.value) ? terimaTglInput.value : new Date().toISOString().split('T')[0];
         const parts = rawDate.split('-');
         const baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -273,6 +274,10 @@ function selectSupplier(supplierId) {
         const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
         const dd = String(baseDate.getDate()).padStart(2, '0');
         tempoInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    if (typeof saveTerimaCreateDraft === 'function') {
+        saveTerimaCreateDraft();
     }
 }
 
@@ -284,6 +289,10 @@ function clearSelectedSupplier() {
     renderSupplierDropdown('');
     supDropdownList.style.display = 'block';
     supSearchInput.focus();
+
+    if (typeof saveTerimaCreateDraft === 'function') {
+        saveTerimaCreateDraft();
+    }
 }
 
 // Search input listeners
@@ -394,6 +403,9 @@ function applyBarangCategoryFilterToSelect(selectElem, category) {
 let terimaRowIndex = window.selectedPoDetailsCount || 1;
 
 function onPoSelected(poId) {
+    if (window.isEditMode) {
+        return;
+    }
     if (typeof clearTerimaCreateDraft === 'function') {
         clearTerimaCreateDraft();
     }
@@ -405,7 +417,7 @@ function onPoSelected(poId) {
     window.location.href = baseUrl + '?po_id=' + encodeURIComponent(poId);
 }
 
-// ⚡ Salin Semua Sisa PO langsung ke kolom Kuantitas Terima
+// Salin Semua Sisa PO langsung ke kolom Kuantitas Terima
 function copyAllRemainingPoQty() {
     document.querySelectorAll('.terima-row').forEach(row => {
         const sisa = parseFloat(row.dataset.sisa || 0);
@@ -417,7 +429,7 @@ function copyAllRemainingPoQty() {
     calculateTotalTerima();
 }
 
-// 🧹 Kosongkan Semua Kuantitas agar bisa diketik manual sesuai fisik yang datang
+// Kosongkan Semua Kuantitas agar bisa diketik manual sesuai fisik yang datang
 function clearAllTerimaQty() {
     document.querySelectorAll('.item-terima-qty').forEach(input => {
         input.value = 0;
@@ -832,6 +844,9 @@ function proceedSubmitOverPo() {
     closeConfirmOverPoModal();
     const form = document.getElementById('formTerima');
     if (form) {
+        if (typeof lockTerimaSubmitButtons === 'function') {
+            lockTerimaSubmitButtons();
+        }
         form.submit();
     }
 }
@@ -847,43 +862,175 @@ window.removeTerimaRow = removeTerimaRow;
 window.addNewItemRow = () => addTerimaRow(true);
 window.removeItemRow = (btn) => removeTerimaRow(btn);
 
-// Validasi Kelengkapan Batch Fisik Supplier Sebelum Form Disubmit
-const formTerimaElem = document.getElementById('formTerima');
-if (formTerimaElem) {
-    formTerimaElem.addEventListener('submit', function (e) {
-        const rows = document.querySelectorAll('.terima-row');
-        let errorFound = false;
+// ==========================================================================
+// VALIDASI INTERAKTIF & ANTI DOUBLE-SUBMIT (CREATE & EDIT FORM)
+// ==========================================================================
 
+let isTerimaFormSubmitting = false;
+
+function validateTerimaForm() {
+    const banner = document.getElementById('terimaValidationBanner');
+    const errors = [];
+    const fieldsToMark = [];
+
+    // Bersihkan kelas error lama
+    document.querySelectorAll('.terima-input-error').forEach(el => el.classList.remove('terima-input-error'));
+
+    // 1. Validasi Supplier Mitra
+    const supplierIdEl = document.getElementById('supplier_id');
+    const supplierSearchInput = document.getElementById('supplier_search_input');
+    const supplierSelectedBox = document.getElementById('selected_supplier_box');
+    const isSupplierSelected = (supplierIdEl && supplierIdEl.value.trim() !== '') ||
+                               (supplierSelectedBox && supplierSelectedBox.style.display !== 'none');
+    if (!isSupplierSelected) {
+        errors.push('Supplier mitra pengirim wajib dipilih dari daftar rekanan.');
+        if (supplierSearchInput) fieldsToMark.push(supplierSearchInput);
+    }
+
+    // 2. Validasi Tanggal Terima Fisik
+    const terimaTglEl = document.getElementById('terima_tgl');
+    if (!terimaTglEl || !terimaTglEl.value.trim()) {
+        errors.push('Tanggal masuk fisik barang ke gudang wajib diisi.');
+        if (terimaTglEl) fieldsToMark.push(terimaTglEl);
+    }
+
+    // 3. Validasi Nomor Surat Jalan (SJ)
+    const suratJalanEl = document.getElementById('suratjalan_no');
+    if (!suratJalanEl || !suratJalanEl.value.trim()) {
+        errors.push('Nomor Surat Jalan (SJ) dari supplier fisik wajib diisi.');
+        if (suratJalanEl) fieldsToMark.push(suratJalanEl);
+    }
+
+    // 4. Validasi Gudang Masuk
+    const gudangIdEl = document.getElementById('gudang_id');
+    if (!gudangIdEl || !gudangIdEl.value.trim()) {
+        errors.push('Gudang tujuan penerimaan barang wajib dipilih.');
+        if (gudangIdEl) fieldsToMark.push(gudangIdEl);
+    }
+
+    // 5. Validasi Baris Item Barang
+    const rows = document.querySelectorAll('#terimaItemsContainer .terima-row, #itemsContainer .item-row, .terima-row');
+    if (rows.length === 0) {
+        errors.push('Minimal harus ada 1 baris item komoditas barang yang diterima.');
+    } else {
+        let hasValidRow = false;
         rows.forEach((row, idx) => {
-            if (errorFound) return;
+            const rowNumber = idx + 1;
+            const barangSelect = row.querySelector('.item-barang') || row.querySelector('.item-barang-id') || row.querySelector('select[name*="[barang_id]"]') || row.querySelector('input[name*="[barang_id]"]');
+            const qtyInput = row.querySelector('.item-terima-qty') || row.querySelector('.qty-terima') || row.querySelector('input[name*="[terima_qty]"]');
+            const batchInput = row.querySelector('.item-batch') || row.querySelector('input[name*="[batch_no]"]');
 
-            const barangSelect = row.querySelector('.item-barang') || row.querySelector('.item-barang-id');
-            const qtyInput = row.querySelector('.item-terima-qty');
-            const batchInput = row.querySelector('.item-batch');
+            const barangIdVal = barangSelect ? barangSelect.value.trim() : '';
+            const qtyVal = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
 
-            const hasBarang = barangSelect && barangSelect.value;
-            const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+            if (!barangIdVal) {
+                errors.push(`Baris ke-${rowNumber}: Komoditas barang wajib dipilih.`);
+                if (barangSelect) fieldsToMark.push(barangSelect);
+            }
 
-            if (hasBarang && qty > 0 && batchInput) {
+            if (qtyVal <= 0) {
+                errors.push(`Baris ke-${rowNumber}: Kuantitas fisik terima wajib lebih besar dari 0.`);
+                if (qtyInput) fieldsToMark.push(qtyInput);
+            }
+
+            // Validasi batch jika barang & qty terisi
+            if (barangIdVal && qtyVal > 0 && batchInput) {
                 const batchVal = batchInput.value.trim();
                 if (!batchVal || batchVal.endsWith('-')) {
-                    e.preventDefault();
-                    errorFound = true;
-                    batchInput.style.border = '2px solid #ef4444';
-                    batchInput.style.backgroundColor = '#fef2f2';
-                    batchInput.focus();
-                    const len = batchInput.value.length;
-                    batchInput.setSelectionRange(len, len);
-
-                    alert(`⚠️ Nomor Batch Fisik Supplier pada baris ke-${idx + 1} belum diisi lengkap!\n\nSilakan ketikkan kode lot / faktur yang tertera pada surat jalan atau kemasan supplier di belakang tanda strip.`);
-                } else {
-                    batchInput.style.border = '';
-                    batchInput.style.backgroundColor = '';
+                    errors.push(`Baris ke-${rowNumber}: Nomor batch fisik dari faktur/surat jalan supplier wajib diisi lengkap.`);
+                    fieldsToMark.push(batchInput);
                 }
+            }
+
+            if (barangIdVal && qtyVal > 0) {
+                hasValidRow = true;
             }
         });
 
-        if (errorFound) {
+        if (!hasValidRow && errors.length === 0) {
+            errors.push('Minimal harus ada 1 item barang dengan kuantitas fisik terima > 0.');
+        }
+    }
+
+    // Jika ada error validasi
+    if (errors.length > 0) {
+        fieldsToMark.forEach(el => el.classList.add('terima-input-error'));
+
+        if (banner) {
+            let errorItemsHtml = errors.map(err => `<li>${err}</li>`).join('');
+            banner.innerHTML = `
+                <div class="terima-validation-header">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Periksa Kembali Data Formulir Penerimaan (${errors.length} Kesalahan)</span>
+                </div>
+                <ul class="terima-validation-list">
+                    ${errorItemsHtml}
+                </ul>
+            `;
+            banner.style.display = 'block';
+            banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Fokus ke input error pertama
+        if (fieldsToMark.length > 0) {
+            try {
+                fieldsToMark[0].focus();
+            } catch (err) {}
+        }
+
+        return false;
+    }
+
+    // Jika lolos validasi, sembunyikan banner
+    if (banner) {
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+    }
+
+    return true;
+}
+
+function lockTerimaSubmitButtons() {
+    isTerimaFormSubmitting = true;
+    const submitBtns = document.querySelectorAll('#btnSubmitTerima, .btn-dock-submit, .btn-save, button[type="submit"]');
+    submitBtns.forEach(btn => {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        const textSpan = btn.querySelector('#btnSubmitTerimaText') || btn.querySelector('span');
+        if (textSpan) {
+            textSpan.textContent = 'Menyimpan Dokumen...';
+        }
+    });
+}
+
+function unlockTerimaSubmitButtons() {
+    isTerimaFormSubmitting = false;
+    const submitBtns = document.querySelectorAll('#btnSubmitTerima, .btn-dock-submit, .btn-save, button[type="submit"]');
+    submitBtns.forEach(btn => {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        const textSpan = btn.querySelector('#btnSubmitTerimaText');
+        if (textSpan) {
+            textSpan.textContent = window.isEditMode ? 'Simpan Perubahan Penerimaan' : 'Simpan Penerimaan Fisik';
+        }
+    });
+}
+
+// Pasang Event Listener Form Submit & Reset Error
+const formTerimaElem = document.getElementById('formTerima');
+if (formTerimaElem) {
+    formTerimaElem.addEventListener('submit', function (e) {
+        if (isTerimaFormSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Jalankan Validasi Interaktif Client-Side
+        const isValid = validateTerimaForm();
+        if (!isValid) {
+            e.preventDefault();
             return false;
         }
 
@@ -893,19 +1040,45 @@ if (formTerimaElem) {
             openConfirmOverPoModal(window.currentOverPoItems);
             return false;
         }
+
+        // Kunci tombol simpan untuk mencegah double-submit
+        lockTerimaSubmitButtons();
     });
 
-    // Reset style error saat user mulai mengetik di kolom batch
+    // Reset style error saat user mulai mengetik atau mengubah field
     document.addEventListener('input', function (e) {
+        if (e.target && e.target.classList.contains('terima-input-error')) {
+            e.target.classList.remove('terima-input-error');
+        }
         if (e.target && e.target.classList.contains('item-batch')) {
             const val = e.target.value.trim();
             if (val && !val.endsWith('-')) {
                 e.target.style.border = '';
                 e.target.style.backgroundColor = '';
+                e.target.classList.remove('terima-input-error');
             }
         }
     });
+
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.classList.contains('terima-input-error')) {
+            e.target.classList.remove('terima-input-error');
+        }
+        const supplierSearch = document.getElementById('supplier_search_input');
+        if (supplierSearch && e.target && e.target.id === 'supplier_id') {
+            supplierSearch.classList.remove('terima-input-error');
+        }
+    });
 }
+
+// BFCache navigation reset
+window.addEventListener('pageshow', function () {
+    unlockTerimaSubmitButtons();
+});
+
+window.validateTerimaForm = validateTerimaForm;
+window.lockTerimaSubmitButtons = lockTerimaSubmitButtons;
+window.unlockTerimaSubmitButtons = unlockTerimaSubmitButtons;
 
 // Shortcut Pintasan Keyboard Ctrl+S / Cmd+S untuk Simpan Cepat
 document.addEventListener('keydown', function (e) {
@@ -1107,11 +1280,11 @@ function updateQcChipCounts() {
     const chipPenolong = document.getElementById('qcChipPenolong');
 
     if (chipAll) chipAll.innerHTML = `Semua (${counts['']})`;
-    if (chipSingkong) chipSingkong.innerHTML = `🥔 Singkong (${counts['SINGKONG']})`;
-    if (chipMinyak) chipMinyak.innerHTML = `🛢️ Minyak (${counts['MINYAK']})`;
-    if (chipPlastik) chipPlastik.innerHTML = `🛍️ Plastik (${counts['PLASTIK']})`;
-    if (chipKarton) chipKarton.innerHTML = `📦 Karton (${counts['KARTON']})`;
-    if (chipPenolong) chipPenolong.innerHTML = `🧂 Bumbu &amp; Penolong (${counts['BAHAN_PENOLONG']})`;
+    if (chipSingkong) chipSingkong.innerHTML = `Singkong (${counts['SINGKONG']})`;
+    if (chipMinyak) chipMinyak.innerHTML = `Minyak (${counts['MINYAK']})`;
+    if (chipPlastik) chipPlastik.innerHTML = `Plastik (${counts['PLASTIK']})`;
+    if (chipKarton) chipKarton.innerHTML = `Karton (${counts['KARTON']})`;
+    if (chipPenolong) chipPenolong.innerHTML = `Bumbu &amp; Penolong (${counts['BAHAN_PENOLONG']})`;
 }
 
 function setQcCategoryFilter(cat, btn) {
@@ -1261,95 +1434,91 @@ function renderQcTicketsTable(tickets) {
         const kCat = (t.kategori_barang || 'SINGKONG').toUpperCase();
         const isSingkong = kCat === 'SINGKONG' || (t.item_summary || '').toUpperCase().includes('SINGKONG');
 
-        // Badge Komoditas
-        let catBadge = '';
-        if (isSingkong) {
-            catBadge = `<span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.68rem; font-weight: 700; border: 1px solid #a7f3d0;">🥔 Singkong</span>`;
-        } else if (kCat === 'MINYAK') {
-            catBadge = `<span class="badge" style="background: #fefce8; color: #a16207; font-size: 0.68rem; font-weight: 700; border: 1px solid #fef08a;">🛢️ Minyak</span>`;
-        } else if (kCat === 'PLASTIK') {
-            catBadge = `<span class="badge" style="background: #eff6ff; color: #1d4ed8; font-size: 0.68rem; font-weight: 700; border: 1px solid #bfdbfe;">🛍️ Plastik</span>`;
-        } else if (kCat === 'KARTON') {
-            catBadge = `<span class="badge" style="background: #fff7ed; color: #c2410c; font-size: 0.68rem; font-weight: 700; border: 1px solid #fed7aa;">📦 Karton</span>`;
-        } else {
-            catBadge = `<span class="badge" style="background: #f5f3ff; color: #6d28d9; font-size: 0.68rem; font-weight: 700; border: 1px solid #ddd6fe;">🧂 Penolong</span>`;
-        }
+        // Badge Komoditas (Clean Neutral)
+        let catLabel = 'Penolong';
+        if (isSingkong) catLabel = 'Singkong';
+        else if (kCat === 'MINYAK') catLabel = 'Minyak';
+        else if (kCat === 'PLASTIK') catLabel = 'Plastik';
+        else if (kCat === 'KARTON') catLabel = 'Karton';
 
-        // Badge Tahap Singkong
+        const catBadge = `<span class="qc-cat-pill">${catLabel}</span>`;
+
+        // Badge Tahap Uji Mutu
         let tahapBadge = '';
         if (isSingkong) {
             if (t.has_p2) {
-                tahapBadge = `<span class="qc-stage-badge lengkap" title="Kedatangan ini sudah selesai Pengujian 1 (1/2 bak) dan Pengujian 2 (sisa bak)">🟢 Uji 1 + 2 Lengkap</span>`;
+                tahapBadge = `<span class="qc-stage-pill success" title="Kedatangan ini sudah selesai Pengujian 1 dan Pengujian 2">Uji 1 + 2 Lengkap</span>`;
             } else {
-                tahapBadge = `<span class="qc-stage-badge uji1" title="Baru selesai Pengujian 1 (1/2 bak)">🟡 Uji 1 (1/2 Bak)</span>`;
+                tahapBadge = `<span class="qc-stage-pill warning" title="Baru selesai Pengujian 1 (1/2 bak)">Uji 1 (1/2 Bak)</span>`;
             }
         } else {
-            tahapBadge = `<span class="qc-stage-badge selesai">✅ Selesai Diuji</span>`;
+            tahapBadge = `<span class="qc-stage-pill success">Selesai Diuji</span>`;
         }
 
-        // Badges Grade
+        // Badges Grade (Neutral Enterprise Standard)
         let gradeBadgesHtml = '';
         if (t.grades && t.grades.length > 0) {
             gradeBadgesHtml = t.grades.map(g => {
-                const color = g === 'A' ? '#047857' : (g === 'B' ? '#b45309' : '#dc2626');
-                const bg = g === 'A' ? '#ecfdf5' : (g === 'B' ? '#fffbeb' : '#fef2f2');
-                const bd = g === 'A' ? '#a7f3d0' : (g === 'B' ? '#fde68a' : '#fecaca');
-                return `<span style="font-size:0.675rem; font-weight:800; background:${bg}; color:${color}; border:1px solid ${bd}; padding:1px 5px; border-radius:4px;">Gr. ${escapeHtml(g)}</span>`;
+                const uG = String(g).toUpperCase();
+                let grCls = 'grade-none';
+                if (uG === 'A') grCls = 'grade-a';
+                else if (uG === 'B') grCls = 'grade-b';
+                else if (uG === 'REJECT') grCls = 'grade-reject';
+                return `<span class="qc-grade-pill ${grCls}">Gr. ${escapeHtml(g)}</span>`;
             }).join(' ');
         }
 
         // PO Badge
         const hasPo = Boolean(t.po_id) && t.po_no && t.po_no !== 'Non-PO';
         const poBadge = hasPo
-            ? `<span style="font-size: 0.725rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">📄 PO: ${escapeHtml(t.po_no)}</span>`
-            : `<span style="font-size: 0.725rem; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">⚡ Non-PO</span>`;
+            ? `<span class="qc-po-pill">PO: ${escapeHtml(t.po_no)}</span>`
+            : `<span class="qc-nonpo-pill">Non-PO</span>`;
 
         html += `
                 <tr class="qc-picker-row" onclick="applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" title="Klik baris ini untuk tarik tiket ${escapeHtml(t.qc_no)}">
-                    <td style="text-align: center; color: #94a3b8; font-weight: 700; font-size: 0.775rem;">
+                    <td style="text-align: center; color: #64748b; font-size: 0.8125rem;">
                         ${idx + 1}
                     </td>
                     <td>
-                        <div class="qc-ticket-pill">${escapeHtml(t.qc_no)}</div>
-                        <div style="font-size: 0.725rem; color: #64748b; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-                            <span>🕒</span>
+                        <div class="qc-ticket-code">${escapeHtml(t.qc_no)}</div>
+                        <div class="qc-ticket-date">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>${escapeHtml(t.tgl_periksa)}</span>
                         </div>
                     </td>
                     <td>
-                        <strong style="color: #0f172a; font-size: 0.85rem; display: block;">${escapeHtml(t.supplier_nm || '-')}</strong>
-                        <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                        <div class="qc-supplier-name">${escapeHtml(t.supplier_nm || '-')}</div>
+                        <div class="qc-ref-row">
                             ${poBadge}
-                            ${t.surat_jalan_supplier ? `<span style="font-size: 0.7rem; color: #64748b; font-family: monospace;">SJ: ${escapeHtml(t.surat_jalan_supplier)}</span>` : ''}
+                            ${t.surat_jalan_supplier ? `<span class="qc-sj-text">SJ: ${escapeHtml(t.surat_jalan_supplier)}</span>` : ''}
                         </div>
                     </td>
                     <td>
-                        <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; margin-bottom: 3px;">
+                        <div class="qc-tags-row">
                             ${catBadge}
                             ${tahapBadge}
                         </div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #1e293b;">${escapeHtml(t.item_summary || t.nama_jenis || '-')}</div>
-                        ${gradeBadgesHtml ? `<div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 3px;">${gradeBadgesHtml}</div>` : ''}
+                        <div class="qc-item-name">${escapeHtml(t.item_summary || t.nama_jenis || '-')}</div>
+                        ${gradeBadgesHtml ? `<div class="qc-grades-row">${gradeBadgesHtml}</div>` : ''}
                     </td>
                     <td>
                         <div class="qc-plate-pill">
-                            <span>🚛</span>
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
                             <span>${escapeHtml(t.plat_nomor_truk || '-')}</span>
                         </div>
-                        <div style="font-size: 0.725rem; color: #475569; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-                            <span>👤</span>
+                        <div class="qc-driver-name">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             <span>${escapeHtml(t.sopir_nama || '-')}</span>
                         </div>
                     </td>
                     <td style="text-align: right;">
-                        <div class="qc-netto-badge">
-                            <span class="qc-netto-value">${parseFloat(t.total_netto).toLocaleString('id-ID', { minimumFractionDigits: 0 })} kg</span>
-                            <span class="qc-gross-sub">Gross: ${parseFloat(t.total_gross).toLocaleString('id-ID', { minimumFractionDigits: 0 })} kg</span>
-                        </div>
+                        <div class="qc-netto-num">${parseFloat(t.total_netto).toLocaleString('id-ID', { minimumFractionDigits: 0 })} kg</div>
+                        <div class="qc-gross-sub">Gross: ${parseFloat(t.total_gross).toLocaleString('id-ID', { minimumFractionDigits: 0 })} kg</div>
                     </td>
                     <td style="text-align: center;">
                         <button type="button" class="btn-tarik-qc" onclick="event.stopPropagation(); applyQcTicket(${t.qc_id}); closeModal('modalPilihQc');" title="Tarik data inspeksi ke formulir penerimaan">
-                            <span>⚡ Tarik</span>
+                            <span>Tarik</span>
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
                     </td>
                 </tr>
@@ -1415,7 +1584,7 @@ function applyQcTicket(qcId) {
             const btnDetach = document.getElementById('btnDetachQc');
 
             if (bannerTitle) {
-                bannerTitle.innerHTML = `<span style="color:#15803d;">✅ Terhubung dengan Tiket QC: ${escapeHtml(data.qc_no)}</span>`;
+                bannerTitle.innerHTML = `<span style="color:#15803d; font-weight:700;">Terhubung dengan Tiket QC: ${escapeHtml(data.qc_no)}</span>`;
             }
             if (bannerSub) {
                 bannerSub.innerHTML = `Supplier: <strong>${escapeHtml(data.supplier_nm || '-')}</strong> &bull; Truk: <strong>${escapeHtml(data.plat_nomor_truk || '-')}</strong> &bull; Petugas QC: <strong>${escapeHtml(data.petugas_qc_nama || '-')}</strong>`;
@@ -1460,6 +1629,10 @@ function applyQcTicket(qcId) {
                                 <input type="hidden" name="items[${idx}][kadar_air_persen]" value="${it.kadar_air || 0}">
                                 <input type="hidden" name="items[${idx}][refraksi_persen]" value="${rowRefraksiPersen}">
                                 <input type="hidden" name="items[${idx}][barang_id]" value="${it.barang_id}" class="item-barang-id">
+                                <input type="hidden" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="item-harga">
+                                <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
+                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
+                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
                                 
                                 <strong style="color: #0f172a; display: block; font-size: 0.85rem;" class="item-barang-name">${escapeHtml(it.barang_nm)}</strong>
                                 ${sisaPoVal > 0 || pesanPoVal > 0 ? `
@@ -1480,7 +1653,7 @@ function applyQcTicket(qcId) {
                                 </div>
                                 <div class="row-over-po-badge" style="display: none; margin-top: 3px;">
                                     <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
-                                        ⚠️ Over PO (<span class="over-diff-text">+0</span>)
+                                        Over PO (<span class="over-diff-text">+0</span>)
                                     </span>
                                 </div>
                             </td>
@@ -1503,20 +1676,16 @@ function applyQcTicket(qcId) {
                             <td>
                                 <input type="number" step="0.0001" min="0" name="items[${idx}][reject_qty]" value="${rowRejectQty}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                             </td>
-                            <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                            <td class="row-netto">
                                 ${Math.max(0, rowBruto - rowRejectQty).toLocaleString('id-ID', { minimumFractionDigits: 2 })}
                             </td>
                             <td style="text-align: center;">
                                 <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">${escapeHtml(it.satuan_nm)}</span>
                             </td>
-                            <td>
-                                <input type="number" step="0.01" min="0" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
-                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
-                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
-                            </td>
                             <td style="text-align: center;">
-                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                <button type="button" onclick="removeTerimaRow(this)" class="btn-remove-row" title="Hapus Baris">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
                             </td>
                         `;
                     container.appendChild(tr);
@@ -1679,7 +1848,7 @@ function initCreateTerimaDateNumberSync() {
         terimaNoInput.style.pointerEvents = 'none';
         if (terimaNoHelp) {
             terimaNoHelp.style.display = 'block';
-            terimaNoHelp.innerHTML = `<span style="color:#0284c7;">⚡ Memeriksa urutan nomor GRN untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
+            terimaNoHelp.innerHTML = `<span style="color:#0284c7;">Memeriksa urutan nomor GRN untuk periode ${formatTanggalIndo(targetDateStr)}...</span>`;
         }
 
         fetch(`/ajax/generate-code?type=grn&date=${encodeURIComponent(targetDateStr)}`)
@@ -1701,7 +1870,7 @@ function initCreateTerimaDateNumberSync() {
 
                     if (terimaNoHelp) {
                         terimaNoHelp.style.display = 'block';
-                        terimaNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Nomor GRN disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
+                        terimaNoHelp.innerHTML = `<span style="color:#15803d; font-weight:600;">Nomor GRN disesuaikan otomatis (${reasonText}): <strong>${data.code}</strong></span>`;
                     }
                 }
             })
@@ -1869,11 +2038,47 @@ function initCreatePreviousMonthProtection() {
 
 // =========================================================================
 // 8. AUTO-SAVE & RESTORE DRAFT PENERIMAAN BARANG (GRN) (LOCAL STORAGE)
+// DENGAN BATAS KEDALUWARSA (MAX 2 JAM) & BEBAS EMOJI (ENTERPRISE UX)
 // =========================================================================
 const TERIMA_DRAFT_STORAGE_KEY = 'erp_mirasa_terima_create_draft_v1';
+const TERIMA_DRAFT_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 Jam (120 Menit)
 let terimaDraftSaveDebounceTimer = null;
 let terimaDraftIndicatorTimer = null;
 let isTerimaSubmitting = false;
+let isRestoringTerimaDraft = false;
+
+function showTerimaDraftRestoreBanner(timestamp) {
+    const banner = document.getElementById('terimaDraftRestoreBanner');
+    const textEl = document.getElementById('terimaDraftRestoreText');
+    if (!banner || !textEl) return;
+
+    let timeText = '';
+    if (timestamp) {
+        const d = new Date(timestamp);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const diffMins = Math.max(1, Math.round((Date.now() - timestamp) / 60000));
+        timeText = ` (tersimpan pukul ${hours}:${mins} WIB - sekitar ${diffMins} menit lalu)`;
+    }
+
+    textEl.textContent = `Draf formulir Penerimaan Barang dipulihkan otomatis${timeText}. Draf otomatis kedaluwarsa jika tidak ada aktivitas selama 2 jam.`;
+    banner.style.display = 'flex';
+}
+window.showTerimaDraftRestoreBanner = showTerimaDraftRestoreBanner;
+
+function dismissTerimaDraftBanner() {
+    const banner = document.getElementById('terimaDraftRestoreBanner');
+    if (banner) {
+        banner.style.display = 'none';
+    }
+}
+window.dismissTerimaDraftBanner = dismissTerimaDraftBanner;
+
+function discardTerimaCreateDraft() {
+    clearTerimaCreateDraft();
+    window.location.reload();
+}
+window.discardTerimaCreateDraft = discardTerimaCreateDraft;
 
 function showTerimaDraftIndicator(text) {
     const ind = document.getElementById('draftSaveIndicator');
@@ -1896,6 +2101,8 @@ function clearTerimaCreateDraft() {
         localStorage.removeItem(TERIMA_DRAFT_STORAGE_KEY);
         const ind = document.getElementById('draftSaveIndicator');
         if (ind) ind.style.display = 'none';
+        const banner = document.getElementById('terimaDraftRestoreBanner');
+        if (banner) banner.style.display = 'none';
     } catch (e) {
         console.warn('Gagal menghapus draft Penerimaan:', e);
     }
@@ -1903,10 +2110,10 @@ function clearTerimaCreateDraft() {
 window.clearTerimaCreateDraft = clearTerimaCreateDraft;
 
 function saveTerimaCreateDraft() {
-    if (isTerimaSubmitting) return;
+    if (window.isEditMode || isTerimaSubmitting || isRestoringTerimaDraft) return;
     clearTimeout(terimaDraftSaveDebounceTimer);
     terimaDraftSaveDebounceTimer = setTimeout(() => {
-        if (isTerimaSubmitting) return;
+        if (isTerimaSubmitting || isRestoringTerimaDraft) return;
         try {
             const formTerima = document.getElementById('formTerima');
             if (!formTerima) return;
@@ -2008,7 +2215,7 @@ function saveTerimaCreateDraft() {
             };
 
             localStorage.setItem(TERIMA_DRAFT_STORAGE_KEY, JSON.stringify(payload));
-            showTerimaDraftIndicator('💾 Draft Tersimpan');
+            showTerimaDraftIndicator('Draft Tersimpan');
         } catch (e) {
             console.warn('Gagal menyimpan draft Penerimaan:', e);
         }
@@ -2017,12 +2224,23 @@ function saveTerimaCreateDraft() {
 window.saveTerimaCreateDraft = saveTerimaCreateDraft;
 
 function restoreTerimaCreateDraft() {
+    if (window.isEditMode) return false;
     try {
         const raw = localStorage.getItem(TERIMA_DRAFT_STORAGE_KEY);
         if (!raw) return false;
 
         const draft = JSON.parse(raw);
-        if (!draft || !draft.header) return false;
+        if (!draft || !draft.header || !draft.timestamp) {
+            localStorage.removeItem(TERIMA_DRAFT_STORAGE_KEY);
+            return false;
+        }
+
+        // Cek apakah draft sudah kedaluwarsa (> 2 Jam / 120 Menit)
+        const ageMs = Date.now() - draft.timestamp;
+        if (ageMs > TERIMA_DRAFT_MAX_AGE_MS) {
+            localStorage.removeItem(TERIMA_DRAFT_STORAGE_KEY);
+            return false;
+        }
 
         // Jika halaman dibuka kembali dengan error server (validation errors)
         if (window.hasOldServerInput) {
@@ -2033,9 +2251,8 @@ function restoreTerimaCreateDraft() {
         const queryQcId = urlParams.get('qc_id');
         const queryPoId = urlParams.get('po_id') || (window.selectedPoId ? String(window.selectedPoId) : null);
 
-        // Jika ada query po_id, data PO sudah dimuat lengkap dari database oleh server (Blade).
-        // Draft lama di localStorage TIDAK BOLEH menimpa data PO yang baru ditarik!
-        if (queryPoId) {
+        // Jika ada query po_id DAN draft tersimpan memiliki po_id yang BERBEDA, buang draft lama
+        if (queryPoId && draft.header.po_id && String(draft.header.po_id) !== String(queryPoId)) {
             clearTerimaCreateDraft();
             return false;
         }
@@ -2045,6 +2262,8 @@ function restoreTerimaCreateDraft() {
             clearTerimaCreateDraft();
             return false;
         }
+
+        isRestoringTerimaDraft = true;
 
         const h = draft.header;
 
@@ -2101,7 +2320,7 @@ function restoreTerimaCreateDraft() {
             const btnDetach = document.getElementById('btnDetachQc');
             const qcStatusPill = document.getElementById('qcStatusPill');
 
-            if (bannerTitle) bannerTitle.innerHTML = `<span style="color:#15803d;">✅ Terhubung dengan Tiket QC: ${escapeHtml(h.qc_meta.qc_no || '')}</span>`;
+            if (bannerTitle) bannerTitle.innerHTML = `<span style="color:#15803d; font-weight:700;">Terhubung dengan Tiket QC: ${escapeHtml(h.qc_meta.qc_no || '')}</span>`;
             if (bannerSub) bannerSub.innerHTML = `Supplier: <strong>${escapeHtml(h.qc_meta.supplier_nm || '-')}</strong> &bull; Truk: <strong>${escapeHtml(h.qc_meta.plat_nomor_truk || '-')}</strong> &bull; Petugas QC: <strong>${escapeHtml(h.qc_meta.petugas_qc_nama || '-')}</strong>`;
             if (btnDetach) btnDetach.style.display = 'inline-block';
             if (qcStatusPill) qcStatusPill.style.display = 'inline-block';
@@ -2144,6 +2363,10 @@ function restoreTerimaCreateDraft() {
                                 <input type="hidden" name="items[${idx}][kadar_air_persen]" value="${escapeHtml(it.kadar_air_persen || 0)}">
                                 <input type="hidden" name="items[${idx}][refraksi_persen]" value="${escapeHtml(rowRefraksiPersen)}">
                                 <input type="hidden" name="items[${idx}][barang_id]" value="${escapeHtml(it.barang_id)}" class="item-barang-id">
+                                <input type="hidden" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="item-harga">
+                                <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
+                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
+                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
                                 
                                 <strong style="color: #0f172a; display: block; font-size: 0.85rem;" class="item-barang-name">${escapeHtml(it.barang_nm)}</strong>
                                 ${(sisaPoVal > 0 || pesanPoVal > 0) ? `
@@ -2184,20 +2407,16 @@ function restoreTerimaCreateDraft() {
                             <td>
                                 <input type="number" step="0.0001" min="0" name="items[${idx}][reject_qty]" value="${it.reject_qty || 0}" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
                             </td>
-                            <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+                            <td class="row-netto">
                                 ${rowNetto.toLocaleString('id-ID', { minimumFractionDigits: 2 })}
                             </td>
                             <td style="text-align: center;">
                                 <span class="row-satuan" style="font-weight: 700; color: #475569; font-size: 0.8rem;">${escapeHtml(it.satuan_nm || 'KG')}</span>
                             </td>
-                            <td>
-                                <input type="number" step="0.01" min="0" name="items[${idx}][harga_nominal]" value="${defaultHarga}" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-                                <input type="hidden" name="items[${idx}][diskon_persen]" value="${it.diskon_persen || 0}" class="item-diskon">
-                                <input type="hidden" name="items[${idx}][potongan_nominal]" value="${it.potongan_nominal || 0}" class="item-potongan">
-                                <input type="hidden" name="items[${idx}][ppn_tipe]" value="${it.ppn_tipe || 'NON_PPN'}" class="item-ppn-tipe">
-                            </td>
                             <td style="text-align: center;">
-                                <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+                                <button type="button" onclick="removeTerimaRow(this)" class="btn-remove-row" title="Hapus Baris">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
                             </td>
                         `;
                         container.appendChild(tr);
@@ -2233,11 +2452,14 @@ function restoreTerimaCreateDraft() {
             }
         }
 
-        showTerimaDraftIndicator('💾 Draft Dipulihkan dari Sesi Terakhir');
+        showTerimaDraftIndicator('Draft Dipulihkan dari Sesi Terakhir');
+        showTerimaDraftRestoreBanner(draft.timestamp);
         return true;
     } catch (e) {
         console.warn('Gagal me-restore draft Penerimaan:', e);
         return false;
+    } finally {
+        isRestoringTerimaDraft = false;
     }
 }
 window.restoreTerimaCreateDraft = restoreTerimaCreateDraft;
@@ -2272,6 +2494,12 @@ function initTerimaDraftAutoSave() {
 }
 
 function initAllTerimaWorkstationFeatures() {
+    if (window.isEditMode) {
+        document.querySelectorAll('.terima-row').forEach(r => attachExcelKeyboardEventsTerima(r));
+        calculateTotalTerima();
+        initCreatePreviousMonthProtection();
+        return;
+    }
     const draftRestored = initTerimaDraftAutoSave();
     initAutoLoadQcTicket(draftRestored);
     initCreateTerimaDateNumberSync();

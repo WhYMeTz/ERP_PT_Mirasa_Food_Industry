@@ -1,44 +1,852 @@
-/**
- * =========================================================================
+/* =========================================================================
  * ERP PT MIRASA - TERIMA BARANG (GRN) SHOW STYLESHEET
- * =========================================================================
- */
+ * Two-Column Operational Inspector Standard (Harmonized with PO Design System)
+ * Clean Enterprise Minimalist (WaveDash / Linear Inspired)
+ * Bebas Gradasi, Tanpa Emoji, Monokromatik Slate Halus, Efisien & Super Cepat
+ * ========================================================================= */
 
-@media print {
-    header, nav, .btn, .no-print, .alert, footer {
-        display: none !important;
-    }
-    body, main {
-        padding: 0 !important;
-        margin: 0 !important;
-        background: #ffffff !important;
-    }
-    .card {
-        box-shadow: none !important;
-        border: 1px solid #000000 !important;
-        break-inside: avoid;
-    }
-    .print-only {
-        display: block !important;
-    }
-    table th, table td {
-        border: 1px solid #cbd5e1 !important;
-        color: #000000 !important;
+:root {
+    --po-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --po-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --po-slate-900: #0f172a;
+    --po-slate-800: #1e293b;
+    --po-slate-700: #334155;
+    --po-slate-600: #475569;
+    --po-slate-500: #64748b;
+    --po-slate-400: #94a3b8;
+    --po-slate-300: #cbd5e1;
+    --po-slate-200: #e2e8f0;
+    --po-slate-100: #f1f5f9;
+    --po-slate-50:  #f8fafc;
+    --po-white:     #ffffff;
+    --po-emerald:   #047857;
+    --po-emerald-light: #ecfdf5;
+    --po-emerald-border: #a7f3d0;
+    --po-rose:      #dc2626;
+    --po-rose-light: #fef2f2;
+    --po-rose-border: #fecaca;
+    --po-amber:     #b45309;
+    --po-amber-light: #fffbeb;
+    --po-amber-border: #fde68a;
+    --po-sky:       #0284c7;
+    --po-sky-light: #f0f9ff;
+    --po-sky-border: #bae6fd;
+    --po-radius-lg: 14px;
+    --po-radius-md: 10px;
+    --po-radius-sm: 6px;
+    --po-radius-pill: 9999px;
+    --po-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+/* Page Wrapper */
+.po-show-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-bottom: 3.5rem;
+    color: var(--po-slate-900);
+    font-family: var(--po-font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================================
+ * 1. Breadcrumb Navigation
+ * ========================================================================= */
+.po-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8125rem;
+    color: var(--po-slate-500);
+    margin-bottom: 0.85rem;
+}
+
+.po-breadcrumb a {
+    color: var(--po-slate-500);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.po-breadcrumb a:hover {
+    color: var(--po-slate-900);
+}
+
+.breadcrumb-separator {
+    color: var(--po-slate-300);
+    font-size: 0.75rem;
+}
+
+.breadcrumb-current {
+    color: var(--po-slate-900);
+    font-weight: 600;
+}
+
+/* =========================================================================
+ * 2. Header Bar Section
+ * ========================================================================= */
+.po-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.po-header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.po-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.po-header-title h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    letter-spacing: -0.025em;
+    margin: 0;
+    line-height: 1.25;
+    font-family: var(--po-font-mono);
+}
+
+.po-back-link {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--po-white);
+    border: 1px solid var(--po-slate-200);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--po-slate-600);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.po-back-link:hover {
+    background: var(--po-slate-50);
+    border-color: var(--po-slate-300);
+    color: var(--po-slate-900);
+}
+
+/* macOS Traffic Dots Accent */
+.mac-traffic-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    padding: 0 2px;
+}
+
+.mac-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.mac-dot-red    { background: #ff5f56; border: 1px solid #e0443e; }
+.mac-dot-yellow { background: #ffbd2e; border: 1px solid #dea123; }
+.mac-dot-green  { background: #27c93f; border: 1px solid #1aab29; }
+
+.po-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+}
+
+/* =========================================================================
+ * 3. Buttons (Pill Standards WaveDash / Linear)
+ * ========================================================================= */
+.btn-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.15rem;
+    background: var(--po-white);
+    border: 1px solid var(--po-slate-300);
+    border-radius: var(--po-radius-pill);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--po-slate-900);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.25;
+}
+
+.btn-pill-outline:hover {
+    background: var(--po-slate-50);
+    border-color: var(--po-slate-400);
+    color: var(--po-slate-900);
+}
+
+.btn-pill-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.25rem;
+    background: var(--po-slate-900);
+    border: 1px solid var(--po-slate-900);
+    border-radius: var(--po-radius-pill);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--po-white);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.btn-pill-dark:hover {
+    background: var(--po-slate-800);
+    border-color: var(--po-slate-800);
+    color: var(--po-white);
+}
+
+.btn-action-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.48rem 0.95rem;
+    background: var(--po-white);
+    border: 1.5px solid var(--po-slate-300);
+    border-radius: var(--po-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-action-trigger:hover,
+.btn-action-trigger.active {
+    background: var(--po-emerald-light);
+    border-color: var(--po-emerald);
+    color: var(--po-emerald);
+}
+
+/* =========================================================================
+ * 4. Badges & Status Chips
+ * ========================================================================= */
+.po-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--po-radius-sm);
+    font-size: 0.725rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.po-badge-completed { background: var(--po-emerald-light); color: var(--po-emerald); border: 1px solid var(--po-emerald-border); }
+.po-badge-approved  { background: var(--po-sky-light); color: var(--po-sky); border: 1px solid var(--po-sky-border); }
+.po-badge-pending   { background: var(--po-amber-light); color: var(--po-amber); border: 1px solid var(--po-amber-border); }
+.po-badge-rejected  { background: var(--po-rose-light); color: var(--po-rose); border: 1px solid var(--po-rose-border); }
+.po-badge-draft     { background: var(--po-slate-100); color: var(--po-slate-600); border: 1px solid var(--po-slate-300); }
+.po-badge-tax       { background: var(--po-slate-100); color: var(--po-slate-700); border: 1px solid var(--po-slate-300); font-family: var(--po-font-mono); font-weight: 700; }
+.po-badge-qc        { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; font-weight: 700; }
+
+/* =========================================================================
+ * 5. Metrics Cards Grid (Harmonized with PO 4-Column Grid)
+ * ========================================================================= */
+.po-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .po-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-.print-only {
-    display: none;
+@media (max-width: 640px) {
+    .po-metrics-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
-/* Dropdown Aksi Show View */
+.po-metric-card {
+    background: var(--po-white);
+    border: 1px solid var(--po-slate-200);
+    border-radius: var(--po-radius-lg);
+    padding: 1.1rem 1.25rem;
+    box-shadow: var(--po-shadow-subtle);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.po-metric-card:hover {
+    border-color: var(--po-slate-300);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.po-metric-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.65rem;
+}
+
+.po-metric-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.po-metric-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--po-slate-50);
+    border: 1px solid var(--po-slate-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--po-slate-600);
+}
+
+.po-metric-label {
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--po-slate-500);
+}
+
+.po-metric-dots {
+    color: var(--po-slate-300);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+}
+
+.po-metric-value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    font-family: var(--po-font-mono);
+}
+
+.po-metric-value.text-danger {
+    color: var(--po-rose);
+}
+
+.po-metric-footer {
+    font-size: 0.75rem;
+    color: var(--po-slate-500);
+    margin-top: 0.5rem;
+}
+
+/* =========================================================================
+ * 6. Alert Banners (Linear Minimalist Style)
+ * ========================================================================= */
+.po-alert-banner {
+    border-radius: var(--po-radius-md);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    box-shadow: var(--po-shadow-subtle);
+}
+
+.po-alert-info {
+    background: var(--po-sky-light);
+    border: 1.5px solid #e0f2fe;
+    border-left: 4px solid var(--po-sky);
+    color: #075985;
+}
+
+.po-alert-danger {
+    background: var(--po-rose-light);
+    border: 1.5px solid #fee2e2;
+    border-left: 4px solid var(--po-rose);
+    color: #991b1b;
+}
+
+.po-alert-warning {
+    background: var(--po-amber-light);
+    border: 1.5px solid #fef3c7;
+    border-left: 4px solid var(--po-amber);
+    color: #92400e;
+}
+
+.po-alert-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex: 1;
+    min-width: 260px;
+}
+
+.po-alert-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.po-alert-info .po-alert-icon-box {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.po-alert-danger .po-alert-icon-box {
+    background: #fee2e2;
+    color: var(--po-rose);
+}
+
+.po-alert-warning .po-alert-icon-box {
+    background: #fef3c7;
+    color: var(--po-amber);
+}
+
+.po-alert-body {
+    flex: 1;
+}
+
+.po-alert-title {
+    font-size: 0.925rem;
+    font-weight: 700;
+    margin: 0 0 0.2rem 0;
+}
+
+.po-alert-desc {
+    font-size: 0.8125rem;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.po-alert-list {
+    margin: 0.35rem 0 0 0;
+    padding-left: 1.2rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+/* =========================================================================
+ * 7. Workspace Grid (2 Columns: Left 2.3fr, Right 1fr)
+ * ========================================================================= */
+.po-workspace-grid {
+    display: grid;
+    grid-template-columns: 2.3fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .po-workspace-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.po-main-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.po-side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: sticky;
+    top: 1rem;
+}
+
+/* Solid Minimalist Card */
+.po-card {
+    background: var(--po-white);
+    border: 1px solid var(--po-slate-200);
+    border-radius: var(--po-radius-lg);
+    box-shadow: var(--po-shadow-subtle);
+    overflow: hidden;
+}
+
+.po-card-header {
+    background: var(--po-white);
+    padding: 0.95rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.po-card-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.po-card-subtitle {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--po-slate-500);
+    text-transform: none;
+    letter-spacing: normal;
+    margin-left: 0.35rem;
+}
+
+.po-card-body {
+    padding: 1.15rem 1.25rem;
+}
+
+/* =========================================================================
+ * 8. Modern Minimalist Tables
+ * ========================================================================= */
+.po-table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.po-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+}
+
+.po-table thead tr {
+    background: var(--po-slate-50);
+    border-bottom: 1.5px solid var(--po-slate-200);
+}
+
+.po-table th {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--po-slate-600);
+    white-space: nowrap;
+}
+
+.po-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.12s ease;
+}
+
+.po-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.po-table tbody tr:hover {
+    background: var(--po-slate-50);
+}
+
+.po-table td {
+    padding: 0.8rem 0.85rem;
+    color: var(--po-slate-700);
+    vertical-align: middle;
+}
+
+/* Batch Pill */
+.terima-batch-capsule {
+    font-family: var(--po-font-mono);
+    font-size: 0.8125rem;
+    background: #f8fafc;
+    color: #1e293b;
+    border: 1px solid var(--po-slate-300);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+/* Grade Pills in Show */
+.grade-pill-show {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+
+.grade-pill-show.grade-a {
+    background: var(--po-emerald-light);
+    color: var(--po-emerald);
+    border: 1px solid var(--po-emerald-border);
+}
+
+.grade-pill-show.grade-b {
+    background: var(--po-amber-light);
+    color: var(--po-amber);
+    border: 1px solid var(--po-amber-border);
+}
+
+.grade-pill-show.grade-reject {
+    background: var(--po-rose-light);
+    color: var(--po-rose);
+    border: 1px solid var(--po-rose-border);
+}
+
+.grade-pill-show.grade-none {
+    background: var(--po-slate-100);
+    color: var(--po-slate-600);
+    border: 1px solid var(--po-slate-300);
+}
+
+/* Elegant Summary Footer Bar (PO Design Standard) */
+.po-summary-bar {
+    border-top: 1.5px solid var(--po-slate-200);
+    background: var(--po-slate-50);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.po-summary-note {
+    font-size: 0.8rem;
+    color: var(--po-slate-500);
+    flex: 1;
+    min-width: 240px;
+}
+
+.po-summary-metrics {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.po-summary-metric-box {
+    background: var(--po-white);
+    border: 1px solid var(--po-slate-200);
+    border-radius: 6px;
+    padding: 0.45rem 0.85rem;
+    text-align: right;
+}
+
+.po-summary-metric-label {
+    font-size: 0.6875rem;
+    color: var(--po-slate-500);
+    text-transform: uppercase;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.po-summary-metric-val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    font-family: var(--po-font-mono);
+}
+
+.po-summary-metric-box.danger-box {
+    background: var(--po-rose-light);
+    border-color: var(--po-rose-border);
+}
+
+.po-summary-metric-box.danger-box .po-summary-metric-label {
+    color: var(--po-rose);
+}
+
+.po-summary-metric-box.danger-box .po-summary-metric-val {
+    color: var(--po-rose);
+}
+
+.po-summary-metric-box.primary-box {
+    background: var(--po-emerald-light);
+    border-color: var(--po-emerald-border);
+}
+
+.po-summary-metric-box.primary-box .po-summary-metric-label {
+    color: var(--po-emerald);
+    font-weight: 800;
+}
+
+.po-summary-metric-box.primary-box .po-summary-metric-val {
+    color: var(--po-emerald);
+    font-size: 1.15rem;
+}
+
+/* =========================================================================
+ * 9. Tanda Tangan Slip Timbang Card (3 Kolom)
+ * ========================================================================= */
+.slip-signatures-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.15rem 1.25rem;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .slip-signatures-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.slip-sign-box {
+    border: 1px dashed var(--po-slate-300);
+    border-radius: 8px;
+    padding: 1rem 0.75rem;
+    background: var(--po-slate-50);
+}
+
+.slip-sign-role {
+    font-size: 0.75rem;
+    color: var(--po-slate-500);
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.slip-sign-entity {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    display: block;
+    margin-top: 0.2rem;
+}
+
+.slip-sign-space {
+    height: 52px;
+}
+
+.slip-sign-line {
+    border-bottom: 1px solid var(--po-slate-400);
+    width: 75%;
+    margin: 0 auto;
+}
+
+.slip-sign-meta {
+    font-size: 0.725rem;
+    color: var(--po-slate-500);
+    margin-top: 0.35rem;
+    display: block;
+}
+
+/* =========================================================================
+ * 10. Sidebar Inspector Panels
+ * ========================================================================= */
+.inspector-entity-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--po-slate-900);
+    display: block;
+    line-height: 1.3;
+}
+
+.inspector-entity-sub {
+    font-size: 0.75rem;
+    color: var(--po-slate-500);
+    display: block;
+    margin-top: 2px;
+}
+
+.inspector-entity-desc {
+    font-size: 0.8125rem;
+    color: var(--po-slate-600);
+    margin-top: 0.45rem;
+    line-height: 1.45;
+}
+
+.inspector-kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.8125rem;
+}
+
+.inspector-kv-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.inspector-kv-row:first-child {
+    padding-top: 0;
+}
+
+.inspector-kv-label {
+    color: var(--po-slate-500);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.inspector-kv-val {
+    color: var(--po-slate-900);
+    font-weight: 600;
+    text-align: right;
+}
+
+.inspector-link-sky {
+    color: var(--po-sky);
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.inspector-link-sky:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.inspector-link-purple {
+    color: #7e22ce;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.inspector-link-purple:hover {
+    color: #6b21a8;
+    text-decoration: underline;
+}
+
+/* =========================================================================
+ * 11. Dropdown Aksi Show View (Fixed Viewport)
+ * ========================================================================= */
 .action-dropdown-menu {
     position: fixed;
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    min-width: 195px;
+    background: var(--po-white);
+    border: 1.5px solid var(--po-slate-300);
+    border-radius: var(--po-radius-sm);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    min-width: 210px;
     z-index: 999999 !important;
     display: none;
     overflow: hidden;
@@ -60,9 +868,9 @@
 .action-dropdown-item {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.65rem;
     padding: 0.55rem 0.95rem;
-    color: #1e293b;
+    color: var(--po-slate-800);
     text-decoration: none;
     font-size: 0.8125rem;
     font-weight: 500;
@@ -76,27 +884,317 @@
 }
 
 .action-dropdown-item:hover {
-    background: #f0fdf4;
-    color: #059669;
+    background: var(--po-emerald-light);
+    color: var(--po-emerald);
 }
 
 .action-dropdown-item.danger-item:hover {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.action-dropdown-divider {
-    height: 1px;
-    background: #f1f5f9;
-    margin: 0.3rem 0;
+    background: var(--po-rose-light);
+    color: var(--po-rose);
 }
 
 .action-dropdown-item.warning-item {
-    color: #dc2626;
+    color: var(--po-rose);
     background: #fff5f5;
 }
 
 .action-dropdown-item.warning-item:hover {
-    background: #fef2f2;
+    background: var(--po-rose-light);
     color: #991b1b;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: var(--po-slate-100);
+    margin: 0.3rem 0;
+}
+
+/* =========================================================================
+ * 12. Hazard Modal (Delete Confirmation)
+ * ========================================================================= */
+.hazard-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.hazard-modal-container {
+    background: var(--po-white);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+    border: 1px solid var(--po-rose-border);
+    box-sizing: border-box;
+}
+
+.hazard-modal-header {
+    background: var(--po-rose-light);
+    border-bottom: 1px solid #fca5a5;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hazard-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hazard-modal-icon-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--po-rose);
+    color: var(--po-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.hazard-modal-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #991b1b;
+}
+
+.hazard-modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: var(--po-slate-500);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.hazard-modal-close-btn:hover {
+    color: var(--po-slate-900);
+}
+
+.hazard-modal-body {
+    padding: 1.25rem;
+}
+
+.hazard-modal-intro {
+    font-size: 0.875rem;
+    color: var(--po-slate-700);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.hazard-modal-target-box {
+    background: var(--po-slate-50);
+    border: 1px solid var(--po-slate-200);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.hazard-modal-target-label {
+    font-size: 0.8rem;
+    color: var(--po-slate-500);
+}
+
+.hazard-modal-target-code {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--po-slate-900);
+    font-family: var(--po-font-mono);
+}
+
+.hazard-modal-target-sub {
+    font-size: 0.85rem;
+    color: var(--po-slate-600);
+    margin-top: 0.25rem;
+}
+
+.hazard-modal-warning-box {
+    background: var(--po-amber-light);
+    border: 1px solid var(--po-amber-border);
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.8rem;
+    color: #92400e;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    line-height: 1.45;
+}
+
+.hazard-modal-warning-box svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.hazard-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.btn-hazard-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.25rem;
+    background: var(--po-rose);
+    border: 1px solid var(--po-rose);
+    border-radius: var(--po-radius-pill);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--po-white);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-hazard-submit:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* =========================================================================
+ * 12.1. Stock Usage Alert Banner & Guard
+ * ========================================================================= */
+.stock-usage-alert-box {
+    background: #ffffff;
+    border: 1px solid var(--po-slate-200);
+    border-radius: var(--po-radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--po-shadow-subtle);
+    transition: all 0.15s ease;
+}
+
+.stock-usage-alert-box.locked {
+    border-color: #cbd5e1;
+    border-left: 4px solid #475569;
+    background: #ffffff;
+}
+
+.stock-usage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.stock-usage-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--po-radius-pill);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.stock-usage-tag {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.stock-usage-desc {
+    margin: 0 0 1rem 0;
+    font-size: 0.825rem;
+    color: #334155;
+    line-height: 1.5;
+}
+
+.stock-usage-desc strong {
+    color: #0f172a;
+}
+
+.stock-usage-items-table {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    background: #ffffff;
+}
+
+.stock-usage-footer-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78125rem;
+    color: #475569;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.btn-adjustment-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--po-radius-pill);
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.btn-adjustment-link:hover {
+    background: #334155;
+    color: #ffffff;
+}
+
+/* =========================================================================
+ * 13. Print Stylesheet
+ * ========================================================================= */
+@media print {
+    header, nav, aside, .sidebar, #sidebar, .btn, .no-print, .alert, footer, .po-header-bar, .po-breadcrumb, .btn-action-trigger, .po-metrics-grid, .po-summary-bar {
+        display: none !important;
+    }
+    body, main, .main-content, .content-wrapper, .container, .container-fluid, .po-show-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .print-only {
+        display: block !important;
+        width: 100% !important;
+        color: #000000 !important;
+        font-family: 'Helvetica', 'Arial', sans-serif !important;
+        padding: 0 !important;
+    }
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .print-table th, .print-table td {
+        border: 1px solid #000000;
+        padding: 6px 8px;
+    }
+}
+
+.print-only {
+    display: none;
 }

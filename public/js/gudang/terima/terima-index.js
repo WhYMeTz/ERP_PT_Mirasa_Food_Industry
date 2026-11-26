@@ -6,6 +6,7 @@
 
 let activeDropdownMenu = null;
 let activeTriggerButton = null;
+let lastHazardTriggerEl = null;
 
 function toggleSmartActionDropdown(button, event, menuId) {
     if (event) {
@@ -79,7 +80,8 @@ function closeAllActionDropdowns() {
 }
 
 // Handler Modal Delete Terima
-function openDeleteTerimaModal(terimaId, terimaNo, supplierNm) {
+function openDeleteTerimaModal(terimaId, terimaNo, supplierNm, triggerEl) {
+    lastHazardTriggerEl = triggerEl || activeTriggerButton || document.activeElement;
     closeAllActionDropdowns();
     const modal = document.getElementById('modal-delete-terima');
     const noEl = document.getElementById('delete-terima-no');
@@ -91,12 +93,18 @@ function openDeleteTerimaModal(terimaId, terimaNo, supplierNm) {
         if (supEl) supEl.textContent = supplierNm ? `Supplier: ${supplierNm}` : '';
         formEl.action = `/gudang/terima/${terimaId}`;
         modal.style.display = 'flex';
+        const cancelBtn = modal.querySelector('.hazard-modal-actions .btn-pill-outline');
+        if (cancelBtn) cancelBtn.focus();
     }
 }
 
 function closeDeleteTerimaModal() {
     const modal = document.getElementById('modal-delete-terima');
     if (modal) modal.style.display = 'none';
+    if (lastHazardTriggerEl && typeof lastHazardTriggerEl.focus === 'function') {
+        lastHazardTriggerEl.focus();
+        lastHazardTriggerEl = null;
+    }
 }
 
 // Global Event Listeners
@@ -244,3 +252,29 @@ window.onBeritaAcaraIframeLoaded = onBeritaAcaraIframeLoaded;
 window.printBeritaAcaraModalIframe = printBeritaAcaraModalIframe;
 window.toggleBeritaAcaraModalEdit = toggleBeritaAcaraModalEdit;
 window.resetBeritaAcaraModalIframe = resetBeritaAcaraModalIframe;
+
+/**
+ * Modern Pagination Handler for Penerimaan Barang (GRN)
+ */
+function changeTerimaPerPage(size) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', size);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
+}
+
+function jumpToTerimaPage(maxPage) {
+    const input = document.getElementById('terimaJumpPageInput');
+    if (!input) return;
+    let page = parseInt(input.value, 10);
+    if (isNaN(page) || page < 1) page = 1;
+    if (page > maxPage) page = maxPage;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    window.location.href = url.toString();
+}
+
+window.changeTerimaPerPage = changeTerimaPerPage;
+window.jumpToTerimaPage = jumpToTerimaPage;
+

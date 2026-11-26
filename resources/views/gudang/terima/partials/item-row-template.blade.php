@@ -47,6 +47,10 @@
                     @endforeach
                 </optgroup>
             </select>
+            <input type="hidden" name="items[__INDEX__][harga_nominal]" value="0" class="item-harga">
+            <input type="hidden" name="items[__INDEX__][diskon_persen]" value="0" class="item-diskon">
+            <input type="hidden" name="items[__INDEX__][potongan_nominal]" value="0" class="item-potongan">
+            <input type="hidden" name="items[__INDEX__][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
         </td>
         <td>
             <input type="text" name="items[__INDEX__][batch_no]" id="batch___INDEX__" value="" placeholder="Contoh: BC-... (ketik nomor batch faktur)" class="form-control item-batch" style="font-family: monospace; font-weight: 700; color: #0284c7; width: 100%;" required>
@@ -67,21 +71,16 @@
         <td>
             <input type="number" step="0.0001" min="0" name="items[__INDEX__][reject_qty]" value="0" class="form-control item-reject-qty" placeholder="0" style="text-align: right;" oninput="calculateTotalTerima()">
         </td>
-        <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;" class="row-netto">
+        <td class="row-netto">
             1,00
         </td>
         <td style="text-align: center;">
             <span class="row-satuan" style="font-weight: 600; color: #475569; font-size: 0.8rem;">-</span>
         </td>
-        <td>
-            <input type="number" step="0.01" min="0" name="items[__INDEX__][harga_nominal]" value="0" class="form-control item-harga" placeholder="0" style="text-align: right; font-weight: 600;" oninput="calculateTotalTerima()">
-            {{-- Nilai Finansial/Pajak Disimpan di Hidden Input untuk Finance --}}
-            <input type="hidden" name="items[__INDEX__][diskon_persen]" value="0" class="item-diskon">
-            <input type="hidden" name="items[__INDEX__][potongan_nominal]" value="0" class="item-potongan">
-            <input type="hidden" name="items[__INDEX__][ppn_tipe]" value="NON_PPN" class="item-ppn-tipe">
-        </td>
         <td style="text-align: center;">
-            <button type="button" onclick="removeTerimaRow(this)" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.8rem;" title="Hapus Baris">&times;</button>
+            <button type="button" onclick="removeTerimaRow(this)" class="btn-remove-row" title="Hapus Baris">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </button>
         </td>
     </tr>
 </template>

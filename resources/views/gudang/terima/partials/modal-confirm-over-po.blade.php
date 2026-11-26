@@ -41,7 +41,7 @@
             {{-- Info Box Operasional & Keuangan --}}
             <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:0.75rem 0.85rem; margin-bottom:1.25rem; font-size:0.78rem; color:#92400e; line-height:1.45;">
                 <div style="display:flex; gap:0.5rem; align-items:flex-start;">
-                    <span style="font-size:1rem; line-height:1;">💡</span>
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <div>
                         <strong>Catatan Sistem:</strong> Seluruh stok fisik yang diinput akan <strong>tetap dicatat 100% akurat</strong> ke kartu stok gudang. Dokumen penerimaan ini akan diberi penanda <em>Over-Delivery</em> untuk rekonsiliasi faktur tagihan bersama bagian Keuangan &amp; Purchasing.
                     </div>
@@ -50,11 +50,11 @@
 
             {{-- Action Buttons --}}
             <div style="display:flex; justify-content:flex-end; gap:0.6rem; align-items:center;">
-                <button type="button" onclick="closeConfirmOverPoModal()" class="btn btn-secondary" style="font-size:0.85rem; padding:0.5rem 1rem; border-radius:6px; font-weight:600;">
+                <button type="button" onclick="closeConfirmOverPoModal()" class="btn-pill-outline" style="font-size:0.8125rem;">
                     Periksa Kembali
                 </button>
-                <button type="button" onclick="proceedSubmitOverPo()" class="btn btn-warning" style="background:#f59e0b; border-color:#d97706; color:#ffffff; font-size:0.85rem; font-weight:700; padding:0.5rem 1.15rem; border-radius:6px; box-shadow:0 2px 4px rgba(245,158,11,0.25);">
-                    ✓ Lanjutkan Terima Over PO
+                <button type="button" onclick="proceedSubmitOverPo()" class="btn-pill-dark" style="background:#d97706; border-color:#d97706; font-size:0.8125rem;">
+                    Lanjutkan Terima Over PO
                 </button>
             </div>
         </div>

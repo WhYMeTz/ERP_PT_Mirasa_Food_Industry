@@ -95,7 +95,7 @@ class TerimaBarangController extends Controller
             ]);
         }
 
-        return view('gudang.terima.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType', 'kpiCounts', 'hasReject'));
+        return view('gudang.terima.index', compact('dataList', 'gudangList', 'search', 'gudangId', 'viewType', 'kpiCounts', 'hasReject', 'perPage'));
     }
 
     public function create(Request $request): View
@@ -171,24 +171,36 @@ class TerimaBarangController extends Controller
         }
 
         $terima = $this->terimaService->getById((int)$id);
+        $stockUsage = $this->terimaService->checkStockUsage($terima);
 
         if ($request->wantsJson()) {
             return response()->json([
-                'status'  => 'success',
-                'message' => 'Detail penerimaan barang berhasil diambil.',
-                'data'    => $terima,
+                'status'      => 'success',
+                'message'     => 'Detail penerimaan barang berhasil diambil.',
+                'data'        => $terima,
+                'stock_usage' => $stockUsage,
             ]);
         }
 
-        return view('gudang.terima.show', compact('terima'));
+        return view('gudang.terima.show', compact('terima', 'stockUsage'));
     }
 
     /**
      * Tampilan form edit penerimaan barang.
      */
-    public function edit(int $id): View
+    public function edit(int $id): View|RedirectResponse
     {
         $terima = $this->terimaService->getById($id);
+
+        // Smart Guard: Cek apakah sebagian/seluruh bahan baku sudah terpakai
+        $stockUsage = $this->terimaService->checkStockUsage($terima);
+        if (!$stockUsage['can_be_edited']) {
+            $reasonText = !empty($stockUsage['reasons']) ? implode(' ', $stockUsage['reasons']) : 'Sebagian/seluruh bahan baku telah digunakan di lini produksi.';
+            return redirect()
+                ->route('gudang.terima.show', $terima->terima_id)
+                ->with('error', "Dokumen penerimaan {$terima->terima_no} terkunci dan tidak dapat diubah: {$reasonText} Gunakan modul Penyesuaian Stok (Stock Adjustment) untuk mengoreksi selisih fisik riil.");
+        }
+
         $supplierList = MstSupplier::active()->with('jenisSupplier')->orderBy('supplier_nm')->get();
         $user = auth()->user();
         $gudangList = $user ? $user->getAllowedGudangList() : collect();
@@ -209,7 +221,8 @@ class TerimaBarangController extends Controller
             'supplierList',
             'gudangList',
             'barangList',
-            'openPoList'
+            'openPoList',
+            'stockUsage'
         ));
     }
 
@@ -218,6 +231,15 @@ class TerimaBarangController extends Controller
      */
     public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
+        // Smart Guard: Cek pemakaian stok sebelum validasi form
+        $stockUsage = $this->terimaService->checkStockUsage($id);
+        if (!$stockUsage['can_be_edited']) {
+            $reasonText = !empty($stockUsage['reasons']) ? implode(' ', $stockUsage['reasons']) : 'Sebagian/seluruh bahan baku telah digunakan di lini produksi.';
+            return back()->withInput()->withErrors([
+                'error' => "Gagal menyimpan perubahan: Dokumen penerimaan terkunci. {$reasonText} Gunakan modul Penyesuaian Stok."
+            ]);
+        }
+
         $validated = $request->validate([
             'terima_no'        => 'required|string|max:50|unique:dat_terima_hdr,terima_no,' . $id . ',terima_id',
             'terima_tgl'       => 'required|date',
@@ -227,6 +249,7 @@ class TerimaBarangController extends Controller
             'suratjalan_no'    => 'nullable|string|max:100',
             'tgl_jatuh_tempo'  => 'nullable|date',
             'catatan_txt'      => 'nullable|string',
+            'alasan_edit'      => 'nullable|string|max:500',
             'potongan_nominal' => 'nullable|numeric|min:0',
             'ppn_tipe'         => 'nullable|string',
 
@@ -247,6 +270,22 @@ class TerimaBarangController extends Controller
 
         try {
             $terima = $this->terimaService->update($id, $validated);
+
+            if (isset($terima->was_recently_changed) && $terima->was_recently_changed === false) {
+                $noChangeMsg = "Seluruh data dokumen Penerimaan Barang sama dengan data awal. Tidak ada proses perubahan yang perlu disimpan ke sistem.";
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'status'      => 'info',
+                        'message'     => $noChangeMsg,
+                        'was_changed' => false,
+                        'data'        => $terima,
+                    ]);
+                }
+
+                return redirect()
+                    ->route('gudang.terima.edit', $terima->terima_id)
+                    ->with('no_change_info', $noChangeMsg);
+            }
 
             if ($request->wantsJson()) {
                 return response()->json([

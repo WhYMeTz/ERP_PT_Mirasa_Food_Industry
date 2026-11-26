@@ -9,6 +9,24 @@ let activeDropdownMenu = null;
 let activeTriggerButton = null;
 
 /**
+ * Pindahkan seluruh menu dropdown aksi ke <body> saat halaman dimuat
+ * agar terbebas dari stacking context tabel dan sticky column
+ */
+function hoistActionDropdownsToBody() {
+    document.querySelectorAll('.qc-table-clean .action-dropdown-menu').forEach(menu => {
+        if (menu.parentElement !== document.body) {
+            document.body.appendChild(menu);
+        }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hoistActionDropdownsToBody);
+} else {
+    hoistActionDropdownsToBody();
+}
+
+/**
  * Toggle Smart Action Dropdown dengan posisi Fixed Viewport (Mencegah terpotong overflow tabel)
  */
 function toggleSmartActionDropdown(button, event, menuId) {
@@ -29,11 +47,22 @@ function toggleSmartActionDropdown(button, event, menuId) {
     // Tutup dropdown lain yang sedang terbuka
     closeAllActionDropdowns();
 
+    // Pastikan menu berada di document.body agar tidak tertimpa baris tabel / sticky cell
+    if (targetMenu.parentElement !== document.body) {
+        document.body.appendChild(targetMenu);
+    }
+
     // Tampilkan menu dan hitung posisinya secara pintar
     targetMenu.style.display = 'block';
+    targetMenu.style.zIndex = '999999';
     activeDropdownMenu = targetMenu;
     activeTriggerButton = button;
     button.classList.add('active');
+
+    const td = button.closest('td');
+    if (td) {
+        td.classList.add('is-dropdown-open');
+    }
 
     positionActionDropdown(button, targetMenu);
 }
@@ -42,8 +71,8 @@ function positionActionDropdown(button, menu) {
     if (!button || !menu) return;
 
     const rect = button.getBoundingClientRect();
-    const menuWidth = menu.offsetWidth || 210;
-    const menuHeight = menu.offsetHeight || 180;
+    const menuWidth = Math.max(menu.offsetWidth, 220);
+    const menuHeight = Math.max(menu.offsetHeight, 180);
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
 
@@ -74,6 +103,9 @@ function positionActionDropdown(button, menu) {
 function closeAllActionDropdowns() {
     document.querySelectorAll('.action-dropdown-menu, .qc-action-menu-dropdown').forEach(menu => {
         menu.style.display = 'none';
+    });
+    document.querySelectorAll('.qc-col-aksi.is-dropdown-open').forEach(td => {
+        td.classList.remove('is-dropdown-open');
     });
     if (activeTriggerButton) {
         activeTriggerButton.classList.remove('active');
@@ -396,5 +428,32 @@ function toggleAllDrawers() {
         textLabel.textContent = allDrawersExpanded ? 'Tutup Semua Rincian' : 'Buka Semua Rincian';
     }
 }
+
+/**
+ * =========================================================================
+ * PAGINATION & PER-PAGE HANDLERS (PO & WAVEDASH STANDARD)
+ * =========================================================================
+ */
+
+function jumpToQcPage(maxPage) {
+    const input = document.querySelector('.qc-jump-input');
+    if (!input) return;
+
+    let targetPage = parseInt(input.value, 10);
+    if (isNaN(targetPage) || targetPage < 1) targetPage = 1;
+    if (targetPage > maxPage) targetPage = maxPage;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', targetPage);
+    window.location.href = url.toString();
+}
+
+function changeQcPerPage(size) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', size);
+    url.searchParams.set('page', 1); // Reset ke halaman 1 saat baris per halaman berubah
+    window.location.href = url.toString();
+}
+
 
 

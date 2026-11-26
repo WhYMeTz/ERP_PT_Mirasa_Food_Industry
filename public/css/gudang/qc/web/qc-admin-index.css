@@ -1,215 +1,440 @@
 /* =========================================================================
- * ERP PT MIRASA - QUALITY CONTROL (QC) INBOUND INDEX STYLES
- * Mengikuti 100% Desain Standar Purchase Order (PO) Gudang
+ * ERP PT MIRASA - QUALITY CONTROL (QC) INBOUND WEB DESKTOP STYLES
+ * Mengikuti 100% Desain Standar Purchase Order (PO) Gudang / WaveDash
+ * Bebas Gradasi, Tanpa Emoji, Monokromatik Slate Halus, Efisien & Super Cepat
  * ========================================================================= */
 
-/* Dropdown Aksi Cerdas (Smart Viewport Positioning) */
-.action-dropdown-menu,
-.qc-action-menu-dropdown {
-    position: fixed;
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    min-width: 210px;
-    z-index: 999999 !important;
-    display: none;
-    overflow: hidden;
-    padding: 0.35rem 0;
-    animation: fadeInDropdown 0.12s ease-out;
+/* Page Wrapper */
+.qc-page-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-@keyframes fadeInDropdown {
-    from {
-        opacity: 0;
-        transform: scale(0.96);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+/* 1. Header Section (Harmonized with PO & Kas Keluar Standard) */
+.qc-top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.action-dropdown-item,
-.qc-dropdown-item {
+.qc-header-kicker {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.qc-header-title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.qc-header-subtitle {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0.35rem 0 0 0;
+    line-height: 1.45;
+}
+
+.qc-header-actions {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.55rem 0.95rem;
-    color: #1e293b;
-    text-decoration: none;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    transition: background 0.12s ease, color 0.12s ease;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
-    box-sizing: border-box;
+    gap: 0.625rem;
+    flex-wrap: wrap;
 }
 
-.action-dropdown-item:hover,
-.qc-dropdown-item:hover {
-    background: #f0fdf4;
-    color: #059669;
-}
-
-.action-dropdown-item.danger-item:hover,
-.qc-dropdown-item.danger-item:hover {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.action-dropdown-divider {
-    height: 1px;
-    background: #f1f5f9;
-    margin: 0.3rem 0;
-}
-
-/* Tombol Aksi Utama */
-.btn-action-trigger {
-    background: #ffffff;
-    border: 1.5px solid #cbd5e1;
-    color: #1e293b;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.32rem 0.75rem;
-    border-radius: 6px;
+/* Action Button Pills (WaveDash Enterprise Standard) */
+.btn-pill-outline {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
+    padding: 0.55rem 1.15rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    text-decoration: none;
+    transition: all 0.15s ease;
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-pill-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.btn-pill-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.25rem;
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.btn-pill-dark:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff;
+}
+
+/* 2. KPI Metrics Grid (Harmonized with PO 5 Kolom) */
+.qc-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+    .qc-metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .qc-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .qc-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.qc-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+    cursor: default;
+    user-select: none;
     transition: all 0.15s ease;
 }
 
-.btn-action-trigger:hover,
-.btn-action-trigger.active {
-    background: #f0fdf4;
-    border-color: #059669;
-    color: #059669;
+.qc-metric-card.is-active {
+    border: 1.5px solid #0f172a;
 }
 
-/* Badges */
-.badge-qc {
-    display: inline-flex;
+.qc-metric-top {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.3rem;
-    padding: 0.25rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    white-space: nowrap;
+    margin-bottom: 0.65rem;
 }
 
-.badge-qc-siap {
-    background: #fef3c7;
-    color: #b45309;
-    border: 1px solid #fde68a;
-}
-
-.badge-qc-selesai {
-    background: #dcfce7;
-    color: #15803d;
-    border: 1px solid #bbf7d0;
-}
-
-.badge-qc-reject {
-    background: #fee2e2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
-}
-
-.badge-qc-fryer-pending {
-    display: inline-flex;
+.qc-metric-header-left {
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
-    background: #fffbeb;
-    color: #d97706;
-    border: 1px solid #fde68a;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.15rem 0.45rem;
-    border-radius: 4px;
-    margin-top: 0.25rem;
+    gap: 0.45rem;
 }
 
-.badge-grn-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: #ecfdf5;
-    color: #047857;
-    border: 1px solid #a7f3d0;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.2rem 0.55rem;
-    border-radius: 6px;
-    text-decoration: none;
-    transition: all 0.12s ease;
-}
-
-.badge-grn-pill:hover {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-/* Modal Konfirmasi Hapus Bahaya */
-.modal-qc-danger {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(2px);
-    z-index: 999999;
-    display: none;
+.qc-metric-icon {
+    color: #64748b;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
 }
 
-.modal-qc-danger-box {
+.qc-metric-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+}
+
+.qc-metric-dots {
+    color: #94a3b8;
+    cursor: default;
+    padding: 0 2px;
+}
+
+.qc-metric-value {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.qc-metric-footer {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+/* 3. Main Data Card & Control Bar */
+.qc-main-card {
     background: #ffffff;
-    border-radius: 12px;
-    max-width: 480px;
-    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     overflow: hidden;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-    animation: modalIn 0.15s ease-out;
 }
 
-@keyframes modalIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+.qc-control-bar {
+    padding: 1.15rem 1.35rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.qc-tabs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.qc-status-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    padding: 0.25rem;
+    border-radius: 9999px;
+    border: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
+.qc-status-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.95rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.qc-status-tab:hover {
+    color: #0f172a;
+    background: #ffffff;
+}
+
+.qc-status-tab.active {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.qc-status-tab .badge-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.1rem 0.45rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    background: #e2e8f0;
+    color: #0f172a;
+    line-height: 1;
+}
+
+.qc-status-tab.active .badge-count {
+    background: #334155;
+    color: #ffffff;
+}
+
+/* Control Bar Filter Form */
+.qc-filter-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    width: 100%;
+}
+
+.qc-search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    max-width: 320px;
+}
+
+.qc-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.qc-search-input {
+    width: 100%;
+    padding: 0.5rem 0.85rem 0.5rem 2.25rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.qc-search-input:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.06);
+}
+
+.qc-select-control {
+    padding: 0.5rem 0.85rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.15s ease;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.qc-select-control:focus {
+    border-color: #0f172a;
+}
+
+.btn-qc-filter {
+    padding: 0.5rem 1rem;
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-qc-filter:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+}
+
+.btn-qc-reset {
+    padding: 0.5rem 0.85rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.btn-qc-reset:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.qc-total-badge {
+    margin-left: auto;
+    font-size: 0.8125rem;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.qc-total-badge strong {
+    color: #0f172a;
 }
 
 /* =========================================================================
- * CLEAN TABEL & ACCORDION DRAWER DETAIL (SOLUSI MINIMALIS LEGA)
+ * CLEAN TABEL & ACCORDION DRAWER DETAIL (SOLUSI MINIMALIS LEGA & RESPONSIF)
  * ========================================================================= */
+
+.qc-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.qc-table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.qc-table-responsive::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+.qc-table-responsive::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 9999px;
+}
+
+.qc-table-responsive::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
 
 .qc-table-clean {
     width: 100%;
     border-collapse: collapse;
+    table-layout: auto;
 }
 
 .qc-table-clean th {
-    padding: 0.75rem 0.85rem;
+    padding: 0.65rem 0.65rem;
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
     color: #475569;
     background: #f8fafc;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1.5px solid #e2e8f0;
     letter-spacing: 0.03em;
+    white-space: nowrap;
 }
 
 .qc-table-clean tr.qc-main-row {
@@ -227,9 +452,86 @@
 }
 
 .qc-table-clean td {
-    padding: 0.7rem 0.85rem;
-    font-size: 0.825rem;
+    padding: 0.6rem 0.65rem;
+    font-size: 0.8125rem;
     vertical-align: middle;
+}
+
+/* Kolom Responsif Pintar & Fleksibel */
+.qc-col-no {
+    width: 38px;
+    min-width: 38px;
+    text-align: center;
+}
+
+.qc-col-drawer {
+    width: 36px;
+    min-width: 36px;
+    text-align: center;
+}
+
+.qc-col-dokumen {
+    min-width: 135px;
+    text-align: left;
+}
+
+.qc-col-armada {
+    min-width: 140px;
+    text-align: left;
+}
+
+.qc-col-muatan {
+    min-width: 90px;
+    text-align: right;
+}
+
+.qc-col-uji1 {
+    min-width: 105px;
+    text-align: left;
+}
+
+.qc-col-uji2 {
+    min-width: 110px;
+    text-align: left;
+}
+
+.qc-col-netto {
+    min-width: 95px;
+    text-align: right;
+}
+
+.qc-col-status {
+    min-width: 105px;
+    text-align: center;
+}
+
+/* Sticky Action Column: Tetap tampak di sisi kanan saat scroll horizontal atau zoom */
+.qc-table-clean .qc-col-aksi {
+    width: 75px;
+    min-width: 75px;
+    text-align: right;
+    position: sticky;
+    right: 0;
+    z-index: 5;
+    background: #ffffff;
+    box-shadow: -3px 0 6px -2px rgba(15, 23, 42, 0.06);
+}
+
+.qc-table-clean th.qc-col-aksi {
+    background: #f8fafc;
+    z-index: 6;
+}
+
+.qc-table-clean tr.qc-main-row:hover .qc-col-aksi {
+    background: #f8fafc;
+}
+
+.qc-table-clean tr.qc-main-row.row-is-expanded .qc-col-aksi {
+    background: #f0fdf4 !important;
+}
+
+.qc-table-clean td.qc-col-aksi.is-dropdown-open {
+    z-index: 100 !important;
 }
 
 /* Tombol Drawer Toggle (Chevron) */
@@ -283,9 +585,9 @@
 
 .qc-drawer-box {
     background: #ffffff;
-    border: 1.5px solid #cbd5e1;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     overflow: hidden;
     animation: drawerFadeIn 0.15s ease-out;
 }
@@ -304,29 +606,12 @@
 .qc-drawer-header {
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
-    padding: 0.75rem 1.25rem;
+    padding: 0.875rem 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.75rem;
-}
-
-.qc-drawer-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    align-items: center;
-}
-
-.qc-chip {
-    font-size: 0.73rem;
-    background: #ffffff;
-    color: #475569;
-    border: 1px solid #cbd5e1;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 500;
 }
 
 .qc-stages-grid {
@@ -338,71 +623,606 @@
 }
 
 .qc-stage-card {
-    border-radius: 8px;
-    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
     background: #ffffff;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.qc-stage-card.stage-uji1 {
-    border-top: 3px solid #0284c7;
-}
-
+.qc-stage-card.stage-uji1,
 .qc-stage-card.stage-uji2 {
-    border-top: 3px solid #6366f1;
+    border-top: 1px solid #e2e8f0; /* Garis seragam netral sesuai standar WaveDash / PO (bebas warna-warni pelangi) */
 }
 
 .qc-stage-card-header {
-    padding: 0.65rem 0.95rem;
+    padding: 0.75rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-weight: 700;
     font-size: 0.8125rem;
-    background: #f8fafc;
+    background: #ffffff;
     color: #0f172a;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.qc-stage-card.stage-uji1 .qc-stage-card-header {
-    background: #f8fafc;
-    color: #0f172a;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.qc-stage-card.stage-uji2 .qc-stage-card-header {
-    background: #f8fafc;
-    color: #0f172a;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .qc-stat-grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.35rem;
-    padding: 0.75rem 0.85rem;
-    background: #ffffff;
+    gap: 0.5rem;
+    padding: 0.85rem 1rem;
+    background: #f8fafc;
     border-bottom: 1px solid #f1f5f9;
 }
 
 .qc-stat-cell {
     text-align: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.4rem;
 }
 
 .qc-stat-label {
-    font-size: 0.68rem;
+    font-size: 0.6875rem;
     text-transform: uppercase;
     font-weight: 700;
+    letter-spacing: 0.04em;
     color: #64748b;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .qc-stat-val {
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     font-weight: 800;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Micro-Pill Pengujian 2 Standar PO */
+.qc-btn-uji2-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: #0f172a;
+    color: #ffffff !important;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+    border: 1px solid #0f172a;
+}
+
+.qc-btn-uji2-pill:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.qc-badge-waiting {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: #fefce8;
+    color: #a16207;
+    border: 1px solid #fef08a;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap !important;
+    line-height: 1.4;
+}
+
+/* Capsule Buttons Footer Drawer */
+.btn-pill-grn-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1.15rem;
+    background: #059669;
+    border: 1px solid #059669;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+}
+
+.btn-pill-grn-success:hover {
+    background: #047857;
+    border-color: #047857;
+    color: #ffffff !important;
+}
+
+.btn-pill-danger-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1.15rem;
+    background: #ffffff;
+    border: 1px solid #fca5a5;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #dc2626 !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease;
+}
+
+.btn-pill-danger-outline:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+    color: #b91c1c !important;
+}
+
+/* Micro-Badges Status Clean */
+.qc-badge-clean {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.qc-badge-clean.grade-a {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.qc-badge-clean.grade-b {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.qc-badge-clean.grade-reject {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.qc-badge-clean.warning {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+/* Status Gudang Modern Pill Indicators (WaveDash / Linear Minimalist) */
+.qc-status-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+}
+
+.qc-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.qc-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Status: Masuk Gudang (GRN Penuh) - Tenang, Elegan, Monokromatik dengan aksen emerald dot */
+.qc-status-grn {
+    background: #f8fafc;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+}
+
+.qc-status-grn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
     color: #0f172a;
 }
 
+.qc-status-dot.is-completed {
+    background: #10b981;
+}
+
+/* Status: Siap Ditarik GRN (Lolos Uji) */
+.qc-status-ready {
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #e0f2fe;
+}
+
+.qc-status-dot.is-ready {
+    background: #0284c7;
+}
+
+/* Status: Bongkar 1/2 (Menunggu Uji 2) */
+.qc-status-waiting {
+    background: #fefce8;
+    color: #a16207;
+    border: 1px solid #fef08a;
+}
+
+.qc-status-dot.is-waiting {
+    background: #eab308;
+}
+
+/* Status: GRN Parsial (Ada Reject) */
+.qc-status-partial {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #ffedd5;
+}
+
+.qc-status-partial:hover {
+    background: #ffedd5;
+    border-color: #fed7aa;
+    color: #9a3412;
+}
+
+.qc-status-dot.is-partial {
+    background: #f97316;
+}
+
+/* Status: Ditolak Total */
+.qc-status-rejected {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fee2e2;
+}
+
+.qc-status-dot.is-rejected {
+    background: #ef4444;
+}
+
+/* Sub-text referensi dokumen nomor GRN */
+.qc-status-ref {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Sub-text informasi reject */
+.qc-status-reject-subtext {
+    font-size: 0.675rem;
+    color: #dc2626;
+    font-weight: 700;
+}
+
+/* Legacy Support Fallback */
+.badge-grn-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #f8fafc;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    transition: all 0.12s ease;
+}
+
+.badge-grn-pill:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+/* Dropdown Aksi Cerdas (Smart Viewport Positioning) */
+.action-dropdown-menu,
+.qc-action-menu-dropdown {
+    position: fixed;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    min-width: 220px;
+    width: max-content;
+    max-width: 340px;
+    z-index: 999999 !important;
+    display: none;
+    overflow: hidden;
+    padding: 0.35rem 0;
+    animation: fadeInDropdown 0.12s ease-out;
+}
+
+@keyframes fadeInDropdown {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.action-dropdown-item,
+.qc-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.95rem;
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background 0.12s ease, color 0.12s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.action-dropdown-item:hover,
+.qc-dropdown-item:hover {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.action-dropdown-item.danger-item:hover,
+.qc-dropdown-item.danger-item:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.action-dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0.3rem 0;
+}
+
+/* Tombol Aksi Utama */
+.btn-action-trigger {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #1e293b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.32rem 0.75rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+}
+
+.btn-action-trigger:hover,
+.btn-action-trigger.active {
+    background: #f0fdf4;
+    border-color: #059669;
+    color: #059669;
+}
+
+/* Modal Konfirmasi Hapus Bahaya */
+.modal-qc-danger {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-qc-danger-box {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 480px;
+    width: 100%;
+    overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    animation: modalIn 0.15s ease-out;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+ * 4. MODERN PAGINATION & QUICK JUMP STYLES (Linear Minimalist / WaveDash)
+ * ========================================================================== */
+.qc-pagination-container {
+    border-top: 1px solid #e2e8f0;
+    padding: 0.875rem 1.25rem;
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.qc-pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.qc-per-page-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.775rem;
+    color: #475569;
+}
+
+.qc-per-page-control {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.775rem;
+    color: #0f172a;
+    background: #ffffff;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.qc-per-page-control:focus {
+    border-color: #0f172a;
+}
+
+.qc-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.qc-page-btn {
+    padding: 5px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #ffffff;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.qc-page-btn:hover:not(.disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.qc-page-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f8fafc;
+}
+
+.qc-page-numbers {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.qc-page-number {
+    min-width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: none;
+    background: #ffffff;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.qc-page-number:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.qc-page-number.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+    font-weight: 700;
+}
+
+.qc-page-dots {
+    padding: 0 4px;
+    color: #94a3b8;
+    font-weight: 700;
+    user-select: none;
+}
+
+.qc-page-jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid #e2e8f0;
+}
+
+.qc-jump-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.qc-jump-input {
+    width: 50px;
+    height: 30px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
+    outline: none;
+    background: #ffffff;
+    transition: all 0.15s ease;
+    padding: 0 4px;
+}
+
+.qc-jump-input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.qc-jump-total {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}

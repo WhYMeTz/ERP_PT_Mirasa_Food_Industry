@@ -83,33 +83,34 @@
 
 @section('content')
 {{-- TOP HEADER COMMAND (STANDAR PO GUDANG) --}}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <a href="{{ $backUrl }}" style="color: #64748b; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
+        <a href="{{ $backUrl }}" style="color: #64748b; text-decoration: none; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem;">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             {{ $backLabel }}
         </a>
         <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-            <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">
+            <h1 style="font-size: 1.625rem; font-weight: 700; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
                 Edit Dokumen QC: {{ $qc->qc_no }}
             </h1>
             <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight: 700;">Status: {{ $qc->status_qc }}</span>
             <span class="badge" style="background:#f1f5f9; color:#475569; font-weight: 700;">Komoditas: {{ $kat }}</span>
             @if ($kat === 'SINGKONG')
-                <span class="badge" style="{{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background:#f3e8ff; color:#7e22ce; border: 1px solid #d8b4fe;' : 'background:#e0f2fe; color:#0369a1; border: 1px solid #bae6fd;' }} font-weight: 800;">
-                    {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? '🍟 Pengujian II (Produksi)' : '🚛 Pengujian I (Kedatangan)' }}
+                <span class="badge" style="{{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'background:#f3e8ff; color:#7e22ce; border: 1px solid #d8b4fe;' : 'background:#e0f2fe; color:#0369a1; border: 1px solid #bae6fd;' }} font-weight: 700;">
+                    {{ ($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2' ? 'Pengujian II (Produksi)' : 'Pengujian I (Kedatangan)' }}
                 </span>
             @endif
         </div>
-        <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0;">
+        <p style="color: #64748b; font-size: 0.8125rem; margin-top: 0.25rem; margin-bottom: 0; line-height: 1.45;">
             Koreksi dan sesuaikan data dokumen pemeriksaan mutu, parameter sampling laboratorium, tonase timbangan fisik, serta lembar HACCP.
         </p>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <button type="button" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+        <button type="button" onclick="openHaccpModal('{{ $qc->qc_id }}', '{{ $qc->qc_no }}')" class="btn-pill-outline" style="border-radius: 8px; padding: 0.45rem 0.85rem;">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             <span>Lihat Dokumen HACCP</span>
         </button>
+    </div>
 </div>
 
 {{-- ALERT SUKSES DENGAN NOTIFIKASI JELAS --}}
@@ -134,11 +135,11 @@
 
 {{-- BANNER KHUSUS PENGUJIAN 2 (LANJUTAN SISA MUATAN BAK) --}}
 @if (($qc->tahap_uji ?? 'PENGUJIAN_1') === 'PENGUJIAN_2')
-    <div style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 1.5px solid #d8b4fe; border-radius: 10px; padding: 1rem 1.25rem; box-shadow: 0 2px 5px rgba(126, 34, 206, 0.06);">
+    <div style="margin-bottom: 1.25rem; background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 10px; padding: 1rem 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
             <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                <div style="width: 40px; height: 40px; border-radius: 8px; background: #9333ea; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3);">
-                    🍟
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #9333ea; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                 </div>
                 <div>
                     <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -149,11 +150,11 @@
                         Tiket ini merupakan pengujian lanjutan dari sisa muatan bak armada truk. Hasil pengujian fisik lapisan dalam dan tes rasa fryer menentukan kelayakan konsumsi dan produksi.
                     </div>
                     @if ($qc->parentQc)
-                        <div style="margin-top: 0.55rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8rem; background: rgba(255,255,255,0.7); padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid #e9d5ff;">
+                        <div style="margin-top: 0.55rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8rem; background: #ffffff; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid #e9d5ff;">
                             <span style="font-weight: 700; color: #7e22ce;">Dokumen Induk Uji 1:</span>
                             <span style="font-family: monospace; font-weight: 800; color: #0f172a;">#{{ $qc->parentQc->qc_no }}</span>
                             <span style="color: #cbd5e1;">&bull;</span>
-                            <span>🚛 <strong>{{ $qc->parentQc->plat_nomor_truk ?: ($qc->plat_nomor_truk ?? '-') }}</strong></span>
+                            <span>Plat: <strong>{{ $qc->parentQc->plat_nomor_truk ?: ($qc->plat_nomor_truk ?? '-') }}</strong></span>
                             <span style="color: #cbd5e1;">&bull;</span>
                             <span>Sopir: <strong>{{ $qc->parentQc->sopir_nama ?: ($qc->sopir_nama ?? '-') }}</strong></span>
                             <span style="color: #cbd5e1;">&bull;</span>
@@ -164,9 +165,9 @@
             </div>
             @if ($qc->parent_qc_id)
                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
-                    <a href="{{ route('qc.inbound.edit', [$qc->parent_qc_id, 'ref' => request('ref')]) }}" class="btn btn-sm" style="background: #ffffff; color: #7e22ce; border: 1.5px solid #d8b4fe; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06);" title="Buka dan edit formulir Pengujian I (Kedatangan)">
+                    <a href="{{ route('qc.inbound.edit', [$qc->parent_qc_id, 'ref' => request('ref')]) }}" class="btn btn-sm" style="background: #ffffff; color: #7e22ce; border: 1.5px solid #d8b4fe; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem;" title="Buka dan edit formulir Pengujian I (Kedatangan)">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        <span>🚛 Beralih Edit Uji 1</span>
+                        <span>Beralih Edit Uji 1</span>
                     </a>
                 </div>
             @endif
@@ -179,11 +180,11 @@
     $p2ChildWeb = ($kat === 'SINGKONG' && ($qc->tahap_uji ?? 'PENGUJIAN_1') !== 'PENGUJIAN_2') ? $qc->pengujian2List->first() : null;
 @endphp
 @if ($p2ChildWeb)
-    <div style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 1rem 1.25rem; box-shadow: 0 2px 5px rgba(2, 132, 199, 0.06);">
+    <div style="margin-bottom: 1.25rem; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 1rem 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
             <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                <div style="width: 40px; height: 40px; border-radius: 8px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">
-                    🚛
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
                 </div>
                 <div>
                     <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -196,9 +197,9 @@
                 </div>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
-                <a href="{{ route('qc.inbound.edit', [$p2ChildWeb->qc_id, 'ref' => request('ref')]) }}" class="btn btn-sm" style="background: #7e22ce; color: #ffffff; border: 1.5px solid #6b21a8; font-weight: 800; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem; box-shadow: 0 2px 4px rgba(126, 34, 206, 0.25);" title="Beralih untuk mengedit dokumen Pengujian II">
+                <a href="{{ route('qc.inbound.edit', [$p2ChildWeb->qc_id, 'ref' => request('ref')]) }}" class="btn btn-sm" style="background: #7e22ce; color: #ffffff; border: 1.5px solid #6b21a8; font-weight: 800; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; border-radius: 6px; padding: 0.45rem 0.9rem;" title="Beralih untuk mengedit dokumen Pengujian II">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    <span>🍟 Beralih Edit Uji 2 &rarr;</span>
+                    <span>Beralih Edit Uji 2 &rarr;</span>
                 </a>
             </div>
         </div>

@@ -148,6 +148,11 @@ class DatQcInboundHdr extends Model
      */
     public function getTerimaAttribute(): ?DatTerimaHdr
     {
+        return $this->resolveTerima();
+    }
+
+    public function resolveTerima(bool $checkRelatives = true): ?DatTerimaHdr
+    {
         if (array_key_exists('terima_resolved', $this->relations)) {
             return $this->relations['terima_resolved'];
         }
@@ -182,12 +187,24 @@ class DatQcInboundHdr extends Model
             }
         }
 
+        // Jika tidak perlu cek parent/child (mencegah infinite circular recursion P1 <-> P2), stop
+        if (!$checkRelatives) {
+            $this->relations['terima_resolved'] = null;
+            return null;
+        }
+
+        // Tandai sementara null sebagai recursion guard
+        $this->relations['terima_resolved'] = null;
+
         // 3. Cek via parent QC jika ini P2 (Pengujian 2)
         if ($this->parent_qc_id) {
             $parent = $this->relationLoaded('parentQc') ? $this->parentQc : $this->parentQc()->first();
-            if ($parent && $parent->terima) {
-                $this->relations['terima_resolved'] = $parent->terima;
-                return $parent->terima;
+            if ($parent) {
+                $parentTerima = $parent->resolveTerima(checkRelatives: false);
+                if ($parentTerima && !$parentTerima->deleted_st) {
+                    $this->relations['terima_resolved'] = $parentTerima;
+                    return $parentTerima;
+                }
             }
         }
 
@@ -195,9 +212,10 @@ class DatQcInboundHdr extends Model
         $children = $this->relationLoaded('pengujian2List') ? $this->pengujian2List : $this->pengujian2List()->get();
         if ($children && $children->isNotEmpty()) {
             foreach ($children as $p2) {
-                if ($p2->terima) {
-                    $this->relations['terima_resolved'] = $p2->terima;
-                    return $p2->terima;
+                $childTerima = $p2->resolveTerima(checkRelatives: false);
+                if ($childTerima && !$childTerima->deleted_st) {
+                    $this->relations['terima_resolved'] = $childTerima;
+                    return $childTerima;
                 }
             }
         }

@@ -71,11 +71,22 @@
                     <label for="pack_id" class="hpp-label">Nomor Dokumen Pengemasan Fisik Tersedia <span class="required">*</span></label>
                     <select name="pack_id" id="pack_id" class="hpp-select" required onchange="onPackagingSelectChange(this.value)">
                         <option value="">-- Pilih Dokumen Pengemasan Fisik --</option>
-                        @forelse($packagingList as $p)
-                            <option value="{{ $p->pack_id }}" 
-                                    {{ (string) $p->pack_id === (string) old('pack_id', $selectedPackId) ? 'selected' : '' }}>
-                                [{{ $p->pack_no }}] {{ \Carbon\Carbon::parse($p->pack_tgl)->format('d/m/Y') }} &mdash; {{ $p->barangJadi?->barang_nm ?? 'Produk Jadi' }} &bull; Shift {{ $p->shift ?? 'A' }} ({{ number_format((float)$p->hasil_karton_qty, 0, ',', '.') }} Karton / {{ number_format((float)$p->hasil_pcs_qty, 0, ',', '.') }} Pcs)
-                            </option>
+                        @php
+                            $groupedPackaging = $packagingList->groupBy(fn($p) => \Carbon\Carbon::parse($p->pack_tgl)->format('Y-m-d'));
+                        @endphp
+                        @forelse($groupedPackaging as $tgl => $groupDocs)
+                            @php
+                                $labelTanggal = \Carbon\Carbon::parse($tgl)->locale('id')->isoFormat('dddd, D MMMM Y');
+                                $countDocs = $groupDocs->count();
+                            @endphp
+                            <optgroup label="Tanggal: {{ $labelTanggal }} ({{ $countDocs }} Dokumen)">
+                                @foreach($groupDocs as $p)
+                                    <option value="{{ $p->pack_id }}" 
+                                            {{ (string) $p->pack_id === (string) old('pack_id', $selectedPackId) ? 'selected' : '' }}>
+                                        [{{ $p->pack_no }}] {{ $p->barangJadi?->barang_nm ?? 'Produk Jadi' }} &bull; Shift {{ $p->shift ?? 'A' }} ({{ number_format((float)$p->hasil_karton_qty, 0, ',', '.') }} Karton / {{ number_format((float)$p->hasil_pcs_qty, 0, ',', '.') }} Pcs)
+                                    </option>
+                                @endforeach
+                            </optgroup>
                         @empty
                             <option value="" disabled>(Semua dokumen pengemasan telah dikalkulasi &amp; berstatus Final)</option>
                         @endforelse

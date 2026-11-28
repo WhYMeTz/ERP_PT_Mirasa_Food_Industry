@@ -134,6 +134,11 @@
     }
 }
 
+/* Print Utility Classes */
+.print-only {
+    display: none !important;
+}
+
 /* Print Media Stylesheet */
 @media print {
     body {
@@ -148,6 +153,10 @@
 
     .print-only {
         display: block !important;
+    }
+
+    .signatures-grid.print-only {
+        display: grid !important;
     }
 
     .packaging-show-container {

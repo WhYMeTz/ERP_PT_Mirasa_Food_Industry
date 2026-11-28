@@ -12,6 +12,7 @@ use App\Services\Common\CodeGeneratorService;
 use App\Services\Penjualan\PengeluaranBarangService;
 use App\Services\Penjualan\SoService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Penjualan\FakturPenjualanService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,8 @@ class SoController extends Controller
     public function __construct(
         protected SoService $soService,
         protected CodeGeneratorService $codeGenerator,
-        protected PengeluaranBarangService $pengeluaranService
+        protected PengeluaranBarangService $pengeluaranService,
+        protected FakturPenjualanService $fakturService
     ) {}
 
     /**
@@ -50,6 +52,13 @@ class SoController extends Controller
         ];
 
         $orders = $this->soService->getAllPaginated(15, $search, $status, $filters);
+
+        // Konsolidasi otomatis jika ada SO pengiriman parsial dengan faktur terpecah
+        foreach ($orders as $ord) {
+            if ($ord->so_id) {
+                $this->fakturService->consolidateSplitFaktursForSo($ord->so_id);
+            }
+        }
 
         // Status Counts & Metrik Konsisten dengan PO Pembelian
         $rawCounts = DatSoHdr::where('deleted_st', false)
@@ -186,6 +195,9 @@ class SoController extends Controller
             abort(403, 'Akses ditolak: Dokumen PO Penjualan komersial hanya dapat diakses oleh Departemen Penjualan, Keuangan, atau Manajemen.');
         }
 
+        // Konsolidasi otomatis jika ada SO pengiriman parsial dengan faktur terpecah
+        $this->fakturService->consolidateSplitFaktursForSo($id);
+
         $order = $this->soService->getById($id);
         $stockMap = $this->soService->getStockAvailabilityMap($order->details->pluck('barang_id')->toArray());
         $kasBanks = \App\Models\Keuangan\MstKasBank::active()->orderBy('nama_akun')->get();
@@ -199,6 +211,9 @@ class SoController extends Controller
      */
     public function edit(int $id): View|RedirectResponse
     {
+        // Konsolidasi otomatis jika ada SO pengiriman parsial dengan faktur terpecah
+        $this->fakturService->consolidateSplitFaktursForSo($id);
+
         $order = $this->soService->getById($id);
 
         if (in_array($order->status_cd, ['COMPLETED', 'CANCELLED'])) {
@@ -593,6 +608,9 @@ class SoController extends Controller
      */
     public function exportFakturPdf(Request $request, int $id): Response
     {
+        // Konsolidasi otomatis jika ada SO pengiriman parsial dengan faktur terpecah
+        $this->fakturService->consolidateSplitFaktursForSo($id);
+
         $order = $this->soService->getById($id);
 
         $logoPath = public_path('images/logo.png');
@@ -637,6 +655,9 @@ class SoController extends Controller
      */
     public function exportSuratJalanPdf(Request $request, int $id): Response
     {
+        // Konsolidasi otomatis jika ada SO pengiriman parsial dengan faktur terpecah
+        $this->fakturService->consolidateSplitFaktursForSo($id);
+
         $order = $this->soService->getById($id);
 
         $logoPath = public_path('images/logo.png');

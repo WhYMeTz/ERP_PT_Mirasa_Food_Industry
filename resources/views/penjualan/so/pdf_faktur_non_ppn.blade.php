@@ -224,7 +224,7 @@
                 <table class="faktur-no-box">
                     <tr>
                         <td style="width: 110px; font-weight: bold;">NOMOR FAKTUR</td>
-                        <td style="font-family: monospace; font-weight: bold; font-size: 9pt;">: {{ $order->faktur_no ?: '-' }}</td>
+                        <td style="font-family: monospace; font-weight: bold; font-size: 9pt;">: {{ preg_replace('/-\d+$/', '', $order->faktur_no ?: '-') }}</td>
                     </tr>
                     <tr>
                         <td style="font-weight: bold;">NOMOR PO</td>

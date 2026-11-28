@@ -233,6 +233,7 @@ class PackagingController extends Controller
         $tarifs = $this->tarifKemasanService->getAllTarif();
 
         // 1. Varian Output WIP Hasil Masak Dapur (Hanya yang masih memiliki sisa stok / belum habis terkemas)
+        // Diurutkan secara FIFO (First-In First-Out: tanggal masak terlama & output_id ASC)
         $wipList = \App\Models\Produksi\DatProduksiDtl::with(['produksi', 'barang.satuanDasar'])
             ->where('deleted_st', false)
             ->whereHas('produksi', function ($q) {
@@ -240,7 +241,6 @@ class PackagingController extends Controller
                   ->where('status_cd', '!=', 'VOID');
             })
             ->where('qty_kg', '>', 0)
-            ->orderByDesc('output_id')
             ->get()
             ->filter(function ($wip) {
                 $totalPacked = (float) \App\Models\Produksi\DatPackagingDtl::whereHas('header', function ($q) use ($wip) {
@@ -254,7 +254,29 @@ class PackagingController extends Controller
                 $wip->sisa_qty_kg = max(0, round((float)$wip->qty_kg - $totalPacked, 2));
                 return $wip->sisa_qty_kg > 0.05;
             })
+            ->sortBy(function ($wip) {
+                $tgl = $wip->produksi?->produksi_tgl ? $wip->produksi->produksi_tgl->format('Y-m-d') : '9999-99-99';
+                return $tgl . '_' . str_pad($wip->output_id, 10, '0', STR_PAD_LEFT);
+            })
             ->values();
+
+        // Tandai batch tertua (FIFO Prioritas) per varian barang curah
+        $firstWipByBarang = [];
+        foreach ($wipList as $wip) {
+            if (!isset($firstWipByBarang[$wip->barang_id])) {
+                $firstWipByBarang[$wip->barang_id] = $wip;
+                $wip->is_fifo_oldest = true;
+            } else {
+                $wip->is_fifo_oldest = false;
+            }
+            $oldest = $firstWipByBarang[$wip->barang_id];
+            $wip->oldest_output_id = $oldest->output_id;
+            $wip->oldest_batch_str = $oldest->batch_no ?: ($oldest->produksi?->batch_wip_no ?: ($oldest->produksi?->produksi_tgl ? $oldest->produksi->produksi_tgl->format('d m Y') : '-'));
+            $wip->oldest_sisa_qty = (float) ($oldest->sisa_qty_kg ?? $oldest->qty_kg);
+        }
+
+        // Daftar unik jenis keripik curah / berko yang memiliki stok siap kemas
+        $wipBarangList = $wipList->unique('barang_id')->values();
 
         // 2. Karyawan (Operator & Leader Kemas)
         $karyawanList = \App\Models\MasterData\MstKaryawan::where('active_st', true)
@@ -366,16 +388,41 @@ class PackagingController extends Controller
             ->unique()
             ->filter();
 
-        $activeBatches = \App\Models\Gudang\DatStokBatch::with('gudang')
+        $allActiveBatches = \App\Models\Gudang\DatStokBatch::with('gudang')
             ->whereIn('barang_id', $allPkgBarangIds)
             ->where('deleted_st', false)
             ->where('sisa_qty', '>', 0)
             ->orderBy('created_at', 'asc')
-            ->get(['barang_id', 'batch_no', 'sisa_qty', 'gudang_id'])
-            ->groupBy('barang_id');
+            ->get(['barang_id', 'batch_no', 'sisa_qty', 'gudang_id']);
 
+        // 1. Peta batch & sisa stok per [gudang_id][barang_id]
+        $stokBatchByGudang = [];
+        foreach ($allActiveBatches->groupBy('gudang_id') as $gId => $gBatches) {
+            foreach ($gBatches->groupBy('barang_id') as $bId => $bGroup) {
+                $first = $bGroup->first();
+                $stokBatchByGudang[$gId][$bId] = [
+                    'batch_no'  => $first?->batch_no ?? '-',
+                    'sisa_qty'  => (float) $bGroup->sum('sisa_qty'),
+                    'gudang_nm' => $first?->gudang?->gudang_nm ?? '',
+                ];
+            }
+        }
+
+        // 2. Stok Karton per Gudang
+        $stokKartonPuteranByGudang = [];
+        $stokKartonBaruByGudang = [];
+        $stokKartonRejectByGudang = [];
+
+        foreach ($gudangList as $g) {
+            $gId = $g->gudang_id;
+            $stokKartonPuteranByGudang[$gId] = $kartonPuteran ? (float) \App\Models\Gudang\DatStokBatch::where('barang_id', $kartonPuteran->barang_id)->where('gudang_id', $gId)->where('deleted_st', false)->sum('sisa_qty') : 0;
+            $stokKartonBaruByGudang[$gId] = $kartonBaru ? (float) \App\Models\Gudang\DatStokBatch::where('barang_id', $kartonBaru->barang_id)->where('gudang_id', $gId)->where('deleted_st', false)->sum('sisa_qty') : 0;
+            $stokKartonRejectByGudang[$gId] = $kartonReject ? (float) \App\Models\Gudang\DatStokBatch::where('barang_id', $kartonReject->barang_id)->where('gudang_id', $gId)->where('deleted_st', false)->sum('sisa_qty') : 0;
+        }
+
+        // 3. Fallback peta global untuk inisialisasi awal
         $batchInfoMap = [];
-        foreach ($activeBatches as $bId => $batchGroup) {
+        foreach ($allActiveBatches->groupBy('barang_id') as $bId => $batchGroup) {
             $firstBatch = $batchGroup->first();
             $batchInfoMap[$bId] = [
                 'batch_no'  => $firstBatch?->batch_no ?? '-',
@@ -393,6 +440,7 @@ class PackagingController extends Controller
             'kemasanBarangList', 
             'produksiList', 
             'wipList',
+            'wipBarangList', 
             'selectedLaporan', 
             'initialLabor',
             'tarifLakbanDefault', 
@@ -410,7 +458,11 @@ class PackagingController extends Controller
             'stokKartonPuteran',
             'stokKartonBaru',
             'stokKartonReject',
-            'batchInfoMap'
+            'batchInfoMap',
+            'stokBatchByGudang',
+            'stokKartonPuteranByGudang',
+            'stokKartonBaruByGudang',
+            'stokKartonRejectByGudang'
         ));
     }
 
@@ -618,63 +670,134 @@ class PackagingController extends Controller
         if (!$request->has('items') || empty($request->input('items'))) {
             $items = [];
 
-            // A. Curah WIP
-            $wipId = $request->input('wip_barang_id');
-            $outputId = $request->input('output_id');
-            $prodId = $request->input('produksi_id');
-            $batchNo = $request->input('batch_no');
+            // A. Curah WIP (Mendukung Multi-Batch Berko & Single Curah)
+            $wipItemsInput = $request->input('wip_items');
+            $firstProdId = null;
 
-            if ($outputId) {
-                $output = \App\Models\Produksi\DatProduksiDtl::find($outputId);
-                if ($output) {
-                    $wipId = $wipId ?: $output->barang_id;
-                    $prodId = $prodId ?: $output->produksi_id;
-                    $batchNo = $batchNo ?: $output->batch_no;
-                }
-            }
+            if (is_array($wipItemsInput) && count($wipItemsInput) > 0) {
+                foreach ($wipItemsInput as $wRow) {
+                    $outputId = $wRow['output_id'] ?? null;
+                    $wipId    = $wRow['barang_id'] ?? null;
+                    $batchNo  = $wRow['batch_no'] ?? null;
+                    $prodId   = $wRow['produksi_id'] ?? null;
+                    $wipQty   = (float) ($wRow['qty_kg'] ?? 0);
 
-            $wipQty = (float) $request->input('wip_qty_kg', 0);
-            if ($wipId && $wipQty > 0) {
-                $wipBarang = MstBarang::find($wipId);
-                $wipHpp = 0;
-                if (!empty($output) && (float) $output->hpp_satuan > 0) {
-                    $wipHpp = (float) $output->hpp_satuan;
-                } elseif ($prodId) {
-                    $prodHdr = \App\Models\Produksi\DatProduksiHdr::find($prodId);
-                    $wipHpp = (float) ($prodHdr?->hpp_per_kg ?? 0);
+                    if ($wipQty <= 0) continue;
+
+                    $output = null;
+                    if ($outputId) {
+                        $output = \App\Models\Produksi\DatProduksiDtl::find($outputId);
+                        if ($output) {
+                            $wipId = $wipId ?: $output->barang_id;
+                            $prodId = $prodId ?: $output->produksi_id;
+                            $batchNo = $batchNo ?: $output->batch_no;
+                        }
+                    }
+
+                    if (!$firstProdId && $prodId) {
+                        $firstProdId = $prodId;
+                    }
+
+                    if ($wipId && $wipQty > 0) {
+                        $wipBarang = MstBarang::find($wipId);
+                        $wipHpp = 0;
+                        if (!empty($output) && (float) $output->hpp_satuan > 0) {
+                            $wipHpp = (float) $output->hpp_satuan;
+                        } elseif ($prodId) {
+                            $prodHdr = \App\Models\Produksi\DatProduksiHdr::find($prodId);
+                            $wipHpp = (float) ($prodHdr?->hpp_per_kg ?? 0);
+                        }
+
+                        if ($wipHpp <= 0 && $wipId && $batchNo) {
+                            $stkBatch = \App\Models\Gudang\DatStokBatch::where('barang_id', $wipId)
+                                ->where('batch_no', $batchNo)
+                                ->where('harga_satuan', '>', 0)
+                                ->first();
+                            if ($stkBatch) {
+                                $wipHpp = (float) $stkBatch->harga_satuan;
+                            }
+                        }
+
+                        if ($wipHpp <= 0) {
+                            $wipHpp = (float) ($wipBarang?->harga_beli_standar ?? 25500);
+                        }
+
+                        $items[] = [
+                            'barang_id'      => (int) $wipId,
+                            'kategori_bahan' => 'WIP',
+                            'batch_no'       => $batchNo,
+                            'qty_standar'    => $wipQty,
+                            'qty_aktual'     => $wipQty,
+                            'satuan_cd'      => 'KG',
+                            'harga_satuan'   => $wipHpp,
+                        ];
+                    }
                 }
-                
-                // Fallback: cek kartu stok batch gudang (DatStokBatch) berdasarkan batch_no
-                if ($wipHpp <= 0 && $wipId && $batchNo) {
-                    $stkBatch = \App\Models\Gudang\DatStokBatch::where('barang_id', $wipId)
-                        ->where('batch_no', $batchNo)
-                        ->where('harga_satuan', '>', 0)
-                        ->first();
-                    if ($stkBatch) {
-                        $wipHpp = (float) $stkBatch->harga_satuan;
+            } else {
+                // Fallback jika single WIP
+                $wipId = $request->input('wip_barang_id');
+                $outputId = $request->input('output_id');
+                $prodId = $request->input('produksi_id');
+                $batchNo = $request->input('batch_no');
+
+                if ($outputId) {
+                    $output = \App\Models\Produksi\DatProduksiDtl::find($outputId);
+                    if ($output) {
+                        $wipId = $wipId ?: $output->barang_id;
+                        $prodId = $prodId ?: $output->produksi_id;
+                        $batchNo = $batchNo ?: $output->batch_no;
                     }
                 }
 
-                if ($wipHpp <= 0) {
-                    $wipHpp = (float) ($wipBarang?->harga_beli_standar ?? 25500);
-                }
+                $wipQty = (float) $request->input('wip_qty_kg', 0);
+                if ($wipId && $wipQty > 0) {
+                    $wipBarang = MstBarang::find($wipId);
+                    $wipHpp = 0;
+                    if (!empty($output) && (float) $output->hpp_satuan > 0) {
+                        $wipHpp = (float) $output->hpp_satuan;
+                    } elseif ($prodId) {
+                        $prodHdr = \App\Models\Produksi\DatProduksiHdr::find($prodId);
+                        $wipHpp = (float) ($prodHdr?->hpp_per_kg ?? 0);
+                    }
+                    
+                    // Fallback: cek kartu stok batch gudang (DatStokBatch) berdasarkan batch_no
+                    if ($wipHpp <= 0 && $wipId && $batchNo) {
+                        $stkBatch = \App\Models\Gudang\DatStokBatch::where('barang_id', $wipId)
+                            ->where('batch_no', $batchNo)
+                            ->where('harga_satuan', '>', 0)
+                            ->first();
+                        if ($stkBatch) {
+                            $wipHpp = (float) $stkBatch->harga_satuan;
+                        }
+                    }
 
-                $items[] = [
-                    'barang_id'      => (int) $wipId,
-                    'kategori_bahan' => 'WIP',
-                    'batch_no'       => $batchNo,
-                    'qty_standar'    => $wipQty,
-                    'qty_aktual'     => $wipQty,
-                    'satuan_cd'      => 'KG',
-                    'harga_satuan'   => $wipHpp,
-                ];
+                    if ($wipHpp <= 0) {
+                        $wipHpp = (float) ($wipBarang?->harga_beli_standar ?? 25500);
+                    }
+
+                    $items[] = [
+                        'barang_id'      => (int) $wipId,
+                        'kategori_bahan' => 'WIP',
+                        'batch_no'       => $batchNo,
+                        'qty_standar'    => $wipQty,
+                        'qty_aktual'     => $wipQty,
+                        'satuan_cd'      => 'KG',
+                        'harga_satuan'   => $wipHpp,
+                    ];
+                    $firstProdId = $prodId;
+                }
             }
 
-            // B. Bumbu Tabur
+            if (!$request->filled('produksi_id') && $firstProdId) {
+                $request->merge(['produksi_id' => $firstProdId]);
+            }
+
+            // B. Bumbu Tabur (Seasoning)
+            $pakaiSeasoning = $request->boolean('pakai_seasoning', false) || $request->input('pakai_seasoning') === '1' || $request->filled('bumbu_barang_id');
             $bumbuId = $request->input('bumbu_barang_id');
             $bumbuQty = (float) $request->input('bumbu_qty_kg', 0);
             $bumbuSatuan = strtoupper($request->input('bumbu_satuan', 'KG'));
-            if ($bumbuId && $bumbuQty > 0) {
+            if ($pakaiSeasoning && $bumbuId && $bumbuQty > 0) {
                 $bumbuBarang = MstBarang::find($bumbuId);
                 // Normalisasi kuantitas ke KG jika operator memilih inputan Gram
                 $bumbuQtyKg = in_array($bumbuSatuan, ['GR', 'GRAM', 'G']) ? round($bumbuQty / 1000, 4) : $bumbuQty;
@@ -830,6 +953,7 @@ class PackagingController extends Controller
             'jumlah_mesin'             => 'nullable|integer|min:1',
             'barang_jadi_id'           => 'required|exists:mst_barang,barang_id',
             'gudang_id'                => 'required|exists:mst_gudang,gudang_id',
+            'gudang_asal_id'           => 'nullable|exists:mst_gudang,gudang_id',
             'bom_id'                   => 'nullable|exists:mst_bom_hdr,bom_id',
             'produksi_id'              => 'nullable|exists:dat_produksi_hdr,produksi_id',
             'pakai_id'                 => 'nullable|exists:dat_pakai_hdr,pakai_id',
@@ -928,9 +1052,11 @@ class PackagingController extends Controller
         $header = DatPackagingHdr::with([
             'barangJadi.satuanDasar', 
             'gudang', 
+            'gudangAsal',
+            'karyawan',
             'details.barang.satuanDasar', 
             'bom',
-            'produksi',
+            'produksi.gudang',
             'pemakaian.details.barang',
             'laporanKemasOperator',
             'jurnal',
@@ -956,13 +1082,15 @@ class PackagingController extends Controller
         $header = DatPackagingHdr::with([
             'barangJadi.satuanDasar', 
             'gudang', 
+            'gudangAsal',
+            'karyawan',
             'details.barang.satuanDasar', 
             'bom',
-            'produksi',
+            'produksi.gudang',
             'pemakaian.details.barang',
             'adjustmentLogs',
             'laporanKemasOperator',
-            'jurnal',
+            'jurnal.details.coa',
         ])->findOrFail($id);
 
         // Ambil seluruh dokumen pengemasan pada tanggal yang sama untuk Tab Switcher Split View

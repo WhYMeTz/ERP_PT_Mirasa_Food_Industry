@@ -301,7 +301,7 @@ class FakturPenjualanService
         $ppnTipe = $isPpn ? 'PPN_11' : 'NON_PPN';
         $ppnPersen = $isPpn ? 11.00 : 0.00;
 
-        // Generate No Faktur resmi: bersih untuk 1 trip penuh, atau sub-indeks (-1, -2) jika pengiriman bertahap/parsial
+        // Generate No Faktur resmi: selalu bersih (1 PO = 1 Faktur utuh tanpa suffix -1, -2)
         $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
         $wilayah = $customer?->wilayah ?: ($customer?->alamat_txt ?: $customer?->customer_nm);
         $baseFakturNo = !empty($order?->faktur_no)
@@ -309,39 +309,99 @@ class FakturPenjualanService
             : $this->codeGenerator->generateFakturByKlasifikasi($klasifikasi, $wilayah, $isPpn, $fakturTgl);
 
         $cleanBaseFakturNo = preg_replace('/-\d+$/', '', $baseFakturNo);
-
         $soId = $order?->so_id ?? $pengeluaran->so_id;
-        $existingCount = DatFakturHdr::where('so_id', $soId)
-            ->where('deleted_st', false)
-            ->where('status_pembayaran', '!=', 'BATAL')
-            ->count();
 
-        // Cek apakah pengiriman ini parsial (masih ada item pesanan yang belum terkirim penuh)
-        $isPartial = false;
-        if ($order) {
-            foreach ($order->details as $dtl) {
-                if ((float) $dtl->kirim_qty < (float) $dtl->pesan_qty) {
-                    $isPartial = true;
-                    break;
+        // Cek apakah sudah ada faktur aktif untuk PO/SO ini (Prinsip: 1 SO = 1 Faktur Penjualan, multi-trip SJ)
+        if ($soId) {
+            $existingSoFaktur = DatFakturHdr::with('details')->where('so_id', $soId)
+                ->where('deleted_st', false)
+                ->where('status_pembayaran', '!=', 'BATAL')
+                ->first();
+
+            if ($existingSoFaktur) {
+                // Pengiriman parsial ke-2 atau seterusnya:
+                // Sesuai arahan operasional: Faktur Penjualan tetap 1 per PO (Surat Jalan boleh > 1).
+                // Tambahkan rincian barang dari surat jalan baru ini ke faktur tunggal yang sudah ada jika belum tercatat.
+                $existingDtlPengeluaranIds = $existingSoFaktur->details->pluck('pengeluaran_dtl_id')->filter()->all();
+
+                $additionalBruto = 0;
+                $additionalDiskon = 0;
+                $additionalDpp = 0;
+                $additionalPpn = 0;
+                $additionalTotal = 0;
+
+                foreach ($pengeluaran->details as $dtl) {
+                    if (in_array($dtl->pengeluaran_dtl_id, $existingDtlPengeluaranIds)) {
+                        continue;
+                    }
+
+                    $soDtl = $dtl->orderDetail;
+                    $qty = (float) $dtl->kirim_qty;
+                    $hargaSatuan = $soDtl ? (float) $soDtl->harga_satuan : 0;
+                    $diskonPersen = $soDtl ? (float) $soDtl->diskon_persen : 0;
+
+                    $bruto = $qty * $hargaSatuan;
+                    $diskonNominal = ($diskonPersen > 0) ? ($bruto * ($diskonPersen / 100)) : ($soDtl ? (float) $soDtl->potongan_nominal : 0);
+                    $netto = max(0, $bruto - $diskonNominal);
+                    $ppnNominal = $isPpn ? ($netto * 0.11) : 0;
+                    $itemTotal = $netto + $ppnNominal;
+
+                    $additionalBruto += $bruto;
+                    $additionalDiskon += $diskonNominal;
+                    $additionalDpp += $netto;
+                    $additionalPpn += $ppnNominal;
+                    $additionalTotal += $itemTotal;
+
+                    DatFakturDtl::create([
+                        'faktur_id'          => $existingSoFaktur->faktur_id,
+                        'pengeluaran_dtl_id' => $dtl->pengeluaran_dtl_id,
+                        'sodtl_id'           => $dtl->sodtl_id,
+                        'barang_id'          => $dtl->barang_id,
+                        'barang_nm'          => $dtl->barang?->barang_nm ?? "Barang #{$dtl->barang_id}",
+                        'qty'                => $qty,
+                        'satuan'             => $soDtl?->satuan ?: ($dtl->barang?->satuanDasar?->satuan_nm ?? 'Karton'),
+                        'harga_satuan'       => $hargaSatuan,
+                        'diskon_nominal'     => $diskonNominal,
+                        'subtotal_netto'     => $netto,
+                        'ppn_nominal'        => $ppnNominal,
+                        'total_nominal'      => $itemTotal,
+                        'catatan_txt'        => $dtl->catatan_txt,
+                    ]);
                 }
+
+                if ($additionalTotal > 0) {
+                    $newSubtotalBruto = (float) $existingSoFaktur->subtotal_bruto + $additionalBruto;
+                    $newTotalDiskon   = (float) $existingSoFaktur->total_diskon + $additionalDiskon;
+                    $newDpp           = (float) $existingSoFaktur->dpp_nominal + $additionalDpp;
+                    $newPpn           = (float) $existingSoFaktur->ppn_nominal + $additionalPpn;
+                    $newTotalTagihan  = (float) $existingSoFaktur->total_tagihan + $additionalTotal;
+                    $newSisaPiutang   = max(0, $newTotalTagihan - (float) $existingSoFaktur->total_dibayar);
+
+                    $allSjNos = $order ? $order->pengeluaran()->where('status_cd', '!=', 'BATAL')->pluck('pengeluaran_no')->filter()->implode(', ') : $pengeluaran->pengeluaran_no;
+
+                    // Bersihkan nomor faktur dari suffix -1, -2 jika sebelumnya sempat ada
+                    $cleanFakturNo = preg_replace('/-\d+$/', '', $existingSoFaktur->faktur_no);
+
+                    $existingSoFaktur->update([
+                        'faktur_no'      => $cleanFakturNo,
+                        'subtotal_bruto' => $newSubtotalBruto,
+                        'total_diskon'   => $newTotalDiskon,
+                        'dpp_nominal'    => $newDpp,
+                        'ppn_nominal'    => $newPpn,
+                        'total_tagihan'  => $newTotalTagihan,
+                        'sisa_piutang'   => $newSisaPiutang,
+                        'catatan_txt'    => "Mencakup Surat Jalan: {$allSjNos}",
+                        'updated_by'     => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+                    ]);
+                }
+
+                Log::info("Faktur Penjualan {$existingSoFaktur->faktur_no} disinkronkan dengan pengiriman parsial Surat Jalan {$pengeluaran->pengeluaran_no}");
+                return $existingSoFaktur;
             }
         }
 
-        if ($existingCount > 0) {
-            // Pengiriman parsial ke-2 atau seterusnya: gunakan nomor induk dengan sub-indeks berantai (-2, -3, dst)
-            $tripIndex = $existingCount + 1;
-            $fakturNo = "{$cleanBaseFakturNo}-{$tripIndex}";
-            while (DatFakturHdr::where('faktur_no', $fakturNo)->exists()) {
-                $tripIndex++;
-                $fakturNo = "{$cleanBaseFakturNo}-{$tripIndex}";
-            }
-        } elseif ($isPartial) {
-            // Pengiriman parsial pertama: gunakan sub-indeks -1
-            $fakturNo = "{$cleanBaseFakturNo}-1";
-        } else {
-            // Pengiriman penuh 100% dalam 1 kali kirim (KIRIM PENUH): NOMOR BERSIH TANPA AKHIRAN (-1, -2)
-            $fakturNo = $cleanBaseFakturNo;
-        }
+        // Pengiriman pertama: gunakan nomor faktur bersih tanpa akhiran (-1, -2)
+        $fakturNo = $cleanBaseFakturNo;
 
         // Agregasi item dari baris detail Surat Jalan
         $itemsData = [];
@@ -503,28 +563,108 @@ class FakturPenjualanService
             $fakturTgl = $data['faktur_tgl'] ?? now()->toDateString();
             $tglJatuhTempo = $data['tgl_jatuh_tempo'] ?? $this->calculateDueDate($fakturTgl, $data['top_txt'] ?? null);
 
+            // Untuk PO pengiriman parsial, Faktur Penjualan tetap 1 per PO (Surat Jalan bisa multiple).
+            // Periksa apakah SO sudah memiliki Faktur Penjualan aktif.
+            if ($order && $order->so_id) {
+                $existingSoFaktur = DatFakturHdr::with('details')->where('so_id', $order->so_id)
+                    ->where('deleted_st', false)
+                    ->where('status_pembayaran', '!=', 'BATAL')
+                    ->first();
+
+                if ($existingSoFaktur) {
+                    $cleanBaseFakturNo = preg_replace('/-\d+$/', '', $existingSoFaktur->faktur_no);
+                    $existingDtlIds = $existingSoFaktur->details->pluck('pengeluaran_dtl_id')->filter()->toArray();
+                    $itemsData = $data['items'] ?? [];
+
+                    foreach ($itemsData as $item) {
+                        $dtlId = $item['pengeluaran_dtl_id'] ?? null;
+                        if ($dtlId && in_array($dtlId, $existingDtlIds)) {
+                            continue;
+                        }
+                        $qty = (float) ($item['qty'] ?? 0);
+                        $harga = (float) ($item['harga_satuan'] ?? 0);
+                        $diskon = (float) ($item['diskon_nominal'] ?? 0);
+                        $bruto = $qty * $harga;
+                        $netto = max(0, $bruto - $diskon);
+                        $ppn = (float) ($item['ppn_nominal'] ?? 0);
+                        $itemTotal = $netto + $ppn;
+
+                        DatFakturDtl::create([
+                            'faktur_id'          => $existingSoFaktur->faktur_id,
+                            'pengeluaran_dtl_id' => $dtlId,
+                            'sodtl_id'           => $item['sodtl_id'] ?? null,
+                            'barang_id'          => $item['barang_id'],
+                            'barang_nm'          => $item['barang_nm'] ?? "Barang #{$item['barang_id']}",
+                            'qty'                => $qty,
+                            'satuan'             => $item['satuan'] ?? 'Karton',
+                            'harga_satuan'       => $harga,
+                            'diskon_nominal'     => $diskon,
+                            'subtotal_netto'     => $netto,
+                            'ppn_nominal'        => $ppn,
+                            'total_nominal'      => $itemTotal,
+                            'catatan_txt'        => $item['catatan_txt'] ?? null,
+                        ]);
+                    }
+
+                    $existingSoFaktur->load('details');
+                    $newSubtotalBruto = 0;
+                    $newTotalDiskon = 0;
+                    $newDpp = 0;
+                    $newPpn = 0;
+                    $newTotalTagihan = 0;
+
+                    foreach ($existingSoFaktur->details as $it) {
+                        $q = (float) $it->qty;
+                        $h = (float) $it->harga_satuan;
+                        $d = (float) $it->diskon_nominal;
+                        $b = $q * $h;
+                        $n = max(0, $b - $d);
+                        $p = (float) $it->ppn_nominal;
+                        $t = $n + $p;
+
+                        $newSubtotalBruto += $b;
+                        $newTotalDiskon += $d;
+                        $newDpp += $n;
+                        $newPpn += $p;
+                        $newTotalTagihan += $t;
+                    }
+
+                    $newTotalTagihan = max(0, $newTotalTagihan - (float) $existingSoFaktur->total_potongan);
+                    $newSisaPiutang = max(0, $newTotalTagihan - (float) $existingSoFaktur->total_dibayar);
+
+                    $allSjNos = DatPengeluaranHdr::where('so_id', $order->so_id)
+                        ->where('status_cd', '!=', 'BATAL')
+                        ->pluck('pengeluaran_no')
+                        ->filter()
+                        ->unique()
+                        ->implode(', ');
+
+                    $existingSoFaktur->update([
+                        'faktur_no'      => $cleanBaseFakturNo,
+                        'subtotal_bruto' => $newSubtotalBruto,
+                        'total_diskon'   => $newTotalDiskon,
+                        'dpp_nominal'    => $newDpp,
+                        'ppn_nominal'    => $newPpn,
+                        'total_tagihan'  => $newTotalTagihan,
+                        'sisa_piutang'   => $newSisaPiutang,
+                        'catatan_txt'    => "Mencakup Surat Jalan: {$allSjNos}",
+                        'updated_by'     => $userName ?? auth()->user()?->nama_lengkap ?? 'System',
+                    ]);
+
+                    return $existingSoFaktur;
+                }
+            }
+
             $submittedFakturNo = !empty($data['faktur_no']) ? trim($data['faktur_no']) : null;
             $isSubmittedUsed = $submittedFakturNo && DatFakturHdr::where('faktur_no', $submittedFakturNo)
                 ->where('deleted_st', false)
                 ->where('status_pembayaran', '!=', 'BATAL')
                 ->exists();
 
-            $isOrderFakturUsed = !empty($order?->faktur_no) && DatFakturHdr::where('faktur_no', $order->faktur_no)
-                ->where('deleted_st', false)
-                ->where('status_pembayaran', '!=', 'BATAL')
-                ->exists();
-
             if ($submittedFakturNo && !$isSubmittedUsed) {
                 $fakturNo = $submittedFakturNo;
-            } elseif (!empty($order?->faktur_no) && !$isOrderFakturUsed) {
-                $fakturNo = $order->faktur_no;
             } elseif (!empty($order?->faktur_no)) {
-                $cleanBase = preg_replace('/-\d+$/', '', $order->faktur_no);
-                $existingCount = DatFakturHdr::where('so_id', $order->so_id)
-                    ->where('deleted_st', false)
-                    ->where('status_pembayaran', '!=', 'BATAL')
-                    ->count();
-                $fakturNo = "{$cleanBase}-" . ($existingCount + 1);
+                $fakturNo = preg_replace('/-\d+$/', '', $order->faktur_no);
             } else {
                 $klasifikasi = $customer?->klasifikasi ?? 'MANUAL';
                 $wilayah = $customer?->wilayah ?: ($customer?->alamat_txt ?: $customer?->customer_nm);
@@ -822,5 +962,112 @@ class FakturPenjualanService
             'pengeluaran.details.barang.satuanDasar',
             'details.barang.satuanDasar'
         ])->findOrFail($fakturId);
+    }
+
+    /**
+     * Konsolidasi faktur split/parsial menjadi 1 faktur utuh untuk sebuah SO.
+     * Menggabungkan rincian item, memperbarui total tagihan, dan menonaktifkan duplikat.
+     */
+    public function consolidateSplitFaktursForSo(int $soId): ?DatFakturHdr
+    {
+        $fakturs = DatFakturHdr::with('details')
+            ->where('so_id', $soId)
+            ->where('deleted_st', false)
+            ->where('status_pembayaran', '!=', 'BATAL')
+            ->orderBy('faktur_id')
+            ->get();
+
+        if ($fakturs->isEmpty()) {
+            return null;
+        }
+
+        $primaryFaktur = $fakturs->first();
+        $cleanFakturNo = preg_replace('/-\d+$/', '', $primaryFaktur->faktur_no);
+
+        if ($fakturs->count() > 1) {
+            $splitFakturs = $fakturs->slice(1);
+            $existingDtlPengeluaranIds = $primaryFaktur->details->pluck('pengeluaran_dtl_id')->filter()->toArray();
+
+            foreach ($splitFakturs as $splitFaktur) {
+                foreach ($splitFaktur->details as $dtl) {
+                    if (!$dtl->pengeluaran_dtl_id || !in_array($dtl->pengeluaran_dtl_id, $existingDtlPengeluaranIds)) {
+                        $dtl->update(['faktur_id' => $primaryFaktur->faktur_id]);
+                        if ($dtl->pengeluaran_dtl_id) {
+                            $existingDtlPengeluaranIds[] = $dtl->pengeluaran_dtl_id;
+                        }
+                    } else {
+                        // Hapus duplikat baris
+                        $dtl->delete();
+                    }
+                }
+
+                // Tandai faktur pecahan sebagai deleted
+                $splitFaktur->update([
+                    'deleted_st'  => true,
+                    'active_st'   => false,
+                    'catatan_txt' => trim(($splitFaktur->catatan_txt ? $splitFaktur->catatan_txt . ' | ' : '') . "Digabung ke faktur {$cleanFakturNo}"),
+                ]);
+            }
+
+            // Muat ulang detail faktur utama dan hitung ulang total
+            $primaryFaktur->load('details');
+            $subtotalBruto = 0;
+            $totalDiskon = 0;
+            $totalDpp = 0;
+            $totalPpn = 0;
+            $totalTagihan = 0;
+
+            foreach ($primaryFaktur->details as $item) {
+                $qty = (float) $item->qty;
+                $harga = (float) $item->harga_satuan;
+                $diskon = (float) $item->diskon_nominal;
+                $bruto = $qty * $harga;
+                $netto = max(0, $bruto - $diskon);
+                $ppn = (float) $item->ppn_nominal;
+                $itemTotal = $netto + $ppn;
+
+                $subtotalBruto += $bruto;
+                $totalDiskon += $diskon;
+                $totalDpp += $netto;
+                $totalPpn += $ppn;
+                $totalTagihan += $itemTotal;
+            }
+
+            $totalTagihan = max(0, $totalTagihan - (float) $primaryFaktur->total_potongan);
+            $sisaPiutang = max(0, $totalTagihan - (float) $primaryFaktur->total_dibayar);
+
+            // Kumpulkan semua nomor Surat Jalan terkait dari SO
+            $allSjNos = DatPengeluaranHdr::where('so_id', $soId)
+                ->where('status_cd', '!=', 'BATAL')
+                ->pluck('pengeluaran_no')
+                ->filter()
+                ->unique()
+                ->implode(', ');
+
+            $catatanTxt = !empty($allSjNos) ? "Mencakup Surat Jalan: {$allSjNos}" : $primaryFaktur->catatan_txt;
+
+            $primaryFaktur->update([
+                'faktur_no'      => $cleanFakturNo,
+                'subtotal_bruto' => $subtotalBruto,
+                'total_diskon'   => $totalDiskon,
+                'dpp_nominal'    => $totalDpp,
+                'ppn_nominal'    => $ppnNominal,
+                'total_tagihan'  => $totalTagihan,
+                'sisa_piutang'   => $sisaPiutang,
+                'catatan_txt'    => $catatanTxt,
+            ]);
+        } else {
+            if ($primaryFaktur->faktur_no !== $cleanFakturNo) {
+                $primaryFaktur->update(['faktur_no' => $cleanFakturNo]);
+            }
+        }
+
+        // Sinkronkan nomor faktur di SO
+        $so = DatSoHdr::find($soId);
+        if ($so && $so->faktur_no !== $cleanFakturNo) {
+            $so->update(['faktur_no' => $cleanFakturNo]);
+        }
+
+        return $primaryFaktur;
     }
 }

@@ -16,21 +16,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const packTglInput = document.getElementById('pack_tgl');
     packTglInput?.addEventListener('change', function () {
-        const prodSelect = document.getElementById('produksi_id');
-        // Jika belum sinkron dengan tiket curah WIP, sesuaikan nomor batch default & expired
-        if (!prodSelect || !prodSelect.value) {
-            updateBatchNumber();
-            const expInput = document.getElementById('expired_tgl');
-            if (expInput && packTglInput.value) {
-                const parts = packTglInput.value.split('-');
-                if (parts.length === 3) {
-                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                    d.setMonth(d.getMonth() + 6);
-                    const yyyy = d.getFullYear();
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    expInput.value = `${yyyy}-${mm}-${dd}`;
-                }
+        updateBatchNumber();
+        const expInput = document.getElementById('expired_tgl');
+        if (expInput && packTglInput.value) {
+            const parts = packTglInput.value.split('-');
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                d.setMonth(d.getMonth() + 6);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                expInput.value = `${yyyy}-${mm}-${dd}`;
             }
         }
     });
@@ -99,27 +95,43 @@ function debounce(func, delay) {
 }
 
 /**
- * Generate nomor lot batch default: format tanggal murni (contoh: 15 10 2026)
+ * Generate nomor lot batch FG: format DDMMYY tanggal pengemasan (contoh: 261126)
  */
 function updateBatchNumber() {
     const batchInput = document.getElementById('batch_no');
-    if (!batchInput || batchInput.getAttribute('data-customized')) return;
+    const textBatchFg = document.getElementById('text_batch_fg');
+    const displayBatchFg = document.getElementById('display_batch_fg');
 
     const packTgl = document.getElementById('pack_tgl')?.value;
+    let dmyStr = '';
     if (packTgl) {
         const parts = packTgl.split('-');
         if (parts.length === 3) {
             // parts[0] = YYYY, parts[1] = MM, parts[2] = DD
-            batchInput.value = `${parts[2]} ${parts[1]} ${parts[0]}`;
-            return;
+            // Format 6 digit: DDMMYY (misal: 261126)
+            dmyStr = `${parts[2]}${parts[1]}${parts[0].slice(-2)}`;
         }
     }
 
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    batchInput.value = `${dd} ${mm} ${yyyy}`;
+    if (!dmyStr) {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).slice(-2);
+        dmyStr = `${dd}${mm}${yy}`;
+    }
+
+    if (batchInput) {
+        batchInput.value = dmyStr;
+    }
+    if (textBatchFg) {
+        textBatchFg.textContent = dmyStr;
+        textBatchFg.style.color = '#0f172a';
+    }
+    if (displayBatchFg) {
+        displayBatchFg.style.border = '1.5px solid #cbd5e1';
+        displayBatchFg.style.background = '#f1f5f9';
+    }
 }
 
 /**
@@ -1515,6 +1527,9 @@ function buildMaterialRowsFromOperator(item) {
  * Kalkulasi Otomatis Pemakaian Lakban Desktop (Standar cm/Meter & Roll - Poin 41)
  */
 function recalculateDesktopLakban() {
+    if (document.getElementById('input_lakban_atas_gr')) {
+        return; // Form utama menggunakan onSegelAtasBawahChange()
+    }
     const hasilKarton = parseFloat(document.getElementById('hasil_karton_qty')?.value) || 0;
     const standarCm = parseFloat(document.getElementById('lakban_standar_cm')?.value) || 120;
     const rusakM = parseFloat(document.getElementById('lakban_rusak_m')?.value) || 0;
@@ -1601,6 +1616,9 @@ function recalculateDesktopLakban() {
  * Handler jika Admin / User mengetik langsung jumlah Roll
  */
 function onDesktopManualRollInput() {
+    if (document.getElementById('input_lakban_atas_gr')) {
+        return; // Form utama menggunakan onSegelAtasBawahChange()
+    }
     if (typeof onManualRollInput === 'function') {
         onManualRollInput();
     }

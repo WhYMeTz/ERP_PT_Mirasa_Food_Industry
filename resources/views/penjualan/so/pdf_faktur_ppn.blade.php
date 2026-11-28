@@ -256,7 +256,7 @@
         ? $faktur->details 
         : ($order->details ?? collect());
 
-    $fakturNo = $faktur?->faktur_no ?? ($order->faktur_no ?: '-');
+    $fakturNo = preg_replace('/-\d+$/', '', $faktur?->faktur_no ?? ($order->faktur_no ?: '-'));
     $poNo = $order->customer_po_no ?: ($order->so_no ?: '-');
     
     $fakturTgl = $faktur?->faktur_tgl 

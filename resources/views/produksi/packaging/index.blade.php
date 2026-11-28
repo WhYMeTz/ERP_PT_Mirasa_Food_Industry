@@ -188,7 +188,6 @@
                         <th style="padding: 0.75rem 1rem; text-align: left;">WIP &amp; BAHAN TERPAKAI</th>
                         <th style="padding: 0.75rem 1rem; text-align: left;">HASIL KEMAS</th>
                         <th style="padding: 0.75rem 1rem; text-align: left; width: 135px;">DICATAT OLEH</th>
-                        <th style="padding: 0.75rem 1rem; text-align: center; width: 135px;">STATUS HPP</th>
                         <th style="padding: 0.75rem 1rem; text-align: center; width: 85px;">AKSI</th>
                     </tr>
                 </thead>
@@ -198,19 +197,24 @@
                             $menuId = 'actionMenu_' . $row->pack_id;
                             $isEven = ($index % 2 === 1);
                             $rowBg = $isEven ? '#f1f5f9' : '#ffffff';
-                            $wipDetail = $row->details->firstWhere(fn($d) => strtoupper($d->kategori_bahan) === 'WIP');
-                            $wipQty = $wipDetail ? (float) $wipDetail->qty_aktual : 0;
-                            $wipNm = $wipDetail?->barang?->barang_nm ?? 'Keripik Curah (WIP)';
+                            $wipList = $row->details->filter(fn($d) => strtoupper($d->kategori_bahan) === 'WIP');
                             $isFinal = $row->isHppFinal();
                             $canCalc = $row->canCalculateHpp();
                         @endphp
                         <tr class="prod-main-row" style="background: {{ $rowBg }}; border-bottom: 1px solid #e2e8f0; transition: background 0.15s ease;">
                             {{-- No Dokumen --}}
                             <td style="padding: 0.75rem 1rem; vertical-align: top;">
-                                <a href="{{ route('produksi.packaging.show', $row->pack_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <span>{{ $row->pack_no }}</span>
-                                </a>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <a href="{{ route('produksi.packaging.show', $row->pack_id) }}" style="font-weight: 700; color: {{ $row->status_cd === 'VOID' ? '#94a3b8; text-decoration: line-through;' : '#0284c7; text-decoration: none;' }} font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>{{ $row->pack_no }}</span>
+                                    </a>
+                                    @if($row->status_cd === 'VOID')
+                                        <span style="font-size: 0.65rem; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 1px 6px; border-radius: 4px; font-weight: 700;">
+                                            VOID
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
 
                             {{-- Tanggal --}}
@@ -258,13 +262,28 @@
 
                             {{-- WIP & Bahan Terpakai --}}
                             <td style="padding: 0.75rem 1rem; vertical-align: top;">
-                                <div style="font-size: 0.8rem; font-weight: 600; color: #0f172a;">
-                                    {{ $wipNm }} ({{ number_format($wipQty, 1, ',', '.') }} kg)
-                                </div>
+                                @if($wipList->isNotEmpty())
+                                    @foreach($wipList as $wip)
+                                        <div style="font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 2px;">
+                                            {{ $wip->barang?->barang_nm ?? 'Keripik Curah' }} ({{ number_format($wip->qty_aktual, 1, ',', '.') }} kg)
+                                            @if($wip->batch_no)
+                                                <span style="font-size: 0.6875rem; color: #64748b; font-weight: normal; font-family: monospace;">[{{ $wip->batch_no }}]</span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                    @if($wipList->count() > 1)
+                                        <div style="font-size: 0.725rem; font-weight: 700; color: #0369a1; border-top: 1px dashed #cbd5e1; padding-top: 2px; margin-top: 2px;">
+                                            Total Curah: {{ number_format($wipList->sum('qty_aktual'), 1, ',', '.') }} kg
+                                        </div>
+                                    @endif
+                                @else
+                                    <div style="font-size: 0.8rem; color: #94a3b8;">-</div>
+                                @endif
+
                                 @if($row->produksi)
                                     <div style="margin-top: 0.25rem;">
                                         <a href="{{ route('produksi.show', $row->produksi->produksi_id) }}" style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.65rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 0.1rem 0.4rem; border-radius: 4px; text-decoration: none; border: 1px solid #86efac;" title="Lihat Dokumen Hasil Masak Dapur">
-                                            <span>SPK #{{ $row->produksi->produksi_no }}</span>
+                                            <span>SPK {{ $row->produksi->produksi_no }}</span>
                                             @if($row->produksi->shift)
                                                 <span>&bull; Shift {{ $row->produksi->shift }}</span>
                                             @endif
@@ -294,45 +313,6 @@
                                 <div style="font-size: 0.6875rem; color: #64748b; margin-top: 2px;">
                                     {{ $row->created_at ? $row->created_at->format('d/m/Y H:i') : '-' }}
                                 </div>
-                            </td>
-
-                            {{-- Status HPP --}}
-                            <td style="padding: 0.75rem 1rem; text-align: center; vertical-align: top;">
-                                @if($row->status_cd === 'VOID')
-                                    <span style="font-size: 0.7rem; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 0.2rem 0.55rem; border-radius: 9999px; font-weight: 700;">
-                                        VOID
-                                    </span>
-                                @elseif($isFinal)
-                                    <span style="font-size: 0.7rem; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 0.2rem 0.55rem; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                        <span>HPP FINAL</span>
-                                    </span>
-                                    @if($row->jurnal_id && $row->jurnal)
-                                        <a href="{{ route('keuangan.jurnal.index', ['search' => $row->jurnal->jurnal_no]) }}" style="display: inline-block; margin-top: 3px; font-size: 0.7rem; color: #059669; font-weight: 700; text-decoration: none;" title="Lihat detail Jurnal Umum Akuntansi">
-                                            {{ $row->jurnal->jurnal_no }}
-                                        </a>
-                                    @else
-                                        <div style="font-size: 0.65rem; color: #059669; font-weight: 600; margin-top: 3px;">
-                                            Tervalidasi
-                                        </div>
-                                    @endif
-                                @elseif(!$canCalc && $row->produksi_id)
-                                    <span style="font-size: 0.7rem; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 0.2rem 0.55rem; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;" title="HPP Produksi Asal belum difinalkan">
-                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span>Menunggu HPP Produksi</span>
-                                    </span>
-                                    <div style="font-size: 0.65rem; color: #b45309; margin-top: 2px;">
-                                        {{ $row->produksi?->produksi_no }}
-                                    </div>
-                                @else
-                                    <span style="font-size: 0.7rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 0.2rem 0.55rem; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                        <span>Siap Dihitung</span>
-                                    </span>
-                                    <div style="font-size: 0.65rem; color: #1e40af; margin-top: 2px;">
-                                        Siap Ditarik
-                                    </div>
-                                @endif
                             </td>
 
                             {{-- Aksi Dropdown --}}
@@ -368,7 +348,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                            <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
                                     <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #cbd5e1;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                     <span style="font-weight: 600; font-size: 0.95rem; color: #64748b;">Belum ada dokumen pengemasan yang tercatat</span>

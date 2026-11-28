@@ -89,18 +89,13 @@
                     <span class="badge" style="background:#fee2e2; color:#b91c1c;">Dibatalkan</span>
                 @endif
 
-                @if ($validFakturs->count() > 1)
-                    @foreach ($validFakturs as $vfIdx => $vf)
-                        <a href="{{ route('penjualan.faktur.show', $vf->faktur_id) }}" style="text-decoration: none;">
-                            <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700;">
-                                Faktur #{{ $vfIdx + 1 }}: {{ $vf->faktur_no }} ({{ $vf->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum Lunas' }})
-                            </span>
-                        </a>
-                    @endforeach
-                @elseif ($activeFaktur)
-                    <a href="{{ route('penjualan.faktur.show', $activeFaktur->faktur_id) }}" style="text-decoration: none;">
+                @php
+                    $displayFaktur = $activeFaktur ?? $validFakturs->first();
+                @endphp
+                @if ($displayFaktur)
+                    <a href="{{ route('penjualan.faktur.show', $displayFaktur->faktur_id) }}" style="text-decoration: none;">
                         <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700;">
-                            Ditagihkan: {{ $activeFaktur->faktur_no }} ({{ $activeFaktur->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum Lunas' }})
+                            Ditagihkan: {{ preg_replace('/-\d+$/', '', $displayFaktur->faktur_no) }} ({{ $displayFaktur->status_pembayaran === 'LUNAS' ? 'Lunas' : 'Belum Lunas' }})
                         </span>
                     </a>
                 @else
@@ -119,7 +114,7 @@
                 {{-- Multi-Trip: Navigasi Cepat ke Riwayat Pengiriman & Cetak Dokumen Lengkap --}}
                 <a href="#riwayat-pengiriman" class="btn btn-secondary" style="background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;">
                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: -2px; margin-right: 4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    Lihat Dokumen Pengiriman ({{ $validSjs->count() }}x SJ &amp; Faktur)
+                    Lihat Dokumen Pengiriman ({{ $validSjs->count() }}x SJ)
                 </a>
 
                 @if ($lastSj = $validSjs->last())
@@ -128,9 +123,12 @@
                     </a>
                 @endif
 
-                @if ($lastFk = $validFakturs->last())
-                    <a href="{{ route('penjualan.faktur.export-pdf', $lastFk->faktur_id) }}" target="_blank" class="btn btn-primary" style="background: #059669; border-color: #047857; color: #ffffff; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;" title="Cetak Faktur Penjualan Trip Terakhir">
-                        Cetak Faktur Terakhir (PDF)
+                @php
+                    $fakturToPrint = $activeFaktur ?? $validFakturs->first();
+                @endphp
+                @if ($fakturToPrint)
+                    <a href="{{ route('penjualan.faktur.export-pdf', $fakturToPrint->faktur_id) }}" target="_blank" class="btn btn-primary" style="background: #059669; border-color: #047857; color: #ffffff; font-size: 0.85rem; font-weight: 700; padding: 0.55rem 0.95rem; border-radius: 6px;" title="Cetak Faktur Penjualan">
+                        Cetak Faktur (PDF)
                     </a>
                 @endif
 
@@ -542,9 +540,9 @@
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <svg width="20" height="20" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
                     <div>
-                        <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Pengiriman Fisik (Surat Jalan) &amp; Dokumen Faktur</strong>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">Riwayat Pengiriman Fisik (Surat Jalan) &amp; Faktur Penjualan</strong>
                         <div style="font-size: 0.75rem; color: #64748b; font-weight: 400; margin-top: 1px;">
-                            Setiap keberangkatan truk memiliki Surat Jalan fisik &amp; Faktur Penjualan resmi terpisah
+                            Setiap keberangkatan truk memiliki Surat Jalan fisik terpisah, ditagihkan dalam 1 Faktur Penjualan resmi
                         </div>
                     </div>
                 </div>
@@ -570,7 +568,7 @@
                     <tbody>
                         @foreach ($validSjs as $sIdx => $sj)
                             @php
-                                $fk = $sj->faktur;
+                                $fk = $sj->faktur ?? $activeFaktur ?? $validFakturs->first();
                             @endphp
                             <tr style="border-bottom: 1px solid #f1f5f9;">
                                 <td style="text-align: center; vertical-align: middle;">
@@ -617,7 +615,7 @@
                                 <td style="vertical-align: middle;">
                                     @if ($fk)
                                         <a href="{{ route('penjualan.faktur.show', $fk->faktur_id) }}" style="font-family: monospace; font-weight: 700; color: #059669; text-decoration: underline; font-size: 0.85rem;">
-                                            {{ $fk->faktur_no }}
+                                            {{ preg_replace('/-\d+$/', '', $fk->faktur_no) }}
                                         </a>
                                         <div style="margin-top: 3px;">
                                             <span class="badge {{ $fk->status_pembayaran === 'LUNAS' ? 'badge-success' : 'badge-warning' }}" style="font-size: 0.675rem; padding: 2px 6px; border-radius: 3px;">

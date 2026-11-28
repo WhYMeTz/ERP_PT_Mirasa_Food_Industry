@@ -353,10 +353,10 @@ class PackagingService
                 ? trim($data['pack_no']) 
                 : $this->codeGenerator->generatePackagingNo($packTgl);
 
-            // Generate Nomor Batch FG jika kosong
+            // Generate Nomor Batch FG jika kosong (Format standar tanggal kemas: DDMMYY, contoh: 261126)
             $batchNo = !empty($data['batch_no']) 
                 ? trim($data['batch_no']) 
-                : ('LOT-FG-' . date('ymd', strtotime($packTgl)) . '-' . $barangJadiId);
+                : date('dmy', strtotime($packTgl));
 
             $expiredTgl = !empty($data['expired_tgl']) ? $data['expired_tgl'] : null;
             $upahTk = (float) ($data['total_biaya_tenaga_kerja'] ?? 0);
@@ -538,22 +538,7 @@ class PackagingService
             ]);
 
             // 3. Simpan Detail Konsumsi & Eksekusi Pemotongan Stok Bahan Fisik (Outbound)
-            foreach ($processedDetails as $dtlData) {
-                DatPackagingDtl::create([
-                    'pack_id'        => $header->pack_id,
-                    'kategori_bahan' => $dtlData['kategori_bahan'],
-                    'barang_id'      => $dtlData['barang_id'],
-                    'batch_no'       => $dtlData['batch_no'],
-                    'qty_standar'    => $dtlData['qty_standar'],
-                    'qty_aktual'     => $dtlData['qty_aktual'],
-                    'satuan_cd'      => $dtlData['satuan_cd'],
-                    'harga_satuan'   => $dtlData['harga_satuan'],
-                    'subtotal_nilai' => $dtlData['subtotal_nilai'],
-                    'catatan_txt'    => $dtlData['catatan_txt'],
-                    'created_by'     => $userName ?? auth()->user()?->name ?? 'System',
-                    'updated_by'     => $userName ?? auth()->user()?->name ?? 'System',
-                ]);
-
+            foreach ($processedDetails as &$dtlData) {
                 // Tentukan gudang sumber bahan yang dipotong
                 $brgTarget = MstBarang::with('jenisBarang')->find($dtlData['barang_id']);
                 
@@ -575,7 +560,26 @@ class PackagingService
                 }
 
                 $gudangSumberId = $stokBatch ? $stokBatch->gudang_id : $gudangId;
-                $batchTarget = $stokBatch ? $stokBatch->batch_no : ($dtlData['batch_no'] ?? 'BATCH-DEF');
+                $batchTarget = !empty($dtlData['batch_no']) 
+                    ? $dtlData['batch_no'] 
+                    : ($stokBatch ? $stokBatch->batch_no : 'BATCH-DEF');
+                
+                $dtlData['batch_no'] = $batchTarget;
+
+                DatPackagingDtl::create([
+                    'pack_id'        => $header->pack_id,
+                    'kategori_bahan' => $dtlData['kategori_bahan'],
+                    'barang_id'      => $dtlData['barang_id'],
+                    'batch_no'       => $dtlData['batch_no'],
+                    'qty_standar'    => $dtlData['qty_standar'],
+                    'qty_aktual'     => $dtlData['qty_aktual'],
+                    'satuan_cd'      => $dtlData['satuan_cd'],
+                    'harga_satuan'   => $dtlData['harga_satuan'],
+                    'subtotal_nilai' => $dtlData['subtotal_nilai'],
+                    'catatan_txt'    => $dtlData['catatan_txt'],
+                    'created_by'     => $userName ?? auth()->user()?->name ?? 'System',
+                    'updated_by'     => $userName ?? auth()->user()?->name ?? 'System',
+                ]);
 
                 // Potong stok bahan terpakai
                 $ket = "Konsumsi Pengemasan ({$packNo}): {$dtlData['qty_aktual']} {$dtlData['satuan_cd']} untuk {$hasilKarton} Karton {$header->barangJadi?->barang_nm}";
@@ -650,15 +654,17 @@ class PackagingService
             // 4. OTOMATIS TERCATAT DI MENU "GUDANG -> PEMAKAIAN BAHAN" (AUTO-ISSUANCE)
             // Memudahkan operasional: Orang gudang tidak perlu input manual, dokumen pengeluaran otomatis terbit!
             try {
-                $prefixPakai = 'OUT-' . date('Ym', strtotime($packTgl)) . '-';
-                $pakaiNo = $this->codeGenerator->generate('dat_pakai_hdr', 'pakai_no', $prefixPakai, 4);
+                $gudangAsalId = !empty($data['gudang_asal_id']) ? (int) $data['gudang_asal_id'] : $gudangId;
+                $gudangObj = MstGudang::find($gudangAsalId);
+                $lokasiPabrik = $gudangObj?->lokasi_pabrik ?? $gudangObj?->gudang_cd ?? 'MFI';
+                $pakaiNo = $this->codeGenerator->generatePakaiNo($packTgl, null, $lokasiPabrik);
                 $targetBarang = MstBarang::find($barangJadiId);
                 $targetBarangNm = $targetBarang?->barang_nm ?? 'BARANG JADI';
 
                 $pakaiHdr = \App\Models\Gudang\DatPakaiHdr::create([
                     'pakai_no'         => $pakaiNo,
                     'pakai_tgl'        => $packTgl,
-                    'gudang_id'        => !empty($data['gudang_asal_id']) ? (int) $data['gudang_asal_id'] : $gudangId,
+                    'gudang_id'        => $gudangAsalId,
                     'produksi_id'      => $prodId,
                     'tujuan_pemakaian' => 'PENGEMASAN ' . strtoupper($targetBarangNm),
                     'catatan_txt'      => "Otomatis terbentuk dari Pengemasan No. {$packNo} ({$hasilKarton} Karton)",

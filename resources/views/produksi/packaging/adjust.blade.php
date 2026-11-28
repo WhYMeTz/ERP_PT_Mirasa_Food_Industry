@@ -49,56 +49,6 @@
         </div>
     @endif
 
-    {{-- TAB SWITCHER SPLIT DOKUMEN PENGEMASAN (JIKA PADA TANGGAL INI TERDAPAT LEBIH DARI 1 DOKUMEN KEMAS) --}}
-    @if(isset($sameDatePackaging) && $sameDatePackaging->count() > 1)
-        <div class="card-enterprise no-print" style="margin-bottom: 1.25rem; padding: 0.9rem 1.15rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9;">
-                <div style="font-size: 0.875rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.4rem;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0284c7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    <span>Dokumen Pengemasan Hari Ini ({{ \Carbon\Carbon::parse($header->pack_tgl)->format('d/m/Y') }}):</span>
-                </div>
-                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; background: #f8fafc; padding: 0.2rem 0.55rem; border-radius: 4px; border: 1px solid #e2e8f0;">
-                    <span>Tersedia {{ $sameDatePackaging->count() }} Dokumen Produk &bull; Klik Tab untuk Beralih Koreksi</span>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
-                @foreach($sameDatePackaging as $pItem)
-                    @php
-                        $isActive = $pItem->pack_id === $header->pack_id;
-                    @endphp
-                    <a href="{{ route('produksi.packaging.adjust', $pItem->pack_id) }}" 
-                       style="display: flex; flex-direction: column; gap: 0.35rem; padding: 0.75rem 1rem; border-radius: 8px; border: 1.5px solid {{ $isActive ? '#0284c7' : '#e2e8f0' }}; background: {{ $isActive ? '#f0f9ff' : '#ffffff' }}; text-decoration: none; transition: all 0.15s ease-in-out; box-shadow: {{ $isActive ? '0 2px 6px rgba(2, 132, 199, 0.12)' : 'none' }};">
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
-                            <div style="display: flex; align-items: center; gap: 0.45rem;">
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ $isActive ? '#0284c7' : '#94a3b8' }}; flex-shrink: 0;"></span>
-                                <span style="font-size: 0.875rem; font-weight: 800; color: {{ $isActive ? '#0369a1' : '#0f172a' }};">
-                                    {{ $pItem->barangJadi?->barang_nm ?? '-' }}
-                                </span>
-                            </div>
-                            @if($isActive)
-                                <span style="font-size: 0.6875rem; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 0.15rem 0.45rem; border-radius: 9999px; border: 1px solid #bae6fd;">
-                                    Sedang Ditampilkan
-                                </span>
-                            @else
-                                <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">
-                                    Beralih ke Dokumen Ini &rarr;
-                                </span>
-                            @endif
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
-                            <span style="font-family: monospace; font-weight: 700; color: #0284c7;">#{{ $pItem->pack_no }}</span>
-                            <span>&bull;</span>
-                            <span style="font-weight: 700; color: #059669;">{{ number_format($pItem->hasil_karton_qty, 0, ',', '.') }} Ktn ({{ number_format($pItem->hasil_pcs_qty, 0, ',', '.') }} Pcs)</span>
-                            <span>&bull;</span>
-                            <span style="font-weight: 600; color: #0f172a;">HPP Rp {{ number_format($pItem->hpp_per_karton, 0, ',', '.') }}/Ktn</span>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
     {{-- 3. PARAMETER DOKUMEN PENGEMASAN (KARTU STANDAR ERP MIRASA IDENTIK DENGAN PRODUKSI) --}}
     <div class="card-enterprise">
         <div class="card-enterprise-header">

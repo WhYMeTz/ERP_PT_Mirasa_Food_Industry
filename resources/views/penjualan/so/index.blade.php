@@ -277,19 +277,12 @@
                         </td>
                         <td>
                             <div style="font-size: 0.775rem; line-height: 1.5; color: #334155;">
-                                @if($validFakturs->count() > 1)
-                                    <div>
-                                        <span style="color: #64748b; font-size: 0.7rem; font-weight: 700;">Faktur ({{ $validFakturs->count() }}x):</span>
-                                        @foreach($validFakturs as $vf)
-                                            <div style="font-family: monospace; font-weight: 700; color: #059669; font-size: 0.75rem;">
-                                                &bull; {{ $vf->faktur_no }}
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @elseif($activeFaktur)
-                                    <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $activeFaktur->faktur_no }}</strong></div>
-                                @elseif($so->faktur_no)
-                                    <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $so->faktur_no }}</strong></div>
+                                @php
+                                    $displayFaktur = $activeFaktur ?? $validFakturs->first();
+                                    $displayFakturNo = $displayFaktur ? preg_replace('/-\d+$/', '', $displayFaktur->faktur_no) : ($so->faktur_no ? preg_replace('/-\d+$/', '', $so->faktur_no) : null);
+                                @endphp
+                                @if($displayFakturNo)
+                                    <div><span style="color: #64748b; font-size: 0.7rem;">Faktur:</span> <strong style="color: #0f172a;">{{ $displayFakturNo }}</strong></div>
                                 @endif
 
                                 @if($validSjs->count() > 1)
@@ -421,18 +414,16 @@
                                         </a>
                                     @endforeach
 
-                                    {{-- Multi-Trip: Pilihan Cetak Tiap Faktur Penjualan --}}
-                                    @if ($validFakturs->count() > 0)
+                                    {{-- Multi-Trip: Faktur Penjualan Tunggal (1 Faktur per PO) --}}
+                                    @php
+                                        $fakturToPrint = $activeFaktur ?? $validFakturs->first();
+                                    @endphp
+                                    @if ($fakturToPrint)
                                         <div class="action-dropdown-divider"></div>
-                                        <div style="padding: 4px 12px; font-size: 0.7rem; font-weight: 700; color: #059669; text-transform: uppercase;">
-                                            Faktur Penjualan ({{ $validFakturs->count() }}x):
-                                        </div>
-                                        @foreach($validFakturs as $fIdx => $vf)
-                                            <a href="{{ route('penjualan.faktur.export-pdf', $vf->faktur_id) }}" target="_blank" class="action-dropdown-item" style="color: #059669; font-size: 0.775rem; font-weight: 600;">
-                                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                                <span>Cetak Faktur #{{ $fIdx + 1 }}: {{ $vf->faktur_no }}</span>
-                                            </a>
-                                        @endforeach
+                                        <a href="{{ route('penjualan.faktur.export-pdf', $fakturToPrint->faktur_id) }}" target="_blank" class="action-dropdown-item" style="color: #059669; font-weight: 600;">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                            <span>Cetak Faktur (PDF)</span>
+                                        </a>
                                     @endif
                                 @elseif ($activeSjItem)
                                     {{-- Single Trip: Cetak Dokumen Surat Jalan Resmi --}}

@@ -514,6 +514,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/packaging/hpp/packaging-data/{id}', [PackagingController::class, 'getPackagingDataForHpp'])->name('packaging.hpp.packaging-data');
         Route::post('/packaging/hpp/store', [PackagingController::class, 'storeHpp'])->name('packaging.hpp.store')->middleware('role:produksi_create');
         Route::get('/packaging/ajax-bom-preview', [PackagingController::class, 'ajaxBomPreview'])->name('packaging.ajax-bom-preview');
+        Route::get('/packaging/ajax-buffer-status', [PackagingController::class, 'ajaxBufferStatus'])->name('packaging.ajax-buffer-status');
         Route::get('/packaging/ajax-produksi-details', [PackagingController::class, 'ajaxProduksiDetails'])->name('packaging.ajax-produksi-details');
         Route::get('/packaging/ajax-pakai-details', [PackagingController::class, 'ajaxPakaiDetails'])->name('packaging.ajax-pakai-details');
         Route::get('/packaging', [PackagingController::class, 'index'])->name('packaging.index');

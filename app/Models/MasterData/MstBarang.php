@@ -42,7 +42,7 @@ class MstBarang extends Model
         'EKSPOR'        => 'Produk Ekspor (Lolos Rilis)',
         'WIP_BERBUMBU'  => 'Curah Berbumbu (Hasil Seasoning)',
         'WIP_TAWAR'     => 'Curah Tawar (Polos)',
-        'WIP_HOLD'      => 'Tidak Jadi Rilis (Hold QC / Karantina Gudang)',
+        'WIP_HOLD'      => 'Tidak Jadi Rilis (Hold QC)',
         'WIP_AFKIR'     => 'Hasil Langsung Afkir / Limbah Dapur (Berko, Remahan, Lengket)',
     ];
 

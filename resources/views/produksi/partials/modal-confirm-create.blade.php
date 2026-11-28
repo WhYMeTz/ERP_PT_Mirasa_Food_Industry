@@ -30,7 +30,7 @@
                 <div class="kpi-cell">
                     <span class="kpi-label">Singkong Masuk (BPPB)</span>
                     <strong class="kpi-value" id="modalSummarySingkong">0,00 kg</strong>
-                    <small class="kpi-sub" id="modalSummaryGudang">Gudang Bahan</small>
+                    <small class="kpi-sub" id="modalSummarySingkongKonversi">Setara Kulitan: 0,00 kg</small>
                 </div>
                 <div class="kpi-cell">
                     <span class="kpi-label">Total Output Hasil</span>
@@ -40,7 +40,7 @@
                 <div class="kpi-cell">
                     <span class="kpi-label">Rendemen Olahan</span>
                     <strong class="kpi-value kpi-rendemen" id="modalSummaryRendemen">0,00%</strong>
-                    <small class="kpi-sub" id="modalSummaryRendemenStatus">Optimal (≥ 33%)</small>
+                    <small class="kpi-sub" id="modalSummaryRendemenStatus">Kulit: 0,00% | Kupas: 0,00%</small>
                 </div>
             </div>
 

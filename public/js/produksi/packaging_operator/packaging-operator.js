@@ -12,7 +12,56 @@ document.addEventListener('DOMContentLoaded', function () {
     initLakbanUnitSync();
     initLakbanSync();
     initKartonSync();
+    initBufferSyncMobile();
 });
+
+/**
+ * Handle Buffer Sisa Kemas Kemarin (Rollover Mobile)
+ */
+function initBufferSyncMobile() {
+    const barangSelect = document.getElementById('barang_jadi_id');
+    const alertBox = document.getElementById('mobileAlertBuffer');
+    const qtySpan = document.getElementById('mobileBufferQty');
+
+    if (barangSelect) {
+        function checkBuffer() {
+            const bId = barangSelect.value;
+            if (!bId) {
+                if (alertBox) alertBox.style.display = 'none';
+                return;
+            }
+            fetch(`/produksi/packaging/ajax-buffer-status?barang_jadi_id=${bId}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success && res.saldo_pack > 0) {
+                        if (qtySpan) qtySpan.textContent = Number(res.saldo_pack).toLocaleString('id-ID');
+                        if (alertBox) {
+                            alertBox.style.display = 'block';
+                            alertBox.dataset.saldo = res.saldo_pack;
+                        }
+                    } else {
+                        if (alertBox) alertBox.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    if (alertBox) alertBox.style.display = 'none';
+                });
+        }
+
+        barangSelect.addEventListener('change', checkBuffer);
+        if (barangSelect.value) checkBuffer();
+    }
+}
+
+window.pakaiBufferMobile = function() {
+    const alertBox = document.getElementById('mobileAlertBuffer');
+    const tarikInput = document.getElementById('tarik_pack_lalu_qty');
+    if (alertBox && tarikInput) {
+        const saldo = alertBox.dataset.saldo || 0;
+        tarikInput.value = saldo;
+        alertBox.style.display = 'none';
+    }
+};
 
 /**
  * Handle Lakban Unit Suffix Update on selection

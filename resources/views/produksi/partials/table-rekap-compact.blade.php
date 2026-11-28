@@ -239,7 +239,10 @@
 
                         {{-- Rendemen (%) --}}
                         <td style="text-align: center;">
-                            <span style="display: inline-block; font-weight: 700; font-size: 0.775rem; background: {{ $rBadgeBg }}; color: {{ $rBadgeColor }}; border: 1px solid {{ $rBorder }}; padding: 0.2rem 0.5rem; border-radius: 4px; font-variant-numeric: tabular-nums;">
+                            @php
+                                $rKupasVal = round($rendemen / 0.711, 2);
+                            @endphp
+                            <span style="display: inline-block; font-weight: 700; font-size: 0.775rem; background: {{ $rBadgeBg }}; color: {{ $rBadgeColor }}; border: 1px solid {{ $rBorder }}; padding: 0.2rem 0.5rem; border-radius: 4px; font-variant-numeric: tabular-nums;" title="Rendemen Kulit: {{ number_format($rendemen, 2, ',', '.') }}% (Std >= 33%) | Setara Kupas: {{ number_format($rKupasVal, 2, ',', '.') }}% (Std 44-45%)">
                                 {{ number_format($rendemen, 2, ',', '.') }}%
                             </span>
                         </td>
@@ -604,8 +607,15 @@
                                         </div>
 
                                         <div class="mini-cost-row">
-                                            <span>Rendemen Bersih:</span>
-                                            <strong style="color: {{ $rBadgeColor }};">{{ number_format($rendemen, 2, ',', '.') }}%</strong>
+                                            @php
+                                                $rKupasVal = round($rendemen / 0.711, 2);
+                                            @endphp
+                                            <span>Rendemen Kulit:</span>
+                                            <strong style="color: {{ $rBadgeColor }};">{{ number_format($rendemen, 2, ',', '.') }}% <small style="font-size: 0.65rem; color: #64748b;">(&ge;33%)</small></strong>
+                                        </div>
+                                        <div class="mini-cost-row">
+                                            <span>Setara Kupas:</span>
+                                            <strong style="color: #0284c7;">{{ number_format($rKupasVal, 2, ',', '.') }}% <small style="font-size: 0.65rem; color: #64748b;">(44-45%)</small></strong>
                                         </div>
                                         <div class="mini-cost-divider" style="background: #fde047;"></div>
                                         <div class="mini-cost-row">

@@ -193,12 +193,21 @@ class ProduksiController extends Controller
             ->orderBy('lini_id', 'asc')
             ->get();
 
-        // Ambil daftar barang hasil produksi aktif (Khusus Olahan Setengah Jadi / WIP, Ekspor & Produk Jadi)
+        // Ambil daftar barang hasil produksi aktif (Khusus Olahan Setengah Jadi / WIP & Produk Ekspor Langsung)
         $barangHasilList = MstBarang::active()
+            ->whereHas('jenisBarang', fn($j) => $j->whereIn('jenis_barang_cd', ['WIP', 'FG']))
             ->where(function ($q) {
-                $q->whereHas('jenisBarang', fn($j) => $j->whereIn('jenis_barang_cd', ['WIP', 'FG']))
-                  ->orWhere('barang_cd', 'LIKE', 'WIP%')
-                  ->orWhere('barang_cd', 'LIKE', 'FG%');
+                // Hasil penggorengan: Seluruh WIP, atau produk Ekspor langsung (FG-E%)
+                $q->where('barang_cd', 'LIKE', 'WIP%')
+                  ->orWhere('kategori_output_cd', 'EKSPOR')
+                  ->orWhere('barang_cd', 'LIKE', 'FG-E%');
+            })
+            ->where(function ($q) {
+                // Kecualikan Finish Good kemasan karton ritel lokal yang merupakan output modul Packaging
+                $q->where('barang_cd', 'NOT LIKE', 'FG-JB%')
+                  ->where('barang_cd', 'NOT LIKE', 'FG-MX%')
+                  ->where('barang_cd', 'NOT LIKE', 'FG-XX%')
+                  ->where('barang_cd', 'NOT LIKE', 'FG-NA%');
             })
             ->with(['satuanDasar', 'satuanBesar', 'jenisBarang'])
             ->orderBy('barang_nm')
@@ -606,6 +615,9 @@ class ProduksiController extends Controller
             // Bahan
             'singkong_qty'                => 'nullable|numeric|min:0',
             'singkong_nilai'              => 'nullable|numeric|min:0',
+            'kulitan_qty'                 => 'nullable|numeric|min:0',
+            'kupasan_qty'                 => 'nullable|numeric|min:0',
+            'singkong_tipe'               => 'nullable|string|max:20',
             'minyak_sawit_qty'            => 'nullable|numeric|min:0',
             'minyak_kelapa_qty'           => 'nullable|numeric|min:0',
             'minyak_nilai'                => 'nullable|numeric|min:0',
@@ -793,15 +805,7 @@ class ProduksiController extends Controller
     {
         $produksi = $this->produksiService->getById($id);
 
-        // Ambil seluruh dokumen produksi pada tanggal yang sama untuk Tab Switcher Split View per Lini
-        $sameDateProductions = DatProduksiHdr::whereDate('produksi_tgl', $produksi->produksi_tgl)
-            ->where('deleted_st', false)
-            ->where('status_cd', '!=', 'VOID')
-            ->orderBy('shift_cd', 'asc')
-            ->orderBy('produksi_id', 'asc')
-            ->get();
-
-        return view('produksi.show', compact('produksi', 'sameDateProductions'));
+        return view('produksi.show', compact('produksi'));
     }
 
     /**
@@ -967,6 +971,9 @@ class ProduksiController extends Controller
             // Bahan Baku Langsung (BBL) - Kuantitas & Nilai
             'singkong_qty'                => 'nullable|numeric|min:0',
             'singkong_nilai'              => 'nullable|numeric|min:0',
+            'kulitan_qty'                 => 'nullable|numeric|min:0',
+            'kupasan_qty'                 => 'nullable|numeric|min:0',
+            'singkong_tipe'               => 'nullable|string|max:20',
             'singkong_stok_action'        => 'nullable|string|in:none,deduct_batch',
             'additional_batch_no'         => 'nullable|string|max:100',
             'additional_batch_qty'        => 'nullable|numeric|min:0',

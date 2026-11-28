@@ -265,8 +265,11 @@
             </div>
             <div class="executive-stat-subtext">
                 @if($finalizedCount > 0)
+                    @php
+                        $avgRendemenKupas = round(((float)$tot['rendemen_persen']) / 0.711, 2);
+                    @endphp
                     <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: {{ $rendemenColor }};"></span>
-                    Standar Toleransi Pabrik: Min. 33.00%
+                    Standar Pabrik: Min. 33.00% (Kulit) &bull; Setara Kupas: {{ number_format($avgRendemenKupas, 2, ',', '.') }}% (Std 44-45%)
                 @else
                     <span style="color: #b45309; font-weight: 600;">Belum dihitung (menunggu HPP)</span>
                 @endif

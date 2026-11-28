@@ -81,8 +81,11 @@
                 </div>
                 <div class="co-stat-sub">
                     <strong>{{ $laporan->barangJadi->barang_nm ?? '-' }}</strong>
+                    @if ($laporan->tarik_pack_lalu_qty > 0)
+                        &bull; <span style="color: #15803d; font-weight: 700;">(+{{ number_format($laporan->tarik_pack_lalu_qty, 0) }} Pack Lalu)</span>
+                    @endif
                     @if ($laporan->hasil_pack_qty > 0)
-                        &bull; +{{ number_format($laporan->hasil_pack_qty, 0, ',', '.') }} Pack
+                        &bull; <span style="color: #0284c7; font-weight: 700;">+{{ number_format($laporan->hasil_pack_qty, 0, ',', '.') }} Pack Sisa</span>
                     @endif
                 </div>
             </div>

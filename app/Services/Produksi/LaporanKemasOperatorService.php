@@ -294,6 +294,7 @@ class LaporanKemasOperatorService
                 'barang_jadi_id'         => (int) $payload['barang_jadi_id'],
                 'hasil_karton_qty'       => (float) ($payload['hasil_karton_qty'] ?? 0),
                 'hasil_pack_qty'         => (float) ($payload['hasil_pack_qty'] ?? 0),
+                'tarik_pack_lalu_qty'    => (float) ($payload['tarik_pack_lalu_qty'] ?? 0),
                 'satuan_hasil'           => $payload['satuan_hasil'] ?? 'KARTON',
                 'bumbu_barang_id'        => !empty($payload['bumbu_barang_id']) ? $payload['bumbu_barang_id'] : null,
                 'bumbu_qty_kg'           => (float) ($payload['bumbu_qty_kg'] ?? 0),

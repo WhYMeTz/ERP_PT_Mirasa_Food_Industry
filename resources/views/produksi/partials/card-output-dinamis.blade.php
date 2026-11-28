@@ -5,20 +5,20 @@
                 <span>2. Hasil Penggorengan (Rilis, Tidak Jadi Rilis / Hold, &amp; Afkir)</span>
             </strong>
             <span style="font-size: 0.775rem; color: #64748b; display: block; margin-top: 0.2rem;">
-                Pencatatan rincian output hasil penggorengan: Lolos Rilis (FCC Indofood, Ekspor, Curah), Tidak Jadi Rilis (Hold Gudang), serta Afkir Langsung (Berko, Lengket, Remahan).
+                Pencatatan rincian output hasil penggorengan: Lolos Rilis (FCC Indofood, Ekspor, Curah), Tidak Jadi Rilis (Hold QC), serta Afkir Langsung (Berko, Lengket, Remahan).
             </span>
         </div>
 
         {{-- Baris Badge Ringkasan Output & Porsi (Tepat di Bawah Subjudul) --}}
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; width: 100%;">
             <span id="badgeTotalOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap;">
-                Total Timbangan: 0.00 kg
+                Total Hasil: 0.00 kg
             </span>
-            <span id="badgeRilisOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #059669; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap;" title="Total hasil penggorengan yang lolos rilis">
+            <span id="badgeRilisOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #059669; background: #f0fdf4; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Total hasil penggorengan yang lolos rilis">
                 Lolos Rilis: 0.00 kg
             </span>
-            <span id="badgeHoldOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang tidak jadi rilis yang disimpan ke gudang hold / karantina">
-                Hold Gudang: 0.00 kg
+            <span id="badgeHoldOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang tidak jadi rilis (Hold QC)">
+                Hold QC: 0.00 kg
             </span>
             <span id="badgeAfkirOutputKg" style="font-size: 0.775rem; font-weight: 700; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 6px; white-space: nowrap; display: none;" title="Barang cacat masak yang langsung diafkir di hari itu">
                 Afkir Langsung: 0.00 kg
@@ -45,7 +45,7 @@
                     Daftar Hasil Penggorengan &amp; Curah:
                 </span>
                 <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">
-                    💡 Tekan <kbd style="background:#e2e8f0; padding:1px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
+                    Tekan <kbd style="background:#e2e8f0; padding:1px 5px; border-radius:3px; font-weight:700;">Enter</kbd> untuk baris baru
                 </span>
             </div>
             <button type="button" onclick="addFgRow()" class="btn btn-sm btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.775rem;">
@@ -72,57 +72,19 @@
                     @php
                         $allOutputs = isset($barangHasilList) ? $barangHasilList : collect([]);
 
-                        // 1. Khusus Pesanan Indofood (FCC Non Bumbu 6 kg/box) - Lolos Rilis
-                        $fccItems = $allOutputs->filter(function($b) {
-                            if ($b->kategori_output_cd === 'FCC_NON_BUMBU') return true;
-                            if (!empty($b->kategori_output_cd)) return false;
-                            $cd = strtoupper($b->barang_cd ?? '');
-                            $nm = strtoupper($b->barang_nm ?? '');
-                            if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
-                            return str_starts_with($cd, 'WIP-FCC') || str_contains($nm, 'IFL') || str_contains($nm, 'INDOFOOD') || str_contains($nm, 'TANPA BUMBU');
-                        });
-
-                        // 2. Produk Ekspor (Lolos Rilis)
-                        $exportItems = $allOutputs->filter(function($b) use ($fccItems) {
-                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($b->kategori_output_cd === 'EKSPOR') return true;
-                            if (!empty($b->kategori_output_cd)) return false;
-                            $cd = strtoupper($b->barang_cd ?? '');
-                            $nm = strtoupper($b->barang_nm ?? '');
-                            if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
-                            return str_contains($nm, 'EKSPOR') || str_contains($cd, 'FG-EA') || str_contains($cd, 'FG-EC');
-                        });
-
-                        // 3. Curah Berbumbu (Hasil Seasoning)
-                        $seasoningItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems) {
-                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($b->kategori_output_cd === 'WIP_BERBUMBU') return true;
-                            if (!empty($b->kategori_output_cd)) return false;
-                            $cd = strtoupper($b->barang_cd ?? '');
-                            $nm = strtoupper($b->barang_nm ?? '');
-                            if (str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || str_contains($nm, 'AFKIR')) return false;
-                            return str_contains($nm, 'ASIN') || str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'LEMON') || str_contains($nm, 'PEDAS') || str_contains($nm, 'BARCO') || str_contains($nm, 'SAWIT') || str_contains($nm, 'BALQI') || str_contains($nm, 'UCAMP') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR');
-                        });
-
-                        // 4. Tidak Jadi Rilis (Hold QC Gudang / Karantina)
-                        $holdItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems) {
-                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($b->kategori_output_cd === 'WIP_HOLD') return true;
-                            if (!empty($b->kategori_output_cd)) return false;
+                        // 1. Tidak Jadi Rilis (Hold QC - Menyatukan Hold FCC & Hold Ekspor)
+                        $holdItems = $allOutputs->filter(function($b) {
                             $cd = strtoupper($b->barang_cd ?? '');
                             $nm = strtoupper($b->barang_nm ?? '');
                             $grade = strtoupper($b->grade_cd ?? '');
-                            return str_contains($cd, 'HLD') || str_contains($nm, 'HOLD') || $grade === 'HOLD';
+                            return $b->kategori_output_cd === 'WIP_HOLD'
+                                || str_contains($cd, 'HLD')
+                                || str_contains($nm, 'HOLD')
+                                || $grade === 'HOLD';
                         });
 
-                        // 5. Reject / Langsung Afkir / Limbah Dapur (Berko, Remahan, Lengket, Afkir)
-                        $afkirItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems, $holdItems) {
-                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
+                        // 2. Reject / Langsung Afkir / Limbah Dapur (Berko, Remahan, Lengket, Afkir)
+                        $afkirItems = $allOutputs->filter(function($b) use ($holdItems) {
                             if ($holdItems->contains('barang_id', $b->barang_id)) return false;
                             if ($b->kategori_output_cd === 'WIP_AFKIR') return true;
                             if (!empty($b->kategori_output_cd)) return false;
@@ -131,13 +93,54 @@
                             return str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET') || str_contains($nm, 'REMAHAN') || str_contains($nm, 'AFKIR') || str_contains($cd, 'BRK') || str_contains($cd, 'LGT') || str_contains($cd, 'RMH') || str_contains($cd, 'AFK');
                         });
 
-                        // 6. Curah Tawar Normal Lainnya
-                        $tawarItems = $allOutputs->filter(function($b) use ($fccItems, $exportItems, $seasoningItems, $holdItems, $afkirItems) {
+                        // 3. Khusus Pesanan Indofood (FCC Non Bumbu 6 kg/box) - Lolos Rilis
+                        $fccItems = $allOutputs->filter(function($b) use ($holdItems, $afkirItems) {
+                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($afkirItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'FCC_NON_BUMBU') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            return str_starts_with($cd, 'WIP-FCC') || str_contains($nm, 'IFL') || str_contains($nm, 'INDOFOOD') || str_contains($nm, 'TANPA BUMBU');
+                        });
+
+                        // 4. Produk Ekspor (Lolos Rilis)
+                        $exportItems = $allOutputs->filter(function($b) use ($holdItems, $afkirItems, $fccItems) {
+                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($afkirItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'EKSPOR') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            return str_contains($nm, 'EKSPOR') || str_contains($cd, 'FG-EA') || str_contains($cd, 'FG-EC');
+                        });
+
+                        // 5. Curah Berbumbu (Hasil Seasoning)
+                        $seasoningItems = $allOutputs->filter(function($b) use ($holdItems, $afkirItems, $fccItems, $exportItems) {
+                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($afkirItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($fccItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($exportItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($b->kategori_output_cd === 'WIP_BERBUMBU') return true;
+                            if (!empty($b->kategori_output_cd)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $nm = strtoupper($b->barang_nm ?? '');
+                            return str_contains($nm, 'ASIN') || str_contains($nm, 'BUMBU') || str_contains($nm, 'BALADO') || str_contains($nm, 'LEMON') || str_contains($nm, 'PEDAS') || str_contains($nm, 'BARCO') || str_contains($nm, 'SAWIT') || str_contains($nm, 'BALQI') || str_contains($nm, 'UCAMP') || str_contains($nm, 'OPAK') || str_contains($nm, 'PUYUR');
+                        });
+
+                        // 6. Curah Tawar Normal Lainnya (Khusus Olahan Curah Tawar Riil, Bukan FG Karton Lokal)
+                        $tawarItems = $allOutputs->filter(function($b) use ($holdItems, $afkirItems, $fccItems, $exportItems, $seasoningItems) {
+                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
+                            if ($afkirItems->contains('barang_id', $b->barang_id)) return false;
                             if ($fccItems->contains('barang_id', $b->barang_id)) return false;
                             if ($exportItems->contains('barang_id', $b->barang_id)) return false;
                             if ($seasoningItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($holdItems->contains('barang_id', $b->barang_id)) return false;
-                            if ($afkirItems->contains('barang_id', $b->barang_id)) return false;
+                            $cd = strtoupper($b->barang_cd ?? '');
+                            $jenis = strtoupper($b->jenisBarang->jenis_barang_cd ?? '');
+                            if (($jenis === 'FG' || str_starts_with($cd, 'FG-')) && !str_starts_with($cd, 'FG-E')) {
+                                return false;
+                            }
                             return true;
                         });
 
@@ -204,11 +207,14 @@
                                 @endif
 
                                 @if($holdItems->isNotEmpty())
-                                    <optgroup label="5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">
+                                    <optgroup label="5. TIDAK JADI RILIS (HOLD QC)">
                                         @foreach($holdItems as $b)
-                                            @php $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; @endphp
+                                            @php 
+                                                $satuan = $b->satuanDasar?->satuan_cd ?? 'KG'; 
+                                                $cleanNm = trim(str_ireplace(['(HOLD QC GUDANG)', '(HOLD QC)', 'GUDANG'], '', $b->barang_nm));
+                                            @endphp
                                             <option value="{{ $b->barang_id }}" data-cd="{{ $b->barang_cd }}" data-nm="{{ $b->barang_nm }}" data-jenis="WIP" data-satuan="{{ $satuan }}" data-grade="HOLD" {{ $oldBarangId == $b->barang_id ? 'selected' : '' }}>
-                                                [{{ $b->barang_cd }}] {{ $b->barang_nm }} ({{ $satuan }}) [WIP Hold]
+                                                [{{ $b->barang_cd }}] {{ $cleanNm }} (HOLD QC) ({{ $satuan }}) [WIP Hold]
                                             </option>
                                         @endforeach
                                     </optgroup>

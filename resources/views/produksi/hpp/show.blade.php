@@ -231,28 +231,47 @@
             </div>
         </div>
 
-        {{-- METRIK 3: RENDEMEN SINGKONG --}}
+        {{-- METRIK 3: DUAL RENDEMEN SINGKONG (KULIT 33% & KUPAS 44-45%) --}}
+        @php
+            $rKulit = $produksi->rendemen_kulit_persen;
+            $rKupas = $produksi->rendemen_kupas_persen;
+            $rKulitLolos = $rKulit >= 33.0;
+            $rKulitWarning = $rKulit >= 30.0;
+            $rKulitColor = $rKulitLolos ? '#059669' : ($rKulitWarning ? '#d97706' : '#dc2626');
+            $rKulitBg = $rKulitLolos ? '#ecfdf5' : ($rKulitWarning ? '#fef3c7' : '#fee2e2');
+
+            $rKupasLolos = $rKupas >= 44.0;
+            $rKupasWarning = $rKupas >= 40.0;
+            $rKupasColor = $rKupasLolos ? '#0284c7' : ($rKupasWarning ? '#d97706' : '#dc2626');
+        @endphp
         <div class="executive-stat-card">
             <div class="executive-stat-card-header">
                 <div>
-                    <span class="executive-stat-label" style="color: {{ $rendemenColor }};">Rendemen Singkong</span>
-                    <div class="executive-stat-value" style="color: {{ $rendemenColor }};">
-                        {{ number_format($produksi->rendemen_persen, 2, ',', '.') }}%
+                    <span class="executive-stat-label" style="color: {{ $rKulitColor }};">Rendemen Singkong</span>
+                    <div class="executive-stat-value" style="color: {{ $rKulitColor }};">
+                        {{ number_format($rKulit, 2, ',', '.') }}%
+                        <span style="font-size: 0.725rem; font-weight: 600; color: #64748b;">(Kulit)</span>
                     </div>
                 </div>
-                <div class="executive-stat-icon-box" style="background: {{ $rendemenBg }}; color: {{ $rendemenColor }};">
-                    @if($rendemenLolos)
+                <div class="executive-stat-icon-box" style="background: {{ $rKulitBg }}; color: {{ $rKulitColor }};">
+                    @if($rKulitLolos)
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    @elseif($rendemenWarning)
+                    @elseif($rKulitWarning)
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     @else
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
                     @endif
                 </div>
             </div>
-            <div class="executive-stat-subtext">
-                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: {{ $rendemenColor }};"></span>
-                Target Standar Pabrik: &ge; 33.00%
+            <div class="executive-stat-subtext" style="display: flex; align-items: center; justify-content: space-between; gap: 0.35rem; flex-wrap: wrap;">
+                <div>
+                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: {{ $rKulitColor }};"></span>
+                    <span>Kulit: <strong>{{ number_format($rKulit, 2, ',', '.') }}%</strong> (&ge;33%)</span>
+                </div>
+                <div style="border-left: 1px solid #e2e8f0; padding-left: 0.4rem;">
+                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: {{ $rKupasColor }};"></span>
+                    <span>Kupas: <strong style="color: {{ $rKupasColor }};">{{ number_format($rKupas, 2, ',', '.') }}%</strong> (44-45%)</span>
+                </div>
             </div>
         </div>
 
@@ -331,8 +350,19 @@
                         $isCampuran = count($gradeGroups) > 1;
                     @endphp
                     <tr>
-                        <td class="label-col">Input Singkong Mentah</td>
-                        <td class="value-col" style="font-weight: 700;">{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg</td>
+                        <td class="label-col">Input Singkong Masuk</td>
+                        <td class="value-col">
+                            <span style="font-weight: 700;">{{ number_format($produksi->singkong_qty, 0, ',', '.') }} kg</span>
+                            @if($produksi->singkong_tipe === 'KUPAS' || (float)$produksi->kupasan_qty > 0)
+                                <span style="font-size: 0.75rem; font-weight: 600; color: #0369a1; margin-left: 0.35rem;">
+                                    (Singkong Kupas &rarr; Setara Kulitan: {{ number_format($produksi->kulitan_qty ?: ($produksi->singkong_qty / 0.711), 0, ',', '.') }} kg / faktor 71,1%)
+                                </span>
+                            @else
+                                <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; margin-left: 0.35rem;">
+                                    (Singkong Kulit &rarr; Setara Kupas: {{ number_format($produksi->kupasan_qty ?: ($produksi->singkong_qty * 0.711), 0, ',', '.') }} kg / faktor 71,1%)
+                                </span>
+                            @endif
+                        </td>
                     </tr>
                     @if($produksi->pemakaianBahan)
                     <tr>

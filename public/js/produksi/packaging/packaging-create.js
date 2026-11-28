@@ -34,11 +34,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listener pemilihan produk jadi
     barangSelect?.addEventListener('change', function () {
         updateBatchNumber();
+        checkBufferStatus(this.value);
         const isOperatorLinked = !!document.getElementById('laporan_operator_id')?.value;
         if (!isOperatorLinked && hasilKartonInput && parseFloat(hasilKartonInput.value) > 0) {
             fetchBomPreview();
         }
     });
+
+    if (barangSelect && barangSelect.value) {
+        checkBufferStatus(barangSelect.value);
+    }
 
     hasilKartonInput?.addEventListener('input', function () {
         recalculateTotals();
@@ -1059,6 +1064,11 @@ function applyOperatorLaporan(itemOrIdx) {
 
     if (item.hasil_pack_qty !== undefined && document.getElementById('hasil_pack_qty')) {
         document.getElementById('hasil_pack_qty').value = item.hasil_pack_qty;
+    }
+
+    if (item.tarik_pack_lalu_qty !== undefined && document.getElementById('tarik_pack_lalu_qty')) {
+        document.getElementById('tarik_pack_lalu_qty').value = item.tarik_pack_lalu_qty;
+        updateBadgeTarik(parseFloat(item.tarik_pack_lalu_qty) || 0);
     }
 
     // Set isi per karton jika ada
@@ -2150,3 +2160,117 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+/**
+ * =========================================================================
+ * BUFFER SISA ECERAN RUANG KEMAS (ROLLOVER ANTAR-SHIFT)
+ * =========================================================================
+ */
+let currentBufferData = null;
+
+function checkBufferStatus(barangJadiId) {
+    if (!barangJadiId) {
+        hideBufferAlert();
+        return;
+    }
+
+    fetch(`/produksi/packaging/ajax-buffer-status?barang_jadi_id=${barangJadiId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.saldo_pack > 0) {
+                showBufferAlert(data);
+            } else {
+                hideBufferAlert();
+            }
+        })
+        .catch(err => {
+            console.error('Gagal cek buffer status:', err);
+            hideBufferAlert();
+        });
+}
+
+function showBufferAlert(data) {
+    currentBufferData = data;
+    const alertBox = document.getElementById('alertBufferPack');
+    const lblQty = document.getElementById('lblBufferQty');
+    const lblSource = document.getElementById('lblBufferSource');
+    const btnGabung = document.getElementById('btnGabungBuffer');
+    const btnBatal = document.getElementById('btnBatalGabungBuffer');
+
+    if (lblQty) lblQty.textContent = Number(data.saldo_pack).toLocaleString('id-ID');
+    if (lblSource) {
+        let srcText = 'Sisa dari shift sebelumnya di meja kemas.';
+        if (data.last_pack_no) {
+            srcText = `Sumber: Dokumen No. ${data.last_pack_no} (Shift ${data.last_shift || 'A'}${data.last_pack_tgl ? ' - ' + data.last_pack_tgl : ''})`;
+        }
+        lblSource.textContent = srcText;
+    }
+
+    // Cek apakah sudah ditarik
+    const tarikInput = document.getElementById('tarik_pack_lalu_qty');
+    const valTarik = parseFloat(tarikInput?.value || 0);
+
+    if (valTarik > 0) {
+        if (btnGabung) btnGabung.style.display = 'none';
+        if (btnBatal) btnBatal.style.display = 'inline-block';
+        updateBadgeTarik(valTarik);
+    } else {
+        if (btnGabung) btnGabung.style.display = 'inline-block';
+        if (btnBatal) btnBatal.style.display = 'none';
+        updateBadgeTarik(0);
+    }
+
+    if (alertBox) alertBox.style.display = 'block';
+}
+
+function hideBufferAlert() {
+    currentBufferData = null;
+    const alertBox = document.getElementById('alertBufferPack');
+    if (alertBox) alertBox.style.display = 'none';
+    const tarikInput = document.getElementById('tarik_pack_lalu_qty');
+    if (tarikInput) tarikInput.value = '0';
+    updateBadgeTarik(0);
+}
+
+function gabungkanSisaBuffer() {
+    if (!currentBufferData || currentBufferData.saldo_pack <= 0) return;
+    const tarikInput = document.getElementById('tarik_pack_lalu_qty');
+    if (tarikInput) {
+        tarikInput.value = currentBufferData.saldo_pack;
+        updateBadgeTarik(currentBufferData.saldo_pack);
+    }
+    const btnGabung = document.getElementById('btnGabungBuffer');
+    const btnBatal = document.getElementById('btnBatalGabungBuffer');
+    if (btnGabung) btnGabung.style.display = 'none';
+    if (btnBatal) btnBatal.style.display = 'inline-block';
+}
+
+function batalkanGabungBuffer() {
+    const tarikInput = document.getElementById('tarik_pack_lalu_qty');
+    if (tarikInput) {
+        tarikInput.value = '0';
+        updateBadgeTarik(0);
+    }
+    const btnGabung = document.getElementById('btnGabungBuffer');
+    const btnBatal = document.getElementById('btnBatalGabungBuffer');
+    if (btnGabung) btnGabung.style.display = 'inline-block';
+    if (btnBatal) btnBatal.style.display = 'none';
+}
+
+function updateBadgeTarik(qty) {
+    const badge = document.getElementById('badgeTarikBuffer');
+    const text = document.getElementById('valTarikBufferText');
+    if (badge && text) {
+        if (qty > 0) {
+            text.textContent = Number(qty).toLocaleString('id-ID');
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+window.checkBufferStatus = checkBufferStatus;
+window.gabungkanSisaBuffer = gabungkanSisaBuffer;
+window.batalkanGabungBuffer = batalkanGabungBuffer;
+window.updateBadgeTarik = updateBadgeTarik;

@@ -137,8 +137,11 @@
             </div>
             <div class="executive-stat-subtext">
                 Kemasan retail ({{ number_format($header->isi_per_karton_pcs, 0) }} Pcs/Karton)
+                @if($header->tarik_pack_lalu_qty > 0)
+                    &bull; <span style="color: #047857; font-weight: 700;">(+{{ number_format($header->tarik_pack_lalu_qty, 0) }} Pack dari Sisa Kemas Lalu)</span>
+                @endif
                 @if($header->hasil_pack_qty > 0)
-                    &bull; <strong style="color: #0369a1;">+{{ number_format($header->hasil_pack_qty, 0) }} Pack Eceran</strong>
+                    &bull; <strong style="color: #0369a1;">+{{ number_format($header->hasil_pack_qty, 0) }} Pack Sisa (Tersimpan ke Buffer)</strong>
                 @endif
             </div>
         </div>

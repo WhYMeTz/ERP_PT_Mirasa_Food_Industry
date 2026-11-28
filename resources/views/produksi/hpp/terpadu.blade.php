@@ -196,12 +196,22 @@
             <span class="terpadu-metric-sub">Total biaya produksi &amp; pengemasan</span>
         </div>
 
+        @php
+            $isKupasTerpadu = ($singkong_tipe ?? '') === 'KUPAS';
+            $activeRendemenTerpadu = $isKupasTerpadu ? ($rendemen_kupas_persen ?? 0) : $rendemen_persen;
+            $rendemenColorTerpadu = $isKupasTerpadu 
+                ? ($activeRendemenTerpadu >= 44 ? '#059669' : ($activeRendemenTerpadu >= 40 ? '#d97706' : '#dc2626'))
+                : ($activeRendemenTerpadu >= 33 ? '#059669' : ($activeRendemenTerpadu >= 30 ? '#d97706' : '#dc2626'));
+        @endphp
         <div class="terpadu-metric-cell">
             <span class="terpadu-metric-caption">Rasio Rendemen</span>
-            <span class="terpadu-metric-value" style="color: {{ $rendemen_persen >= 33 ? '#059669' : ($rendemen_persen >= 30 ? '#d97706' : '#dc2626') }};">
-                {{ number_format($rendemen_persen, 2, ',', '.') }}%
+            <span class="terpadu-metric-value" style="color: {{ $rendemenColorTerpadu }};">
+                {{ number_format($activeRendemenTerpadu, 2, ',', '.') }}%
+                <small style="font-size: 0.7rem; font-weight: 600; color: #64748b;">({{ $isKupasTerpadu ? 'Kupas' : 'Kulit' }})</small>
             </span>
-            <span class="terpadu-metric-sub">Target standar rendemen pabrik: &ge; 33.0%</span>
+            <span class="terpadu-metric-sub">
+                Target: {{ $isKupasTerpadu ? '44% - 45% (Setara Kulitan: ' . number_format($rendemen_persen, 2, ',', '.') . '%)' : '≥ 33.0%' }}
+            </span>
         </div>
     </div>
 

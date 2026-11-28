@@ -222,7 +222,7 @@
             badgeFgBatch.style.borderWidth = '1.5px';
             badgeFgBatch.style.borderStyle = 'solid';
             badgeFgBatch.style.fontWeight = '700';
-            badgeFgBatch.title = 'Status: Barang Hold QC Gudang (Karantina). Masuk gudang dulu, siap disortir ulang di lain hari.';
+            badgeFgBatch.title = 'Status: Barang Hold QC. Masuk gudang dulu, siap disortir ulang di lain hari.';
             if (batchFgInput) batchFgInput.value = 'HOLD';
             return;
         } else if (isAfkir) {
@@ -1593,18 +1593,24 @@
         // Ringkasan Total Output, Lolos Rilis, Hold & Afkir pada Badge Header Atas
         const badgeTotalOutput = document.getElementById('badgeTotalOutputKg');
         if (badgeTotalOutput) {
-            badgeTotalOutput.textContent = 'Total Timbangan: ' + formatNumber(totalOutputKg, 2) + ' kg';
+            badgeTotalOutput.textContent = 'Total Hasil: ' + formatNumber(totalOutputKg, 2) + ' kg';
         }
 
+        const hasNonRilis = (totalHoldKg > 0) || (totalAfkirKg > 0);
         const badgeRilis = document.getElementById('badgeRilisOutputKg');
         if (badgeRilis) {
-            badgeRilis.textContent = 'Lolos Rilis: ' + formatNumber(totalRilisKg, 2) + ' kg';
+            if (hasNonRilis && totalRilisKg > 0) {
+                badgeRilis.textContent = 'Lolos Rilis: ' + formatNumber(totalRilisKg, 2) + ' kg';
+                badgeRilis.style.display = 'inline-block';
+            } else {
+                badgeRilis.style.display = 'none';
+            }
         }
 
         const badgeHold = document.getElementById('badgeHoldOutputKg');
         if (badgeHold) {
             if (totalHoldKg > 0) {
-                badgeHold.textContent = 'Hold Gudang: ' + formatNumber(totalHoldKg, 2) + ' kg';
+                badgeHold.textContent = 'Hold QC: ' + formatNumber(totalHoldKg, 2) + ' kg';
                 badgeHold.style.display = 'inline-block';
             } else {
                 badgeHold.style.display = 'none';
@@ -1722,13 +1728,43 @@
         const elTotalBiaya = document.getElementById('liveTotalBiaya');
         if (elTotalBiaya) elTotalBiaya.textContent = formatRupiah(totalBiaya);
 
-        // 6. Rendemen & HPP
-        const rendemen = singkongQty > 0 ? (totalOutputKg / singkongQty) * 100 : 0;
+        // 6. Rendemen & HPP (Dua Sudut Pandang: Singkong Kulit 33% & Singkong Kupas 44-45%)
+        let kulitanQty = parseFloat(document.getElementById('kulitan_qty')?.value) || 0;
+        let kupasanQty = parseFloat(document.getElementById('kupasan_qty')?.value) || 0;
+        const singkongTipe = document.getElementById('singkong_tipe')?.value || 'KULIT';
+
+        if (kupasanQty > 0 && kulitanQty <= 0) {
+            kulitanQty = Math.round((kupasanQty / 0.711) * 10000) / 10000;
+        } else if (kulitanQty > 0 && kupasanQty <= 0) {
+            kupasanQty = Math.round((kulitanQty * 0.711) * 10000) / 10000;
+        } else if (kulitanQty <= 0 && kupasanQty <= 0 && singkongQty > 0) {
+            kulitanQty = singkongQty;
+            kupasanQty = Math.round((singkongQty * 0.711) * 10000) / 10000;
+        }
+
+        const effectiveKulitan = kulitanQty > 0 ? kulitanQty : singkongQty;
+        const effectiveKupasan = kupasanQty > 0 ? kupasanQty : (effectiveKulitan > 0 ? Math.round((effectiveKulitan * 0.711) * 10000) / 10000 : 0);
+
+        const rendemenKulit = effectiveKulitan > 0 ? (totalOutputKg / effectiveKulitan) * 100 : 0;
+        const rendemenKupas = effectiveKupasan > 0 ? (totalOutputKg / effectiveKupasan) * 100 : 0;
+        const rendemen = rendemenKulit;
         const hppPerKg = totalOutputKg > 0 ? (totalBiaya / totalOutputKg) : 0;
 
         // Update Kartu Monitor Fisik Lantai Pabrik
         const elSingkongFisik = document.getElementById('liveSingkongFisik');
-        if (elSingkongFisik) elSingkongFisik.textContent = formatNumber(singkongQty, 2) + ' kg';
+        const elSingkongKonv = document.getElementById('liveSingkongKonversi');
+        if (elSingkongFisik) {
+            elSingkongFisik.textContent = formatNumber(singkongQty, 2) + (singkongTipe === 'KUPAS' ? ' kg (Kupas)' : ' kg');
+        }
+        if (elSingkongKonv) {
+            if (singkongTipe === 'KUPAS' || kupasanQty > 0) {
+                elSingkongKonv.textContent = `Setara Kulitan: ${formatNumber(effectiveKulitan, 2)} kg (÷ 71,1%)`;
+            } else if (singkongQty > 0) {
+                elSingkongKonv.textContent = `Setara Kupas: ${formatNumber(effectiveKupasan, 2)} kg (× 71,1%)`;
+            } else {
+                elSingkongKonv.textContent = 'Otomatis ditarik dari dokumen BPPB';
+            }
+        }
 
         const elOutputFisik = document.getElementById('liveOutputFisik');
         if (elOutputFisik) elOutputFisik.textContent = formatNumber(totalOutputKg, 2) + ' kg';
@@ -1736,42 +1772,61 @@
         const elMinyakDisp = document.getElementById('liveMinyakRasioDisplay');
         if (elMinyakDisp) elMinyakDisp.textContent = formatNumber(rasioMinyak, 2) + '%';
 
+        // Rendemen Penggorengan Adaptif (Sesuai Jenis Singkong yang Digoreng)
+        const isKupas = (singkongTipe === 'KUPAS') || (kupasanQty > 0 && kulitanQty <= 0);
+        const activeRendemen = isKupas ? rendemenKupas : rendemenKulit;
+
+        const liveRendemenTitle = document.getElementById('liveRendemenTitle');
         const liveRendemenDisp = document.getElementById('liveRendemenDisplay');
         const liveRendemenStatusDisp = document.getElementById('liveRendemenStatusDisplay');
-        if (liveRendemenDisp) liveRendemenDisp.textContent = formatNumber(rendemen, 2) + '%';
-        if (liveRendemenStatusDisp) {
-            if (rendemen >= 33.0) {
-                if (liveRendemenDisp) liveRendemenDisp.style.color = '#16a34a';
-                liveRendemenStatusDisp.textContent = 'Rendemen Optimal (≥ 33%)';
-                liveRendemenStatusDisp.style.color = '#15803d';
-            } else if (rendemen >= 30.0) {
-                if (liveRendemenDisp) liveRendemenDisp.style.color = '#d97706';
-                liveRendemenStatusDisp.textContent = 'Rendemen Sedang (30% - 33%)';
-                liveRendemenStatusDisp.style.color = '#b45309';
+
+        if (liveRendemenTitle) {
+            if (singkongQty <= 0) {
+                liveRendemenTitle.textContent = 'Rendemen Penggorengan';
+            } else if (isKupas) {
+                liveRendemenTitle.textContent = 'Rendemen Singkong Kupas';
             } else {
-                if (liveRendemenDisp) liveRendemenDisp.style.color = '#dc2626';
-                liveRendemenStatusDisp.textContent = rendemen > 0 ? 'Rendemen Rendah (< 30%)' : 'Menunggu timbangan';
-                liveRendemenStatusDisp.style.color = rendemen > 0 ? '#b91c1c' : '#64748b';
+                liveRendemenTitle.textContent = 'Rendemen Singkong Kulit';
             }
         }
 
-        const liveRendemen = document.getElementById('liveRendemen');
-        const liveRendemenStatus = document.getElementById('liveRendemenStatus');
+        if (liveRendemenDisp) {
+            liveRendemenDisp.textContent = formatNumber(activeRendemen, 2) + '%';
+        }
 
-        if (liveRendemen) liveRendemen.textContent = formatNumber(rendemen, 2) + '%';
-        if (liveRendemenStatus) {
-            if (rendemen >= 33.0) {
-                if (liveRendemen) liveRendemen.style.color = '#059669';
-                liveRendemenStatus.textContent = 'Rendemen Optimal (Di atas target 33%)';
-                liveRendemenStatus.style.color = '#059669';
-            } else if (rendemen >= 30.0) {
-                if (liveRendemen) liveRendemen.style.color = '#d97706';
-                liveRendemenStatus.textContent = 'Rendemen Sedang (Target 33%)';
-                liveRendemenStatus.style.color = '#d97706';
+        if (liveRendemenStatusDisp) {
+            if (totalOutputKg <= 0 || activeRendemen <= 0) {
+                if (liveRendemenDisp) liveRendemenDisp.style.color = '#16a34a';
+                liveRendemenStatusDisp.textContent = isKupas ? 'Menunggu timbangan (Std: 44% - 45%)' : 'Menunggu timbangan (Std: ≥ 33%)';
+                liveRendemenStatusDisp.style.color = '#64748b';
+            } else if (isKupas) {
+                if (activeRendemen >= 44.0) {
+                    if (liveRendemenDisp) liveRendemenDisp.style.color = '#16a34a';
+                    liveRendemenStatusDisp.textContent = 'Rendemen Optimal (Target: 44% - 45%)';
+                    liveRendemenStatusDisp.style.color = '#15803d';
+                } else if (activeRendemen >= 40.0) {
+                    if (liveRendemenDisp) liveRendemenDisp.style.color = '#d97706';
+                    liveRendemenStatusDisp.textContent = 'Rendemen Sedang (Target: 44% - 45%)';
+                    liveRendemenStatusDisp.style.color = '#b45309';
+                } else {
+                    if (liveRendemenDisp) liveRendemenDisp.style.color = '#dc2626';
+                    liveRendemenStatusDisp.textContent = 'Rendemen Rendah (< 40%)';
+                    liveRendemenStatusDisp.style.color = '#b91c1c';
+                }
             } else {
-                if (liveRendemen) liveRendemen.style.color = '#dc2626';
-                liveRendemenStatus.textContent = rendemen > 0 ? 'Rendemen Rendah' : 'Menunggu timbangan';
-                liveRendemenStatus.style.color = rendemen > 0 ? '#dc2626' : '#64748b';
+                if (activeRendemen >= 33.0) {
+                    if (liveRendemenDisp) liveRendemenDisp.style.color = '#16a34a';
+                    liveRendemenStatusDisp.textContent = 'Rendemen Optimal (Target: ≥ 33%)';
+                    liveRendemenStatusDisp.style.color = '#15803d';
+                } else if (activeRendemen >= 30.0) {
+                    if (liveRendemenDisp) liveRendemenDisp.style.color = '#d97706';
+                    liveRendemenStatusDisp.textContent = 'Rendemen Sedang (Target: ≥ 33%)';
+                    liveRendemenStatusDisp.style.color = '#b45309';
+                } else {
+                    if (liveRendemenDisp) liveRendemenDisp.style.color = '#dc2626';
+                    liveRendemenStatusDisp.textContent = 'Rendemen Rendah (< 30%)';
+                    liveRendemenStatusDisp.style.color = '#b91c1c';
+                }
             }
         }
 
@@ -2437,6 +2492,9 @@
 
                         // 4. Salin rincian kuantitas & nilai bahan baku
                         setVal('singkong_qty', d.singkong_qty);
+                        setVal('kulitan_qty', d.kulitan_qty || 0);
+                        setVal('kupasan_qty', d.kupasan_qty || 0);
+                        setVal('singkong_tipe', d.singkong_tipe || 'KULIT');
                         setVal('singkong_nilai', d.singkong_nilai);
                         setVal('minyak_sawit_qty', d.minyak_sawit_qty);
                         setVal('minyak_kelapa_qty', d.minyak_kelapa_qty);
@@ -2525,17 +2583,6 @@
                             noticeEl.style.display = 'block';
                         }
 
-                        // Notifikasi rincian komposisi grade singkong
-                        const gradeNoticeEl = document.getElementById('singkongGradeNotice');
-                        const gradeNoticeText = document.getElementById('singkongGradeNoticeText');
-                        if (gradeNoticeEl && gradeNoticeText) {
-                            if (d.singkong_grade_desc && d.singkong_grade_desc !== '-') {
-                                gradeNoticeText.innerHTML = `Komposisi Grade Bahan Baku Singkong: <strong>${d.singkong_grade_desc}</strong>`;
-                                gradeNoticeEl.style.display = 'flex';
-                            } else {
-                                gradeNoticeEl.style.display = 'none';
-                            }
-                        }
 
                         if (typeof window.calcAll === 'function') window.calcAll();
                     } catch (domErr) {
@@ -2635,13 +2682,39 @@
             }
 
             const rowBg = (idx % 2 === 1) ? '#f8fafc' : '#ffffff';
+            const itemNmUpper = (it.barang_nm || '').toUpperCase();
+            const itemCdUpper = (it.barang_cd || '').toUpperCase();
+            let konvBadge = '';
+            if (itemNmUpper.includes('KUPAS') || itemCdUpper === 'BB-SK001') {
+                const setaraKulit = Math.round((itemQty / 0.711) * 100) / 100;
+                konvBadge = `
+                    <div style="margin-top: 0.35rem; display: flex; justify-content: center;">
+                        <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #3b82f6;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            <span>Setara Kulitan: <strong style="color: #0369a1;">${formatNumber(setaraKulit, 2)} KG</strong></span>
+                            <span style="color: #64748b; font-size: 0.675rem; font-weight: 500;">(&divide; 71,1%)</span>
+                        </span>
+                    </div>
+                `;
+            } else if (itemNmUpper.includes('KULIT') || itemCdUpper === 'BB-SK002') {
+                const setaraKupas = Math.round((itemQty * 0.711) * 100) / 100;
+                konvBadge = `
+                    <div style="margin-top: 0.35rem; display: flex; justify-content: center;">
+                        <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 600;">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #64748b;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            <span>Setara Kupas: <strong>${formatNumber(setaraKupas, 2)} KG</strong></span>
+                            <span style="color: #64748b; font-size: 0.675rem; font-weight: 500;">(&times; 71,1%)</span>
+                        </span>
+                    </div>
+                `;
+            }
 
             html += `
                 <tr style="background: ${rowBg}; border-bottom: 1px solid #e2e8f0; transition: background 0.12s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='${rowBg}'">
                     <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; color: #64748b; font-weight: 600; font-size: 0.875rem;">${idx + 1}</td>
                     <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; color: #334155; font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${kat}</td>
                     <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.barang_cd || '-'}</td>
-                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-weight: 600; color: #0f172a; font-size: 0.9rem; line-height: 1.35;">${it.barang_nm || '-'}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-weight: 600; color: #0f172a; font-size: 0.9rem; line-height: 1.35;">${it.barang_nm || '-'}${konvBadge}</td>
                     <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle;">${gradeHtml}</td>
                     <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.batch_no || '-'}</td>
                     <td style="padding: 0.75rem 0.5rem; text-align: center; vertical-align: middle; font-weight: 700; color: #0284c7; font-size: 0.925rem; font-variant-numeric: tabular-nums;">
@@ -2768,32 +2841,18 @@
             const nm = (b.barang_nm || '').toUpperCase();
             const grade = (b.grade_cd || '').toUpperCase();
             
-            // 1. Kategori Database Eksplisit (Prioritas Utama)
-            if (kat === 'FCC_NON_BUMBU') {
-                fccItems.push(b);
-            } else if (kat === 'EKSPOR') {
-                exportItems.push(b);
-            } else if (kat === 'WIP_BERBUMBU') {
-                seasoningItems.push(b);
-            } else if (kat === 'WIP_HOLD') {
+            // 1. Hold QC (FCC Hold & Ekspor Hold Digabung ke Grup Hold)
+            if (kat === 'WIP_HOLD' || cd.includes('HLD') || nm.includes('HOLD') || grade === 'HOLD') {
                 holdItems.push(b);
-            } else if (kat === 'WIP_AFKIR') {
+            } else if (kat === 'WIP_AFKIR' || cd.includes('AFK') || nm.includes('AFKIR') || cd.includes('BRK') || cd.includes('LGT') || cd.includes('RMH') || nm.includes('BERKO') || nm.includes('LENGKET') || nm.includes('REMAHAN')) {
                 afkirItems.push(b);
-            } else if (kat === 'WIP_TAWAR') {
-                tawarItems.push(b);
-            }
-            // 2. Fallback Heuristik Teks untuk data lama yang belum ber-kategori
-            else if (cd.includes('HLD') || nm.includes('HOLD') || grade === 'HOLD') {
-                holdItems.push(b);
-            } else if (cd.includes('AFK') || nm.includes('AFKIR') || cd.includes('BRK') || cd.includes('LGT') || cd.includes('RMH') || nm.includes('BERKO') || nm.includes('LENGKET') || nm.includes('REMAHAN')) {
-                afkirItems.push(b);
-            } else if (cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
+            } else if (kat === 'FCC_NON_BUMBU' || cd.startsWith('WIP-FCC') || nm.includes('IFL') || nm.includes('INDOFOOD') || nm.includes('TANPA BUMBU')) {
                 fccItems.push(b);
-            } else if (nm.includes('EKSPOR') || cd.startsWith('FG-EA') || cd.startsWith('FG-EC')) {
+            } else if (kat === 'EKSPOR' || nm.includes('EKSPOR') || cd.startsWith('FG-EA') || cd.startsWith('FG-EC')) {
                 exportItems.push(b);
-            } else if (seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
+            } else if (kat === 'WIP_BERBUMBU' || seasoningCodes.includes(cd) || nm.includes('ASIN') || nm.includes('BUMBU') || nm.includes('BALADO') || nm.includes('LEMON') || nm.includes('PEDAS') || nm.includes('BARCO') || nm.includes('SAWIT') || nm.includes('BALQI') || nm.includes('UCAMP') || nm.includes('OPAK') || nm.includes('PUYUR')) {
                 seasoningItems.push(b);
-            } else {
+            } else if (kat === 'WIP_TAWAR' || (!cd.startsWith('FG-') || cd.startsWith('FG-E'))) {
                 tawarItems.push(b);
             }
         });
@@ -2807,8 +2866,15 @@
                 const itemGrade = b.grade_cd || defaultGrade;
                 const selected = (initial && initial.barang_id == b.barang_id) ? 'selected' : '';
                 const tagSuffix = groupTag ? ` ${groupTag}` : '';
+                
+                let displayNm = b.barang_nm || '';
+                if (itemGrade === 'HOLD' || cd.includes('HLD') || displayNm.toUpperCase().includes('HOLD')) {
+                    displayNm = displayNm.replace(/\s*\(HOLD QC GUDANG\)/i, ' (HOLD QC)')
+                                         .replace(/\s*GUDANG/i, '');
+                }
+
                 html += `<option value="${b.barang_id}" data-cd="${b.barang_cd}" data-nm="${b.barang_nm}" data-jenis="${jenis}" data-satuan="${satuan}" data-grade="${itemGrade}" ${selected}>
-                    [${b.barang_cd}] ${b.barang_nm} (${satuan})${tagSuffix}
+                    [${b.barang_cd}] ${displayNm} (${satuan})${tagSuffix}
                 </option>`;
             });
             return html;
@@ -2842,7 +2908,7 @@
         }
 
         if (holdItems.length > 0) {
-            optionsHtml += '<optgroup label="5. TIDAK JADI RILIS (HOLD QC / KARANTINA GUDANG)">';
+            optionsHtml += '<optgroup label="5. TIDAK JADI RILIS (HOLD QC)">';
             optionsHtml += buildOptGroup(holdItems, 'HOLD', '[WIP Hold]');
             optionsHtml += '</optgroup>';
         }
@@ -3534,7 +3600,24 @@
         const liniText = selLini.options[selLini.selectedIndex]?.text || selLini.value;
         const gdgText = selGdg.options[selGdg.selectedIndex]?.text || selGdg.value;
         const singkongQty = parseFloat(document.getElementById('singkong_qty')?.value) || 0;
-        const rendemen = singkongQty > 0 ? (totalOutputKg / singkongQty) * 100 : 0;
+        let kulitanQty = parseFloat(document.getElementById('kulitan_qty')?.value) || 0;
+        let kupasanQty = parseFloat(document.getElementById('kupasan_qty')?.value) || 0;
+        const singkongTipe = document.getElementById('singkong_tipe')?.value || 'KULIT';
+
+        if (kupasanQty > 0 && kulitanQty <= 0) {
+            kulitanQty = Math.round((kupasanQty / 0.711) * 10000) / 10000;
+        } else if (kulitanQty > 0 && kupasanQty <= 0) {
+            kupasanQty = Math.round((kulitanQty * 0.711) * 10000) / 10000;
+        } else if (kulitanQty <= 0 && kupasanQty <= 0 && singkongQty > 0) {
+            kulitanQty = singkongQty;
+            kupasanQty = Math.round((singkongQty * 0.711) * 10000) / 10000;
+        }
+
+        const effectiveKulitan = kulitanQty > 0 ? kulitanQty : singkongQty;
+        const effectiveKupasan = kupasanQty > 0 ? kupasanQty : (effectiveKulitan > 0 ? Math.round((effectiveKulitan * 0.711) * 10000) / 10000 : 0);
+        const rendemenKulit = effectiveKulitan > 0 ? (totalOutputKg / effectiveKulitan) * 100 : 0;
+        const rendemenKupas = effectiveKupasan > 0 ? (totalOutputKg / effectiveKupasan) * 100 : 0;
+        const rendemen = rendemenKulit;
 
         // Pasang data ke elemen modal
         const elDocNo = document.getElementById('modalSummaryDocNo');
@@ -3550,7 +3633,13 @@
         if (elGdg) elGdg.textContent = gdgText;
 
         const elSingkong = document.getElementById('modalSummarySingkong');
-        if (elSingkong) elSingkong.textContent = formatNumber(singkongQty, 2) + ' kg';
+        const elSingkongKonv = document.getElementById('modalSummarySingkongKonversi');
+        if (elSingkong) elSingkong.textContent = formatNumber(singkongQty, 2) + (singkongTipe === 'KUPAS' ? ' kg (Kupas)' : ' kg');
+        if (elSingkongKonv) {
+            elSingkongKonv.textContent = singkongTipe === 'KUPAS' || kupasanQty > 0
+                ? `Setara Kulitan: ${formatNumber(effectiveKulitan, 2)} kg (÷ 71,1%)`
+                : `Setara Kupas: ${formatNumber(effectiveKupasan, 2)} kg (× 71,1%)`;
+        }
 
         const elOutput = document.getElementById('modalSummaryOutput');
         if (elOutput) elOutput.textContent = formatNumber(totalOutputKg, 2) + ' kg';
@@ -3558,28 +3647,29 @@
         const elItemCount = document.getElementById('modalSummaryItemCount');
         if (elItemCount) elItemCount.textContent = `${validItemCount} Baris Olahan`;
 
+        const isKupasModal = (singkongTipe === 'KUPAS') || (kupasanQty > 0 && kulitanQty <= 0);
+        const activeModalRendemen = isKupasModal ? rendemenKupas : rendemenKulit;
         const elRendemen = document.getElementById('modalSummaryRendemen');
         const elRendemenStatus = document.getElementById('modalSummaryRendemenStatus');
         if (elRendemen) {
-            elRendemen.textContent = formatNumber(rendemen, 2) + '%';
-            if (rendemen >= 33.0) {
-                elRendemen.style.color = '#16a34a';
-                if (elRendemenStatus) {
-                    elRendemenStatus.textContent = 'Rendemen Optimal (≥ 33%)';
-                    elRendemenStatus.style.color = '#15803d';
-                }
-            } else if (rendemen >= 30.0) {
-                elRendemen.style.color = '#d97706';
-                if (elRendemenStatus) {
-                    elRendemenStatus.textContent = 'Rendemen Standar (30 - 33%)';
-                    elRendemenStatus.style.color = '#b45309';
-                }
+            elRendemen.textContent = formatNumber(activeModalRendemen, 2) + '%';
+            if (isKupasModal) {
+                elRendemen.style.color = activeModalRendemen >= 44.0 ? '#16a34a' : (activeModalRendemen >= 40.0 ? '#d97706' : '#dc2626');
             } else {
-                elRendemen.style.color = '#dc2626';
-                if (elRendemenStatus) {
-                    elRendemenStatus.textContent = 'Rendemen Rendah (< 30%)';
-                    elRendemenStatus.style.color = '#b91c1c';
-                }
+                elRendemen.style.color = activeModalRendemen >= 33.0 ? '#16a34a' : (activeModalRendemen >= 30.0 ? '#d97706' : '#dc2626');
+            }
+        }
+        if (elRendemenStatus) {
+            if (isKupasModal) {
+                elRendemenStatus.textContent = activeModalRendemen >= 44.0 
+                    ? 'Optimal (Target: 44% - 45%)' 
+                    : (activeModalRendemen >= 40.0 ? 'Sedang (Target: 44% - 45%)' : 'Rendah (< 40%)');
+                elRendemenStatus.style.color = activeModalRendemen >= 44.0 ? '#15803d' : (activeModalRendemen >= 40.0 ? '#b45309' : '#b91c1c');
+            } else {
+                elRendemenStatus.textContent = activeModalRendemen >= 33.0 
+                    ? 'Optimal (Target: ≥ 33%)' 
+                    : (activeModalRendemen >= 30.0 ? 'Sedang (Target: ≥ 33%)' : 'Rendah (< 30%)');
+                elRendemenStatus.style.color = activeModalRendemen >= 33.0 ? '#15803d' : (activeModalRendemen >= 30.0 ? '#b45309' : '#b91c1c');
             }
         }
 

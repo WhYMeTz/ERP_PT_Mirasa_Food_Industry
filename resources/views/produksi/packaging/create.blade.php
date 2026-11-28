@@ -211,6 +211,29 @@
                             </select>
                         </div>
 
+                        {{-- Alert Banner: Buffer Sisa Eceran (Rollover Antar-Shift) --}}
+                        <div id="alertBufferPack" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.85rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                    <span style="font-size: 1.35rem; line-height: 1;">📦</span>
+                                    <div>
+                                        <div style="font-weight: 700; color: #166534; font-size: 0.875rem;">
+                                            Tersedia Sisa di Ruang Kemas: <span id="lblBufferQty" style="font-size: 1.05rem; color: #047857; font-weight: 800;">0</span> Pack
+                                        </div>
+                                        <div id="lblBufferSource" style="font-size: 0.725rem; color: #4b5563; margin-top: 2px;"></div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <button type="button" id="btnGabungBuffer" class="btn btn-sm" style="background: #059669; color: #ffffff; font-weight: 700; font-size: 0.775rem; padding: 0.35rem 0.85rem; border-radius: 6px; border: none; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="gabungkanSisaBuffer()">
+                                        + Gabungkan ke Kemas Ini
+                                    </button>
+                                    <button type="button" id="btnBatalGabungBuffer" class="btn btn-sm" style="display: none; background: #e2e8f0; color: #475569; font-weight: 600; font-size: 0.775rem; padding: 0.35rem 0.75rem; border-radius: 6px; border: none; cursor: pointer;" onclick="batalkanGabungBuffer()">
+                                        Batal Gabung
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Baris 2: Hasil Kemas Utama, Sisa Eceran, Batch FG & Expired Date --}}
                         <div class="grid-web-4" style="gap: 0.85rem; margin-bottom: 0;">
                             {{-- Hasil Kemas Utama --}}
@@ -233,16 +256,22 @@
                                 </div>
                             </div>
 
-                            {{-- Sisa Eceran --}}
+                            {{-- Sisa Eceran & Rollover Buffer --}}
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" for="hasil_pack_qty">
-                                    Sisa Eceran / Non-Karton (Pack)
-                                </label>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label class="form-label" for="hasil_pack_qty" style="margin-bottom: 0.2rem;">
+                                        Sisa Eceran Baru (Pack)
+                                    </label>
+                                    <span id="badgeTarikBuffer" style="display: {{ old('tarik_pack_lalu_qty', $selectedLaporan?->tarik_pack_lalu_qty ?? 0) > 0 ? 'inline-block' : 'none' }}; font-size: 0.675rem; font-weight: 700; color: #047857; background: #dcfce7; padding: 1px 6px; border-radius: 4px;" title="Jumlah pack dari sesi sebelumnya yang digabungkan">
+                                        +<span id="valTarikBufferText">{{ old('tarik_pack_lalu_qty', $selectedLaporan?->tarik_pack_lalu_qty ?? 0) }}</span> dari Lalu
+                                    </span>
+                                </div>
                                 <div class="input-group-web">
                                     <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="form-control" placeholder="0" value="{{ old('hasil_pack_qty', $selectedLaporan?->hasil_pack_qty) }}" style="font-weight: 600;">
                                     <span class="input-group-addon" style="font-size: 0.75rem; padding: 0 0.4rem; color: #475569; font-weight: 600;">Pack</span>
                                 </div>
-                                <small style="color: #64748b; font-size: 0.675rem; margin-top: 0.25rem; display: block;">Sisa pack bungkus di luar karton utuh.</small>
+                                <input type="hidden" id="tarik_pack_lalu_qty" name="tarik_pack_lalu_qty" value="{{ old('tarik_pack_lalu_qty', $selectedLaporan?->tarik_pack_lalu_qty ?? 0) }}">
+                                <small style="color: #64748b; font-size: 0.675rem; margin-top: 0.25rem; display: block;">Sisa di luar karton utuh &rarr; simpan ke buffer kemas.</small>
                             </div>
 
                             {{-- No. Batch FG (Display Read-only Panel) --}}

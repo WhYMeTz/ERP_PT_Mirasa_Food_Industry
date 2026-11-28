@@ -200,6 +200,8 @@ class PackagingOperatorController extends Controller
             'produksi_id'                  => 'nullable|exists:dat_produksi_hdr,produksi_id',
             'barang_jadi_id'               => 'required|exists:mst_barang,barang_id',
             'hasil_karton_qty'             => 'required|numeric|min:0.0001',
+            'hasil_pack_qty'               => 'nullable|numeric|min:0',
+            'tarik_pack_lalu_qty'          => 'nullable|numeric|min:0',
             'karton_puteran_qty'           => 'nullable|numeric|min:0',
             'karton_baru_qty'              => 'nullable|numeric|min:0',
             'karton_reject_qty'            => 'nullable|numeric|min:0',

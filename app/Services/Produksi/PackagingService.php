@@ -7,6 +7,7 @@ use App\Models\Gudang\DatStokLedger;
 use App\Models\MasterData\MstBarang;
 use App\Models\MasterData\MstGudang;
 use App\Models\Produksi\DatPackagingAdjustmentLog;
+use App\Models\Produksi\DatPackagingBufferLog;
 use App\Models\Produksi\DatPackagingDtl;
 use App\Models\Produksi\DatPackagingHdr;
 use App\Models\Produksi\DatProduksiDtl;
@@ -316,6 +317,49 @@ class PackagingService
     }
 
     /**
+     * Dapatkan saldo buffer sisa eceran (Pack) yang tersedia di ruang kemas untuk suatu produk jadi.
+     */
+    public function getAvailablePackBuffer(int $barangJadiId): array
+    {
+        $lastLog = DatPackagingBufferLog::where('barang_jadi_id', $barangJadiId)
+            ->where('deleted_st', false)
+            ->orderBy('buffer_id', 'desc')
+            ->first();
+
+        $saldo = $lastLog ? (float) $lastLog->saldo_akhir_pack : 0;
+
+        // Fallback jika belum ada log buffer resmi tapi ada data historis pengemasan
+        if (!$lastLog) {
+            $totalIn = (float) DatPackagingHdr::where('barang_jadi_id', $barangJadiId)
+                ->where('status_cd', 'POSTED')
+                ->where('deleted_st', false)
+                ->sum('hasil_pack_qty');
+            $totalOut = (float) DatPackagingHdr::where('barang_jadi_id', $barangJadiId)
+                ->where('status_cd', 'POSTED')
+                ->where('deleted_st', false)
+                ->sum('tarik_pack_lalu_qty');
+            $saldo = max(0, $totalIn - $totalOut);
+        }
+
+        // Ambil info dokumen kemas terakhir yang menyisakan pack
+        $lastPkg = DatPackagingHdr::where('barang_jadi_id', $barangJadiId)
+            ->where('status_cd', 'POSTED')
+            ->where('deleted_st', false)
+            ->where('hasil_pack_qty', '>', 0)
+            ->orderBy('pack_id', 'desc')
+            ->first();
+
+        return [
+            'barang_jadi_id' => $barangJadiId,
+            'saldo_pack'     => round($saldo, 2),
+            'last_pack_no'   => $lastPkg?->pack_no,
+            'last_pack_tgl'  => $lastPkg?->pack_tgl ? (is_string($lastPkg->pack_tgl) ? date('d/m/Y', strtotime($lastPkg->pack_tgl)) : $lastPkg->pack_tgl->format('d/m/Y')) : null,
+            'last_shift'     => $lastPkg?->shift ?? 'A',
+            'last_sisa_qty'  => (float) ($lastPkg?->hasil_pack_qty ?? 0),
+        ];
+    }
+
+    /**
      * Menyimpan dan memposting transaksi Pengemasan Barang Jadi (Packaging & HPP).
      * Wajib DB::transaction() sesuai standar AGENTS.md.
      */
@@ -346,7 +390,24 @@ class PackagingService
                     $isiPerKarton = 20; // Default standar isi per karton snack PT Mirasa
                 }
             }
-            $hasilPcs = $hasilKarton * $isiPerKarton;
+
+            $tarikPackLalu = max(0, (float) ($data['tarik_pack_lalu_qty'] ?? 0));
+            $hasilPack = max(0, (float) ($data['hasil_pack_qty'] ?? 0));
+
+            // Validasi: Tarik sisa pack tidak boleh melebihi saldo buffer yang tersedia
+            if ($tarikPackLalu > 0) {
+                $bufferStatus = $this->getAvailablePackBuffer($barangJadiId);
+                if ($tarikPackLalu > $bufferStatus['saldo_pack']) {
+                    throw new Exception("Jumlah sisa pack yang ditarik ({$tarikPackLalu} Pack) melebihi saldo buffer yang tersedia di ruang kemas ({$bufferStatus['saldo_pack']} Pack).");
+                }
+            }
+
+            // Total bungkus/pcs aktual yang diproduksi dari konsumsi bahan shift ini:
+            // (Hasil kardus x Isi) + Sisa pack baru - Sisa pack lama yang digabung
+            $hasilPcs = ($hasilKarton * $isiPerKarton) + $hasilPack - $tarikPackLalu;
+            if ($hasilPcs <= 0) {
+                $hasilPcs = ($hasilKarton * $isiPerKarton);
+            }
 
             // Generate Nomor Dokumen Standar Resmi PT Mirasa: {seq:3}/PCK/MFI/{month}/{year}
             $packNo = !empty($data['pack_no']) 
@@ -510,7 +571,8 @@ class PackagingService
                 'produksi_id'              => $prodId,
                 'target_karton_qty'        => $targetKarton,
                 'hasil_karton_qty'         => $hasilKarton,
-                'hasil_pack_qty'           => (float) ($data['hasil_pack_qty'] ?? 0),
+                'hasil_pack_qty'           => $hasilPack,
+                'tarik_pack_lalu_qty'      => $tarikPackLalu,
                 'satuan_hasil'             => $data['satuan_hasil'] ?? 'KARTON',
                 'isi_per_karton_pcs'       => $isiPerKarton,
                 'gramatur_gr'              => (float) ($data['gramatur_gr'] ?? 0),
@@ -536,6 +598,42 @@ class PackagingService
                 'created_by'               => $userName ?? auth()->user()?->name ?? 'System',
                 'updated_by'               => $userName ?? auth()->user()?->name ?? 'System',
             ]);
+
+            // 2b. Catat Mutasi Buffer Sisa Eceran Pack (Ruang Kemas)
+            $bufferStatus = $this->getAvailablePackBuffer($barangJadiId);
+            $runningSaldo = $bufferStatus['saldo_pack'];
+
+            // (A) Jika ada penarikan sisa pack lalu untuk digabung ke kemas ini (OUT dari Buffer)
+            if ($tarikPackLalu > 0) {
+                $runningSaldo = max(0, $runningSaldo - $tarikPackLalu);
+                DatPackagingBufferLog::create([
+                    'barang_jadi_id'   => $barangJadiId,
+                    'pack_id'          => $header->pack_id,
+                    'transaksi_tgl'    => $packTgl,
+                    'tipe_transaksi'   => 'OUT',
+                    'qty_pack'         => $tarikPackLalu,
+                    'saldo_akhir_pack' => $runningSaldo,
+                    'keterangan_txt'   => "Digabungkan ke Pengemasan {$packNo} (Hasil Utama: {$hasilKarton} Karton)",
+                    'created_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                    'updated_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                ]);
+            }
+
+            // (B) Jika ada sisa pack baru di akhir pengemasan shift ini (IN ke Buffer)
+            if ($hasilPack > 0) {
+                $runningSaldo = $runningSaldo + $hasilPack;
+                DatPackagingBufferLog::create([
+                    'barang_jadi_id'   => $barangJadiId,
+                    'pack_id'          => $header->pack_id,
+                    'transaksi_tgl'    => $packTgl,
+                    'tipe_transaksi'   => 'IN',
+                    'qty_pack'         => $hasilPack,
+                    'saldo_akhir_pack' => $runningSaldo,
+                    'keterangan_txt'   => "Sisa Eceran Pengemasan {$packNo} (Shift " . ($data['shift'] ?? 'A') . ")",
+                    'created_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                    'updated_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                ]);
+            }
 
             // 3. Simpan Detail Konsumsi & Eksekusi Pemotongan Stok Bahan Fisik (Outbound)
             foreach ($processedDetails as &$dtlData) {
@@ -881,7 +979,45 @@ class PackagingService
                 }
             }
 
-            // 3. Update Status Header
+            // 4. Balikkan mutasi buffer sisa pack jika dokumen kemas ini memiliki catatan sisa / tarikan pack
+            if ((float) $header->hasil_pack_qty > 0 || (float) $header->tarik_pack_lalu_qty > 0) {
+                $bufferStatus = $this->getAvailablePackBuffer($header->barang_jadi_id);
+                $runningSaldo = $bufferStatus['saldo_pack'];
+
+                // Jika sebelumnya menambah sisa pack, sekarang ditarik kembali (VOID_OUT)
+                if ((float) $header->hasil_pack_qty > 0) {
+                    $runningSaldo = max(0, $runningSaldo - (float) $header->hasil_pack_qty);
+                    DatPackagingBufferLog::create([
+                        'barang_jadi_id'   => $header->barang_jadi_id,
+                        'pack_id'          => $header->pack_id,
+                        'transaksi_tgl'    => now()->format('Y-m-d'),
+                        'tipe_transaksi'   => 'VOID_OUT',
+                        'qty_pack'         => (float) $header->hasil_pack_qty,
+                        'saldo_akhir_pack' => $runningSaldo,
+                        'keterangan_txt'   => "Pembatalan Pengemasan {$header->pack_no}: Tarik kembali sisa pack",
+                        'created_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                        'updated_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                    ]);
+                }
+
+                // Jika sebelumnya menarik sisa pack lalu, sekarang dikembalikan ke buffer (VOID_IN)
+                if ((float) $header->tarik_pack_lalu_qty > 0) {
+                    $runningSaldo = $runningSaldo + (float) $header->tarik_pack_lalu_qty;
+                    DatPackagingBufferLog::create([
+                        'barang_jadi_id'   => $header->barang_jadi_id,
+                        'pack_id'          => $header->pack_id,
+                        'transaksi_tgl'    => now()->format('Y-m-d'),
+                        'tipe_transaksi'   => 'VOID_IN',
+                        'qty_pack'         => (float) $header->tarik_pack_lalu_qty,
+                        'saldo_akhir_pack' => $runningSaldo,
+                        'keterangan_txt'   => "Pembatalan Pengemasan {$header->pack_no}: Kembalikan saldo sisa pack yang ditarik",
+                        'created_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                        'updated_by'       => $userName ?? auth()->user()?->name ?? 'System',
+                    ]);
+                }
+            }
+
+            // 5. Update Status Header
             $header->update([
                 'status_cd'   => 'VOID',
                 'catatan_txt' => trim($header->catatan_txt . "\n[DIBATALKAN]: " . $reason),

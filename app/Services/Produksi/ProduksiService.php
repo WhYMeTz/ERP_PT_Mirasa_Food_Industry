@@ -1211,6 +1211,10 @@ class ProduksiService
             'total_bahan_nilai'  => 0,
             'singkong_qty'       => 0,
             'singkong_nilai'     => 0,
+            'kulitan_qty'        => 0,
+            'kupasan_qty'        => 0,
+            'singkong_tipe'      => 'KULIT',
+            'konversi_faktor'    => 0.711,
             'minyak_sawit_qty'   => 0,
             'minyak_kelapa_qty'  => 0,
             'minyak_nilai'       => 0,
@@ -1295,7 +1299,7 @@ class ProduksiService
             if (str_contains($nm, 'BERKO') || str_contains($nm, 'LENGKET') || str_starts_with($cd, 'WIP-BRK') || str_starts_with($cd, 'WIP-LGT') || str_starts_with($cd, 'WIP-B')) {
                 $summary['berko_bahan_qty'] += $qty;
                 $summary['berko_bahan_nilai'] += $subtotal;
-            } elseif (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK')) {
+            } elseif (str_contains($nm, 'SINGKONG') || str_starts_with($cd, 'BB-SK') || str_starts_with($cd, 'BRG-RAW')) {
                 $summary['singkong_qty'] += $qty;
                 $summary['singkong_nilai'] += $subtotal;
                 $singkongGrades[$dtlGrade] = ($singkongGrades[$dtlGrade] ?? 0) + $qty;
@@ -1303,6 +1307,13 @@ class ProduksiService
                     $varietasList[] = 'STP';
                 } elseif (str_contains($nm, 'MANGGU') || str_contains($cd, 'MGU')) {
                     $varietasList[] = 'MGU';
+                }
+
+                // Klasifikasi Fisik: Singkong Kupas vs Singkong Kulit
+                if (str_contains($nm, 'KUPAS') || $cd === 'BB-SK001') {
+                    $summary['kupasan_qty'] += $qty;
+                } else {
+                    $summary['kulitan_qty'] += $qty;
                 }
             } elseif (str_contains($nm, 'MINYAK')) {
                 if (str_contains($nm, 'KELAPA')) {
@@ -1373,6 +1384,24 @@ class ProduksiService
             $summary['singkong_grades'] = [];
         }
 
+        // Konversi dan Sinkronisasi Singkong Kupas vs Singkong Kulit (Standar Pabrik: Faktor 71,1% / 0,711)
+        if ($summary['kupasan_qty'] > 0 && $summary['kulitan_qty'] <= 0) {
+            $summary['singkong_tipe'] = 'KUPAS';
+            // Singkong Kulit Setara = Singkong Kupas / 0.711 (contoh: 16.543 kg / 0.711 = 23.267,23 kg)
+            $summary['kulitan_qty'] = round($summary['kupasan_qty'] / 0.711, 4);
+        } elseif ($summary['kulitan_qty'] > 0 && $summary['kupasan_qty'] <= 0) {
+            $summary['singkong_tipe'] = 'KULIT';
+            // Singkong Kupas Setara = Singkong Kulit * 0.711
+            $summary['kupasan_qty'] = round($summary['kulitan_qty'] * 0.711, 4);
+        } elseif ($summary['kupasan_qty'] > 0 && $summary['kulitan_qty'] > 0) {
+            $summary['singkong_tipe'] = 'CAMPUR';
+            $summary['kulitan_qty'] += round($summary['kupasan_qty'] / 0.711, 4);
+        } elseif ($summary['singkong_qty'] > 0) {
+            $summary['singkong_tipe'] = 'KULIT';
+            $summary['kulitan_qty'] = $summary['singkong_qty'];
+            $summary['kupasan_qty'] = round($summary['singkong_qty'] * 0.711, 4);
+        }
+
         $summary['karton_estimasi'] = $kartonCount;
         $summary['items'] = $items;
         $summary['total_item_count'] = count($items);
@@ -1387,6 +1416,23 @@ class ProduksiService
     {
         $singkongQty = (float) ($data['singkong_qty'] ?? 0);
         $singkongNilai = (float) ($data['singkong_nilai'] ?? 0);
+        $kulitanQty = (float) ($data['kulitan_qty'] ?? 0);
+        $kupasanQty = (float) ($data['kupasan_qty'] ?? 0);
+
+        // Konversi dan Sinkronisasi Singkong Kupas vs Singkong Kulit (Standar Pabrik: Faktor 71,1% / 0,711)
+        if ($kupasanQty > 0 && $kulitanQty <= 0) {
+            $kulitanQty = round($kupasanQty / 0.711, 4);
+        } elseif ($kulitanQty > 0 && $kupasanQty <= 0) {
+            $kupasanQty = round($kulitanQty * 0.711, 4);
+        } elseif ($kulitanQty <= 0 && $kupasanQty <= 0 && $singkongQty > 0) {
+            $kulitanQty = $singkongQty;
+            $kupasanQty = round($singkongQty * 0.711, 4);
+        }
+        if ($singkongQty <= 0 && $kupasanQty > 0) {
+            $singkongQty = $kupasanQty;
+        } elseif ($singkongQty <= 0 && $kulitanQty > 0) {
+            $singkongQty = $kulitanQty;
+        }
 
         $minyakSawitQty = (float) ($data['minyak_sawit_qty'] ?? 0);
         $minyakKelapaQty = (float) ($data['minyak_kelapa_qty'] ?? 0);
@@ -1526,6 +1572,9 @@ class ProduksiService
 
         $totalWipQty = $iflQty + $totalManualQty + $totalBerkoQty + $uncategorizedQty;
         $effectiveOutputKg = $totalOutputKg > 0 ? $totalOutputKg : $totalWipQty;
+        if ($effectiveOutputKg <= 0 && !empty($data['total_wip_qty']) && (float)$data['total_wip_qty'] > 0) {
+            $effectiveOutputKg = (float) $data['total_wip_qty'];
+        }
         if ($totalWipQty <= 0 && $effectiveOutputKg > 0) {
             $totalWipQty = $effectiveOutputKg;
         }
@@ -1538,7 +1587,19 @@ class ProduksiService
         $berkoPersen = $totalWipQty > 0 ? ($totalBerkoQty / $totalWipQty) * 100 : 0;
         $berkoBiasaPersen = $totalWipQty > 0 ? ($berkoQty / $totalWipQty) * 100 : 0;
         $berkoMePersen = $totalWipQty > 0 ? ($berkoMeQty / $totalWipQty) * 100 : 0;
-        $rendemenPersen = $singkongQty > 0 ? ($effectiveOutputKg / $singkongQty) * 100 : 0;
+
+        // Rendemen Singkong Kulit (Standar Acuan Pabrik >= 33.0%)
+        // Formula: Output WIP / Berat Singkong Kulit Setara
+        $effectiveKulitan = $kulitanQty > 0 ? $kulitanQty : $singkongQty;
+        $rendemenKulitPersen = $effectiveKulitan > 0 ? ($effectiveOutputKg / $effectiveKulitan) * 100 : 0;
+
+        // Rendemen Singkong Kupas (Standar Acuan Pabrik 44.0% - 45.0%)
+        // Formula: Output WIP / Berat Singkong Kupas Bersih
+        $effectiveKupasan = $kupasanQty > 0 ? $kupasanQty : ($effectiveKulitan > 0 ? round($effectiveKulitan * 0.711, 4) : 0);
+        $rendemenKupasPersen = $effectiveKupasan > 0 ? ($effectiveOutputKg / $effectiveKupasan) * 100 : 0;
+
+        // Tolok ukur utama rendemen_persen sistem adalah Rendemen Singkong Kulit (Standar Pabrik 33%)
+        $rendemenPersen = $rendemenKulitPersen;
         $hppPerKg = $effectiveOutputKg > 0 ? ($totalBiayaProduksi / $effectiveOutputKg) : 0;
 
         // Metrik Limbah Fisik HACCP (Formulir MFI/HACCP-04/FRM-03/045/VIII/2021)
@@ -1570,6 +1631,8 @@ class ProduksiService
 
         return array_merge($data, [
             'singkong_qty'                => $singkongQty,
+            'kulitan_qty'                 => round($kulitanQty, 4),
+            'kupasan_qty'                 => round($kupasanQty, 4),
             'singkong_nilai'              => $singkongNilai,
             'minyak_sawit_qty'            => $minyakSawitQty,
             'minyak_kelapa_qty'           => $minyakKelapaQty,
@@ -1638,6 +1701,8 @@ class ProduksiService
             'po_ifl_realisasi_qty'        => $poIflRealisasiQty,
             'po_ifl_terpenuhi_st'         => $poIflTerpenuhiSt,
             'rendemen_persen'             => round($rendemenPersen, 2),
+            'rendemen_kulit_persen'       => round($rendemenKulitPersen, 2),
+            'rendemen_kupas_persen'       => round($rendemenKupasPersen, 2),
             'hpp_per_kg'                  => round($hppPerKg, 2),
         ]);
     }
@@ -1675,6 +1740,14 @@ class ProduksiService
                 $pakaiHdr = DatPakaiHdr::find($data['pakai_id']);
                 if (!$pakaiHdr || !in_array($pakaiHdr->status_st, ['POSTED', 'DRAFT'])) {
                     throw new Exception("Dokumen BPPB [{$pakaiHdr?->pakai_no}] tidak ditemukan atau status tidak valid untuk diproses.");
+                }
+                if ((!isset($data['kulitan_qty']) || (float)$data['kulitan_qty'] <= 0) && (!isset($data['kupasan_qty']) || (float)$data['kupasan_qty'] <= 0)) {
+                    $bppbSummary = $this->extractPakaiSummary($pakaiHdr->pakai_id);
+                    $data['kulitan_qty'] = $bppbSummary['kulitan_qty'] ?? 0;
+                    $data['kupasan_qty'] = $bppbSummary['kupasan_qty'] ?? 0;
+                    if (empty($data['singkong_tipe'])) {
+                        $data['singkong_tipe'] = $bppbSummary['singkong_tipe'] ?? 'KULIT';
+                    }
                 }
             }
 
@@ -3951,7 +4024,18 @@ class ProduksiService
         $tglCarbon = Carbon::parse($primaryProd->produksi_tgl)->timezone(config('app.timezone', 'Asia/Jakarta'));
         $hariIndo = $dayNamesIndo[$tglCarbon->dayOfWeek] ?? 'Senin';
 
-        $rendemenPersen = $totalSingkongAll > 0 ? round(($totalWipAll / $totalSingkongAll) * 100, 2) : 0;
+        $totalKulitanAll = (float) $allDocs->sum('kulitan_qty');
+        $totalKupasanAll = (float) $allDocs->sum('kupasan_qty');
+        if ($totalKulitanAll <= 0) {
+            $totalKulitanAll = $totalSingkongAll;
+        }
+        if ($totalKupasanAll <= 0 && $totalKulitanAll > 0) {
+            $totalKupasanAll = round($totalKulitanAll * 0.711, 4);
+        }
+
+        // Rendemen Kulit (Standar Pabrik >= 33.0%) & Rendemen Kupas (44.0% - 45.0%)
+        $rendemenPersen = $totalKulitanAll > 0 ? round(($totalWipAll / $totalKulitanAll) * 100, 2) : 0;
+        $rendemenKupasPersen = $totalKupasanAll > 0 ? round(($totalWipAll / $totalKupasanAll) * 100, 2) : 0;
 
         return [
             'produksi_id'          => $primaryProd->produksi_id,
@@ -3988,15 +4072,18 @@ class ProduksiService
             'batch_wip_no'         => $primaryProd->batch_wip_no,
 
             // Kuantitas Fisik Bahan (Gabungan Harian)
-            'singkong_qty'         => $totalSingkongAll,
-            'singkong_nilai'       => $singkongNilai,
-            'minyak_sawit_qty'     => $totalMinyakSawitAll,
-            'minyak_kelapa_qty'    => $totalMinyakKelapaAll,
-            'minyak_nilai'         => $minyakNilai,
-            'bumbu_qty'            => $totalBumbuQtyAll,
-            'bumbu_nilai'          => $bumbuNilai,
-            'total_wip_qty'        => $totalWipAll,
-            'rendemen_persen'      => $rendemenPersen,
+            'singkong_qty'          => $totalSingkongAll,
+            'kulitan_qty'           => $totalKulitanAll,
+            'kupasan_qty'           => $totalKupasanAll,
+            'singkong_nilai'        => $singkongNilai,
+            'minyak_sawit_qty'      => $totalMinyakSawitAll,
+            'minyak_kelapa_qty'     => $totalMinyakKelapaAll,
+            'minyak_nilai'          => $minyakNilai,
+            'bumbu_qty'             => $totalBumbuQtyAll,
+            'bumbu_nilai'           => $bumbuNilai,
+            'total_wip_qty'         => $totalWipAll,
+            'rendemen_persen'       => $rendemenPersen,
+            'rendemen_kupas_persen' => $rendemenKupasPersen,
 
             // Kemasan
             'karton_baru_qty'      => $totalKartonBaruQtyAll,
@@ -4624,6 +4711,9 @@ class ProduksiService
             'total_dapur_nilai'           => $totalDapurNilai,
             'total_wip_kg_produced'       => $totalWipKgProduced,
             'rendemen_persen'             => (float) $produksi->rendemen_persen,
+            'rendemen_kulit_persen'       => (float) $produksi->rendemen_kulit_persen,
+            'rendemen_kupas_persen'       => (float) $produksi->rendemen_kupas_persen,
+            'singkong_tipe'               => $produksi->singkong_tipe,
             'outputs_list'                => $outputsList,
             'packaging_branches'          => $packagingBranches,
             'packagingBranches'           => $packagingBranches,

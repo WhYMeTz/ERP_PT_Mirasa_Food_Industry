@@ -649,6 +649,28 @@ class PackagingController extends Controller
     }
 
     /**
+     * AJAX endpoint untuk mengecek saldo buffer sisa eceran (Pack) yang tersedia di ruang kemas.
+     */
+    public function ajaxBufferStatus(Request $request): JsonResponse
+    {
+        $barangJadiId = (int) $request->input('barang_jadi_id', 0);
+        if ($barangJadiId <= 0) {
+            return response()->json(['success' => false, 'saldo_pack' => 0]);
+        }
+
+        $buffer = $this->packagingService->getAvailablePackBuffer($barangJadiId);
+
+        return response()->json([
+            'success'        => true,
+            'saldo_pack'     => $buffer['saldo_pack'],
+            'last_pack_no'   => $buffer['last_pack_no'],
+            'last_pack_tgl'  => $buffer['last_pack_tgl'],
+            'last_shift'     => $buffer['last_shift'],
+            'last_sisa_qty'  => $buffer['last_sisa_qty'],
+        ]);
+    }
+
+    /**
      * Menyimpan dokumen pengemasan baru, menghitung HPP, dan memutasi stok.
      */
     public function store(Request $request): RedirectResponse
@@ -960,6 +982,7 @@ class PackagingController extends Controller
             'target_karton_qty'        => 'nullable|numeric|min:0.01',
             'hasil_karton_qty'         => 'required|numeric|min:0.01',
             'hasil_pack_qty'           => 'nullable|numeric|min:0',
+            'tarik_pack_lalu_qty'      => 'nullable|numeric|min:0',
             'satuan_hasil'             => 'nullable|string|max:20',
             'isi_per_karton_pcs'       => 'nullable|numeric|min:1',
             'gramatur_gr'              => 'nullable|numeric|min:0',

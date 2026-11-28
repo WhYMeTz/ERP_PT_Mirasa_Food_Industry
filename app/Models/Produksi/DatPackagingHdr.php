@@ -34,6 +34,7 @@ class DatPackagingHdr extends Model
         'target_karton_qty',
         'hasil_karton_qty',
         'hasil_pack_qty',
+        'tarik_pack_lalu_qty',
         'satuan_hasil',
         'isi_per_karton_pcs',
         'gramatur_gr',
@@ -70,6 +71,8 @@ class DatPackagingHdr extends Model
         'expired_tgl'              => 'date',
         'target_karton_qty'        => 'decimal:4',
         'hasil_karton_qty'         => 'decimal:4',
+        'hasil_pack_qty'           => 'decimal:4',
+        'tarik_pack_lalu_qty'      => 'decimal:4',
         'isi_per_karton_pcs'       => 'decimal:4',
         'gramatur_gr'              => 'decimal:4',
         'hasil_pcs_qty'            => 'decimal:4',
@@ -177,6 +180,14 @@ class DatPackagingHdr extends Model
     public function adjustmentLogs(): HasMany
     {
         return $this->hasMany(DatPackagingAdjustmentLog::class, 'pack_id', 'pack_id')->orderBy('adj_id', 'desc');
+    }
+
+    /**
+     * Relasi ke Mutasi Buffer Sisa Eceran Pack
+     */
+    public function bufferLogs(): HasMany
+    {
+        return $this->hasMany(DatPackagingBufferLog::class, 'pack_id', 'pack_id')->orderBy('buffer_id', 'desc');
     }
 
     /**

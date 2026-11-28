@@ -301,6 +301,12 @@
                                 </div>
                                 <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
                                     {{ number_format($row->hasil_pcs_qty, 0, ',', '.') }} Pcs
+                                    @if($row->hasil_pack_qty > 0)
+                                        <span style="color: #0284c7; font-weight: 700; display: block;" title="Sisa pack di ruang kemas (Buffer)">+{{ number_format($row->hasil_pack_qty, 0) }} Pack Sisa</span>
+                                    @endif
+                                    @if($row->tarik_pack_lalu_qty > 0)
+                                        <span style="color: #15803d; font-weight: 600; font-size: 0.65rem; display: block;" title="Menggabungkan sisa pack sesi sebelumnya">(Pakai {{ number_format($row->tarik_pack_lalu_qty, 0) }} Pack lalu)</span>
+                                    @endif
                                 </div>
                             </td>
 

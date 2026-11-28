@@ -17,11 +17,6 @@
             </div>
         </div>
 
-        {{-- NOTIFIKASI KOMPOSISI MULTI-GRADE SINGKONG --}}
-        <div id="singkongGradeNotice" style="display: none; padding: 0.45rem 1rem; background: #f0fdf4; border-bottom: 1px solid #bbf7d0; font-size: 0.75rem; color: #166534; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; color: #059669;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span id="singkongGradeNoticeText"></span>
-        </div>
 
         {{-- TABEL RINCIAN BAHAN DENGAN FIXED LAYOUT & ENTERPRISE GRID --}}
         <div style="overflow-x: auto;">

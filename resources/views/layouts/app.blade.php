@@ -1385,6 +1385,7 @@
         @media print {
             header, #sbToggle, .sb-overlay { display: none !important; }
             body { padding-left: 0 !important; }
+            body.sb-closed main, main { padding-top: 0 !important; margin-top: 0 !important; }
         }
     </style>
     @stack('styles')

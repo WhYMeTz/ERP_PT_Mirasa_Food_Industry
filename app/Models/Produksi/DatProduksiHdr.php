@@ -239,6 +239,56 @@ class DatProduksiHdr extends Model
             || !empty($this->jurnal_id);
     }
 
+    /**
+     * Rendemen Singkong Kulit (%) - Standar Pabrik: >= 33.0%
+     */
+    public function getRendemenKulitPersenAttribute(): float
+    {
+        $kulit = (float) ($this->kulitan_qty ?: $this->singkong_qty);
+        $wip = (float) $this->total_wip_qty;
+        if ($wip <= 0 && $this->relationLoaded('outputs')) {
+            $wip = (float) $this->outputs->sum('qty_kg');
+        }
+        return $kulit > 0 ? round(($wip / $kulit) * 100, 2) : (float) ($this->rendemen_persen ?? 0);
+    }
+
+    /**
+     * Rendemen Singkong Kupas (%) - Standar Pabrik: 44.0% - 45.0%
+     */
+    public function getRendemenKupasPersenAttribute(): float
+    {
+        $kupas = (float) $this->kupasan_qty;
+        if ($kupas <= 0) {
+            $kulit = (float) ($this->kulitan_qty ?: $this->singkong_qty);
+            $kupas = $kulit > 0 ? round($kulit * 0.711, 4) : 0;
+        }
+        $wip = (float) $this->total_wip_qty;
+        if ($wip <= 0 && $this->relationLoaded('outputs')) {
+            $wip = (float) $this->outputs->sum('qty_kg');
+        }
+        return $kupas > 0 ? round(($wip / $kupas) * 100, 2) : 0;
+    }
+
+    /**
+     * Deteksi jenis singkong utama yang tercatat pada SPK / BPPB
+     */
+    public function getSingkongTipeAttribute(): string
+    {
+        if ((float) $this->kupasan_qty > 0 && (float) $this->kulitan_qty <= 0) {
+            return 'KUPAS';
+        }
+        if ($this->relationLoaded('pemakaianBahan') && $this->pemakaianBahan) {
+            foreach ($this->pemakaianBahan->details ?? [] as $dtl) {
+                $nm = strtoupper($dtl->barang?->barang_nm ?? '');
+                $cd = strtoupper($dtl->barang?->barang_cd ?? '');
+                if (str_contains($nm, 'KUPAS') || $cd === 'BB-SK001') {
+                    return 'KUPAS';
+                }
+            }
+        }
+        return 'KULIT';
+    }
+
     public function pemakaianBahan(): BelongsTo
     {
         return $this->belongsTo(DatPakaiHdr::class, 'pakai_id', 'pakai_id');

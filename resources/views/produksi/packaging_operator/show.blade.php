@@ -35,8 +35,13 @@
         </div>
         <div class="pkg-summary-qty">
             {{ number_format($laporan->hasil_karton_qty, 0, ',', '.') }} {{ $laporan->satuan_hasil }}
+            @if ($laporan->tarik_pack_lalu_qty > 0)
+                <div style="font-size: 0.8rem; color: #15803d; font-weight: 700; margin-top: 2px;">
+                    (Termasuk +{{ number_format($laporan->tarik_pack_lalu_qty, 0) }} Pack dari Sisa Kemarin)
+                </div>
+            @endif
             @if ($laporan->hasil_pack_qty > 0)
-                <span style="font-size: 1rem; color: var(--pkg-red-700); font-weight: 700;">+ {{ number_format($laporan->hasil_pack_qty, 0, ',', '.') }} Pack</span>
+                <span style="font-size: 0.95rem; color: var(--pkg-red-700); font-weight: 700;">+ {{ number_format($laporan->hasil_pack_qty, 0, ',', '.') }} Pack Sisa Baru</span>
             @endif
         </div>
     </div>

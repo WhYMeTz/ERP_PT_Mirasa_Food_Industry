@@ -18,7 +18,7 @@
 
             {{-- Langkah-langkah --}}
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.9rem 1rem; margin-bottom:1.25rem; font-size:0.83rem; color:#475569;">
-                <div style="font-weight:700; color:#0f172a; margin-bottom:0.4rem;">📋 Petunjuk Import Rekap HPP:</div>
+                <div style="font-weight:700; color:#0f172a; margin-bottom:0.4rem;">Petunjuk Import Rekap HPP:</div>
                 <ol style="margin:0; padding-left:1.25rem; line-height:1.8;">
                     <li>Unduh template resmi atau gunakan berkas Excel harian yang biasa digunakan pabrik.</li>
                     <li>Pastikan baris data dimulai pada <strong>baris ke-7</strong> dengan kolom tanggal, biaya singkong, minyak, CNG, tenaga kerja, FOH, dan output WIP.</li>

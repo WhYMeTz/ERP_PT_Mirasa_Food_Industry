@@ -199,6 +199,18 @@
                     </option>
                 @endforeach
             </select>
+
+            {{-- Alert Sisa Kemas Kemarin untuk Mobile --}}
+            <div id="mobileAlertBuffer" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 0.65rem 0.85rem; margin-top: 0.65rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: #166534;">
+                        📦 Ada sisa <strong><span id="mobileBufferQty">0</span> pack</strong> shift kemarin
+                    </div>
+                    <button type="button" class="btn btn-sm" style="background: #059669; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer;" onclick="pakaiBufferMobile()">
+                        Pakai
+                    </button>
+                </div>
+            </div>
         </div>
 
         {{-- Jumlah Hasil Jadi & Pilihan Satuan --}}
@@ -220,13 +232,24 @@
             </div>
         </div>
 
+        {{-- Sisa Pack Lalu yang Digabung (Rollover) --}}
+        <div class="pkg-form-group" style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 0.85rem;">
+            <label class="pkg-label" for="tarik_pack_lalu_qty" style="color: #047857; font-weight: 700;">📦 Pakai Sisa Pack Shift Kemarin (Jika Ada)</label>
+            <div class="pkg-input-suffix-wrapper">
+                <input type="number" step="any" min="0" id="tarik_pack_lalu_qty" name="tarik_pack_lalu_qty" class="pkg-input" placeholder="0" value="{{ old('tarik_pack_lalu_qty', 0) }}" style="padding-right: 55px; font-weight: 700; color: #047857;">
+                <span class="pkg-input-suffix-muted">Pack</span>
+            </div>
+            <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Isi jika ada sisa pack shift lalu yang digabung ke kardus shift ini.</small>
+        </div>
+
         {{-- Sisa Pack / Eceran (Opsional) --}}
         <div class="pkg-form-group">
-            <label class="pkg-label" for="hasil_pack_qty">Sisa Eceran / Tambahan Pack (Jika Ada)</label>
+            <label class="pkg-label" for="hasil_pack_qty">Sisa Eceran Baru di Meja Kemas (Pack)</label>
             <div class="pkg-input-suffix-wrapper">
                 <input type="number" step="any" min="0" id="hasil_pack_qty" name="hasil_pack_qty" class="pkg-input" placeholder="0 jika pas kardus" value="{{ old('hasil_pack_qty', 0) }}" style="padding-right: 55px;">
                 <span class="pkg-input-suffix-muted">Pack</span>
             </div>
+            <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Sisa bungkus di luar kardus utuh (otomatis disimpan ke buffer).</small>
         </div>
     </div>
 

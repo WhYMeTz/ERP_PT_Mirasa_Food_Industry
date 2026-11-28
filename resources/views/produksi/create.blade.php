@@ -243,7 +243,10 @@
                             {{ number_format((float)old('singkong_qty', 0), 2, ',', '.') }} kg
                         </div>
                         <input type="hidden" name="singkong_qty" id="singkong_qty" value="{{ old('singkong_qty', 0) }}">
-                        <small style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis ditarik dari dokumen BPPB</small>
+                        <input type="hidden" name="kulitan_qty" id="kulitan_qty" value="{{ old('kulitan_qty', 0) }}">
+                        <input type="hidden" name="kupasan_qty" id="kupasan_qty" value="{{ old('kupasan_qty', 0) }}">
+                        <input type="hidden" name="singkong_tipe" id="singkong_tipe" value="{{ old('singkong_tipe', 'KULIT') }}">
+                        <small id="liveSingkongKonversi" style="color: #64748b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">Otomatis ditarik dari dokumen BPPB</small>
                     </div>
 
                     {{-- Metrik 2: Total Output Jadi --}}
@@ -257,15 +260,15 @@
                         <small style="color: #0369a1; font-size: 0.7rem;">WIP Utama + Curah + Berko &amp; Remahan</small>
                     </div>
 
-                    {{-- Metrik 3: Rendemen Masak --}}
+                    {{-- Metrik 3: Rendemen Penggorengan (Dinamis Sesuai Jenis Singkong) --}}
                     <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; text-align: center;">
-                        <span style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.04em; display: block;">
+                        <span id="liveRendemenTitle" style="font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.04em; display: block;">
                             Rendemen Penggorengan
                         </span>
                         <div id="liveRendemenDisplay" style="font-size: 1.4rem; font-weight: 800; color: #16a34a; margin-top: 0.25rem;">
                             0.00%
                         </div>
-                        <span id="liveRendemenStatusDisplay" style="font-size: 0.725rem; font-weight: 700; color: #15803d; display: block;">
+                        <span id="liveRendemenStatusDisplay" style="font-size: 0.725rem; font-weight: 700; color: #15803d; display: block; margin-top: 0.25rem;">
                             Menunggu timbangan
                         </span>
                     </div>

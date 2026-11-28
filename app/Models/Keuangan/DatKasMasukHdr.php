@@ -21,6 +21,7 @@ class DatKasMasukHdr extends Model
         'bkm_no',
         'tgl_terima',
         'kas_bank_id',
+        'coa_id',
         'kategori_penerimaan',
         'customer_id',
         'penyetor_nama',
@@ -28,6 +29,7 @@ class DatKasMasukHdr extends Model
         'no_referensi_bank',
         'total_terima',
         'catatan',
+        'jurnal_id',
         'status_cd',
         'alasan_void',
         'void_by',
@@ -63,9 +65,29 @@ class DatKasMasukHdr extends Model
         return $this->hasMany(DatKasMasukDtl::class, 'bkm_id', 'bkm_id');
     }
 
+    public function jurnal(): BelongsTo
+    {
+        return $this->belongsTo(DatJurnalHdr::class, 'jurnal_id', 'jurnal_id');
+    }
+
+    public function coa(): BelongsTo
+    {
+        return $this->belongsTo(MstCoa::class, 'coa_id', 'coa_id');
+    }
+
     public function getTerbilangAttribute(): string
     {
         return KasBankService::terbilang((float) $this->total_terima);
+    }
+
+    public function getStatusBadgeAttribute(): array
+    {
+        return match ($this->status_cd) {
+            'DRAFT'  => ['label' => 'Menunggu Verifikasi', 'class' => 'draft', 'color' => '#d97706', 'bg' => '#fffbeb', 'border' => '#fde68a'],
+            'POSTED' => ['label' => 'POSTED (Terbit)', 'class' => 'posted', 'color' => '#059669', 'bg' => '#ecfdf5', 'border' => '#a7f3d0'],
+            'VOID'   => ['label' => 'VOID (Batal)', 'class' => 'void', 'color' => '#dc2626', 'bg' => '#fef2f2', 'border' => '#fecaca'],
+            default  => ['label' => $this->status_cd, 'class' => 'default', 'color' => '#64748b', 'bg' => '#f8fafc', 'border' => '#e2e8f0'],
+        };
     }
 
     public function getKategoriBadgeAttribute(): array

@@ -2177,6 +2177,11 @@
                                 ->where('status_cd', 'DRAFT')
                                 ->whereNull('jurnal_id')
                                 ->count();
+                            $pendingBkmJurnalBadge = \App\Models\Keuangan\DatKasMasukHdr::where('deleted_st', false)
+                                ->where('status_cd', 'DRAFT')
+                                ->whereNull('jurnal_id')
+                                ->count();
+                            $totalPendingJurnalBadge = $pendingBkkJurnalBadge + $pendingBkmJurnalBadge;
                             $billedTerimaIdsNav = \App\Models\Keuangan\DatHutangDtl::where('deleted_st', false)
                                 ->whereNotNull('terima_id')
                                 ->pluck('terima_id');
@@ -2184,7 +2189,7 @@
                                 ->where('status_cd', 'COMPLETED')
                                 ->whereNotIn('terima_id', $billedTerimaIdsNav)
                                 ->count();
-                            $totalAkuntansiBadge = $pendingBkkJurnalBadge + $unbilledGrnBadge;
+                            $totalAkuntansiBadge = $totalPendingJurnalBadge + $unbilledGrnBadge;
                         @endphp
                         <div class="pill-dropdown" id="navDropdownLaporan">
                             <button type="button" class="pill-dropdown-btn {{ $isLaporanActive ? 'active' : '' }}"
@@ -2262,13 +2267,13 @@
                                                 <div style="display: flex; flex-direction: column; flex: 1;">
                                                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
                                                         <span style="font-weight: 700; color: #0f172a;">Verifikasi Jurnal</span>
-                                                        @if ($pendingBkkJurnalBadge > 0)
+                                                        @if ($totalPendingJurnalBadge > 0)
                                                             <span style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
-                                                                {{ $pendingBkkJurnalBadge }} Menunggu
+                                                                {{ $totalPendingJurnalBadge }} Menunggu
                                                             </span>
                                                         @endif
                                                     </div>
-                                                    <span style="font-size: 0.6875rem; color: #475569;">Verifikasi Kas Keluar (BKK) &amp; pemetaan COA</span>
+                                                    <span style="font-size: 0.6875rem; color: #475569;">Verifikasi Kas Keluar (BKK) &amp; Kas Masuk (BKM)</span>
                                                 </div>
                                             </a>
                                         @endif

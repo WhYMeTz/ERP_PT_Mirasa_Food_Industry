@@ -630,16 +630,32 @@ function showEnterpriseAlert(title, message) {
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeAllActionDropdowns();
+        closeAllCoaDropdowns();
         closeDetailModal();
+        closeDetailModalBkm();
         closeBatchConfirmModal();
+        closeBatchConfirmModalBkm();
         closeVoidModal();
+        closeVoidModalBkm();
+    }
+});
+
+// Click outside handler for Searchable COA Pickers
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('.vj-coa-picker-wrapper')) {
+        closeAllCoaDropdowns();
     }
 });
 
 // DOMContentLoaded Init
 document.addEventListener('DOMContentLoaded', function () {
-    recalculateTabCounts();
-    updateBatchToolbarState();
+    if (window.vjConfig && window.vjConfig.activeTab === 'bkm') {
+        recalculateTabCountsBkm();
+        updateBatchToolbarStateBkm();
+    } else {
+        recalculateTabCounts();
+        updateBatchToolbarState();
+    }
 
     // Auto submit filter form saat tekan Enter di kolom search
     const searchInput = document.getElementById('filterSearch');
@@ -652,3 +668,570 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+// ==========================================================================
+// 10. SEARCHABLE COA PICKER UNTUK KAS MASUK (BKM)
+// ==========================================================================
+window.openCoaDropdown = function (bkmId) {
+    closeAllCoaDropdowns();
+    closeAllActionDropdowns();
+
+    const dropdown = document.getElementById(`coa_dropdown_${bkmId}`);
+    const input = document.getElementById(`coa_search_${bkmId}`);
+    if (!dropdown || !input) return;
+
+    dropdown.style.display = 'block';
+    filterCoaOptions(bkmId, input.value);
+};
+
+window.closeAllCoaDropdowns = function () {
+    const dropdowns = document.querySelectorAll('.vj-coa-dropdown');
+    dropdowns.forEach(dd => {
+        dd.style.display = 'none';
+    });
+};
+
+window.filterCoaOptions = function (bkmId, query) {
+    const dropdown = document.getElementById(`coa_dropdown_${bkmId}`);
+    if (!dropdown) return;
+
+    dropdown.style.display = 'block';
+
+    const cleanQuery = (query || '').toLowerCase().trim();
+    const options = dropdown.querySelectorAll('.vj-coa-option');
+    const emptyMsg = dropdown.querySelector('.vj-coa-empty-msg');
+    let visibleCount = 0;
+
+    options.forEach(opt => {
+        const kode = (opt.getAttribute('data-kode') || '').toLowerCase();
+        const nama = (opt.getAttribute('data-nama') || '').toLowerCase();
+        const kategori = (opt.getAttribute('data-kategori') || '').toLowerCase();
+
+        if (!cleanQuery || kode.includes(cleanQuery) || nama.includes(cleanQuery) || kategori.includes(cleanQuery)) {
+            opt.style.display = 'flex';
+            visibleCount++;
+        } else {
+            opt.style.display = 'none';
+        }
+        opt.classList.remove('highlighted');
+    });
+
+    if (emptyMsg) {
+        emptyMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
+};
+
+window.selectCoaOption = function (bkmId, coaId, kode, nama) {
+    const input = document.getElementById(`coa_search_${bkmId}`);
+    const hidden = document.getElementById(`bkm_coa_id_${bkmId}`);
+    const clearBtn = document.getElementById(`coa_clear_${bkmId}`);
+    const row = document.getElementById(`row-bkm-${bkmId}`);
+    const btnVerify = document.getElementById(`btnVerifySingleBkm_${bkmId}`);
+    const dropdown = document.getElementById(`coa_dropdown_${bkmId}`);
+
+    if (input) input.value = `${kode} - ${nama}`;
+    if (hidden) hidden.value = coaId;
+    if (clearBtn) clearBtn.style.display = 'flex';
+    if (dropdown) dropdown.style.display = 'none';
+
+    if (row) {
+        row.classList.remove('row-unmapped');
+        row.classList.add('row-ready');
+        row.setAttribute('data-ready', '1');
+    }
+
+    if (btnVerify) {
+        btnVerify.disabled = false;
+    }
+
+    recalculateTabCountsBkm();
+    updateBatchToolbarStateBkm();
+};
+
+window.clearCoaSelection = function (bkmId) {
+    const input = document.getElementById(`coa_search_${bkmId}`);
+    const hidden = document.getElementById(`bkm_coa_id_${bkmId}`);
+    const clearBtn = document.getElementById(`coa_clear_${bkmId}`);
+    const row = document.getElementById(`row-bkm-${bkmId}`);
+    const btnVerify = document.getElementById(`btnVerifySingleBkm_${bkmId}`);
+
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    if (hidden) hidden.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    if (row) {
+        row.classList.remove('row-ready');
+        row.classList.add('row-unmapped');
+        row.setAttribute('data-ready', '0');
+
+        const checkbox = row.querySelector('.vj-row-checkbox-bkm');
+        if (checkbox) {
+            checkbox.checked = false;
+            row.classList.remove('row-selected');
+        }
+    }
+
+    if (btnVerify) {
+        btnVerify.disabled = true;
+    }
+
+    recalculateTabCountsBkm();
+    updateBatchToolbarStateBkm();
+};
+
+window.handleCoaPickerKey = function (event, bkmId) {
+    const dropdown = document.getElementById(`coa_dropdown_${bkmId}`);
+    if (!dropdown || dropdown.style.display === 'none') {
+        if (event.key === 'ArrowDown' || event.key === 'Enter') {
+            openCoaDropdown(bkmId);
+            event.preventDefault();
+        }
+        return;
+    }
+
+    const visibleOptions = Array.from(dropdown.querySelectorAll('.vj-coa-option')).filter(o => o.style.display !== 'none');
+    if (visibleOptions.length === 0) return;
+
+    let currentIndex = visibleOptions.findIndex(o => o.classList.contains('highlighted'));
+
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (currentIndex >= 0) visibleOptions[currentIndex].classList.remove('highlighted');
+        currentIndex = (currentIndex + 1) % visibleOptions.length;
+        visibleOptions[currentIndex].classList.add('highlighted');
+        visibleOptions[currentIndex].scrollIntoView({ block: 'nearest' });
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (currentIndex >= 0) visibleOptions[currentIndex].classList.remove('highlighted');
+        currentIndex = (currentIndex - 1 + visibleOptions.length) % visibleOptions.length;
+        visibleOptions[currentIndex].classList.add('highlighted');
+        visibleOptions[currentIndex].scrollIntoView({ block: 'nearest' });
+    } else if (event.key === 'Enter') {
+        event.preventDefault();
+        if (currentIndex >= 0 && visibleOptions[currentIndex]) {
+            visibleOptions[currentIndex].click();
+        } else if (visibleOptions.length > 0) {
+            visibleOptions[0].click();
+        }
+    } else if (event.key === 'Escape') {
+        dropdown.style.display = 'none';
+    }
+};
+
+// ==========================================================================
+// 11. BKM SINGLE VERIFY
+// ==========================================================================
+window.verifySingleBkm = function (bkmId) {
+    closeAllActionDropdowns();
+    closeAllCoaDropdowns();
+
+    const coaInput = document.getElementById(`bkm_coa_id_${bkmId}`);
+    const coaId = coaInput ? parseInt(coaInput.value, 10) : null;
+
+    if (!coaId) {
+        showEnterpriseAlert('Pilih Akun Kredit Terlebih Dahulu', 'Silakan pilih Akun Kredit (COA Lawan) melalui kolom pencarian sebelum menerbitkan Jurnal Umum BKM ini.');
+        const searchInput = document.getElementById(`coa_search_${bkmId}`);
+        if (searchInput) searchInput.focus();
+        return;
+    }
+
+    const tglInput = document.getElementById(`tgl_jurnal_bkm_${bkmId}`);
+    const tglJurnal = tglInput ? tglInput.value : '';
+
+    const ketInput = document.getElementById(`bkm_keterangan_${bkmId}`);
+    const keteranganJurnal = ketInput ? ketInput.value : '';
+
+    const btn = document.getElementById(`btnVerifySingleBkm_${bkmId}`);
+    const originalContent = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Memproses...`;
+    }
+
+    fetch(`${window.vjConfig.singleBkmBaseUrl}/${bkmId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': window.vjConfig.csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            coa_id: coaId,
+            tgl_jurnal: tglJurnal,
+            keterangan_jurnal: keteranganJurnal
+        })
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.message || 'Gagal memverifikasi dan menerbitkan jurnal BKM.');
+        }
+        return data;
+    })
+    .then(data => {
+        const row = document.getElementById(`row-bkm-${bkmId}`);
+        if (row) {
+            row.style.transition = 'all 0.3s ease-out';
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                row.remove();
+                recalculateTabCountsBkm();
+                updateBatchToolbarStateBkm();
+
+                const remainingRows = document.querySelectorAll('#vjMainTableBkm .vj-table-row');
+                if (remainingRows.length === 0) {
+                    window.location.reload();
+                }
+            }, 300);
+        }
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+        showEnterpriseAlert('Gagal Verifikasi BKM', err.message);
+    });
+};
+
+// ==========================================================================
+// 12. BKM BATCH SELECTION & VERIFY
+// ==========================================================================
+window.onRowCheckboxChangeBkm = function (checkbox) {
+    const row = checkbox.closest('.vj-table-row');
+    if (row) {
+        if (checkbox.checked) {
+            row.classList.add('row-selected');
+        } else {
+            row.classList.remove('row-selected');
+        }
+    }
+    updateBatchToolbarStateBkm();
+};
+
+window.toggleSelectAllBkm = function (masterCheckbox) {
+    const isChecked = masterCheckbox.checked;
+    const rows = Array.from(document.querySelectorAll('#vjMainTableBkm .vj-table-row')).filter(r => r.style.display !== 'none');
+
+    rows.forEach(row => {
+        const isReady = row.getAttribute('data-ready') === '1';
+        const checkbox = row.querySelector('.vj-row-checkbox-bkm');
+        if (checkbox) {
+            if (isChecked) {
+                if (isReady) {
+                    checkbox.checked = true;
+                    row.classList.add('row-selected');
+                } else {
+                    checkbox.checked = false;
+                    row.classList.remove('row-selected');
+                }
+            } else {
+                checkbox.checked = false;
+                row.classList.remove('row-selected');
+            }
+        }
+    });
+
+    updateBatchToolbarStateBkm();
+};
+
+function updateBatchToolbarStateBkm() {
+    const checkboxes = document.querySelectorAll('.vj-row-checkbox-bkm:checked');
+    const count = checkboxes.length;
+
+    let totalNominal = 0;
+    checkboxes.forEach(cb => {
+        const row = cb.closest('.vj-table-row');
+        if (row) {
+            const nominal = parseFloat(row.getAttribute('data-nominal') || 0);
+            totalNominal += nominal;
+        }
+    });
+
+    const badge = document.getElementById('selectedCountBadgeBkm');
+    const totalBadge = document.getElementById('selectedTotalBadgeBkm');
+    const btnBatch = document.getElementById('btnBatchVerifyBkm');
+
+    if (badge) {
+        badge.textContent = `${count} BKM Terpilih`;
+        if (count > 0) {
+            badge.classList.add('active');
+        } else {
+            badge.classList.remove('active');
+        }
+    }
+
+    if (totalBadge) {
+        if (count > 0) {
+            totalBadge.style.display = 'inline-block';
+            totalBadge.textContent = `(Rp ${formatRupiah(totalNominal)})`;
+        } else {
+            totalBadge.style.display = 'none';
+        }
+    }
+
+    if (btnBatch) {
+        btnBatch.disabled = (count === 0);
+    }
+}
+
+function recalculateTabCountsBkm() {
+    const allRows = document.querySelectorAll('#vjMainTableBkm .vj-table-row');
+    let readyCount = 0;
+    let unmappedCount = 0;
+
+    allRows.forEach(row => {
+        if (row.getAttribute('data-ready') === '1') {
+            readyCount++;
+        } else {
+            unmappedCount++;
+        }
+    });
+
+    const tabAll = document.getElementById('tabCountAllBkm');
+    const tabReady = document.getElementById('tabCountReadyBkm');
+    const tabUnmapped = document.getElementById('tabCountUnmappedBkm');
+
+    if (tabAll) tabAll.textContent = allRows.length;
+    if (tabReady) tabReady.textContent = readyCount;
+    if (tabUnmapped) tabUnmapped.textContent = unmappedCount;
+}
+
+window.applyClientFilterBkm = function (filterType, button) {
+    const tabs = document.querySelectorAll('.vj-quick-filter-group .vj-quick-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if (button) button.classList.add('active');
+
+    const rows = document.querySelectorAll('#vjMainTableBkm .vj-table-row');
+    rows.forEach(row => {
+        const isReady = row.getAttribute('data-ready') === '1';
+        if (filterType === 'all') {
+            row.style.display = '';
+        } else if (filterType === 'ready') {
+            row.style.display = isReady ? '' : 'none';
+        } else if (filterType === 'unmapped') {
+            row.style.display = !isReady ? '' : 'none';
+        }
+    });
+
+    const masterCheckbox = document.getElementById('checkAllReadyBkm');
+    if (masterCheckbox) masterCheckbox.checked = false;
+    updateBatchToolbarStateBkm();
+};
+
+window.openBatchConfirmModalBkm = function () {
+    const checkboxes = document.querySelectorAll('.vj-row-checkbox-bkm:checked');
+    if (checkboxes.length === 0) return;
+
+    let totalNominal = 0;
+    const previewList = document.getElementById('batchPreviewListBkm');
+    if (!previewList) return;
+
+    previewList.innerHTML = '';
+
+    checkboxes.forEach(cb => {
+        const row = cb.closest('.vj-table-row');
+        if (!row) return;
+
+        const bkmNo = row.getAttribute('data-bkm-no');
+        const bkmId = row.getAttribute('data-bkm-id');
+        const nominal = parseFloat(row.getAttribute('data-nominal') || 0);
+        totalNominal += nominal;
+
+        const coaInput = document.getElementById(`coa_search_${bkmId}`);
+        const coaLabel = coaInput ? coaInput.value : '-';
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'vj-preview-row';
+        rowDiv.innerHTML = `
+            <div>
+                <strong style="color: #0f172a; font-family: monospace;">${escapeHtml(bkmNo)}</strong>
+                <span style="color: #64748b; margin-left: 6px;">Kredit: <strong>${escapeHtml(coaLabel)}</strong></span>
+            </div>
+            <strong style="color: #047857; font-feature-settings: 'tnum';">Rp ${formatRupiah(nominal)}</strong>
+        `;
+        previewList.appendChild(rowDiv);
+    });
+
+    document.getElementById('batchConfirmBkmCount').textContent = `${checkboxes.length} Dokumen`;
+    document.getElementById('batchConfirmBkmTotal').textContent = `Rp ${formatRupiah(totalNominal)}`;
+
+    const modal = document.getElementById('modalConfirmBatchBkm');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeBatchConfirmModalBkm = function () {
+    const modal = document.getElementById('modalConfirmBatchBkm');
+    if (modal) modal.style.display = 'none';
+};
+
+window.submitBatchVerificationBkm = function () {
+    const checkboxes = document.querySelectorAll('.vj-row-checkbox-bkm:checked');
+    if (checkboxes.length === 0) return;
+
+    const items = [];
+    for (let cb of checkboxes) {
+        const row = cb.closest('.vj-table-row');
+        if (!row) continue;
+
+        const bkmId = parseInt(cb.value, 10);
+        const coaInput = document.getElementById(`bkm_coa_id_${bkmId}`);
+        const coaId = coaInput ? parseInt(coaInput.value, 10) : null;
+
+        if (!coaId) {
+            const bkmNo = row.getAttribute('data-bkm-no');
+            showEnterpriseAlert('Akun Kredit Belum Dipilih', `Transaksi ${bkmNo} belum memiliki Akun Kredit (COA Lawan). Silakan tentukan terlebih dahulu.`);
+            closeBatchConfirmModalBkm();
+            return;
+        }
+
+        const tglInput = document.getElementById(`tgl_jurnal_bkm_${bkmId}`);
+        const ketInput = document.getElementById(`bkm_keterangan_${bkmId}`);
+
+        items.push({
+            bkm_id: bkmId,
+            coa_id: coaId,
+            tgl_jurnal: tglInput ? tglInput.value : null,
+            keterangan_jurnal: ketInput ? ketInput.value : null
+        });
+    }
+
+    const btnExec = document.getElementById('btnExecuteBatchBkm');
+    const btnCancel = document.getElementById('btnCancelBatchBkm');
+
+    if (btnExec) {
+        btnExec.disabled = true;
+        btnExec.innerHTML = `Memproses...`;
+    }
+    if (btnCancel) btnCancel.disabled = true;
+
+    fetch(window.vjConfig.batchBkmUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': window.vjConfig.csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ items: items })
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.message || 'Gagal memproses verifikasi masal BKM.');
+        }
+        return data;
+    })
+    .then(data => {
+        closeBatchConfirmModalBkm();
+        window.location.reload();
+    })
+    .catch(err => {
+        if (btnExec) {
+            btnExec.disabled = false;
+            btnExec.innerHTML = `Ya, Terbitkan Jurnal Sekarang`;
+        }
+        if (btnCancel) btnCancel.disabled = false;
+        showEnterpriseAlert('Gagal Verifikasi Masal BKM', err.message);
+    });
+};
+
+// ==========================================================================
+// 13. DETAIL & VOID MODALS BKM
+// ==========================================================================
+window.openDetailModalBkm = function (bkmId) {
+    closeAllActionDropdowns();
+    closeAllCoaDropdowns();
+
+    const row = document.getElementById(`row-bkm-${bkmId}`);
+    if (!row) return;
+
+    const bkmNo = row.getAttribute('data-bkm-no');
+    const tgl = row.getAttribute('data-tgl');
+    const kasBank = row.getAttribute('data-kas-bank');
+    const penyetor = row.getAttribute('data-penyetor');
+    const kasir = row.getAttribute('data-kasir');
+    const metode = row.getAttribute('data-metode');
+    const catatan = row.getAttribute('data-catatan');
+    const totalFormatted = row.getAttribute('data-nominal-formatted');
+    const itemsJson = row.getAttribute('data-items');
+
+    document.getElementById('dtlBkmNo').textContent = bkmNo || '-';
+    document.getElementById('dtlBkmTgl').textContent = tgl || '-';
+    document.getElementById('dtlBkmKasBank').textContent = kasBank || '-';
+    document.getElementById('dtlBkmPenyetor').textContent = penyetor || '-';
+    document.getElementById('dtlBkmKasir').textContent = kasir || '-';
+    document.getElementById('dtlBkmMetode').textContent = metode || '-';
+    document.getElementById('dtlBkmTotalNominal').textContent = totalFormatted || 'Rp 0';
+
+    const noteWrap = document.getElementById('dtlBkmNoteWrapper');
+    const noteText = document.getElementById('dtlBkmNoteText');
+    if (catatan && catatan.trim()) {
+        noteWrap.style.display = 'block';
+        noteText.textContent = catatan;
+    } else {
+        noteWrap.style.display = 'none';
+    }
+
+    const tableBody = document.getElementById('dtlBkmItemsTableBody');
+    if (tableBody) {
+        try {
+            const items = JSON.parse(itemsJson || '[]');
+            if (items.length > 0) {
+                tableBody.innerHTML = items.map((it, idx) => `
+                    <tr>
+                        <td style="text-align: center; color: #64748b;">${idx + 1}</td>
+                        <td style="font-weight: 600; color: #0f172a;">${escapeHtml(it.uraian)}</td>
+                        <td style="text-align: center;">${it.qty} ${escapeHtml(it.satuan)}</td>
+                        <td style="text-align: right; font-feature-settings: 'tnum';">Rp ${formatRupiah(it.harga_satuan)}</td>
+                        <td style="text-align: right; font-weight: 700; color: #047857; font-feature-settings: 'tnum';">Rp ${formatRupiah(it.nominal)}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 1rem;">Tidak ada item rincian.</td></tr>`;
+            }
+        } catch (e) {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; padding: 1rem;">Gagal membaca rincian item.</td></tr>`;
+        }
+    }
+
+    const linkSlip = document.getElementById('dtlBkmLinkSlip');
+    if (linkSlip) {
+        linkSlip.href = `${window.vjConfig.showBkmBaseUrl}/${bkmId}`;
+    }
+
+    const modal = document.getElementById('modalDetailBkm');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeDetailModalBkm = function () {
+    const modal = document.getElementById('modalDetailBkm');
+    if (modal) modal.style.display = 'none';
+};
+
+window.openVoidModalBkm = function (bkmId, bkmNo) {
+    closeAllActionDropdowns();
+    closeAllCoaDropdowns();
+
+    const form = document.getElementById('formVoidBkm');
+    if (form) {
+        form.action = `${window.vjConfig.voidBkmBaseUrl}/${bkmId}/void`;
+    }
+
+    document.getElementById('voidBkmNo').textContent = bkmNo || '-';
+    const inputAlasan = document.getElementById('alasanVoidBkmInput');
+    if (inputAlasan) {
+        inputAlasan.value = '';
+    }
+
+    const modal = document.getElementById('modalVoidBkm');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeVoidModalBkm = function () {
+    const modal = document.getElementById('modalVoidBkm');
+    if (modal) modal.style.display = 'none';
+};

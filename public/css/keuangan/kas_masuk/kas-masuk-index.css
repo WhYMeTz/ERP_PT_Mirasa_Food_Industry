@@ -1,177 +1,907 @@
 /* ==========================================================================
    Modul Keuangan: Bukti Kas Masuk (BKM) - Index Stylesheet
    PT Mirasa Food Industry - Enterprise ERP
+   Mengacu pada PO_DESIGN_SYSTEM.md & Harmonized with Kas Keluar Standard
    ========================================================================== */
 
-/* Smart Action Dropdown Button & Container */
-.btn-action-trigger {
+:root {
+    --erp-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --erp-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --erp-bg-page: #f8fafc;
+    --erp-bg-surface: #ffffff;
+    --erp-bg-subtle: #f8fafc;
+    --erp-text-primary: #0f172a;
+    --erp-text-secondary: #334155;
+    --erp-text-label: #475569;
+    --erp-text-muted: #64748b;
+    --erp-border-card: #e2e8f0;
+    --erp-border-input: #cbd5e1;
+    --erp-primary: #0f172a;
+    --erp-primary-hover: #1e293b;
+    --erp-emerald: #059669;
+    --erp-emerald-text: #047857;
+    --erp-emerald-bg: #ecfdf5;
+    --erp-amber: #d97706;
+    --erp-amber-text: #b45309;
+    --erp-amber-bg: #fef3c7;
+    --erp-rose: #dc2626;
+    --erp-rose-text: #b91c1c;
+    --erp-rose-bg: #fee2e2;
+}
+
+/* Page Wrapper */
+.bkm-page-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+    color: var(--erp-text-primary);
+    font-family: var(--erp-font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 1. Header Section (Harmonized with PO & Kas Keluar) */
+.bkm-top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.bkm-header-kicker {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--erp-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.bkm-header-title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    letter-spacing: -0.025em;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.bkm-header-subtitle {
+    font-size: 0.8125rem;
+    color: var(--erp-text-muted);
+    margin: 0.35rem 0 0 0;
+    line-height: 1.45;
+}
+
+.bkm-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+}
+
+/* Reusable Pill Buttons */
+.btn-pill-outline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.45rem;
+    min-height: 36px;
+    padding: 0.5rem 1.15rem;
+    background: var(--erp-bg-surface);
+    color: var(--erp-text-secondary);
+    border: 1px solid var(--erp-border-card);
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.btn-pill-outline:hover {
+    background: var(--erp-bg-subtle);
+    border-color: var(--erp-border-input);
+    color: var(--erp-text-primary);
+}
+
+.btn-pill-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 36px;
+    padding: 0.5rem 1.25rem;
+    background: var(--erp-primary);
+    color: #ffffff;
+    border: 1px solid var(--erp-primary);
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.btn-pill-dark:hover {
+    background: var(--erp-primary-hover);
+    border-color: var(--erp-primary-hover);
+    color: #ffffff;
+}
+
+/* 2. 4 Kolom KPI Metric Cards (Fokus Kasir Operasional Harian) */
+.bkm-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.bkm-metric-card {
+    background: var(--erp-bg-surface);
+    border: 1px solid var(--erp-border-card);
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bkm-metric-card:hover {
+    border-color: var(--erp-border-input);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.bkm-metric-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.bkm-metric-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.bkm-metric-icon {
+    color: var(--erp-text-muted);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.bkm-metric-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--erp-text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.bkm-metric-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.bkm-metric-dots span {
+    width: 3.5px;
+    height: 3.5px;
+    border-radius: 50%;
+    background: #94a3b8;
+}
+
+.bkm-metric-value {
+    font-size: clamp(1.2rem, 1.6vw, 1.5rem);
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    margin-bottom: 0.6rem;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--erp-font-mono);
+}
+
+.bkm-metric-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--erp-text-muted);
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.dot-emerald { background: var(--erp-emerald); }
+.dot-amber   { background: var(--erp-amber); }
+.dot-sky     { background: #0284c7; }
+.dot-slate   { background: var(--erp-text-muted); }
+.dot-rose    { background: var(--erp-rose); }
+
+/* 3. Main Data Card & Control Bar (PO Standard) */
+.bkm-main-card {
+    background: var(--erp-bg-surface);
+    border: 1px solid var(--erp-border-card);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.bkm-control-bar {
+    padding: 1.15rem 1.35rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bkm-tabs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.bkm-status-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    padding: 0.25rem;
+    border-radius: 9999px;
+    border: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
+.bkm-pill-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.95rem;
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: var(--erp-text-muted);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.bkm-pill-tab:hover {
+    color: var(--erp-text-primary);
+    background: #ffffff;
+}
+
+.bkm-pill-tab.active {
+    background: var(--erp-primary);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+}
+
+.bkm-pill-tab .badge-count {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: var(--erp-text-secondary);
+    font-weight: 700;
+}
+
+.bkm-pill-tab.active .badge-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.bkm-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.bkm-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+}
+
+.bkm-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.bkm-search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0.45rem 0.85rem 0.45rem 2.35rem;
+    font-size: 0.8125rem;
+    color: var(--erp-text-primary);
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-input);
+    border-radius: 8px;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.bkm-search-input:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--erp-primary);
+}
+
+.bkm-select-input {
+    height: 38px;
+    padding: 0.45rem 1.85rem 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--erp-text-primary);
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-input);
+    border-radius: 8px;
+    cursor: pointer;
+    min-width: 160px;
+}
+
+.bkm-select-input:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+}
+
+.bkm-date-input {
+    height: 38px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8125rem;
+    color: var(--erp-text-primary);
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-input);
+    border-radius: 8px;
+}
+
+.bkm-date-input:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+}
+
+.btn-bkm-filter {
+    height: 38px;
+    padding: 0 1.15rem;
+    background: var(--erp-primary);
+    border: 1px solid var(--erp-primary);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-bkm-filter:hover {
+    background: var(--erp-primary-hover);
+}
+
+.btn-bkm-reset {
+    height: 38px;
+    padding: 0 0.95rem;
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-input);
+    border-radius: 8px;
+    color: var(--erp-text-label);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.15s ease;
+}
+
+.btn-bkm-reset:hover {
+    background: var(--erp-bg-subtle);
+    color: var(--erp-text-primary);
+}
+
+.bkm-total-badge {
+    font-size: 0.8125rem;
+    color: var(--erp-text-muted);
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.bkm-total-badge strong {
+    color: var(--erp-text-primary);
+}
+
+/* 4. Table Styles */
+.bkm-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.bkm-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.bkm-table thead th {
+    background: #f8fafc;
+    color: var(--erp-text-label);
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1.5px solid var(--erp-border-card);
+    white-space: nowrap;
+}
+
+.bkm-table tbody td {
+    padding: 0.85rem 1rem;
+    color: var(--erp-text-secondary);
+    font-size: 0.8125rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.bkm-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.bkm-doc-code {
+    font-family: var(--erp-font-mono);
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.15s ease;
+}
+
+.bkm-doc-code:hover {
+    color: var(--erp-emerald-text);
+}
+
+.bkm-meta-date {
+    font-size: 0.725rem;
+    color: var(--erp-text-muted);
+    margin-top: 2px;
+}
+
+.bkm-entity-title {
+    font-weight: 700;
+    color: var(--erp-text-primary);
+}
+
+.bkm-entity-sub {
+    font-size: 0.725rem;
+    color: var(--erp-text-muted);
+    margin-top: 2px;
+}
+
+.bkm-category-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.bkm-cat-limbah {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.bkm-cat-modal {
+    background: #faf5ff;
+    color: #7e22ce;
+    border-color: #e9d5ff;
+}
+
+.bkm-cat-tunai {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.bkm-cat-lain {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+.bkm-method-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: var(--erp-text-label);
+}
+
+.bkm-amount-cell {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--erp-emerald-text);
+    font-family: var(--erp-font-mono);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Status Indicator Badges (PO Standard) */
+.erp-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.indicator-amber {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.indicator-emerald {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.indicator-rose {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+/* 5. Smart Action Dropdown (Wajib Standar AGENTS.md Bagian 2) */
+.btn-action-trigger {
+    display: inline-flex;
+    align-items: center;
     gap: 5px;
     padding: 0.35rem 0.65rem;
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-input);
+    border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 700;
-    color: #334155;
-    background-color: #ffffff;
-    border: 1.5px solid #cbd5e1;
-    border-radius: 6px;
+    color: var(--erp-text-label);
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
 }
 
 .btn-action-trigger:hover {
-    background-color: #f0fdf4;
-    border-color: #059669;
-    color: #059669;
+    background: #f0fdf4;
+    border-color: var(--erp-emerald);
+    color: var(--erp-emerald);
 }
 
-/* Fixed-position Smart Action Dropdown Menu to prevent overflow issues */
 .action-dropdown-menu {
-    display: none;
     position: fixed;
     z-index: 99999;
-    min-width: 175px;
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-input);
     border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-    padding: 0.35rem;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
+    min-width: 190px;
+    padding: 0.35rem 0;
+    display: none;
 }
 
 .action-dropdown-menu.show {
     display: block;
-    animation: fadeInDropdown 0.15s ease-out;
-}
-
-@keyframes fadeInDropdown {
-    from {
-        opacity: 0;
-        transform: translateY(-4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .action-dropdown-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--erp-text-secondary);
     text-decoration: none;
-    border-radius: 6px;
+    background: none;
     border: none;
-    background: transparent;
     width: 100%;
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: all 0.1s ease;
 }
 
 .action-dropdown-item:hover {
-    background-color: #f0fdf4;
-    color: #059669;
+    background: #f0fdf4;
+    color: var(--erp-emerald);
 }
 
-.action-dropdown-item.danger-item {
-    color: #dc2626;
+.action-dropdown-item.action-verify:hover {
+    background: #ecfdf5;
+    color: #047857;
 }
 
 .action-dropdown-item.danger-item:hover {
-    background-color: #fef2f2;
-    color: #b91c1c;
+    background: #fef2f2;
+    color: var(--erp-rose);
 }
 
 .action-dropdown-divider {
     height: 1px;
-    background-color: #f1f5f9;
-    margin: 0.3rem 0;
+    background: #f1f5f9;
+    margin: 0.25rem 0;
 }
 
-/* Category Badges */
-.badge-kategori {
-    display: inline-flex;
+/* Pagination Bar */
+.bkm-pagination-bar {
+    padding: 0.875rem 1.35rem;
+    border-top: 1px solid var(--erp-border-card);
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: #ffffff;
 }
 
-.badge-kategori.limbah {
-    background-color: #ecfdf5;
-    color: #047857;
-    border: 1px solid #a7f3d0;
+.bkm-pagination-info {
+    font-size: 0.8125rem;
+    color: var(--erp-text-muted);
 }
 
-.badge-kategori.tunai {
-    background-color: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #bfdbfe;
+.bkm-pagination-info strong {
+    color: var(--erp-text-primary);
 }
 
-.badge-kategori.modal {
-    background-color: #faf5ff;
-    color: #7e22ce;
-    border: 1px solid #e9d5ff;
+/* Responsive Breakpoints */
+@media (max-width: 1200px) {
+    .bkm-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
-.badge-kategori.piutang {
-    background-color: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #fed7aa;
+@media (max-width: 768px) {
+    .bkm-tabs-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
-.badge-kategori.lain {
-    background-color: #f8fafc;
-    color: #475569;
+@media (max-width: 640px) {
+    .bkm-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 6. Modal Dialogs (PO_DESIGN_SYSTEM.md Bagian 6) */
+.bkm-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.bkm-modal-dialog {
+    background: #ffffff;
+    border-radius: 14px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
     border: 1px solid #cbd5e1;
+    overflow: hidden;
+    animation: bkmModalFadeIn 0.15s ease-out;
 }
 
-/* Status Badges */
-.badge-status-posted {
-    display: inline-flex;
+@keyframes bkmModalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.97) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.bkm-modal-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.bkm-modal-header-emerald {
+    background: #f0fdf4;
+    border-bottom-color: #dcfce7;
+}
+
+.bkm-modal-header-rose {
+    background: #fef2f2;
+    border-bottom-color: #fee2e2;
+}
+
+.bkm-modal-icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
     align-items: center;
-    gap: 4px;
-    background-color: #f0fdf4;
-    color: #166534;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bkm-icon-badge-emerald {
+    background: #dcfce7;
+    color: var(--erp-emerald);
     border: 1px solid #bbf7d0;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
 }
 
-.badge-status-void {
+.bkm-icon-badge-rose {
+    background: #fee2e2;
+    color: var(--erp-rose);
+    border: 1px solid #fecaca;
+}
+
+.bkm-modal-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--erp-text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.bkm-modal-desc {
+    font-size: 0.8rem;
+    color: var(--erp-text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.bkm-text-rose {
+    color: #991b1b !important;
+}
+
+.bkm-text-rose-subtle {
+    color: #b91c1c !important;
+}
+
+.bkm-modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.bkm-info-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+}
+
+.bkm-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+}
+
+.bkm-info-label {
+    color: var(--erp-text-muted);
+}
+
+.bkm-info-value {
+    color: var(--erp-text-primary);
+    font-weight: 600;
+}
+
+.bkm-info-value-mono {
+    font-family: var(--erp-font-mono);
+    color: var(--erp-text-primary);
+    font-weight: 700;
+}
+
+.bkm-info-total {
+    font-family: var(--erp-font-mono);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--erp-emerald-text);
+}
+
+.bkm-field-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.bkm-field-help {
+    font-size: 0.725rem;
+    color: var(--erp-text-muted);
+    margin-top: 0.35rem;
+    display: block;
+    line-height: 1.35;
+}
+
+.bkm-modal-footer {
+    padding: 0.85rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.btn-pill-rose {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    background-color: #fef2f2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-    font-size: 0.75rem;
+    justify-content: center;
+    gap: 6px;
+    padding: 0.5rem 1.25rem;
+    background: var(--erp-rose);
+    color: #ffffff;
+    border: 1.5px solid var(--erp-rose);
+    border-radius: 8px;
+    font-size: 0.8125rem;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
 
-/* Row Void styling */
-tr.row-void {
-    background-color: #fffaf0;
-    opacity: 0.75;
+.btn-pill-rose:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
 }
-tr.row-void td {
-    text-decoration: line-through;
+
+.btn-pill-emerald {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0.5rem 1.25rem;
+    background: var(--erp-emerald);
+    color: #ffffff;
+    border: 1.5px solid var(--erp-emerald);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
-tr.row-void td:last-child,
-tr.row-void td:nth-child(8) {
-    text-decoration: none;
+
+.btn-pill-emerald:hover {
+    background: #047857;
+    border-color: #047857;
 }

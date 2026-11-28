@@ -8,7 +8,6 @@ use App\Models\Gudang\DatStokBatch;
 use App\Models\MasterData\MstBarang;
 use App\Models\User;
 use App\Services\Common\CodeGeneratorService;
-use App\Services\Keuangan\JurnalService;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -17,8 +16,7 @@ class PemakaianService
 {
     public function __construct(
         protected StokService $stokService,
-        protected CodeGeneratorService $codeGenerator,
-        protected JurnalService $jurnalService
+        protected CodeGeneratorService $codeGenerator
     ) {}
 
     /**
@@ -707,9 +705,10 @@ class PemakaianService
     /**
      * Verifikasi & Posting Pengeluaran Bahan:
      * 1. Validasi status masih DRAFT
-     * 2. Kurangi stok fisik gudang per-batch & catat kartu stok mutasi OUT
-     * 3. Terbitkan Jurnal Umum Akuntansi otomatis (Debet 1151 Persediaan WIP & FG, Kredit 1150 Persediaan Bahan Baku)
-     * 4. Ubah status menjadi POSTED
+     * 2. Ubah status menjadi POSTED
+     * (Catatan: Stok fisik gudang sudah langsung dipotong secara real-time saat pembuatan dokumen DRAFT.
+     *  Sesuai alur pabrik, dokumen BPPB murni operasional gudang dan tidak menerbitkan jurnal.
+     *  Jurnal biaya bahan baku resmi diterbitkan saat proses finalisasi HPP Produksi / WIP).
      */
     public function postPemakaian(int $pakaiId, ?User $user = null): DatPakaiHdr
     {
@@ -727,64 +726,16 @@ class PemakaianService
                 throw new Exception("Dokumen pemakaian '{$header->pakai_no}' tidak memiliki rincian bahan yang dikeluarkan.");
             }
 
-            $totalNominal = 0;
-
-            // 1. Akumulasi Total Nominal untuk Penerbitan Jurnal
-            // (Catatan: Stok fisik gudang sudah langsung dipotong secara real-time saat pembuatan dokumen DRAFT)
-            foreach ($header->details as $dtl) {
-                $qtyKeluar = (float) $dtl->qty_keluar;
-                if ($qtyKeluar <= 0) {
-                    continue;
-                }
-                $totalNominal += (float) $dtl->total_harga;
-            }
-
-            // 2. Terbitkan Jurnal Umum Otomatis
-            $jurnalId = null;
-            if ($totalNominal > 0) {
-                $tujuan = $header->tujuan_pemakaian ?: 'PRODUKSI';
-                $tglJurnal = $header->pakai_tgl ? $header->pakai_tgl->format('Y-m-d') : date('Y-m-d');
-                $keteranganJurnal = "Pemakaian Bahan Baku ({$tujuan}) - Dokumen No: {$header->pakai_no}";
-
-                $entries = [
-                    [
-                        'kode_akun'  => '1151', // Persediaan WIP & FG
-                        'debet'      => $totalNominal,
-                        'kredit'     => 0,
-                        'keterangan' => "Pemakaian Bahan untuk Produksi ({$tujuan})",
-                    ],
-                    [
-                        'kode_akun'  => '1150', // Persediaan Bahan Baku & Penolong
-                        'debet'      => 0,
-                        'kredit'     => $totalNominal,
-                        'keterangan' => "Pengeluaran Bahan Baku Gudang - {$header->pakai_no}",
-                    ],
-                ];
-
-                $jurnal = $this->jurnalService->catatJurnal(
-                    'PEMAKAIAN_PRODUKSI',
-                    $tglJurnal,
-                    $header->pakai_no,
-                    $header->pakai_id,
-                    $keteranganJurnal,
-                    $entries,
-                    $user
-                );
-
-                $jurnalId = $jurnal->jurnal_id;
-            }
-
-            // 3. Update Status Dokumen menjadi POSTED
+            // Update Status Dokumen menjadi POSTED (Murni dokumen operasional logistik, tanpa jurnal akuntansi)
             $actor = $user?->name ?? auth()->user()?->name ?? 'SYSTEM';
             $header->update([
                 'status_st'  => 'POSTED',
                 'posted_at'  => now(),
                 'posted_by'  => $actor,
-                'jurnal_id'  => $jurnalId,
                 'updated_by' => $actor,
             ]);
 
-            return $header->fresh(['details.barang', 'jurnal']);
+            return $header->fresh(['details.barang']);
         });
     }
 
@@ -797,7 +748,7 @@ class PemakaianService
             $header = DatPakaiHdr::with('details')->where('pakai_id', $pakaiId)->firstOrFail();
 
             if ($header->status_st === 'POSTED') {
-                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah diposting dan jurnal telah dibukukan. Dokumen tidak dapat dihapus langsung.");
+                throw new Exception("Dokumen pemakaian '{$header->pakai_no}' sudah berstatus POSTED. Dokumen tidak dapat dihapus langsung.");
             }
 
             // Kembalikan stok fisik untuk seluruh item yang dibatalkan (Stock Reversal)

@@ -1,0 +1,37 @@
+/* ==========================================================================
+   Modul Keuangan: Bukti Kas Masuk (BKM) - Show & Printable Slip Stylesheet
+   PT Mirasa Food Industry - Enterprise ERP (Pola 5B: Centered Voucher Sheet)
+   ========================================================================== */
+
+.bkm-show-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Print Rules */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printableVoucher,
+    #printableVoucher * {
+        visibility: visible;
+    }
+    #printableVoucher {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+}

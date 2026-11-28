@@ -353,8 +353,8 @@ class PemakaianController extends Controller
     }
 
     /**
-     * Verifikasi & Posting Dokumen Pemakaian Bahan.
-     * Memotong stok fisik gudang dan menerbitkan Jurnal Umum otomatis.
+     * Posting Dokumen Pemakaian Bahan.
+     * Memperbarui status dokumen menjadi POSTED.
      */
     public function postPemakaian(Request $request, int $id): RedirectResponse|JsonResponse
     {
@@ -362,7 +362,7 @@ class PemakaianController extends Controller
             $user = Auth::user();
             $header = $this->pemakaianService->postPemakaian($id, $user);
 
-            $msg = "Dokumen pemakaian {$header->pakai_no} BERHASIL DIVERIFIKASI! Stok fisik telah dipotong dan Jurnal Umum otomatis telah diterbitkan.";
+            $msg = "Dokumen pemakaian {$header->pakai_no} BERHASIL DIPOSTING! Status dokumen telah diperbarui.";
 
             if ($request->wantsJson()) {
                 return response()->json([

@@ -1,117 +1,1222 @@
 /* ==========================================================================
-   Modul Keuangan: Bukti Kas Masuk (BKM) - Form Stylesheet
+   CSS Form Bukti Kas Masuk (BKM) - Smart Adaptive Form (PO Design System)
    PT Mirasa Food Industry - Enterprise ERP
+   100% Selaras PO Design System: Bebas Warna Hijau, Monokromatik Slate Halus
+   High Legibility, Comfortable Touch Targets, Zero AI Slop
    ========================================================================== */
 
-.bkm-form-container {
-    max-width: 1100px;
+:root {
+    --erp-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --erp-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --erp-bg-page: #f8fafc;
+    --erp-bg-surface: #ffffff;
+    --erp-bg-subtle: #f8fafc;
+    --erp-bg-muted: #f1f5f9;
+    --erp-text-primary: #0f172a;
+    --erp-text-secondary: #334155;
+    --erp-text-label: #475569;
+    --erp-text-muted: #64748b;
+    --erp-border-subtle: #f1f5f9;
+    --erp-border-card: #e2e8f0;
+    --erp-border-input: #cbd5e1;
+    --erp-primary: #0f172a;
+    --erp-primary-hover: #1e293b;
+    --erp-rose: #dc2626;
+    --erp-rose-bg: #fee2e2;
+    --erp-rose-border: #fecaca;
+}
+
+.bkm-full-container {
+    width: 100%;
+    max-width: 100%;
     margin: 0 auto;
+    padding: 0.25rem 0 3rem 0;
+    font-family: var(--erp-font-sans);
+    color: var(--erp-text-primary);
+    -webkit-font-smoothing: antialiased;
 }
 
-.category-selection-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
+/* 1. Breadcrumb Bar */
+.bkm-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.775rem;
+    color: var(--erp-text-muted);
+    margin-bottom: 0.75rem;
 }
 
-.category-card-option {
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    background: #ffffff;
-    transition: all 0.2s ease-in-out;
+.bkm-breadcrumb a {
+    color: var(--erp-text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.bkm-breadcrumb a:hover {
+    color: var(--erp-text-primary);
+}
+
+.breadcrumb-separator {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+}
+
+.breadcrumb-current {
+    color: var(--erp-text-primary);
+    font-weight: 600;
+}
+
+/* 2. Header Bar */
+.bkm-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+
+.bkm-header-info {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.category-card-option:hover {
-    border-color: #10b981;
-    background: #f0fdf4;
+.bkm-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
-.category-card-option.selected {
-    border-color: #059669;
-    background: #ecfdf5;
-    box-shadow: 0 0 0 1px #059669;
+.bkm-header-title h1 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--erp-text-primary);
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.bkm-back-link {
+    color: var(--erp-text-label);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid var(--erp-border-card);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: all 0.15s ease;
+}
+
+.bkm-back-link:hover {
+    background: var(--erp-bg-subtle);
+    color: var(--erp-text-primary);
+    border-color: var(--erp-border-input);
+}
+
+.bkm-pill-badge {
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: var(--erp-text-label);
+    border: 1px solid var(--erp-border-input);
+}
+
+/* Neutral Slate Badge untuk Nomor BKM (Bebas Hijau Mint) */
+.bkm-pill-code {
+    font-family: var(--erp-font-mono);
+    color: var(--erp-text-primary);
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    font-weight: 700;
+}
+
+.btn-header-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 36px;
+    padding: 0 1rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 1px solid var(--erp-border-card);
+    color: var(--erp-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-header-secondary:hover {
+    background: var(--erp-bg-subtle);
+    border-color: var(--erp-border-input);
+    color: var(--erp-text-primary);
+}
+
+/* Alert Banner */
+.bkm-alert-banner {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    border-radius: 12px;
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 1rem;
+    color: #991b1b;
+}
+
+.bkm-alert-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.875rem;
+    margin-bottom: 0.35rem;
+}
+
+.bkm-alert-list {
+    margin: 0;
+    padding-left: 1.35rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+}
+
+/* AR Notice Banner (Compact, Subtle, Anti-Dominasi Layar) */
+.bkm-ar-notice {
+    background: #f8fafc;
+    border: 1px solid var(--erp-border-card);
+    border-radius: 10px;
+    padding: 0.5rem 0.85rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.bkm-ar-notice-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--erp-text-secondary);
+    font-size: 0.775rem;
+}
+
+.bkm-ar-notice-left svg {
+    color: var(--erp-text-muted);
+    flex-shrink: 0;
+}
+
+.bkm-ar-notice-link {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid var(--erp-border-input);
+    transition: all 0.15s ease;
+}
+
+.bkm-ar-notice-link:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+/* 3. Cards & Parameter Grid */
+.bkm-card {
+    background: #ffffff;
+    border: 1px solid var(--erp-border-card);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.bkm-card-header {
+    padding: 0.9rem 1.35rem;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.bkm-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.bkm-card-subtitle {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--erp-text-muted);
+    margin-top: 0.15rem;
+}
+
+.bkm-card-body {
+    padding: 1.25rem 1.35rem;
+}
+
+/* Category Grid (4 Kartu Segmented - Bebas Hijau, Slate Solid) */
+.category-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+}
+
+.category-card-option {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-card);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+    min-height: 82px;
+}
+
+.category-card-option:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.category-card-option.selected,
+.category-card-option:has(input:checked) {
+    border-color: var(--erp-primary);
+    border-width: 2px;
+    background: #f8fafc;
+    box-shadow: 0 0 0 1px var(--erp-primary);
 }
 
 .category-card-option input[type="radio"] {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.category-card-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: #f1f5f9;
+    color: var(--erp-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--erp-border-card);
+    transition: all 0.15s ease;
+}
+
+.category-card-option.selected .category-card-icon-box,
+.category-card-option:has(input:checked) .category-card-icon-box {
+    background: var(--erp-primary);
+    color: #ffffff;
+    border-color: var(--erp-primary);
+}
+
+.category-card-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .category-card-title {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--erp-text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.2rem;
+}
+
+/* Check Indicator - Solid Dark Slate saat Terpilih (BUKAN HIJAU) */
+.category-check-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: all 0.15s ease;
+}
+
+.category-card-option.selected .category-check-indicator,
+.category-card-option:has(input:checked) .category-check-indicator {
+    background: var(--erp-primary);
+    border-color: var(--erp-primary);
+    color: #ffffff;
+}
+
+.category-card-desc {
+    font-size: 0.725rem;
+    color: var(--erp-text-muted);
+    line-height: 1.35;
+}
+
+/* Parameter Grid 4 Kolom Simetris */
+.parameter-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1.25fr 1.2fr 1fr;
+    gap: 1.15rem;
+    align-items: start;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    position: relative;
+}
+
+.form-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--erp-text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 22px;
+}
+
+.req-star {
+    color: var(--erp-rose);
+}
+
+.form-control {
+    width: 100%;
+    height: 42px;
+    font-size: 0.875rem;
+    padding: 0.45rem 0.85rem;
+    border: 1.5px solid var(--erp-border-input);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--erp-text-primary);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.form-hint {
+    font-size: 0.725rem;
+    color: var(--erp-text-muted);
+    line-height: 1.3;
+}
+
+.live-saldo-badge {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid var(--erp-border-card);
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    margin-top: 0.25rem;
+}
+
+.live-saldo-caption {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--erp-text-label);
+}
+
+.live-saldo-value {
+    font-family: var(--erp-font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--erp-text-primary);
+}
+
+.dual-input-row {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 0.5rem;
+}
+
+/* ==========================================================================
+   4. SMART DYNAMIC WORKSTATION (DUAL-MODE)
+   ========================================================================== */
+.card-table-workstation {
+    margin-top: 1.25rem;
+    overflow: hidden;
+}
+
+.bkm-workstation-panel {
+    width: 100%;
+}
+
+.bkm-mode-badge {
+    font-size: 0.725rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: var(--erp-text-primary);
+    border: 1px solid var(--erp-border-input);
+}
+
+/* WADAH 1: SINGLE DIRECT ENTRY (Lapang, Bersih, Selesai 10 Detik) */
+.bkm-single-entry-body {
+    padding: 1.75rem 2rem;
+    background: #ffffff;
+}
+
+.bkm-single-entry-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.8fr;
+    gap: 1.75rem;
+    align-items: start;
+}
+
+.bkm-single-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.bkm-single-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--erp-text-primary);
+}
+
+.bkm-single-amount-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.bkm-single-prefix {
+    position: absolute;
+    left: 16px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--erp-text-label);
+    pointer-events: none;
+    font-family: var(--erp-font-mono);
+}
+
+.bkm-single-amount-input {
+    width: 100%;
+    height: 56px;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--erp-text-primary);
+    font-family: var(--erp-font-mono);
+    text-align: right;
+    padding-left: 56px;
+    padding-right: 16px;
+    border-radius: 10px;
+    border: 2px solid var(--erp-border-input);
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.bkm-single-amount-input:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.bkm-single-text-input {
+    height: 56px;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* WADAH 2: MULTI-ITEM TABLE */
+.bkm-workstation-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.bkm-quick-presets-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.quick-presets-label {
+    font-size: 0.725rem;
+    font-weight: 600;
+    color: var(--erp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.quick-presets-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.btn-preset-pill {
+    background: #f1f5f9;
+    border: 1px solid var(--erp-border-input);
+    color: var(--erp-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-preset-pill:hover {
+    background: #e2e8f0;
+    color: var(--erp-text-primary);
+    border-color: #94a3b8;
+}
+
+.bkm-items-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.65rem 1.35rem;
+    background: #f8fafc;
+    border-bottom: 1.5px solid var(--erp-border-card);
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--erp-text-label);
+    letter-spacing: 0.04em;
+}
+
+.bkm-col-num-hdr {
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.bkm-col-uraian-hdr {
+    flex: 1;
+    min-width: 0;
+}
+
+.bkm-col-nominal-hdr {
+    width: 260px;
+    text-align: right;
+    padding-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.bkm-col-action-hdr {
+    width: 42px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.bkm-items-list {
+    padding: 1rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: #f8fafc;
+}
+
+.bkm-item-card {
+    background: #ffffff;
+    border: 1.5px solid var(--erp-border-card);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+}
+
+.bkm-item-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.bkm-item-card:focus-within {
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 1px #94a3b8;
+}
+
+.bkm-item-main-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.bkm-item-num {
+    width: 36px;
+    height: 42px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    border: 1px solid var(--erp-border-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--erp-text-label);
+    font-weight: 700;
+    font-size: 0.85rem;
+    font-family: var(--erp-font-mono);
+    flex-shrink: 0;
+}
+
+.bkm-item-col-uraian {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.bkm-mobile-label {
+    display: none;
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: var(--erp-text-label);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2rem;
+}
+
+.form-control-item {
+    width: 100%;
+    height: 42px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--erp-text-primary);
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--erp-border-input);
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.form-control-item:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.bkm-item-sub-actions {
+    display: flex;
+    align-items: center;
+    margin-top: 0.15rem;
+}
+
+.btn-toggle-qty {
+    background: transparent;
+    border: none;
+    padding: 3px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--erp-text-label);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.btn-toggle-qty:hover {
+    background: #f1f5f9;
+    color: var(--erp-text-primary);
+}
+
+.toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.toggle-icon.is-rotated {
+    transform: rotate(180deg);
+}
+
+.bkm-item-expandable-panel {
+    background: #f8fafc;
+    border: 1px solid var(--erp-border-card);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    margin-top: 0.35rem;
+}
+
+.bkm-details-grid {
+    display: grid;
+    grid-template-columns: 110px 130px 1fr;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--erp-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.form-control-detail {
+    height: 36px;
+    font-size: 0.825rem;
+    font-weight: 500;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    border: 1.5px solid var(--erp-border-input);
+    background: #ffffff;
+    color: var(--erp-text-primary);
+    width: 100%;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.form-control-detail:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.bkm-item-col-nominal {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.bkm-nominal-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.nominal-prefix {
+    position: absolute;
+    left: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--erp-text-muted);
+    pointer-events: none;
+    font-family: var(--erp-font-mono);
+}
+
+/* Nominal Input - Monospace Slate-900 (Bebas Hijau!) */
+.form-control-nominal {
+    width: 100%;
+    height: 42px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--erp-text-primary);
+    font-family: var(--erp-font-mono);
+    text-align: right;
+    padding-left: 38px;
+    padding-right: 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--erp-border-input);
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.form-control-nominal:focus {
+    border-color: var(--erp-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.bkm-item-col-action {
+    width: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding-top: 1px;
+}
+
+.btn-delete-row {
+    background: #ffffff;
+    color: var(--erp-text-muted);
+    border: 1.5px solid var(--erp-border-card);
+    border-radius: 8px;
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-delete-row:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: var(--erp-rose);
+}
+
+.bkm-add-row-bar {
+    padding: 0 1.35rem 1.25rem 1.35rem;
+    background: #f8fafc;
+}
+
+.btn-add-item-large {
+    width: 100%;
+    height: 42px;
+    background: #ffffff;
+    border: 1.5px dashed var(--erp-border-input);
+    border-radius: 10px;
+    color: var(--erp-text-secondary);
+    font-weight: 700;
+    font-size: 0.825rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-add-item-large:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: var(--erp-text-primary);
+}
+
+/* Catatan Umum */
+.bkm-notes-row {
+    padding: 0.75rem 1.35rem;
+    background: #ffffff;
+    border-top: 1px solid var(--erp-border-card);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notes-icon {
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+}
+
+.notes-input-wrapper {
+    flex: 1;
+}
+
+.notes-input {
+    height: 38px;
+    font-size: 0.8125rem;
+}
+
+/* ==========================================================================
+   5. STICKY DOCK FOOTER (PO DESIGN SYSTEM STANDARD - ZERO GREEN)
+   ========================================================================== */
+.bkm-dock-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 95;
+    background: #ffffff;
+    color: var(--erp-text-primary);
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    border-top: 1.5px solid var(--erp-border-card);
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.dock-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.dock-info-box {
+    min-width: 240px;
+    background: #f8fafc;
+    border: 1px solid var(--erp-border-card);
+    border-radius: 8px;
+    padding: 0.45rem 0.8rem;
+}
+
+.dock-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--erp-text-muted);
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.category-card-desc {
-    font-size: 0.725rem;
-    color: #64748b;
-    line-height: 1.3;
+/* Neutral Slate Indicator Dot (Bebas Hijau) */
+.dock-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #475569;
 }
 
-/* Item Table Styling */
-.bkm-item-table {
-    width: 100%;
-    border-collapse: collapse;
+.dock-info-content {
+    font-size: 0.8125rem;
+    color: var(--erp-text-primary);
+    font-weight: 600;
 }
 
-.bkm-item-table th {
-    background: #f8fafc;
-    border-bottom: 1.5px solid #e2e8f0;
-    padding: 0.65rem 0.75rem;
-    font-size: 0.75rem;
+.dock-cashier-status {
+    font-size: 0.6875rem;
+    color: var(--erp-text-label);
+    font-weight: 500;
+    margin-top: 0.15rem;
+}
+
+.dock-total-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.dock-total-label {
+    font-size: 0.7rem;
     font-weight: 700;
-    color: #475569;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
+    color: var(--erp-text-muted);
 }
 
-.bkm-item-table td {
-    padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+/* Grand Total Monospace Hitam Slate-900 (Bebas Hijau!) */
+.dock-total-amount {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--erp-text-primary);
+    font-family: var(--erp-font-mono);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
 }
 
-.bkm-item-table input.form-control,
-.bkm-item-table select.form-control {
-    font-size: 0.85rem;
-    padding: 0.4rem 0.65rem;
+.dock-terbilang {
+    font-size: 0.725rem;
+    color: var(--erp-text-muted);
+    font-style: italic;
+    max-width: 440px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.btn-remove-row {
-    color: #ef4444;
-    background: #fef2f2;
-    border: 1px solid #fee2e2;
-    border-radius: 6px;
-    padding: 0.35rem 0.5rem;
+.dock-actions {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-dock-cancel {
+    background: #ffffff;
+    color: var(--erp-text-label);
+    border: 1.5px solid var(--erp-border-input);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
-.btn-remove-row:hover {
-    background: #fee2e2;
-    color: #dc2626;
+.btn-dock-cancel:hover {
+    background: var(--erp-bg-subtle);
+    border-color: #94a3b8;
+    color: var(--erp-text-primary);
 }
 
-/* Total Box */
-.total-summary-card {
-    background: #f8fafc;
+.btn-dock-secondary {
+    background: #ffffff;
+    color: var(--erp-text-primary);
+    border: 1.5px solid var(--erp-border-input);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.55rem 1.1rem;
     border-radius: 8px;
-    border: 1.5px solid #e2e8f0;
-    padding: 1rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
 }
 
-.total-summary-card .grand-total-amount {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #059669;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+.btn-dock-secondary:hover {
+    background: var(--erp-bg-subtle);
+    border-color: #94a3b8;
+    color: var(--erp-text-primary);
+}
+
+.dock-btn-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+}
+
+/* Tombol Utama: SOLID DARK SLATE #0f172a (Persis PO Design System - Bebas Hijau!) */
+.btn-dock-submit {
+    background: var(--erp-primary);
+    color: #ffffff;
+    border: 1.5px solid var(--erp-primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.55rem 1.35rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+    white-space: nowrap;
+}
+
+.btn-dock-submit:hover {
+    background: var(--erp-primary-hover);
+    border-color: var(--erp-primary-hover);
+}
+
+.dock-shortcut-hint {
+    font-size: 0.6875rem;
+    color: var(--erp-text-muted);
+    font-weight: 500;
+}
+
+.dock-shortcut-hint kbd {
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 0.6875rem;
+    font-family: var(--erp-font-mono);
+    color: #334155;
+}
+
+/* ==========================================================================
+   6. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 1200px) {
+    .category-selection-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .parameter-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .bkm-single-entry-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .category-selection-grid {
+        grid-template-columns: 1fr;
+    }
+    .parameter-grid {
+        grid-template-columns: 1fr;
+    }
+    .bkm-items-header-bar {
+        display: none;
+    }
+    .bkm-mobile-label {
+        display: block;
+    }
+    .bkm-item-main-row {
+        flex-direction: column;
+        gap: 0.75rem;
+        position: relative;
+    }
+    .bkm-item-num {
+        display: none;
+    }
+    .bkm-item-col-uraian {
+        width: 100%;
+    }
+    .bkm-item-col-nominal {
+        width: 100%;
+    }
+    .bkm-item-col-action {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+    .bkm-details-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .bkm-details-grid .detail-field:last-child {
+        grid-column: span 2;
+    }
+    .bkm-dock-footer {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        gap: 1rem;
+    }
+    .dock-total-wrapper {
+        align-items: center;
+    }
+    .dock-actions {
+        justify-content: stretch;
+    }
+    .btn-dock-cancel,
+    .btn-dock-secondary,
+    .btn-dock-submit {
+        flex: 1;
+        justify-content: center;
+    }
+    .dock-btn-group {
+        width: 100%;
+        align-items: stretch;
+    }
 }
